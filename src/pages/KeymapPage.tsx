@@ -3,6 +3,7 @@ import { IconKeyboard, IconDeviceFloppy, IconRestore, IconArrowsExchange } from 
 import { useKeymap } from "../hooks/useKeymap";
 import { KeycodeSelector } from "../components/KeycodeSelector";
 import { KeyboardKey } from "../components/KeyboardKey";
+import type { Macro } from "../components/MacroEditor";
 import type { KeycodeDefinition } from "../types/keymap";
 
 export function KeymapPage() {
@@ -24,6 +25,7 @@ export function KeymapPage() {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isSwapMode, setIsSwapMode] = useState(false);
   const [swapSourceLayer, setSwapSourceLayer] = useState<number | null>(null);
+  const [macros, setMacros] = useState<Macro[]>([]);
 
   // Handle key click
   const handleKeyClick = useCallback((keyIndex: number) => {
@@ -56,6 +58,21 @@ export function KeymapPage() {
       setSwapSourceLayer(null);
     }
   }, [isSwapMode, swapSourceLayer, swapLayers]);
+
+  // Handle macro operations
+  const handleMacroSave = useCallback((macro: Macro) => {
+    setMacros((prev) => {
+      const existing = prev.find((m) => m.id === macro.id);
+      if (existing) {
+        return prev.map((m) => (m.id === macro.id ? macro : m));
+      }
+      return [...prev, macro];
+    });
+  }, []);
+
+  const handleMacroDelete = useCallback((macroId: number) => {
+    setMacros((prev) => prev.filter((m) => m.id !== macroId));
+  }, []);
 
   // Keyboard layout - mapping key indices to positions
   const leftHalfRows = [
@@ -239,6 +256,9 @@ export function KeymapPage() {
           isOpen={isSelectorOpen}
           onClose={() => setIsSelectorOpen(false)}
           onSelect={handleKeycodeSelect}
+          macros={macros}
+          onMacroSave={handleMacroSave}
+          onMacroDelete={handleMacroDelete}
         />
       </div>
     </div>

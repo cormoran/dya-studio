@@ -6,20 +6,29 @@ import { useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconX, IconSearch } from "@tabler/icons-react";
 import { KEYCODE_CATEGORIES, type KeycodeDefinition } from "../types/keymap";
+import { MacroEditor, MacroList, type Macro } from "./MacroEditor";
 
 interface KeycodeSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (keycode: KeycodeDefinition) => void;
+  macros?: Macro[];
+  onMacroSave?: (macro: Macro) => void;
+  onMacroDelete?: (macroId: number) => void;
 }
 
 export function KeycodeSelector({
   isOpen,
   onClose,
   onSelect,
+  macros = [],
+  onMacroSave,
+  onMacroDelete,
 }: KeycodeSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isMacroEditorOpen, setIsMacroEditorOpen] = useState(false);
+  const [editingMacro, setEditingMacro] = useState<Macro | undefined>(undefined);
 
   // Filter keycodes based on search and category
   const filteredCategories = useMemo(() => {
@@ -58,6 +67,41 @@ export function KeycodeSelector({
     onClose();
     setSearchQuery("");
     setSelectedCategory(null);
+  };
+
+  const handleMacroSelect = (macro: Macro) => {
+    // Convert macro to a keycode definition
+    // In a real implementation, this would use a specific macro behavior ID
+    onSelect({
+      code: macro.id,
+      label: macro.name,
+      description: `Macro: ${macro.sequence}`,
+      behaviorId: 99, // Special behavior ID for macros
+      param1: macro.id,
+      param2: 0,
+    });
+    onClose();
+    setSearchQuery("");
+    setSelectedCategory(null);
+  };
+
+  const handleMacroSave = (macro: Macro) => {
+    onMacroSave?.(macro);
+    setEditingMacro(undefined);
+  };
+
+  const handleMacroEdit = (macro: Macro) => {
+    setEditingMacro(macro);
+    setIsMacroEditorOpen(true);
+  };
+
+  const handleMacroDelete = (macroId: number) => {
+    onMacroDelete?.(macroId);
+  };
+
+  const handleCreateMacro = () => {
+    setEditingMacro(undefined);
+    setIsMacroEditorOpen(true);
   };
 
   return (
@@ -127,49 +171,80 @@ export function KeycodeSelector({
                 {category.name}
               </button>
             ))}
+            <button
+              onClick={() => setSelectedCategory("Macros")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === "Macros"
+                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+              }`}
+            >
+              Macros
+            </button>
           </div>
 
           {/* Keycode Grid */}
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6">
-              {filteredCategories.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-[var(--color-text-muted)]">
-                    No keycodes found matching your search
-                  </p>
-                </div>
-              ) : (
-                filteredCategories.map((category) => (
-                  <div key={category.name}>
-                    <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
-                      {category.name}
-                    </h3>
-                    <div className="grid grid-cols-4 tablet:grid-cols-6 gap-2">
-                      {category.keycodes.map((keycode, index) => (
-                        <button
-                          key={`${category.name}-${index}`}
-                          onClick={() => handleSelect(keycode)}
-                          className="group relative p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 transition-all text-center"
-                          title={keycode.description || keycode.label}
-                        >
-                          <div className="text-sm font-medium text-[var(--color-text)]">
-                            {keycode.label}
-                          </div>
-                          {keycode.description && (
-                            <div className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
-                              {keycode.description}
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+            {selectedCategory === "Macros" ? (
+              <MacroList
+                macros={macros}
+                onSelect={handleMacroSelect}
+                onEdit={handleMacroEdit}
+                onDelete={handleMacroDelete}
+                onCreateNew={handleCreateMacro}
+              />
+            ) : (
+              <div className="space-y-6">
+                {filteredCategories.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-[var(--color-text-muted)]">
+                      No keycodes found matching your search
+                    </p>
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  filteredCategories.map((category) => (
+                    <div key={category.name}>
+                      <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                        {category.name}
+                      </h3>
+                      <div className="grid grid-cols-4 tablet:grid-cols-6 gap-2">
+                        {category.keycodes.map((keycode, index) => (
+                          <button
+                            key={`${category.name}-${index}`}
+                            onClick={() => handleSelect(keycode)}
+                            className="group relative p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 transition-all text-center"
+                            title={keycode.description || keycode.label}
+                          >
+                            <div className="text-sm font-medium text-[var(--color-text)]">
+                              {keycode.label}
+                            </div>
+                            {keycode.description && (
+                              <div className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
+                                {keycode.description}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {/* Macro Editor Dialog */}
+      <MacroEditor
+        isOpen={isMacroEditorOpen}
+        onClose={() => {
+          setIsMacroEditorOpen(false);
+          setEditingMacro(undefined);
+        }}
+        onSave={handleMacroSave}
+        existingMacro={editingMacro}
+      />
     </Dialog.Root>
   );
 }
