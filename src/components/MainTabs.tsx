@@ -42,18 +42,11 @@ export default function MainTabs() {
             
             {/* Active indicator */}
             <motion.div
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyber-blue via-cyber-purple to-cyber-pink"
-              initial={false}
-              animate={{
-                scaleX: 0,
-                opacity: 0,
-              }}
-              whileInView={{
-                scaleX: 1,
-                opacity: 1,
-              }}
-              transition={{ duration: 0.2 }}
-              style={{ transformOrigin: 'left' }}
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyber-blue via-cyber-purple to-cyber-pink group-data-[state=active]:opacity-100"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{ transformOrigin: 'left', opacity: 0 }}
             />
           </Tabs.Trigger>
         ))}

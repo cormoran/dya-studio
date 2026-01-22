@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 import dyaLogo from '../assets/dya.svg';
 
 interface SplashScreenProps {
@@ -6,6 +7,11 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 2500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-cyber-dark to-cyber-darker"
@@ -45,9 +51,6 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             stiffness: 260,
             damping: 20,
             duration: 1
-          }}
-          onAnimationComplete={() => {
-            setTimeout(onComplete, 1500);
           }}
         />
 
