@@ -180,12 +180,12 @@ export const KEYCODE_CATEGORIES: KeycodeCategory[] = [
     name: "Media",
     description: "Media control keys",
     keycodes: [
-      { code: 0xe9, label: "Vol+", behaviorId: 3, param1: 0xe9, param2: 0 },
-      { code: 0xea, label: "Vol-", behaviorId: 3, param1: 0xea, param2: 0 },
-      { code: 0xe2, label: "Mute", behaviorId: 3, param1: 0xe2, param2: 0 },
-      { code: 0xcd, label: "Play", behaviorId: 3, param1: 0xcd, param2: 0 },
-      { code: 0xb5, label: "Next", behaviorId: 3, param1: 0xb5, param2: 0 },
-      { code: 0xb6, label: "Prev", behaviorId: 3, param1: 0xb6, param2: 0 },
+      { code: 0xe9, label: "Vol+", behaviorId: 3, param1: 0x00e9, param2: 0 },
+      { code: 0xea, label: "Vol-", behaviorId: 3, param1: 0x00ea, param2: 0 },
+      { code: 0xe2, label: "Mute", behaviorId: 3, param1: 0x00e2, param2: 0 },
+      { code: 0xcd, label: "Play", behaviorId: 3, param1: 0x00cd, param2: 0 },
+      { code: 0xb5, label: "Next", behaviorId: 3, param1: 0x00b5, param2: 0 },
+      { code: 0xb6, label: "Prev", behaviorId: 3, param1: 0x00b6, param2: 0 },
     ],
   },
 ];

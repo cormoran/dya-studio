@@ -9,22 +9,22 @@ const mockLayers: KeymapLayer[] = [
   {
     id: 0,
     name: "Base",
-    bindings: Array(54).fill({ behaviorId: 0, param1: 0x00, param2: 0 }),
+    bindings: Array.from({ length: 54 }, () => ({ behaviorId: 0, param1: 0x00, param2: 0 })),
   },
   {
     id: 1,
     name: "Lower",
-    bindings: Array(54).fill({ behaviorId: 0, param1: 0x00, param2: 0 }),
+    bindings: Array.from({ length: 54 }, () => ({ behaviorId: 0, param1: 0x00, param2: 0 })),
   },
   {
     id: 2,
     name: "Raise",
-    bindings: Array(54).fill({ behaviorId: 0, param1: 0x00, param2: 0 }),
+    bindings: Array.from({ length: 54 }, () => ({ behaviorId: 0, param1: 0x00, param2: 0 })),
   },
   {
     id: 3,
     name: "Adjust",
-    bindings: Array(54).fill({ behaviorId: 0, param1: 0x00, param2: 0 }),
+    bindings: Array.from({ length: 54 }, () => ({ behaviorId: 0, param1: 0x00, param2: 0 })),
   },
 ];
 
