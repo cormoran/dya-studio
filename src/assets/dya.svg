@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="dyaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#b030ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff006e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- D -->
+  <path d="M 30 50 L 30 150 L 60 150 Q 80 150 80 130 L 80 70 Q 80 50 60 50 Z M 45 65 L 60 65 Q 65 65 65 70 L 65 130 Q 65 135 60 135 L 45 135 Z" 
+        fill="url(#dyaGradient)" filter="url(#glow)" stroke="url(#dyaGradient)" stroke-width="1"/>
+  
+  <!-- Y -->
+  <path d="M 95 50 L 110 90 L 125 50 L 140 50 L 117.5 100 L 117.5 150 L 102.5 150 L 102.5 100 L 80 50 Z" 
+        fill="url(#dyaGradient)" filter="url(#glow)" stroke="url(#dyaGradient)" stroke-width="1"/>
+  
+  <!-- A -->
+  <path d="M 145 150 L 160 100 L 175 150 L 190 150 L 167.5 50 L 152.5 50 L 130 150 Z M 157.5 115 L 160 105 L 162.5 115 Z M 155 125 L 165 125 L 162.5 135 L 157.5 135 Z" 
+        fill="url(#dyaGradient)" filter="url(#glow)" stroke="url(#dyaGradient)" stroke-width="1"/>
+</svg>
