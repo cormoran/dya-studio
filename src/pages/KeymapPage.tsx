@@ -16,6 +16,9 @@ export function KeymapPage() {
     swapLayers,
     resetChanges,
     saveChanges,
+    physicalLayouts,
+    behaviors,
+    behaviorDetails,
   } = useKeymap();
 
   const [selectedKey, setSelectedKey] = useState<{
@@ -75,6 +78,7 @@ export function KeymapPage() {
   }, []);
 
   // Keyboard layout - mapping key indices to positions
+  // TODO: Use physicalLayouts from device when available for dynamic layout rendering
   const leftHalfRows = [
     [0, 1, 2, 3, 4, 5],
     [6, 7, 8, 9, 10, 11],
@@ -92,6 +96,11 @@ export function KeymapPage() {
   const rightThumbCluster = [51, 52, 53];
 
   const currentLayer = keymapState.layers[keymapState.activeLayer];
+
+  // Log physical layout info when available for debugging
+  if (physicalLayouts) {
+    console.log("Physical layouts loaded:", physicalLayouts);
+  }
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -259,6 +268,8 @@ export function KeymapPage() {
           macros={macros}
           onMacroSave={handleMacroSave}
           onMacroDelete={handleMacroDelete}
+          behaviors={behaviors}
+          behaviorDetails={behaviorDetails}
         />
       </div>
     </div>

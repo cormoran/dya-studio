@@ -8,7 +8,7 @@ import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
 import { call_rpc } from "@zmkfirmware/zmk-studio-ts-client";
 import type { Request } from "@zmkfirmware/zmk-studio-ts-client";
 
-// Device keymap response types
+// Device response types
 interface DeviceKeymap {
   layers: Array<{
     id: number;
@@ -21,6 +21,47 @@ interface DeviceKeymap {
   }>;
   availableLayers: number;
   maxLayerNameLength: number;
+}
+
+export interface PhysicalLayout {
+  name: string;
+  keys: Array<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    r: number;
+    rx: number;
+    ry: number;
+  }>;
+}
+
+export interface PhysicalLayouts {
+  activeLayoutIndex: number;
+  layouts: PhysicalLayout[];
+}
+
+export interface BehaviorDetails {
+  id: number;
+  displayName: string;
+  metadata: Array<{
+    param1: Array<{
+      name: string;
+      nil?: {};
+      constant?: number;
+      range?: { min: number; max: number };
+      hidUsage?: { keyboardMax: number; consumerMax: number };
+      layerId?: {};
+    }>;
+    param2: Array<{
+      name: string;
+      nil?: {};
+      constant?: number;
+      range?: { min: number; max: number };
+      hidUsage?: { keyboardMax: number; consumerMax: number };
+      layerId?: {};
+    }>;
+  }>;
 }
 
 /**
@@ -36,6 +77,54 @@ async function loadKeymapFromDevice(connection: RpcConnection): Promise<DeviceKe
   }
   
   return response.keymap.getKeymap as DeviceKeymap;
+}
+
+/**
+ * Load physical layouts from device via RPC
+ */
+async function loadPhysicalLayoutsFromDevice(connection: RpcConnection): Promise<PhysicalLayouts> {
+  const response = await call_rpc(connection, {
+    keymap: { getPhysicalLayouts: true },
+  } as Request);
+  
+  if (!response.keymap?.getPhysicalLayouts) {
+    throw new Error("Failed to load physical layouts from device");
+  }
+  
+  return response.keymap.getPhysicalLayouts as PhysicalLayouts;
+}
+
+/**
+ * Load all behaviors from device via RPC
+ */
+async function loadBehaviorsFromDevice(connection: RpcConnection): Promise<number[]> {
+  const response = await call_rpc(connection, {
+    behaviors: { listAllBehaviors: true },
+  } as Request);
+  
+  if (!response.behaviors?.listAllBehaviors) {
+    throw new Error("Failed to load behaviors from device");
+  }
+  
+  return response.behaviors.listAllBehaviors.behaviors || [];
+}
+
+/**
+ * Load behavior details from device via RPC
+ */
+async function loadBehaviorDetailsFromDevice(
+  connection: RpcConnection,
+  behaviorId: number
+): Promise<BehaviorDetails> {
+  const response = await call_rpc(connection, {
+    behaviors: { getBehaviorDetails: { behaviorId } },
+  } as Request);
+  
+  if (!response.behaviors?.getBehaviorDetails) {
+    throw new Error(`Failed to load behavior details for ID ${behaviorId}`);
+  }
+  
+  return response.behaviors.getBehaviorDetails as BehaviorDetails;
 }
 
 /**
@@ -128,6 +217,13 @@ export function useKeymap() {
   // Track modified keys for visual indication
   const [modifiedKeys, setModifiedKeys] = useState<Set<string>>(new Set());
 
+  // Physical layouts from device
+  const [physicalLayouts, setPhysicalLayouts] = useState<PhysicalLayouts | null>(null);
+  
+  // Available behaviors from device
+  const [behaviors, setBehaviors] = useState<number[]>([]);
+  const [behaviorDetails, setBehaviorDetails] = useState<Map<number, BehaviorDetails>>(new Map());
+
   /**
    * Get binding key for tracking modifications
    */
@@ -141,7 +237,36 @@ export function useKeymap() {
   const loadKeymap = useCallback(async () => {
     if (isConnected && rpcConnection) {
       try {
+        // Load keymap
         const deviceKeymap = await loadKeymapFromDevice(rpcConnection);
+        
+        // Load physical layouts
+        try {
+          const layouts = await loadPhysicalLayoutsFromDevice(rpcConnection);
+          setPhysicalLayouts(layouts);
+        } catch (error) {
+          console.error("Failed to load physical layouts:", error);
+        }
+        
+        // Load behaviors
+        try {
+          const behaviorIds = await loadBehaviorsFromDevice(rpcConnection);
+          setBehaviors(behaviorIds);
+          
+          // Load details for each behavior
+          const detailsMap = new Map<number, BehaviorDetails>();
+          for (const behaviorId of behaviorIds) {
+            try {
+              const details = await loadBehaviorDetailsFromDevice(rpcConnection, behaviorId);
+              detailsMap.set(behaviorId, details);
+            } catch (error) {
+              console.error(`Failed to load behavior details for ID ${behaviorId}:`, error);
+            }
+          }
+          setBehaviorDetails(detailsMap);
+        } catch (error) {
+          console.error("Failed to load behaviors:", error);
+        }
         
         // Convert from device format to our format
         const layers: KeymapLayer[] = deviceKeymap.layers.map((layer) => ({
@@ -403,5 +528,8 @@ export function useKeymap() {
     resetChanges,
     saveChanges,
     loadKeymap,
+    physicalLayouts,
+    behaviors,
+    behaviorDetails,
   };
 }

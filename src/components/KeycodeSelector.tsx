@@ -7,6 +7,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { IconX, IconSearch } from "@tabler/icons-react";
 import { KEYCODE_CATEGORIES, type KeycodeDefinition } from "../types/keymap";
 import { MacroEditor, MacroList, type Macro } from "./MacroEditor";
+import type { BehaviorDetails } from "../hooks/useKeymap";
 
 interface KeycodeSelectorProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ interface KeycodeSelectorProps {
   macros?: Macro[];
   onMacroSave?: (macro: Macro) => void;
   onMacroDelete?: (macroId: number) => void;
+  behaviors?: number[];
+  behaviorDetails?: Map<number, BehaviorDetails>;
 }
 
 export function KeycodeSelector({
@@ -24,19 +27,68 @@ export function KeycodeSelector({
   macros = [],
   onMacroSave,
   onMacroDelete,
+  behaviors = [],
+  behaviorDetails = new Map(),
 }: KeycodeSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isMacroEditorOpen, setIsMacroEditorOpen] = useState(false);
   const [editingMacro, setEditingMacro] = useState<Macro | undefined>(undefined);
 
+  // Build behavior-based keycode categories from device
+  const behaviorCategories = useMemo(() => {
+    if (behaviors.length === 0) return [];
+    
+    const categories: Array<{ name: string; description: string; keycodes: KeycodeDefinition[] }> = [];
+    
+    for (const behaviorId of behaviors) {
+      const details = behaviorDetails.get(behaviorId);
+      if (!details) continue;
+      
+      // Create keycodes for this behavior based on its parameters
+      const keycodes: KeycodeDefinition[] = [];
+      
+      // If behavior has HID usage parameters, generate keycodes for common keys
+      const hasHidUsage = details.metadata.some(m => 
+        m.param1.some(p => p.hidUsage) || m.param2.some(p => p.hidUsage)
+      );
+      
+      if (hasHidUsage) {
+        // Skip - these are covered by static categories
+        continue;
+      }
+      
+      // For non-HID behaviors, create a basic entry
+      keycodes.push({
+        code: behaviorId,
+        label: details.displayName,
+        description: `Behavior ID: ${behaviorId}`,
+        behaviorId,
+        param1: 0,
+        param2: 0,
+      });
+      
+      if (keycodes.length > 0) {
+        categories.push({
+          name: details.displayName,
+          description: `Custom behavior: ${details.displayName}`,
+          keycodes,
+        });
+      }
+    }
+    
+    return categories;
+  }, [behaviors, behaviorDetails]);
+
   // Filter keycodes based on search and category
   const filteredCategories = useMemo(() => {
+    const allCategories = [...KEYCODE_CATEGORIES, ...behaviorCategories];
+    
     if (!searchQuery && !selectedCategory) {
-      return KEYCODE_CATEGORIES;
+      return allCategories;
     }
 
-    return KEYCODE_CATEGORIES.map((category) => {
+    return allCategories.map((category) => {
       // Filter by selected category
       if (selectedCategory && category.name !== selectedCategory) {
         return null;
