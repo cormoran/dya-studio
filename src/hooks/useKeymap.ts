@@ -5,8 +5,9 @@ import { useState, useCallback, useEffect, useContext } from "react";
 import type { KeymapState, KeyBinding, KeymapLayer } from "../types/keymap";
 import { ConnectionContext } from "../components/DeviceConnection";
 import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
-import { call_rpc } from "@zmkfirmware/zmk-studio-ts-client";
+import { call_rpc, MetaError } from "@zmkfirmware/zmk-studio-ts-client";
 import type { Request } from "@zmkfirmware/zmk-studio-ts-client";
+import { ErrorConditions } from "@zmkfirmware/zmk-studio-ts-client/meta";
 
 // Device response types
 interface DeviceKeymap {
@@ -223,6 +224,9 @@ export function useKeymap() {
   // Available behaviors from device
   const [behaviors, setBehaviors] = useState<number[]>([]);
   const [behaviorDetails, setBehaviorDetails] = useState<Map<number, BehaviorDetails>>(new Map());
+  
+  // Unlock status
+  const [unlockRequired, setUnlockRequired] = useState(false);
 
   /**
    * Get binding key for tracking modifications
@@ -232,11 +236,23 @@ export function useKeymap() {
   }, []);
 
   /**
+   * Check if error is unlock required
+   */
+  const isUnlockRequired = (error: unknown): boolean => {
+    if (error instanceof MetaError) {
+      return error.condition === ErrorConditions.UNLOCK_REQUIRED;
+    }
+    return false;
+  };
+
+  /**
    * Load keymap from device or use mock data
    */
   const loadKeymap = useCallback(async () => {
     if (isConnected && rpcConnection) {
       try {
+        setUnlockRequired(false);
+        
         // Load keymap
         const deviceKeymap = await loadKeymapFromDevice(rpcConnection);
         
@@ -245,6 +261,9 @@ export function useKeymap() {
           const layouts = await loadPhysicalLayoutsFromDevice(rpcConnection);
           setPhysicalLayouts(layouts);
         } catch (error) {
+          if (isUnlockRequired(error)) {
+            throw error; // Propagate unlock error
+          }
           console.error("Failed to load physical layouts:", error);
         }
         
@@ -265,6 +284,9 @@ export function useKeymap() {
           }
           setBehaviorDetails(detailsMap);
         } catch (error) {
+          if (isUnlockRequired(error)) {
+            throw error; // Propagate unlock error
+          }
           console.error("Failed to load behaviors:", error);
         }
         
@@ -297,7 +319,15 @@ export function useKeymap() {
         setOriginalBindings(originals);
         setModifiedKeys(new Set());
       } catch (error) {
-        console.error("Failed to load keymap from device:", error);
+        // Check if unlock is required
+        if (isUnlockRequired(error)) {
+          console.warn("ZMK Studio unlock required");
+          setUnlockRequired(true);
+          // Still fall back to mock data for UI
+        } else {
+          console.error("Failed to load keymap from device:", error);
+        }
+        
         // Fall back to mock data
         const mockLayers = createMockLayers();
         setKeymapState({
@@ -531,5 +561,6 @@ export function useKeymap() {
     physicalLayouts,
     behaviors,
     behaviorDetails,
+    unlockRequired,
   };
 }
