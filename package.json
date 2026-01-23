@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "npm run generate && vite",
+    "build": "npm run generate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "generate": "buf generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -25,6 +26,8 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.64.0",
+    "@bufbuild/protoc-gen-es": "^2.11.0",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
@@ -49,6 +52,8 @@
     "run-script-os": "^1.1.6",
     "tailwindcss": "^4.1.18",
     "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "ts-proto": "^2.11.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "npm:rolldown-vite@7.2.5",

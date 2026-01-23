@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback } from "react";
-import { useZMKApp } from "@cormoran/zmk-studio-react-hook";
+import { useZMKApp, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectSerial } from "@zmkfirmware/zmk-studio-ts-client/transport/serial";
-import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
 
-// Connection context for UI components
+// Simple connection context for UI components
 interface ConnectionContextValue {
   isConnected: boolean;
   deviceName: string | undefined;
@@ -35,32 +34,28 @@ export function DeviceConnectionProvider({
   const zmkApp = useZMKApp();
 
   const handleConnect = useCallback(async () => {
-    try {
-      await zmkApp.connect(connectSerial);
-    } catch (err) {
-      // Error is handled by zmkApp
-      console.error("Connection error:", err);
-    }
+    await zmkApp.connect(connectSerial);
   }, [zmkApp]);
 
   const handleDisconnect = useCallback(() => {
     zmkApp.disconnect();
   }, [zmkApp]);
 
+  const connectionValue: ConnectionContextValue = {
+    isConnected: zmkApp.isConnected,
+    deviceName: zmkApp.state.deviceInfo?.name,
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    isLoading: zmkApp.state.isLoading,
+    error: zmkApp.state.error,
+  };
+
   return (
-    <ConnectionContext.Provider
-      value={{
-        isConnected: zmkApp.isConnected,
-        deviceName: zmkApp.state.deviceInfo?.name,
-        onConnect: handleConnect,
-        onDisconnect: handleDisconnect,
-        isLoading: zmkApp.state.isLoading,
-        error: zmkApp.state.error,
-        rpcConnection: zmkApp.state.connection,
-      }}
-    >
-      {children}
-    </ConnectionContext.Provider>
+    <ZMKAppContext.Provider value={zmkApp}>
+      <ConnectionContext.Provider value={connectionValue}>
+        {children}
+      </ConnectionContext.Provider>
+    </ZMKAppContext.Provider>
   );
 }
 

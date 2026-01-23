@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package zmk.ble_management;
+
+// Profile information
+message ProfileInfo {
+    uint32 index = 1;
+    string name = 2;          // Custom name for the profile
+    string address = 3;       // BLE address (MAC address)
+    bool is_connected = 4;    // Whether currently connected
+    bool is_open = 5;         // Whether profile slot is not in use
+    bool is_active = 6;       // Whether this is the active profile
+}
+
+// Get all BLE profiles
+message GetProfilesRequest {}
+
+message GetProfilesResponse {
+    repeated ProfileInfo profiles = 1;
+    uint32 max_profiles = 2;  // Maximum number of profiles supported
+}
+
+// Set custom name for a profile
+message SetProfileNameRequest {
+    uint32 index = 1;
+    string name = 2;
+}
+
+message SetProfileNameResponse {
+    bool success = 1;
+}
+
+// Switch active profile
+message SwitchProfileRequest {
+    uint32 index = 1;
+}
+
+message SwitchProfileResponse {
+    bool success = 1;
+}
+
+// Unpair a specific profile
+message UnpairProfileRequest {
+    uint32 index = 1;
+}
+
+message UnpairProfileResponse {
+    bool success = 1;
+}
+
+// Split keyboard information
+message SplitInfo {
+    bool is_split = 1;
+    bool is_central = 2;
+    bool peripheral_connected = 3;  // For central: is peripheral connected
+    bool central_bonded = 4;        // For peripheral: is central bonded
+}
+
+message GetSplitInfoRequest {}
+
+message GetSplitInfoResponse {
+    SplitInfo info = 1;
+}
+
+// Forget split keyboard bond (for resetting split connection)
+message ForgetSplitBondRequest {}
+
+message ForgetSplitBondResponse {
+    bool success = 1;
+}
+
+// Main request/response wrapper
+message Request {
+    oneof request_type {
+        GetProfilesRequest get_profiles = 1;
+        SetProfileNameRequest set_profile_name = 2;
+        SwitchProfileRequest switch_profile = 3;
+        UnpairProfileRequest unpair_profile = 4;
+        GetSplitInfoRequest get_split_info = 5;
+        ForgetSplitBondRequest forget_split_bond = 6;
+    }
+}
+
+message ErrorResponse {
+    string message = 1;
+}
+
+message Response {
+    oneof response_type {
+        ErrorResponse error = 1;
+        GetProfilesResponse get_profiles = 2;
+        SetProfileNameResponse set_profile_name = 3;
+        SwitchProfileResponse switch_profile = 4;
+        UnpairProfileResponse unpair_profile = 5;
+        GetSplitInfoResponse get_split_info = 6;
+        ForgetSplitBondResponse forget_split_bond = 7;
+    }
+}

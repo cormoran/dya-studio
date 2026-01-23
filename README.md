@@ -42,7 +42,7 @@ _Coming soon_
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
-- [pnpm](https://pnpm.io/) (recommended) or npm
+- npm (comes with Node.js)
 - A Chromium-based browser (Chrome, Edge) for Web Serial API support
 
 ### Installation
@@ -53,10 +53,10 @@ git clone https://github.com/cormoran/dya-studio.git
 cd dya-studio
 
 # Install dependencies
-pnpm install
+npm install
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
@@ -86,13 +86,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Available Scripts
 
 ```bash
-pnpm dev            # Start development server with HMR
-pnpm build          # Build for production
-pnpm preview        # Preview production build
-pnpm lint           # Run ESLint
-pnpm test           # Run tests with Jest
-pnpm test:watch     # Run tests in watch mode
-pnpm test:coverage  # Generate test coverage report
+npm run dev            # Start development server with HMR
+npm run build          # Build for production
+npm run preview        # Preview production build
+npm run lint           # Run ESLint
+npm test               # Run tests with Jest
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Generate test coverage report
 ```
 
 ### Project Structure
@@ -120,13 +120,13 @@ DYA Studio uses **Jest** and **React Testing Library** for testing. All componen
 
 ```bash
 # Run all tests
-pnpm test
+npm test
 
 # Run tests in watch mode
-pnpm test:watch
+npm run test:watch
 
 # Generate coverage report
-pnpm test:coverage
+npm run test:coverage
 ```
 
 For detailed testing guidelines and best practices, see the [Testing Guide](docs/TESTING_GUIDE.md).

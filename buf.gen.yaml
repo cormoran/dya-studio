@@ -1,0 +1,12 @@
+version: v2
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-ts_proto
+    opt:
+      - outputServices=false
+      - outputJsonMethods=false
+      - outputClientImpl=false
+      - useExactTypes=false
+      - esModuleInterop=true
+    out: src/proto

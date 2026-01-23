@@ -11,6 +11,38 @@ Object.defineProperty(navigator, "serial", {
   value: undefined,
 });
 
+// Mock ReadableStream and WritableStream for Web Serial API
+if (typeof global.ReadableStream === "undefined") {
+  global.ReadableStream = class ReadableStream {
+    getReader() {
+      return {
+        read: jest.fn().mockResolvedValue({ done: true, value: undefined }),
+        releaseLock: jest.fn(),
+        cancel: jest.fn(),
+      };
+    }
+    cancel() {
+      return Promise.resolve();
+    }
+  } as unknown as ReadableStream;
+}
+
+if (typeof global.WritableStream === "undefined") {
+  global.WritableStream = class WritableStream {
+    getWriter() {
+      return {
+        write: jest.fn().mockResolvedValue(undefined),
+        close: jest.fn().mockResolvedValue(undefined),
+        releaseLock: jest.fn(),
+        abort: jest.fn(),
+      };
+    }
+    abort() {
+      return Promise.resolve();
+    }
+  } as unknown as WritableStream;
+}
+
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,
