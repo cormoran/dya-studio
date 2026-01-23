@@ -1,11 +1,80 @@
 /**
  * Hook for managing keymap state
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useContext } from "react";
 import type { KeymapState, KeyBinding, KeymapLayer } from "../types/keymap";
+import { ConnectionContext } from "../components/DeviceConnection";
+import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
+import { call_rpc } from "@zmkfirmware/zmk-studio-ts-client";
+import type { Request } from "@zmkfirmware/zmk-studio-ts-client";
 
-// Mock initial data for development
-const mockLayers: KeymapLayer[] = [
+/**
+ * Load keymap from device via RPC
+ */
+async function loadKeymapFromDevice(connection: RpcConnection): Promise<any> {
+  const response = await call_rpc(connection, {
+    keymap: { getKeymap: true },
+  } as Request);
+  
+  if (!response.keymap?.getKeymap) {
+    throw new Error("Failed to load keymap from device");
+  }
+  
+  return response.keymap.getKeymap;
+}
+
+/**
+ * Save key binding to device via RPC
+ */
+async function saveKeyBindingToDevice(
+  connection: RpcConnection,
+  layerId: number,
+  keyPosition: number,
+  binding: KeyBinding
+): Promise<void> {
+  const response = await call_rpc(connection, {
+    keymap: {
+      setLayerBinding: {
+        layerId,
+        keyPosition,
+        binding: {
+          behaviorId: binding.behaviorId,
+          param1: binding.param1,
+          param2: binding.param2,
+        },
+      },
+    },
+  } as Request);
+  
+  if (response.keymap?.setLayerBinding !== 0) {
+    throw new Error(`Failed to set layer binding: ${response.keymap?.setLayerBinding}`);
+  }
+}
+
+/**
+ * Save all changes to device
+ */
+async function saveChangesToDevice(connection: RpcConnection): Promise<void> {
+  const response = await call_rpc(connection, {
+    keymap: { saveChanges: true },
+  } as Request);
+  
+  if (response.keymap?.saveChanges?.err) {
+    throw new Error(`Failed to save changes: ${response.keymap.saveChanges.err}`);
+  }
+}
+
+/**
+ * Discard changes on device
+ */
+async function discardChangesOnDevice(connection: RpcConnection): Promise<void> {
+  await call_rpc(connection, {
+    keymap: { discardChanges: true },
+  } as Request);
+}
+
+// Mock initial data for development (when not connected)
+const createMockLayers = (): KeymapLayer[] => [
   {
     id: 0,
     name: "Base",
@@ -29,8 +98,9 @@ const mockLayers: KeymapLayer[] = [
 ];
 
 export function useKeymap() {
+  const { isConnected, rpcConnection } = useContext(ConnectionContext);
   const [keymapState, setKeymapState] = useState<KeymapState>({
-    layers: mockLayers,
+    layers: createMockLayers(),
     activeLayer: 0,
     availableLayers: 4,
     maxLayerNameLength: 32,
@@ -51,30 +121,75 @@ export function useKeymap() {
   }, []);
 
   /**
-   * Load keymap from device
-   * TODO: Replace with actual ZMK API call
+   * Load keymap from device or use mock data
    */
   const loadKeymap = useCallback(async () => {
-    // For now, use mock data
-    // In production, this would call the ZMK API
-    setKeymapState({
-      layers: mockLayers,
-      activeLayer: 0,
-      availableLayers: 4,
-      maxLayerNameLength: 32,
-      unsavedChanges: false,
-    });
-    
-    // Store original bindings
-    const originals = new Map<string, KeyBinding>();
-    mockLayers.forEach((layer, layerIndex) => {
-      layer.bindings.forEach((binding, keyIndex) => {
-        originals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+    if (isConnected && rpcConnection) {
+      try {
+        const deviceKeymap = await loadKeymapFromDevice(rpcConnection);
+        
+        // Convert from device format to our format
+        const layers: KeymapLayer[] = deviceKeymap.layers.map((layer: any) => ({
+          id: layer.id,
+          name: layer.name,
+          bindings: layer.bindings.map((b: any) => ({
+            behaviorId: b.behaviorId,
+            param1: b.param1,
+            param2: b.param2,
+          })),
+        }));
+        
+        setKeymapState({
+          layers,
+          activeLayer: 0,
+          availableLayers: deviceKeymap.availableLayers,
+          maxLayerNameLength: deviceKeymap.maxLayerNameLength,
+          unsavedChanges: false,
+        });
+        
+        // Store original bindings
+        const originals = new Map<string, KeyBinding>();
+        layers.forEach((layer, layerIndex) => {
+          layer.bindings.forEach((binding, keyIndex) => {
+            originals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+          });
+        });
+        setOriginalBindings(originals);
+        setModifiedKeys(new Set());
+      } catch (error) {
+        console.error("Failed to load keymap from device:", error);
+        // Fall back to mock data
+        const mockLayers = createMockLayers();
+        setKeymapState({
+          layers: mockLayers,
+          activeLayer: 0,
+          availableLayers: 4,
+          maxLayerNameLength: 32,
+          unsavedChanges: false,
+        });
+      }
+    } else {
+      // Use mock data when not connected
+      const mockLayers = createMockLayers();
+      setKeymapState({
+        layers: mockLayers,
+        activeLayer: 0,
+        availableLayers: 4,
+        maxLayerNameLength: 32,
+        unsavedChanges: false,
       });
-    });
-    setOriginalBindings(originals);
-    setModifiedKeys(new Set());
-  }, [getBindingKey]);
+      
+      // Store original bindings
+      const originals = new Map<string, KeyBinding>();
+      mockLayers.forEach((layer, layerIndex) => {
+        layer.bindings.forEach((binding, keyIndex) => {
+          originals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+        });
+      });
+      setOriginalBindings(originals);
+      setModifiedKeys(new Set());
+    }
+  }, [isConnected, rpcConnection, getBindingKey]);
 
   /**
    * Set active layer
@@ -89,11 +204,12 @@ export function useKeymap() {
   /**
    * Update key binding
    */
-  const setKeyBinding = useCallback((
+  const setKeyBinding = useCallback(async (
     layerIndex: number,
     keyIndex: number,
     binding: KeyBinding
   ) => {
+    // Update local state immediately
     setKeymapState((prev) => {
       const newLayers = [...prev.layers];
       const newBindings = [...newLayers[layerIndex].bindings];
@@ -130,7 +246,18 @@ export function useKeymap() {
         return newSet;
       });
     }
-  }, [getBindingKey, originalBindings]);
+
+    // Send to device if connected
+    if (isConnected && rpcConnection) {
+      try {
+        const layerId = keymapState.layers[layerIndex].id;
+        await saveKeyBindingToDevice(rpcConnection, layerId, keyIndex, binding);
+      } catch (error) {
+        console.error("Failed to save key binding to device:", error);
+        // TODO: Show error to user
+      }
+    }
+  }, [getBindingKey, originalBindings, isConnected, rpcConnection, keymapState.layers]);
 
   /**
    * Get original binding for a key
@@ -167,46 +294,79 @@ export function useKeymap() {
   /**
    * Reset all changes
    */
-  const resetChanges = useCallback(() => {
-    const resetLayers = keymapState.layers.map((layer, layerIndex) => ({
-      ...layer,
-      bindings: layer.bindings.map((_, keyIndex) => {
-        const original = originalBindings.get(getBindingKey(layerIndex, keyIndex));
-        return original ? { ...original } : { behaviorId: 0, param1: 0, param2: 0 };
-      }),
-    }));
+  const resetChanges = useCallback(async () => {
+    if (isConnected && rpcConnection) {
+      try {
+        await discardChangesOnDevice(rpcConnection);
+        // Reload keymap from device
+        await loadKeymap();
+      } catch (error) {
+        console.error("Failed to discard changes on device:", error);
+      }
+    } else {
+      // Reset to original bindings locally
+      const resetLayers = keymapState.layers.map((layer, layerIndex) => ({
+        ...layer,
+        bindings: layer.bindings.map((_, keyIndex) => {
+          const original = originalBindings.get(getBindingKey(layerIndex, keyIndex));
+          return original ? { ...original } : { behaviorId: 0, param1: 0, param2: 0 };
+        }),
+      }));
 
-    setKeymapState((prev) => ({
-      ...prev,
-      layers: resetLayers,
-      unsavedChanges: false,
-    }));
-    setModifiedKeys(new Set());
-  }, [keymapState.layers, originalBindings, getBindingKey]);
+      setKeymapState((prev) => ({
+        ...prev,
+        layers: resetLayers,
+        unsavedChanges: false,
+      }));
+      setModifiedKeys(new Set());
+    }
+  }, [isConnected, rpcConnection, keymapState.layers, originalBindings, getBindingKey, loadKeymap]);
 
   /**
    * Save changes to device
-   * TODO: Implement actual ZMK API call
    */
   const saveChanges = useCallback(async () => {
-    // In production, this would call the ZMK API to save changes
-    // For now, just update the original bindings and clear modified state
-    const newOriginals = new Map<string, KeyBinding>();
-    keymapState.layers.forEach((layer, layerIndex) => {
-      layer.bindings.forEach((binding, keyIndex) => {
-        newOriginals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+    if (isConnected && rpcConnection) {
+      try {
+        await saveChangesToDevice(rpcConnection);
+        
+        // Update original bindings to current state
+        const newOriginals = new Map<string, KeyBinding>();
+        keymapState.layers.forEach((layer, layerIndex) => {
+          layer.bindings.forEach((binding, keyIndex) => {
+            newOriginals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+          });
+        });
+        setOriginalBindings(newOriginals);
+        setModifiedKeys(new Set());
+        
+        setKeymapState((prev) => ({
+          ...prev,
+          unsavedChanges: false,
+        }));
+      } catch (error) {
+        console.error("Failed to save changes to device:", error);
+        throw error;
+      }
+    } else {
+      // For mock mode, just update the originals
+      const newOriginals = new Map<string, KeyBinding>();
+      keymapState.layers.forEach((layer, layerIndex) => {
+        layer.bindings.forEach((binding, keyIndex) => {
+          newOriginals.set(getBindingKey(layerIndex, keyIndex), { ...binding });
+        });
       });
-    });
-    setOriginalBindings(newOriginals);
-    setModifiedKeys(new Set());
-    
-    setKeymapState((prev) => ({
-      ...prev,
-      unsavedChanges: false,
-    }));
-  }, [keymapState.layers, getBindingKey]);
+      setOriginalBindings(newOriginals);
+      setModifiedKeys(new Set());
+      
+      setKeymapState((prev) => ({
+        ...prev,
+        unsavedChanges: false,
+      }));
+    }
+  }, [isConnected, rpcConnection, keymapState.layers, getBindingKey]);
 
-  // Load keymap on mount
+  // Load keymap on mount and when connection changes
   useEffect(() => {
     loadKeymap();
   }, [loadKeymap]);

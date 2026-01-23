@@ -147,40 +147,42 @@ export function KeycodeSelector({
           </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-2 px-6 py-4 border-b border-[var(--color-border)] overflow-x-auto">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === null
-                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-              }`}
-            >
-              All
-            </button>
-            {KEYCODE_CATEGORIES.map((category) => (
+          <div className="px-6 py-4 border-b border-[var(--color-border)] overflow-x-auto">
+            <div className="flex gap-2 min-w-min">
               <button
-                key={category.name}
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => setSelectedCategory(null)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedCategory === category.name
+                  selectedCategory === null
                     ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
                 }`}
               >
-                {category.name}
+                All
               </button>
-            ))}
-            <button
-              onClick={() => setSelectedCategory("Macros")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === "Macros"
-                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-              }`}
-            >
-              Macros
-            </button>
+              {KEYCODE_CATEGORIES.map((category) => (
+                <button
+                  key={category.name}
+                  onClick={() => setSelectedCategory(category.name)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedCategory === category.name
+                      ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+              <button
+                onClick={() => setSelectedCategory("Macros")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === "Macros"
+                    ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                }`}
+              >
+                Macros
+              </button>
+            </div>
           </div>
 
           {/* Keycode Grid */}
