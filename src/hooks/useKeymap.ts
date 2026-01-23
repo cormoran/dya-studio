@@ -8,10 +8,25 @@ import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
 import { call_rpc } from "@zmkfirmware/zmk-studio-ts-client";
 import type { Request } from "@zmkfirmware/zmk-studio-ts-client";
 
+// Device keymap response types
+interface DeviceKeymap {
+  layers: Array<{
+    id: number;
+    name: string;
+    bindings: Array<{
+      behaviorId: number;
+      param1: number;
+      param2: number;
+    }>;
+  }>;
+  availableLayers: number;
+  maxLayerNameLength: number;
+}
+
 /**
  * Load keymap from device via RPC
  */
-async function loadKeymapFromDevice(connection: RpcConnection): Promise<any> {
+async function loadKeymapFromDevice(connection: RpcConnection): Promise<DeviceKeymap> {
   const response = await call_rpc(connection, {
     keymap: { getKeymap: true },
   } as Request);
@@ -20,7 +35,7 @@ async function loadKeymapFromDevice(connection: RpcConnection): Promise<any> {
     throw new Error("Failed to load keymap from device");
   }
   
-  return response.keymap.getKeymap;
+  return response.keymap.getKeymap as DeviceKeymap;
 }
 
 /**
@@ -129,10 +144,10 @@ export function useKeymap() {
         const deviceKeymap = await loadKeymapFromDevice(rpcConnection);
         
         // Convert from device format to our format
-        const layers: KeymapLayer[] = deviceKeymap.layers.map((layer: any) => ({
+        const layers: KeymapLayer[] = deviceKeymap.layers.map((layer) => ({
           id: layer.id,
           name: layer.name,
-          bindings: layer.bindings.map((b: any) => ({
+          bindings: layer.bindings.map((b) => ({
             behaviorId: b.behaviorId,
             param1: b.param1,
             param2: b.param2,
@@ -247,17 +262,24 @@ export function useKeymap() {
       });
     }
 
-    // Send to device if connected
+    // Send to device if connected - use current state from callback
     if (isConnected && rpcConnection) {
       try {
-        const layerId = keymapState.layers[layerIndex].id;
-        await saveKeyBindingToDevice(rpcConnection, layerId, keyIndex, binding);
+        setKeymapState((currentState) => {
+          // Validate layer exists
+          if (layerIndex >= 0 && layerIndex < currentState.layers.length) {
+            const layerId = currentState.layers[layerIndex].id;
+            saveKeyBindingToDevice(rpcConnection, layerId, keyIndex, binding).catch((error) => {
+              console.error("Failed to save key binding to device:", error);
+            });
+          }
+          return currentState;
+        });
       } catch (error) {
         console.error("Failed to save key binding to device:", error);
-        // TODO: Show error to user
       }
     }
-  }, [getBindingKey, originalBindings, isConnected, rpcConnection, keymapState.layers]);
+  }, [getBindingKey, originalBindings, isConnected, rpcConnection]);
 
   /**
    * Get original binding for a key
