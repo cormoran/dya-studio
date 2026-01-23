@@ -14,6 +14,7 @@ This guide helps developers implement feature pages and components consistently 
 8. [Accessibility Guidelines](#accessibility-guidelines)
 9. [File Organization](#file-organization)
 10. [Code Style](#code-style)
+11. [Testing](#testing)
 
 ---
 
@@ -646,3 +647,66 @@ If you encounter design decisions not covered by this guide, prefer:
 3. User experience over visual flair
 
 When in doubt, reference the existing `BatteryPage.tsx` or `SettingsPage.tsx` as canonical examples.
+
+---
+
+## Testing
+
+All features and components should have corresponding tests to ensure reliability and prevent regressions.
+
+### Writing Tests
+
+DYA Studio uses **Jest** and **React Testing Library** for testing. Tests should:
+
+1. **Focus on user behavior** rather than implementation details
+2. **Use semantic queries** that reflect how users interact with the app
+3. **Test integration** rather than isolated units when possible
+4. **Cover error states** and edge cases
+
+### Example Test Structure
+
+```tsx
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MyComponent } from "../MyComponent";
+
+describe("MyComponent", () => {
+  beforeEach(() => {
+    // Setup mocks and reset state
+  });
+
+  test("handles user interaction", async () => {
+    const user = userEvent.setup();
+    render(<MyComponent />);
+    
+    const button = screen.getByRole("button", { name: /click me/i });
+    await user.click(button);
+    
+    expect(screen.getByText("Success!")).toBeInTheDocument();
+  });
+});
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+```
+
+### Before Submitting
+
+Always run tests before submitting your changes:
+
+```bash
+npm run lint    # Check for code style issues
+npm test        # Ensure all tests pass
+```
+
+For comprehensive testing guidelines, examples, and best practices, see the **[Testing Guide](TESTING_GUIDE.md)**.

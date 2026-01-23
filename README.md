@@ -86,10 +86,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Available Scripts
 
 ```bash
-pnpm dev      # Start development server with HMR
-pnpm build    # Build for production
-pnpm preview  # Preview production build
-pnpm lint     # Run ESLint
+pnpm dev            # Start development server with HMR
+pnpm build          # Build for production
+pnpm preview        # Preview production build
+pnpm lint           # Run ESLint
+pnpm test           # Run tests with Jest
+pnpm test:watch     # Run tests in watch mode
+pnpm test:coverage  # Generate test coverage report
 ```
 
 ### Project Structure
@@ -110,6 +113,23 @@ src/
 ### Development Guide
 
 For detailed implementation guidelines, design philosophy, and component patterns, see the [Development Guide](docs/DEVELOPMENT_GUIDE.md).
+
+### Testing
+
+DYA Studio uses **Jest** and **React Testing Library** for testing. All components and features should have corresponding tests.
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Generate coverage report
+pnpm test:coverage
+```
+
+For detailed testing guidelines and best practices, see the [Testing Guide](docs/TESTING_GUIDE.md).
 
 ## Acknowledgments
 
