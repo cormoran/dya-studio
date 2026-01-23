@@ -22,6 +22,17 @@ function formatDate(timestampMs: number): string {
   });
 }
 
+function calculateChartPoints(
+  history: Array<{ timestampMs: number; level: number; isCharging: boolean }>,
+  maxLevel: number
+): Array<{ x: string; y: string }> {
+  return history.map((point, i) => {
+    const x = (i / (history.length - 1)) * 100;
+    const y = ((maxLevel - point.level) / maxLevel) * 100;
+    return { x: `${x}%`, y: `${y}%` };
+  });
+}
+
 function BatteryHistoryChart({
   history,
 }: {
@@ -38,6 +49,7 @@ function BatteryHistoryChart({
   }
 
   const maxLevel = 100;
+  const points = calculateChartPoints(history, maxLevel);
 
   return (
     <div className="space-y-4">
@@ -89,25 +101,13 @@ function BatteryHistoryChart({
 
             {/* Area under the line */}
             <path
-              d={`M 0,${((maxLevel - history[0].level) / maxLevel) * 100}% ${history
-                .map((point, i) => {
-                  const x = (i / (history.length - 1)) * 100;
-                  const y = ((maxLevel - point.level) / maxLevel) * 100;
-                  return `L ${x}%,${y}%`;
-                })
-                .join(" ")} L 100%,100% L 0,100% Z`}
+              d={`M 0,${points[0].y} ${points.slice(1).map((p) => `L ${p.x},${p.y}`).join(" ")} L 100%,100% L 0,100% Z`}
               fill="url(#batteryGradient)"
             />
 
             {/* Line */}
             <polyline
-              points={history
-                .map((point, i) => {
-                  const x = (i / (history.length - 1)) * 100;
-                  const y = ((maxLevel - point.level) / maxLevel) * 100;
-                  return `${x}%,${y}%`;
-                })
-                .join(" ")}
+              points={points.map((p) => `${p.x},${p.y}`).join(" ")}
               fill="none"
               stroke="var(--color-neon)"
               strokeWidth="2"
@@ -115,20 +115,16 @@ function BatteryHistoryChart({
             />
 
             {/* Data points */}
-            {history.map((point, i) => {
-              const x = (i / (history.length - 1)) * 100;
-              const y = ((maxLevel - point.level) / maxLevel) * 100;
-              return (
-                <circle
-                  key={i}
-                  cx={`${x}%`}
-                  cy={`${y}%`}
-                  r="3"
-                  fill="var(--color-neon)"
-                  className="drop-shadow-[0_0_4px_var(--color-neon)]"
-                />
-              );
-            })}
+            {points.map((point, i) => (
+              <circle
+                key={i}
+                cx={point.x}
+                cy={point.y}
+                r="3"
+                fill="var(--color-neon)"
+                className="drop-shadow-[0_0_4px_var(--color-neon)]"
+              />
+            ))}
           </svg>
         </div>
       </div>
