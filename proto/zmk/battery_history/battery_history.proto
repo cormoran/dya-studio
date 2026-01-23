@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package zmk.battery_history;
+
+// Battery level reading at a specific time
+message BatteryReading {
+    uint64 timestamp_ms = 1;  // Unix timestamp in milliseconds
+    uint32 level = 2;          // Battery level (0-100)
+    bool is_charging = 3;      // Whether battery is currently charging
+}
+
+// Battery information for a keyboard half
+message BatteryInfo {
+    string device_name = 1;    // e.g., "Left", "Right", "Central"
+    uint32 current_level = 2;  // Current battery level (0-100)
+    bool is_charging = 3;      // Whether currently charging
+    uint64 last_updated_ms = 4; // Unix timestamp of last update
+    repeated BatteryReading history = 5; // Historical readings
+}
+
+// Get current battery status
+message GetBatteryStatusRequest {}
+
+message GetBatteryStatusResponse {
+    repeated BatteryInfo batteries = 1;  // One or more batteries (for split keyboards)
+}
+
+// Get battery history
+message GetBatteryHistoryRequest {
+    uint64 start_time_ms = 1;  // Start of time range (optional)
+    uint64 end_time_ms = 2;    // End of time range (optional)
+    uint32 max_entries = 3;    // Maximum number of entries to return (optional)
+}
+
+message GetBatteryHistoryResponse {
+    repeated BatteryInfo batteries = 1;  // Battery history for each device
+}
+
+// Main request/response wrapper
+message Request {
+    oneof request_type {
+        GetBatteryStatusRequest get_battery_status = 1;
+        GetBatteryHistoryRequest get_battery_history = 2;
+    }
+}
+
+message ErrorResponse {
+    string message = 1;
+}
+
+message Response {
+    oneof response_type {
+        ErrorResponse error = 1;
+        GetBatteryStatusResponse get_battery_status = 2;
+        GetBatteryHistoryResponse get_battery_history = 3;
+    }
+}
