@@ -1,6 +1,0 @@
-[env.release]
-
-name = "dya-studio"
-
-[asserts]
-directory = "./dist"

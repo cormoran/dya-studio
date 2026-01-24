@@ -28,3 +28,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_RELEASE }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_RELEASE }}
           environment: release
+          wranglerVersion: '4.58.0'
