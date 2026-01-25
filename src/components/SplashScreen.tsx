@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb } from "@tabler/icons-react";
 import { useMemo } from "react";
-import DyaLogo from "../assets/dya.svg?react";
 import type { ConnectionMethod } from "./DeviceConnection";
 
 interface SplashScreenProps {
@@ -58,43 +57,38 @@ export function SplashScreen({
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
       />
 
-      {/* Logo container */}
+      {/* Brand container */}
       <motion.div
         className="relative z-10 flex flex-col items-center gap-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
       >
-        {/* Logo with glow effect */}
+        {/* Brand name with integrated glow effect */}
         <motion.div
-          className="relative"
-          animate={{
-            filter: [
-              "drop-shadow(0 0 20px rgba(0, 212, 255, 0.3))",
-              "drop-shadow(0 0 40px rgba(0, 212, 255, 0.5))",
-              "drop-shadow(0 0 20px rgba(0, 212, 255, 0.3))",
-            ],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <DyaLogo className="w-16 h-16 [&_polygon]:fill-[var(--color-text)]" />
-        </motion.div>
-
-        {/* Brand name */}
-        <motion.div
-          className="flex flex-col items-center gap-2"
+          className="flex flex-col items-center gap-3 font-dya-logo"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <h1 className="text-4xl font-light tracking-[0.3em] text-[var(--color-text)]">
+          <motion.h1
+            className="text-7xl font-medium tracking-[0.15em] text-[var(--color-text)]"
+            animate={{
+              textShadow: [
+                "0 0 30px rgba(0, 212, 255, 0.4), 0 0 60px rgba(0, 212, 255, 0.2)",
+                "0 0 40px rgba(0, 212, 255, 0.6), 0 0 80px rgba(0, 212, 255, 0.3)",
+                "0 0 30px rgba(0, 212, 255, 0.4), 0 0 60px rgba(0, 212, 255, 0.2)",
+              ],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
             DYA
-          </h1>
-          <p className="text-sm font-light tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+          </motion.h1>
+          <p className="text-lg tracking-[0.3em] text-[var(--color-text-muted)] uppercase font-light">
             Studio
           </p>
         </motion.div>
