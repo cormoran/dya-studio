@@ -3,6 +3,7 @@ import { createContext, useCallback } from "react";
 import { useZMKApp, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectSerial } from "@zmkfirmware/zmk-studio-ts-client/transport/serial";
 import { connect as connectBLE } from "@zmkfirmware/zmk-studio-ts-client/transport/gatt";
+import { useHealthCheck, type HealthStatus } from "../hooks/useHealthCheck";
 
 export type ConnectionMethod = "serial" | "ble";
 
@@ -14,6 +15,7 @@ interface ConnectionContextValue {
   onDisconnect: () => void;
   isLoading: boolean;
   error: string | null;
+  healthStatus: HealthStatus;
 }
 
 const ConnectionContext = createContext<ConnectionContextValue>({
@@ -23,6 +25,7 @@ const ConnectionContext = createContext<ConnectionContextValue>({
   onDisconnect: () => {},
   isLoading: false,
   error: null,
+  healthStatus: "healthy",
 });
 
 interface DeviceConnectionProviderProps {
@@ -33,6 +36,7 @@ export function DeviceConnectionProvider({
   children,
 }: DeviceConnectionProviderProps) {
   const zmkApp = useZMKApp();
+  const { healthStatus } = useHealthCheck();
 
   const handleConnect = useCallback(
     async (method: ConnectionMethod) => {
@@ -53,6 +57,7 @@ export function DeviceConnectionProvider({
     onDisconnect: handleDisconnect,
     isLoading: zmkApp.state.isLoading,
     error: zmkApp.state.error,
+    healthStatus,
   };
 
   return (

@@ -3,6 +3,7 @@ import { IconSun, IconMoon } from "@tabler/icons-react";
 import DyaLogo from "../assets/dya.svg?react";
 import { useTheme } from "../hooks/useTheme";
 import type { ConnectionMethod } from "../components/DeviceConnection";
+import type { HealthStatus } from "../hooks/useHealthCheck";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface AppLayoutProps {
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isConnecting?: boolean;
+  healthStatus?: HealthStatus;
 }
 
 export function AppLayout({
@@ -20,8 +22,15 @@ export function AppLayout({
   onConnect,
   onDisconnect,
   isConnecting,
+  healthStatus = "healthy",
 }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
+
+  // Determine status indicator class based on health
+  const getStatusClass = () => {
+    if (!isConnected) return "disconnected";
+    return healthStatus === "healthy" ? "connected" : healthStatus;
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gradient-dark">
@@ -56,7 +65,7 @@ export function AppLayout({
           {isConnected ? (
             <>
               <div className="flex items-center gap-3">
-                <div className="status-indicator connected" />
+                <div className={`status-indicator ${getStatusClass()}`} />
                 <span className="text-sm text-[var(--color-text-secondary)]">
                   {deviceName || "Connected"}
                 </span>

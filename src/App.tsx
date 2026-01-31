@@ -110,6 +110,7 @@ function AppContent() {
             onConnect={connection.onConnect}
             onDisconnect={connection.onDisconnect}
             isConnecting={connection.isLoading}
+            healthStatus={connection.healthStatus}
           >
             <TabNavigation
               tabs={tabs}

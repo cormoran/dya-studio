@@ -241,6 +241,17 @@
   background: var(--color-text-muted);
 }
 
+.status-indicator.warning {
+  background: #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  animation: pulse-status 2s ease-in-out infinite;
+}
+
+:root.light .status-indicator.warning {
+  background: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
 .status-indicator.error {
   background: #ef4444;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
