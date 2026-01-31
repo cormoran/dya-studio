@@ -57,12 +57,16 @@ export function useHealthCheck(): UseHealthCheckReturn {
 
       if (responsePayload) {
         const resp = Response.decode(responsePayload);
-        if (resp.getSplitInfo || resp.error) {
+        // Only treat as successful if we got a valid response (not an error)
+        if (resp.getSplitInfo) {
           // Successful response - reset failure count
           setConsecutiveFailures(0);
           setHealthStatus("healthy");
           setLastCheckTime(new Date());
           disconnectHandledRef.current = false;
+        } else if (resp.error) {
+          // Error response from device
+          throw new Error(resp.error.message || "Device returned error");
         }
       } else {
         throw new Error("No response received");
@@ -130,7 +134,8 @@ export function useHealthCheck(): UseHealthCheckReturn {
       setLastCheckTime(null);
       disconnectHandledRef.current = false;
     }
-  }, [zmkApp?.isConnected, performHealthCheck]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zmkApp?.isConnected]);
 
   return {
     healthStatus,
