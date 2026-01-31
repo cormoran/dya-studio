@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useContext, useRef } from "react";
-import { ZMKCustomSubsystem, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import {
-  Request,
-  Response,
-} from "../proto/zmk/ble_management/ble_management";
+  ZMKCustomSubsystem,
+  ZMKAppContext,
+} from "@cormoran/zmk-studio-react-hook";
+import { Request, Response } from "../proto/zmk/ble_management/ble_management";
 
 // Subsystem identifier for ZMK BLE management custom protocol
 const SUBSYSTEM_IDENTIFIER = "zmk__ble_management";
@@ -27,7 +27,7 @@ export function useHealthCheck(): UseHealthCheckReturn {
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
   const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
   const [isChecking, setIsChecking] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
   const disconnectHandledRef = useRef(false);
 
   const performHealthCheck = useCallback(async () => {
@@ -45,7 +45,7 @@ export function useHealthCheck(): UseHealthCheckReturn {
     try {
       const service = new ZMKCustomSubsystem(
         zmkApp.state.connection,
-        subsystem.index
+        subsystem.index,
       );
 
       const request = Request.create({
@@ -72,25 +72,28 @@ export function useHealthCheck(): UseHealthCheckReturn {
         throw new Error("No response received");
       }
     } catch (error) {
+      console.error("Health check failed:", error);
       // Health check failed
       setConsecutiveFailures((prev) => {
         const newCount = prev + 1;
-        
+
         if (newCount === 1) {
           // First failure - set to warning
           setHealthStatus("warning");
         } else if (newCount >= MAX_CONSECUTIVE_FAILURES) {
           // Multiple failures - unhealthy
           setHealthStatus("unhealthy");
-          
+
           // Auto-disconnect after max failures
           if (!disconnectHandledRef.current && zmkApp?.disconnect) {
             disconnectHandledRef.current = true;
-            console.warn("Device health check failed multiple times, disconnecting");
+            console.warn(
+              "Device health check failed multiple times, disconnecting",
+            );
             zmkApp.disconnect();
           }
         }
-        
+
         return newCount;
       });
       setLastCheckTime(new Date());
@@ -127,7 +130,7 @@ export function useHealthCheck(): UseHealthCheckReturn {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      
+
       // Reset state
       setHealthStatus("healthy");
       setConsecutiveFailures(0);

@@ -4,7 +4,7 @@
  * This test suite verifies the device health check functionality,
  * including periodic health checks, failure tracking, and auto-disconnect.
  */
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useHealthCheck } from "../useHealthCheck";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import type { ReactNode } from "react";
@@ -27,10 +27,11 @@ jest.mock("../../proto/zmk/ble_management/ble_management", () => ({
 }));
 
 import { ZMKCustomSubsystem } from "@cormoran/zmk-studio-react-hook";
-import { Request, Response } from "../../proto/zmk/ble_management/ble_management";
+import { Response } from "../../proto/zmk/ble_management/ble_management";
 
-const MockedZMKCustomSubsystem = ZMKCustomSubsystem as jest.MockedClass<typeof ZMKCustomSubsystem>;
-const MockedRequest = Request as jest.Mocked<typeof Request>;
+const MockedZMKCustomSubsystem = ZMKCustomSubsystem as jest.MockedClass<
+  typeof ZMKCustomSubsystem
+>;
 const MockedResponse = Response as jest.Mocked<typeof Response>;
 
 // Create a wrapper with ZMKAppContext
@@ -85,9 +86,12 @@ describe("useHealthCheck", () => {
         findSubsystem: jest.fn().mockReturnValue(mockSubsystem),
       };
 
-      MockedZMKCustomSubsystem.mockImplementation(() => ({
-        callRPC: mockCallRPC,
-      } as never));
+      MockedZMKCustomSubsystem.mockImplementation(
+        () =>
+          ({
+            callRPC: mockCallRPC,
+          }) as never,
+      );
 
       MockedResponse.decode.mockReturnValue({
         getSplitInfo: { info: {} },
@@ -99,13 +103,16 @@ describe("useHealthCheck", () => {
         wrapper: createWrapper(zmkApp),
       });
 
-      await waitFor(() => {
-        expect(result.current.healthStatus).toBe("healthy");
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(result.current.healthStatus).toBe("healthy");
+        },
+        { timeout: 1000 },
+      );
 
       expect(mockCallRPC).toHaveBeenCalled();
       expect(result.current.consecutiveFailures).toBe(0);
-      
+
       jest.useFakeTimers();
     });
 
@@ -121,9 +128,12 @@ describe("useHealthCheck", () => {
         disconnect: jest.fn(),
       };
 
-      MockedZMKCustomSubsystem.mockImplementation(() => ({
-        callRPC: mockCallRPC,
-      } as never));
+      MockedZMKCustomSubsystem.mockImplementation(
+        () =>
+          ({
+            callRPC: mockCallRPC,
+          }) as never,
+      );
 
       const { result } = renderHook(() => useHealthCheck(), {
         wrapper: createWrapper(zmkApp),
@@ -132,13 +142,16 @@ describe("useHealthCheck", () => {
       // Use real timers for async operations
       jest.useRealTimers();
 
-      await waitFor(() => {
-        expect(result.current.healthStatus).toBe("warning");
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(result.current.healthStatus).toBe("warning");
+        },
+        { timeout: 1000 },
+      );
 
       expect(result.current.consecutiveFailures).toBe(1);
       expect(zmkApp.disconnect).not.toHaveBeenCalled();
-      
+
       jest.useFakeTimers();
     });
 
@@ -154,9 +167,12 @@ describe("useHealthCheck", () => {
         disconnect: jest.fn(),
       };
 
-      MockedZMKCustomSubsystem.mockImplementation(() => ({
-        callRPC: mockCallRPC,
-      } as never));
+      MockedZMKCustomSubsystem.mockImplementation(
+        () =>
+          ({
+            callRPC: mockCallRPC,
+          }) as never,
+      );
 
       jest.useRealTimers();
 
@@ -165,24 +181,33 @@ describe("useHealthCheck", () => {
       });
 
       // Wait for initial check to fail
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(1);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(1);
+        },
+        { timeout: 1000 },
+      );
 
       // Wait for second check (30 seconds later)
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(2);
-      }, { timeout: 31000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(2);
+        },
+        { timeout: 31000 },
+      );
 
       // Wait for third check (30 seconds later)
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(3);
-        expect(result.current.healthStatus).toBe("unhealthy");
-      }, { timeout: 31000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(3);
+          expect(result.current.healthStatus).toBe("unhealthy");
+        },
+        { timeout: 31000 },
+      );
 
       // Auto-disconnect should be called
       expect(zmkApp.disconnect).toHaveBeenCalled();
-      
+
       jest.useFakeTimers();
     }, 95000);
 
@@ -205,9 +230,12 @@ describe("useHealthCheck", () => {
         disconnect: jest.fn(),
       };
 
-      MockedZMKCustomSubsystem.mockImplementation(() => ({
-        callRPC: mockCallRPC,
-      } as never));
+      MockedZMKCustomSubsystem.mockImplementation(
+        () =>
+          ({
+            callRPC: mockCallRPC,
+          }) as never,
+      );
 
       MockedResponse.decode.mockReturnValue({
         getSplitInfo: { info: {} },
@@ -220,19 +248,25 @@ describe("useHealthCheck", () => {
       });
 
       // Wait for first check to fail
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(1);
-        expect(result.current.healthStatus).toBe("warning");
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(1);
+          expect(result.current.healthStatus).toBe("warning");
+        },
+        { timeout: 1000 },
+      );
 
       // Wait for second check (should succeed)
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(0);
-        expect(result.current.healthStatus).toBe("healthy");
-      }, { timeout: 31000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(0);
+          expect(result.current.healthStatus).toBe("healthy");
+        },
+        { timeout: 31000 },
+      );
 
       expect(zmkApp.disconnect).not.toHaveBeenCalled();
-      
+
       jest.useFakeTimers();
     }, 35000);
   });
@@ -250,9 +284,12 @@ describe("useHealthCheck", () => {
         disconnect: jest.fn(),
       };
 
-      MockedZMKCustomSubsystem.mockImplementation(() => ({
-        callRPC: mockCallRPC,
-      } as never));
+      MockedZMKCustomSubsystem.mockImplementation(
+        () =>
+          ({
+            callRPC: mockCallRPC,
+          }) as never,
+      );
 
       jest.useRealTimers();
 
@@ -261,22 +298,28 @@ describe("useHealthCheck", () => {
       });
 
       // Wait for failure
-      await waitFor(() => {
-        expect(result.current.consecutiveFailures).toBe(1);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(result.current.consecutiveFailures).toBe(1);
+        },
+        { timeout: 1000 },
+      );
 
       // Simulate disconnect
       zmkApp.isConnected = false;
       zmkApp.state.connection = null;
-      
+
       rerender();
 
-      await waitFor(() => {
-        expect(result.current.healthStatus).toBe("healthy");
-        expect(result.current.consecutiveFailures).toBe(0);
-        expect(result.current.lastCheckTime).toBeNull();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(result.current.healthStatus).toBe("healthy");
+          expect(result.current.consecutiveFailures).toBe(0);
+          expect(result.current.lastCheckTime).toBeNull();
+        },
+        { timeout: 1000 },
+      );
+
       jest.useFakeTimers();
     });
   });
