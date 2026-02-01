@@ -16,6 +16,7 @@ import {
   mockPhysicalLayouts,
   mockKeymap,
   mockBehaviors,
+  BEHAVIOR_TRANS,
 } from "../lib/mockKeymapData";
 
 // Helper to create key for binding lookup
@@ -128,7 +129,7 @@ export function useDemoKeymap(): UseKeymapReturn {
     // Create default bindings (all transparent)
     const defaultBindings: BehaviorBinding[] = Array(
       mockPhysicalLayouts.layouts[0].keys.length,
-    ).fill({ behaviorId: 2, param1: 0, param2: 0 }); // trans
+    ).fill({ behaviorId: BEHAVIOR_TRANS, param1: 0, param2: 0 });
 
     const newLayer: Layer = {
       id: newLayerId,
@@ -177,7 +178,7 @@ export function useDemoKeymap(): UseKeymapReturn {
         id: layerId,
         name: `Restored ${layerId}`,
         bindings: Array(mockPhysicalLayouts.layouts[0].keys.length).fill({
-          behaviorId: 2,
+          behaviorId: BEHAVIOR_TRANS,
           param1: 0,
           param2: 0,
         }),

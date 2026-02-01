@@ -2,7 +2,7 @@
 
 ## Overview
 
-Demo Mode allows users to try DAY Studio's features without connecting to a physical keyboard. It provides a realistic simulation of the keymap editor using mock data and operations.
+Demo Mode allows users to try DYA Studio's features without connecting to a physical keyboard. It provides a realistic simulation of the keymap editor using mock data and operations.
 
 ## Architecture
 

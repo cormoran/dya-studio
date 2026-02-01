@@ -128,10 +128,10 @@ const HID_LCTRL = 0xe0;
 const HID_LSHIFT = 0xe1;
 
 // Behavior IDs (typical ZMK behavior IDs)
-const BEHAVIOR_KP = 1; // Key press
-const BEHAVIOR_TRANS = 2; // Transparent
-const BEHAVIOR_MO = 3; // Momentary layer
-const BEHAVIOR_TO = 4; // To layer
+export const BEHAVIOR_KP = 1; // Key press
+export const BEHAVIOR_TRANS = 2; // Transparent
+export const BEHAVIOR_MO = 3; // Momentary layer
+export const BEHAVIOR_TO = 4; // To layer
 
 /**
  * Create bindings for a QWERTY base layer
