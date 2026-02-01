@@ -13,15 +13,22 @@ import {
 } from "@tabler/icons-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { ConnectionContext } from "../components/DeviceConnection";
+import { useDemoMode } from "../contexts/DemoModeContext";
 import { KeyboardLayout } from "../components/KeyboardLayout";
 import { KeycodeSelector } from "../components/KeycodeSelector";
 import { UnlockPrompt } from "../components/UnlockPrompt";
 import { useKeymap } from "../hooks/useKeymap";
+import { useDemoKeymap } from "../hooks/useDemoKeymap";
 import type { BehaviorBinding } from "../hooks/useKeymap";
 
 export function KeymapPage() {
   const connection = useContext(ConnectionContext);
-  const keymap = useKeymap();
+  const demoMode = useDemoMode();
+  const realKeymap = useKeymap();
+  const demoKeymap = useDemoKeymap();
+
+  // Use demo keymap if in demo mode, otherwise use real keymap
+  const keymap = demoMode.isDemoMode ? demoKeymap : realKeymap;
 
   // Local UI state
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
@@ -196,7 +203,7 @@ export function KeymapPage() {
           </div>
 
           {/* Action Buttons */}
-          {connection.isConnected && keymap.keymap && (
+          {(connection.isConnected || demoMode.isDemoMode) && keymap.keymap && (
             <div className="flex items-center gap-2">
               {keymap.hasUnsavedChanges && (
                 <span className="text-xs text-[var(--color-neon)] mr-2">
@@ -236,7 +243,7 @@ export function KeymapPage() {
         </div>
 
         {/* Not Connected State */}
-        {!connection.isConnected && (
+        {!connection.isConnected && !demoMode.isDemoMode && (
           <div className="glass-card p-6 text-center">
             <p className="text-sm text-[var(--color-text-muted)]">
               Connect your keyboard to edit keymaps
@@ -252,20 +259,23 @@ export function KeymapPage() {
           </div>
         )}
         {/* Loading State */}
-        {connection.isConnected && keymap.isLoading && (
-          <div className="glass-card p-6 text-center mb-6">
-            <IconLoader2
-              size={24}
-              className="animate-spin mx-auto mb-2 text-[var(--color-electric)]"
-            />
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Loading keymap data...
-            </p>
-          </div>
-        )}
+        {(connection.isConnected || demoMode.isDemoMode) &&
+          keymap.isLoading && (
+            <div className="glass-card p-6 text-center mb-6">
+              <IconLoader2
+                size={24}
+                className="animate-spin mx-auto mb-2 text-[var(--color-electric)]"
+              />
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Loading keymap data...
+              </p>
+            </div>
+          )}
 
         {/* Main Content */}
-        {connection.isConnected && keymap.keymap && currentLayout && (
+        {(connection.isConnected || demoMode.isDemoMode) &&
+          keymap.keymap &&
+          currentLayout && (
           <>
             {/* Layer Tabs */}
             <div className="flex items-center gap-2 mb-6">
@@ -476,9 +486,11 @@ export function KeymapPage() {
         {/* Info */}
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">
-            {connection.isConnected
-              ? "Click on a key to modify its binding. Modified keys are highlighted in green and show the original binding on hover. Use the Reset All button to discard all changes."
-              : "Connect your keyboard to edit keymaps. Click on a key to modify its binding."}
+            {demoMode.isDemoMode
+              ? "Demo Mode: Try the keymap editor with sample data. Changes are simulated and won't affect a real keyboard."
+              : connection.isConnected
+                ? "Click on a key to modify its binding. Modified keys are highlighted in green and show the original binding on hover. Use the Reset All button to discard all changes."
+                : "Connect your keyboard to edit keymaps. Click on a key to modify its binding."}
           </p>
         </div>
       </div>

@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { IconBluetooth, IconUsb } from "@tabler/icons-react";
+import { IconBluetooth, IconUsb, IconPresentationAnalytics } from "@tabler/icons-react";
 import { useMemo } from "react";
 import DyaLogo from "../assets/dya.svg?react";
 import type { ConnectionMethod } from "./DeviceConnection";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
+  onDemoMode?: () => void;
   isConnecting: boolean;
   error: string | null;
 }
@@ -21,6 +22,7 @@ function DisabledSlash({ color }: { color: string }) {
 
 export function SplashScreen({
   onConnect,
+  onDemoMode,
   isConnecting,
   error,
 }: SplashScreenProps) {
@@ -189,6 +191,24 @@ export function SplashScreen({
             animate={{ opacity: 1, y: 0 }}
           >
             <p className="text-sm text-red-500">{error}</p>
+          </motion.div>
+        )}
+
+        {/* Demo Mode Button */}
+        {onDemoMode && !isConnecting && (
+          <motion.div
+            className="mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+          >
+            <button
+              onClick={onDemoMode}
+              className="px-4 py-2 rounded-lg border border-[var(--color-cyber)]/30 bg-[var(--color-cyber)]/10 text-[var(--color-cyber)] hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] transition-all text-sm flex items-center gap-2"
+            >
+              <IconPresentationAnalytics size={18} />
+              Try Demo Mode
+            </button>
           </motion.div>
         )}
       </motion.div>

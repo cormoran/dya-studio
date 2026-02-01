@@ -15,6 +15,7 @@ import {
   ConnectionContext,
 } from "./components/DeviceConnection";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { DemoModeProvider, useDemoMode } from "./contexts/DemoModeContext";
 import { TabNavigation } from "./components/TabNavigation";
 import type { TabItem } from "./components/TabNavigation";
 import { AppLayout } from "./layouts/AppLayout";
@@ -67,21 +68,28 @@ const tabs: TabItem[] = [
 function App() {
   return (
     <ThemeProvider>
-      <DeviceConnectionProvider>
-        <AppContent />
-      </DeviceConnectionProvider>
+      <DemoModeProvider>
+        <DeviceConnectionProvider>
+          <AppContent />
+        </DeviceConnectionProvider>
+      </DemoModeProvider>
     </ThemeProvider>
   );
 }
 
 function AppContent() {
   const connection = useContext(ConnectionContext);
+  const demoMode = useDemoMode();
   const [activeTab, setActiveTab] = useState("battery");
+
+  const handleDemoMode = () => {
+    demoMode.enableDemoMode();
+  };
 
   return (
     <>
       <AnimatePresence>
-        {!connection.isConnected && (
+        {!connection.isConnected && !demoMode.isDemoMode && (
           <motion.div
             key="splash"
             initial={{ opacity: 1 }}
@@ -90,6 +98,7 @@ function AppContent() {
           >
             <SplashScreen
               onConnect={connection.onConnect}
+              onDemoMode={handleDemoMode}
               isConnecting={connection.isLoading}
               error={connection.error}
             />
@@ -97,7 +106,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      {connection.isConnected && (
+      {(connection.isConnected || demoMode.isDemoMode) && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -105,10 +114,18 @@ function AppContent() {
           className="h-screen"
         >
           <AppLayout
-            isConnected={connection.isConnected}
-            deviceName={connection.deviceName}
+            isConnected={connection.isConnected || demoMode.isDemoMode}
+            deviceName={
+              demoMode.isDemoMode ? "Demo Mode" : connection.deviceName
+            }
             onConnect={connection.onConnect}
-            onDisconnect={connection.onDisconnect}
+            onDisconnect={() => {
+              if (demoMode.isDemoMode) {
+                demoMode.disableDemoMode();
+              } else {
+                connection.onDisconnect();
+              }
+            }}
             isConnecting={connection.isLoading}
           >
             <TabNavigation
