@@ -6,8 +6,18 @@
 
 A modern web-based configuration tool for the **DYA keyboard** — a split, trackball-embedded mechanical keyboard running [ZMK firmware](https://zmk.dev/).
 
+## Demo Mode
+
+**Try DYA Studio without a keyboard!** Click "Try Demo Mode" on the splash screen to explore the keymap editor with sample data. Perfect for:
+- Trying the interface before purchasing a DYA keyboard
+- Learning how the keymap editor works
+- Testing configuration changes safely
+
+Demo mode currently supports the Keymap page with simulated data and operations.
+
 ## Features
 
+- 🎮 **Demo Mode** — Try the keymap editor without a keyboard
 - 🔋 Battery monitoring for both keyboard halves
 - 📶 Bluetooth profile management
 - 🩺 Hardware diagnostics
