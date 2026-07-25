@@ -64,26 +64,35 @@ test("dya2 Connection tab: reads connection info and round-trips (+reverts) a sa
 
   // 2) Pick an ENABLED default-layer <select> that exposes at least two real
   //    layer options (value >= 0), so we have a distinct target to write.
-  const count = await selects.count();
+  //    RETRY the scan: the LayerSelects are `disabled={defaultLayer.isLoading}`
+  //    and their options come from `state.layerCount`, so a default-layer
+  //    getState/refresh in flight momentarily disables every select (and can
+  //    render one before its layer options have populated). On a fast DUT the
+  //    section can paint while such a refresh is still settling, so a one-shot
+  //    scan races it -- wait until a usable select actually appears.
   let chosen: Locator | null = null;
   let layerOptionValues: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const s = selects.nth(i);
-    if (!(await s.isEnabled())) continue;
-    const values = await s
-      .locator("option")
-      .evaluateAll((opts) => (opts as HTMLOptionElement[]).map((o) => o.value));
-    const layers = values.filter((v) => Number(v) >= 0);
-    if (layers.length >= 2) {
-      chosen = s;
-      layerOptionValues = layers;
-      break;
+  await expect(async () => {
+    const count = await selects.count();
+    for (let i = 0; i < count; i++) {
+      const s = selects.nth(i);
+      if (!(await s.isEnabled())) continue;
+      const values = await s
+        .locator("option")
+        .evaluateAll((opts) =>
+          (opts as HTMLOptionElement[]).map((o) => o.value),
+        );
+      const layers = values.filter((v) => Number(v) >= 0);
+      if (layers.length >= 2) {
+        chosen = s;
+        layerOptionValues = layers;
+        return;
+      }
     }
-  }
-  expect(
-    chosen,
-    "an enabled default-layer select with >= 2 layer options should exist",
-  ).not.toBeNull();
+    throw new Error(
+      "no enabled default-layer select with >= 2 layer options yet",
+    );
+  }).toPass({ timeout: 60_000 });
   const select = chosen!;
   const label = await select.getAttribute("aria-label");
 

@@ -74,21 +74,32 @@ jobs:
   #   experimental - true => the e2e job is allowed to fail (continue-on-error).
   #              The build still runs+gates; used for a DUT with a known e2e
   #              blocker so it fans out without turning the whole workflow red.
-  # official-unlocked builds the exact studio-rpc-usb-uart image with
-  # CONFIG_ZMK_STUDIO_LOCKING=n so it boots UNLOCKED (the Keymap tab needs the
-  # keymap served, and official ZMK has no RPC unlock). dya2-unlocked builds the
-  # real dya2 right_trackball_studio_unlocked artifact (STUDIO_LOCKING=n, name
-  # "DYA2", PMW3610 trackball on SPI0), booted central-only.
+  # The three DUTs (all STUDIO_LOCKING=n so they boot UNLOCKED -- the tabs need
+  # the keymap/subsystems served and there is no RPC unlock plumbing here):
+  #   - official-unlocked (gating): the exact zmkfirmware/zmk studio-rpc-usb-uart
+  #     image, renode_tester shield -- proves dya-studio works with upstream ZMK.
+  #   - dya2-unlocked (EXPERIMENTAL, dispatch-only): the real dya2
+  #     right_trackball_studio_unlocked artifact (the FULL fork feature set), a
+  #     two-machine WIRED SPLIT. Its e2e is gated to workflow_dispatch because the
+  #     two-machine emulation cannot wire USB CDC on a stock GitHub runner (the
+  #     two CPU threads starve; verified -- never enumerates even with a 10-min
+  #     wiring timeout). Its firmware still builds+gates on every PR.
+  #   - dya2-nonsplit-unlocked (GATING): the SAME dya2 fork feature set built
+  #     NON-SPLIT (CONFIG_ZMK_SPLIT=n via a vendored overlay/conf), so it boots as
+  #     a SINGLE machine and wires USB CDC reliably like the official DUT. It runs
+  #     the same tests/dya2 specs, giving the fork feature set real CI coverage on
+  #     stock runners. See e2e/renode/firmware/dya2_nonsplit.{overlay,conf}.
   matrix:
     name: Compute DUT matrix
     runs-on: ubuntu-latest
     outputs:
       # duts: every DUT (build-dut fans out over this -- all firmware builds on
       # every PR). e2e_duts: the DUTs whose e2e runs for THIS event -- all on
-      # manual dispatch, but only non-experimental ones on push/PR (the heavy
-      # dya2 emulation can't wire USB CDC on a stock 2-core runner within the
-      # timeout, so its e2e would only ever go red; it stays runnable via
-      # workflow_dispatch / a beefier runner, and its firmware still builds).
+      # manual dispatch, but only non-experimental ones on push/PR (the two-machine
+      # dya2-unlocked emulation can't wire USB CDC on a stock runner, so its e2e
+      # would only ever go red; it stays runnable via workflow_dispatch / a beefier
+      # runner, and its firmware still builds. The single-machine
+      # dya2-nonsplit-unlocked DUT is NOT experimental and gates on every PR).
       duts: ${{ steps.set.outputs.duts }}
       e2e_duts: ${{ steps.set.outputs.e2e_duts }}
     steps:
@@ -129,6 +140,23 @@ jobs:
               "destructive_specs": "",
               "one_connection_per_boot": true,
               "experimental": true
+            },
+            {
+              "id": "dya2-nonsplit-unlocked",
+              "repo": "cormoran/zmk-keyboard-dya2",
+              "ref": "support-new-zmk-modules",
+              "manifest": "config/west-workspace.yml",
+              "keymap_overlay": "",
+              "build": "west zmk-build config -b xiao_ble//zmk -s dya2_right -S studio-rpc-usb-uart right-trackball -a nonsplit --cmake-args \"-DCONFIG_ZMK_STUDIO_LOCKING=n -DEXTRA_DTC_OVERLAY_FILE=$GITHUB_WORKSPACE/_overlay-src/e2e/renode/firmware/dya2_nonsplit.overlay -DEXTRA_CONF_FILE=$GITHUB_WORKSPACE/_overlay-src/e2e/renode/firmware/dya2_nonsplit.conf\" -d build",
+              "elf": "build/nonsplit__xiao_ble__zmk__dya2_right/zephyr/zmk.elf",
+              "peripheral_build": "",
+              "peripheral_elf": "",
+              "device": "DYA2",
+              "platform": "dya2",
+              "specs": "tests/common tests/dya2",
+              "destructive_specs": "",
+              "one_connection_per_boot": true,
+              "experimental": false
             }
           ]
           JSON
@@ -156,10 +184,13 @@ jobs:
         with:
           repository: ${{ matrix.dut.repo }}
           ref: ${{ matrix.dut.ref }}
-      # The keymap overlay is vendored in THIS (dya-studio) repo, not the DUT
-      # config repo, so check it out into a side path to copy from.
-      - name: Checkout dya-studio (keymap overlay source)
-        if: matrix.dut.keymap_overlay != ''
+      # Vendored build inputs (the multi-layer keymap overlay for official, and
+      # the non-split overlay/conf for dya2-nonsplit) live in THIS (dya-studio)
+      # repo, not the DUT config repo, so check it out into a side path. Needed
+      # whenever a DUT sets keymap_overlay or its build references _overlay-src
+      # (via -DEXTRA_DTC_OVERLAY_FILE / -DEXTRA_CONF_FILE).
+      - name: Checkout dya-studio (vendored build inputs)
+        if: matrix.dut.keymap_overlay != '' || contains(matrix.dut.build, '_overlay-src')
         uses: actions/checkout@v5
         with:
           path: _overlay-src
@@ -199,12 +230,15 @@ jobs:
     name: e2e (${{ matrix.dut.id }})
     needs: [matrix, build-dut]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # The e2e fans out over e2e_duts (the matrix job filters experimental DUTs
-    # out on push/PR, keeping them on workflow_dispatch) -- so dya2's heavy
-    # emulation, which can't wire USB CDC on a stock 2-core runner within the
-    # timeout, never turns a PR red. continue-on-error still guards a slow
-    # dispatch run.
+    # 40 min covers the dya2-nonsplit per-boot path (connect + 7 dya2 specs, one
+    # fresh Renode boot each at ~1.5-2 min on a stock runner).
+    timeout-minutes: 40
+    # The e2e fans out over e2e_duts (the matrix job filters experimental DUTs out
+    # on push/PR, keeping them on workflow_dispatch) -- so the two-machine
+    # dya2-unlocked DUT, whose heavy emulation can't wire USB CDC on a stock
+    # runner, never turns a PR red. The single-machine dya2-nonsplit-unlocked DUT
+    # (experimental: false) DOES gate: it wires reliably like the official DUT.
+    # continue-on-error still guards a slow experimental dispatch run.
     continue-on-error: ${{ matrix.dut.experimental }}
     strategy:
       fail-fast: false
@@ -267,12 +301,20 @@ jobs:
           DYA2_PERIPHERAL_ELF: ${{ matrix.dut.peripheral_build != '' && format('{0}/fw-peripheral/zmk.elf', github.workspace) || '' }}
         run: bash run-local.sh "${{ github.workspace }}/fw/zmk.elf" ${{ matrix.dut.specs }}
 
-      # Per-boot DUTs (dya2): the two-machine wired-split DUT serves only ONE
-      # Studio connection per boot, so run EACH spec in its OWN fresh Renode boot
-      # (run-local.sh boots one Renode per invocation). Expand each `specs` token:
-      # a directory (tests/dya2) fans out to its individual *.spec.ts, a file runs
-      # as-is — so tests/common/connect.spec.ts and each tests/dya2/*.spec.ts each
-      # get a clean boot. NEVER pass multiple specs to one invocation here.
+      # Per-boot DUTs run EACH spec in its OWN fresh Renode boot (run-local.sh
+      # boots one Renode per invocation). Two per-boot DUTs use this:
+      #   - dya2-unlocked (two-machine wired split): serves only ONE Studio
+      #     connection per boot, so specs cannot share a boot. (experimental /
+      #     dispatch-only: its emulation can't wire USB CDC on a stock CI runner.)
+      #   - dya2-nonsplit-unlocked (single machine): CAN serve many connections
+      #     per boot, but its specs mutate NVS and a shared boot lets one spec's
+      #     residual state fail a later one (macro create/persist/delete), so each
+      #     spec gets a clean boot here too. This DUT wires USB CDC fine on a stock
+      #     runner (single machine), so it GATES.
+      # Expand each `specs` token: a directory (tests/dya2) fans out to its
+      # individual *.spec.ts, a file runs as-is — so tests/common/connect.spec.ts
+      # and each tests/dya2/*.spec.ts each get a clean boot. NEVER pass multiple
+      # specs to one invocation here.
       - name: Run WebSerial ⇄ Renode e2e (per-boot loop, one Studio connection per boot)
         if: ${{ matrix.dut.one_connection_per_boot }}
         working-directory: e2e/renode
@@ -283,7 +325,7 @@ jobs:
           RENODE_PLATFORM: ${{ matrix.dut.platform }}
           DYA2_PERIPHERAL_ELF: ${{ matrix.dut.peripheral_build != '' && format('{0}/fw-peripheral/zmk.elf', github.workspace) || '' }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           ELF="${{ github.workspace }}/fw/zmk.elf"
           rc=0
           for entry in ${{ matrix.dut.specs }}; do
@@ -293,9 +335,24 @@ jobs:
               specs="$entry"
             fi
             for spec in $specs; do
-              echo "::group::Renode boot for $spec"
-              bash run-local.sh "$ELF" "$spec" || rc=1
-              echo "::endgroup::"
+              # Skip spec files with no active (non-fixme) test: booting Renode
+              # (~1-2 min) only to run a fully-skipped file is pure waste
+              # (tests/dya2/trackball.spec.ts is entirely test.fixme). Logged, not
+              # a silent drop.
+              if ! grep -qE '^[[:space:]]*test\(' "$spec"; then
+                echo "::notice::skipping $spec (no active test — all fixme/skip)"
+                continue
+              fi
+              ok=0
+              for attempt in 1 2; do
+                echo "::group::Renode boot for $spec (attempt $attempt)"
+                if bash run-local.sh "$ELF" "$spec"; then
+                  ok=1; echo "::endgroup::"; break
+                fi
+                echo "::endgroup::"
+                echo "::warning::$spec failed on attempt $attempt"
+              done
+              [ "$ok" = 1 ] || rc=1
             done
           done
           exit "$rc"

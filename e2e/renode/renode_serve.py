@@ -295,14 +295,25 @@ def main() -> None:
     # the CENTRAL's USB enumeration + CDC wiring completes only after ~90s of wall
     # clock (measured), far beyond the single-machine 30s default. Use much longer
     # settle/wiring defaults for that path (still overridable via env).
+    # A SINGLE-machine dya2 image (the non-split DUT: RENODE_PLATFORM=dya2, no
+    # peripheral) is heavier than the minimal official image -- it brings up the
+    # full fork feature set (custom-settings load, default installers, PMW3610)
+    # before USB enumerates -- so on a CPU-starved stock CI runner its CDC wires
+    # noticeably slower than the official 30s default. Give it middle-ground
+    # defaults (between the plain single and the two-machine values).
     two_machine_dya2 = bool(_want_dya2(elf) and os.environ.get("DYA2_PERIPHERAL_ELF", "").strip())
-    boot_settle = float(os.environ.get("RENODE_BOOT_SETTLE", "20" if two_machine_dya2 else "8"))
+    single_dya2 = bool(_want_dya2(elf)) and not two_machine_dya2
+
+    def _tiered(two: str, single: str, plain: str) -> str:
+        return two if two_machine_dya2 else (single if single_dya2 else plain)
+
+    boot_settle = float(os.environ.get("RENODE_BOOT_SETTLE", _tiered("20", "12", "8")))
     wiring_timeout = float(
-        os.environ.get("RENODE_WIRING_TIMEOUT", "150" if two_machine_dya2 else "30")
+        os.environ.get("RENODE_WIRING_TIMEOUT", _tiered("150", "120", "30"))
     )
     # Renode's mono cold-start can take ~15-20s on a loaded box; boot_single_real
     # waits boot_wait + 10s for the monitor, so give margin.
-    boot_wait = float(os.environ.get("RENODE_BOOT_WAIT", "45" if two_machine_dya2 else "20"))
+    boot_wait = float(os.environ.get("RENODE_BOOT_WAIT", _tiered("45", "30", "20")))
 
     # Boot the real flashable image on the NRF_USBD_Full usb platform. console =
     # uart0 (silent on a real image), rpc = idle uart1 -- both owned for symmetry.

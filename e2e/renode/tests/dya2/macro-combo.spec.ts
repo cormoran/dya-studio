@@ -39,7 +39,12 @@ function debugHooks(page: Page): void {
 test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> delete", async ({
   page,
 }) => {
-  test.setTimeout(300_000);
+  // Generous: the create/persist/select-slot/delete round trip (each an RPC plus
+  // a 10s save debounce) is much slower on the CPU-starved single-machine
+  // emulation of a stock CI runner than on a dev box, and the select-slot read
+  // can transiently report "No macro bound to that slot" for several cycles
+  // right after create until the write settles.
+  test.setTimeout(600_000);
   debugHooks(page);
 
   await connectDya2(page);
@@ -56,7 +61,7 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
   // CREATE a macro. createMacro issues create_macro AND then list_macros, so the
   // macro appearing here is already a device write->read round-trip.
   await macros.getByTitle("Create macro").click();
-  await expect(items).toHaveCount(before.length + 1, { timeout: 60_000 });
+  await expect(items).toHaveCount(before.length + 1, { timeout: 90_000 });
   const newMacro = (await items.allInnerTexts())
     .map((s) => s.trim())
     .find((n) => !before.includes(n));
@@ -74,7 +79,7 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
   // PERSIST to flash (save_macros). Save disables once nothing is pending.
   await expect(save).toBeEnabled();
   await save.click();
-  await expect(save).toBeDisabled({ timeout: 60_000 });
+  await expect(save).toBeDisabled({ timeout: 120_000 });
 
   // REVERT: select + delete it (delete_macro re-lists). Selecting reads the
   // slot back, which can transiently fail right after create ("No macro bound
@@ -88,12 +93,12 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
         .catch(() => {});
     }
     expect(await macroButton.count()).toBe(0);
-  }).toPass({ timeout: 120_000 });
+  }).toPass({ timeout: 300_000 });
   await expect(items).toHaveCount(before.length);
   // Persist the removal if it left a pending change.
   if (await save.isEnabled().catch(() => false)) {
     await save.click();
-    await expect(save).toBeDisabled({ timeout: 60_000 });
+    await expect(save).toBeDisabled({ timeout: 120_000 });
   }
 });
 

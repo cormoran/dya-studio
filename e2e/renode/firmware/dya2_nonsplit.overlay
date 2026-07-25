@@ -1,0 +1,9 @@
+// Non-split variant of dya2_right for the dya-studio Renode e2e: the shield's
+// dya2.dtsi wires uart0 as the zmk,wired-split half-duplex link. With
+// CONFIG_ZMK_SPLIT=n the split UART config that put uart0 in interrupt-driven
+// mode is gone, so the nRF UARTE half-duplex BUILD_ASSERT fires. This single
+// board has no split peer, so disable that UART entirely.
+&uart0 {
+    status = "disabled";
+    /delete-property/ half-duplex;
+};
