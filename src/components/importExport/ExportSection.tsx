@@ -14,9 +14,7 @@ import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssExportReturn } from "../../hooks/useAbyssExport";
-import { ABYSS_BASE_URL } from "../../lib/abyss/abyssConfig";
-
-const DEFAULT_ABYSS_URL = "https://abyss.keyboard-hub.com";
+import { abyssBaseUrl, abyssHost } from "../../lib/abyss/abyssConfig";
 
 export function ExportSection({
   device,
@@ -64,9 +62,9 @@ export function ExportSection({
         {t("Export")}
       </h3>
       <p className="text-xs text-[var(--color-text-muted)] mb-4">
-        {t(
-          "Exporting uploads this keymap to abyss.keyboard-hub.com under your account.",
-        )}
+        {t("Exporting uploads this keymap to {{host}} under your account.", {
+          host: abyssHost(),
+        })}
       </p>
 
       <label className="block mb-4">
@@ -143,7 +141,7 @@ export function ExportSection({
             })}
             <a
               className="inline-flex items-center gap-1 underline"
-              href={`${ABYSS_BASE_URL || DEFAULT_ABYSS_URL}/keymaps/${result.id}`}
+              href={`${abyssBaseUrl()}/keymaps/${result.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -1117,8 +1117,8 @@ const ja: Record<string, string> = {
     "サインインするとキーマップのインポート／エクスポートができます。",
   "Sign in with Abyss": "Abyss でサインイン",
   "Sign out": "サインアウト",
-  "A sign-in window opens at abyss.keyboard-hub.com. Your session lasts until this tab is closed.":
-    "abyss.keyboard-hub.com のサインイン画面が開きます。セッションはこのタブを閉じるまで有効です。",
+  "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.":
+    "{{host}} のサインイン画面が開きます。セッションはこのタブを閉じるまで有効です。",
   Export: "エクスポート",
   Import: "インポート",
   "Upload the connected keyboard's keymap to Abyss, either as a new keymap or as a new version of an existing one.":
@@ -1152,8 +1152,8 @@ const ja: Record<string, string> = {
   // Import/Export — export section
   "Read the keyboard first to enable exporting.":
     "エクスポートするには、先にキーボードを読み取ってください。",
-  "Exporting uploads this keymap to abyss.keyboard-hub.com under your account.":
-    "エクスポートすると、このキーマップがあなたのアカウントで abyss.keyboard-hub.com にアップロードされます。",
+  "Exporting uploads this keymap to {{host}} under your account.":
+    "エクスポートすると、このキーマップがあなたのアカウントで {{host}} にアップロードされます。",
   Destination: "保存先",
   "Export as a new keymap": "新しいキーマップとしてエクスポート",
   "Update an existing keymap": "既存のキーマップを更新",

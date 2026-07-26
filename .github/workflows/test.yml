@@ -33,11 +33,20 @@ jobs:
           # deployment. The production release build (release.yml) leaves this
           # unset → no badge.
           VITE_BUILD_LABEL: ${{ github.event_name == 'pull_request' && 'PullRequest' || 'Dev' }}
+          # Dev and PR preview builds talk to the staging Abyss deployment, not
+          # production, so an experimental export never lands in the real
+          # catalog. The production release build (release.yml) leaves this
+          # unset and falls back to https://abyss.keyboard-hub.com.
+          VITE_ABYSS_BASE_URL: https://keyboard-abyss.cormoran707.workers.dev
           # Keyboard Abyss OAuth client. Unset -> the Import/Export tab is not
-          # registered at all. Note that pull-request previews get a fresh
-          # origin per commit, so their redirect URI will not match a
-          # statically registered one unless the OAuth client allows a pattern.
-          VITE_ABYSS_CLIENT_ID: ${{ secrets.VITE_ABYSS_CLIENT_ID }}
+          # registered at all. This must be a client registered on the *staging*
+          # instance above: OAuth clients live in that deployment's own
+          # database, so the production client id does not exist there.
+          #
+          # Note that pull-request previews get a fresh origin per commit, so
+          # their redirect URI will not match a statically registered one unless
+          # the OAuth client allows a pattern.
+          VITE_ABYSS_CLIENT_ID: ${{ secrets.VITE_ABYSS_CLIENT_ID_DEV }}
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

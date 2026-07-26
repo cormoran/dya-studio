@@ -8,6 +8,7 @@ import { IconCloud, IconLoader2, IconLogout } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import type { UseAbyssAuthReturn } from "../../hooks/useAbyssAuth";
+import { abyssHost } from "../../lib/abyss/abyssConfig";
 
 export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
   const { t } = useLanguage();
@@ -78,7 +79,8 @@ export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
       {!isAuthenticated && (
         <p className="mt-4 text-xs text-[var(--color-text-muted)]">
           {t(
-            "A sign-in window opens at abyss.keyboard-hub.com. Your session lasts until this tab is closed.",
+            "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.",
+            { host: abyssHost() },
           )}
         </p>
       )}

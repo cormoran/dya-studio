@@ -19,3 +19,27 @@ export { ABYSS_BASE_URL, ABYSS_CLIENT_ID };
 export function isAbyssConfigured(): boolean {
   return ABYSS_CLIENT_ID.length > 0;
 }
+
+/** Where the client library points when `VITE_ABYSS_BASE_URL` is unset. */
+const DEFAULT_ABYSS_BASE_URL = "https://abyss.keyboard-hub.com";
+
+/**
+ * Origin of the Abyss instance this build talks to.
+ *
+ * Dev and PR preview builds point at the staging deployment, so anything that
+ * links to Abyss or names it in copy has to read this rather than hardcoding
+ * the production host — otherwise a dev build tells the user it is uploading
+ * somewhere it is not.
+ */
+export function abyssBaseUrl(): string {
+  return ABYSS_BASE_URL || DEFAULT_ABYSS_BASE_URL;
+}
+
+/** Host shown in UI copy, e.g. `abyss.keyboard-hub.com`. */
+export function abyssHost(): string {
+  try {
+    return new URL(abyssBaseUrl()).host;
+  } catch {
+    return DEFAULT_ABYSS_BASE_URL.replace("https://", "");
+  }
+}
