@@ -4,11 +4,10 @@
  *
  * Sign-in lives here; the export and import sections below it are gated on it.
  *
- * The device-side halves (reading the keyboard into KeyboardHub JSON, diffing
- * an Abyss keymap against it, and writing the diff back) are provided by the
- * `@keyboard-hub/adapter-zmk` / `@keyboard-hub/adapter-common` packages, which
- * are not published to npm yet. Until they are, those sections render an
- * explicit notice rather than a half-working flow.
+ * Reading the keyboard, diffing an Abyss keymap against it, and writing the
+ * diff back are all handled by `@keyboard-hub/adapter-zmk` and
+ * `@keyboard-hub/adapter-common`; this page is the wiring and the UI around
+ * them.
  */
 import { IconCloudUpload } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
@@ -17,35 +16,12 @@ import { useAbyssDevice } from "../hooks/useAbyssDevice";
 import { AbyssAccountCard } from "../components/importExport/AbyssAccountCard";
 import { DeviceSnapshotCard } from "../components/importExport/DeviceSnapshotCard";
 import { ExportSection } from "../components/importExport/ExportSection";
+import { ImportSection } from "../components/importExport/ImportSection";
 import { useAbyssExport } from "../hooks/useAbyssExport";
+import { useAbyssImport } from "../hooks/useAbyssImport";
 
 /** Route path for the Import/Export tab. Must equal the tab id in `App.tsx`. */
 export const IMPORT_EXPORT_TAB_ID = "import-export";
-
-function PendingSection({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  const { t } = useLanguage();
-  return (
-    <div className="glass-card p-6">
-      <h3 className="text-sm font-medium text-[var(--color-text)] mb-2">
-        {title}
-      </h3>
-      <p className="text-sm text-[var(--color-text-muted)] mb-4">
-        {description}
-      </p>
-      <div className="p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {t("Not available yet — this is still being built.")}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export function ImportExportPage() {
   const { t } = useLanguage();
@@ -53,6 +29,7 @@ export function ImportExportPage() {
   // One snapshot shared by both sections — reading the device is expensive.
   const device = useAbyssDevice();
   const exporter = useAbyssExport(device.loaded, device.resolved);
+  const importer = useAbyssImport(device);
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -82,12 +59,7 @@ export function ImportExportPage() {
             <>
               <DeviceSnapshotCard device={device} />
               <ExportSection device={device} exporter={exporter} />
-              <PendingSection
-                title={t("Import")}
-                description={t(
-                  "Pick a compatible keymap from Abyss, review what would change, and write it to the connected keyboard.",
-                )}
-              />
+              <ImportSection device={device} importer={importer} />
             </>
           )}
         </div>

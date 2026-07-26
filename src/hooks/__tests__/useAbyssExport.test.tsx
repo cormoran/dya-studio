@@ -59,7 +59,7 @@ type FakeClient = {
   clearTokenSet: jest.Mock;
 };
 
-function useFakeClient(overrides: Partial<FakeClient> = {}): FakeClient {
+function setUpAbyssClient(overrides: Partial<FakeClient> = {}): FakeClient {
   const client: FakeClient = {
     listMyKeymaps: jest.fn().mockResolvedValue({ items: [] }),
     getKeymap: jest.fn(),
@@ -81,7 +81,7 @@ describe("useAbyssExport", () => {
   });
 
   it("creates against the resolved variation when the layout matched exactly", async () => {
-    const client = useFakeClient();
+    const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
@@ -100,7 +100,7 @@ describe("useAbyssExport", () => {
   it("imports when the keyboard is not in the Abyss catalog", async () => {
     // importKeymap is the only call that may create the catalog records, so an
     // unregistered keyboard must not go through createKeymap.
-    const client = useFakeClient();
+    const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, unregistered));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
@@ -113,7 +113,7 @@ describe("useAbyssExport", () => {
   });
 
   it("appends a version and preserves the existing keymap's name", async () => {
-    const client = useFakeClient({
+    const client = setUpAbyssClient({
       listMyKeymaps: jest.fn().mockResolvedValue({
         items: [
           {
@@ -153,7 +153,7 @@ describe("useAbyssExport", () => {
   });
 
   it("omits deselected sections from a new keymap", async () => {
-    const client = useFakeClient();
+    const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
@@ -176,7 +176,7 @@ describe("useAbyssExport", () => {
   });
 
   it("surfaces a failure without a result", async () => {
-    const client = useFakeClient({
+    const client = setUpAbyssClient({
       createKeymap: jest.fn().mockRejectedValue(new TypeError("offline")),
     });
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
@@ -194,7 +194,7 @@ describe("useAbyssExport", () => {
   });
 
   it("cannot export before a device has been read", () => {
-    useFakeClient();
+    setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(null, null));
     expect(result.current.canExport).toBe(false);
   });

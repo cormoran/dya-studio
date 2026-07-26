@@ -1174,6 +1174,49 @@ const ja: Record<string, string> = {
   // Macro & Combo tab.
   "Module settings": "モジュール設定",
 
+  // Import/Export — import section
+  "Read the keyboard first to enable importing.":
+    "インポートするには、先にキーボードを読み取ってください。",
+  "Writing changes the keyboard. Review the changes before confirming.":
+    "書き込みはキーボードを変更します。確認する前に変更内容を確認してください。",
+  "Keymap to write": "書き込むキーマップ",
+  "No compatible keymaps found for this keyboard":
+    "このキーボードと互換性のあるキーマップが見つかりません",
+  "Loading the keymap...": "キーマップを読み込んでいます...",
+  "The keyboard already matches this keymap.":
+    "キーボードはすでにこのキーマップと一致しています。",
+  "Written to the keyboard and re-read to confirm.":
+    "キーボードに書き込み、再読み取りで確認しました。",
+  "Write to keyboard": "キーボードに書き込む",
+  "Write {{count}} changes to the keyboard? This replaces the current settings and cannot be undone.":
+    "{{count}} 件の変更をキーボードに書き込みますか？現在の設定を置き換え、元に戻せません。",
+  // "Cancel" is already translated near the top of this dictionary.
+
+  // Import/Export — diff view
+  "Layer {{index}}": "レイヤー {{index}}",
+  "{{count}} changes": "{{count}} 件の変更",
+  Rename: "名前の変更",
+  Module: "モジュール",
+  "Show all {{count}} keys": "{{count}} 件すべて表示",
+  "This replaces most of the keymap ({{count}} keys). The full list is long.":
+    "キーマップの大部分を置き換えます（{{count}} キー）。一覧は非常に長くなります。",
+  "Show the full list anyway": "それでも一覧を表示",
+  bindings: "キー割り当て",
+  "layer names": "レイヤー名",
+  combos: "コンボ",
+  macros: "マクロ",
+  modules: "モジュール",
+
+  // Import/Export — pre-flight checks
+  "This keymap has {{target}} keys per layer but the keyboard has {{device}}.":
+    "このキーマップは1レイヤーあたり {{target}} キーですが、キーボードは {{device}} キーです。",
+  "This keymap covers {{target}} of the keyboard's {{device}} keys. The rest are left unchanged.":
+    "このキーマップはキーボードの {{device}} キーのうち {{target}} キーを対象にしています。残りは変更されません。",
+  "Writing needs {{needed}} layers; the keyboard has {{device}}. The missing ones will be added.":
+    "書き込みには {{needed}} レイヤーが必要ですが、キーボードには {{device}} レイヤーあります。不足分は追加されます。",
+  "This keymap was made for the {{target}} layout; the keyboard reports {{device}}.":
+    "このキーマップは {{target}} レイアウト向けですが、キーボードは {{device}} と報告しています。",
+
   // Import/Export — OAuth callback route
   "Completing Abyss sign-in...": "Abyss のサインインを完了しています...",
   "Signed in to Abyss": "Abyss にサインインしました",

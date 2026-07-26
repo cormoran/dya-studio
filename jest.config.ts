@@ -34,6 +34,8 @@ const config: Config = {
     // @keyboard-hub/adapter-common and are covered by that repo's own test
     // suite; what DYA Studio tests here is its wiring around them.
     "^@keyboard-hub/adapter-zmk$": "<rootDir>/src/__mocks__/abyssAdapterZmk.ts",
+    "^@keyboard-hub/adapter-common$":
+      "<rootDir>/src/__mocks__/abyssAdapterCommon.ts",
     // viteEnv reads `import.meta.env`, which the CommonJS test runtime can't
     // parse; swap it for the stub in src/lib/__mocks__/viteEnv.ts. Matches any
     // relative specifier for it ("./viteEnv", "../viteEnv", "../lib/viteEnv"),
