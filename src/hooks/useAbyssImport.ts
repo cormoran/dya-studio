@@ -12,6 +12,7 @@ import { compareKeyboardHubKeymaps } from "@keyboard-hub/adapter-common";
 import { writeZmkKeymapDiff } from "@keyboard-hub/adapter-zmk";
 import type { AbyssKeymapSummary } from "@keyboard-hub/abyss-client";
 import { getAbyssClient } from "../lib/abyss/abyssClient";
+import { listCandidateKeymaps } from "../lib/abyss/abyssKeymapList";
 import { useStudioUnlock } from "./useStudioUnlock";
 import {
   EMPTY_DIFF,
@@ -81,25 +82,23 @@ export function useAbyssImport(
   const currentKeymap = loaded?.state.currentKeymap as
     | KeymapDocument
     | undefined;
-  const keyboard = currentKeymap?.keyboard;
+  // A boolean, not `loaded` itself: the effect below must not re-run on every
+  // render just because a caller passed a fresh object.
+  const hasDevice = Boolean(loaded);
 
-  // Only keymaps for this keyboard and layout variation are candidates.
+  // Candidates come from the resolved layout, not the device-derived slug.
   useEffect(() => {
     const client = getAbyssClient();
-    if (!client || !keyboard) return;
+    if (!client || !hasDevice) return;
     let cancelled = false;
     setIsLoadingKeymaps(true);
     void (async () => {
       try {
-        const page = await client.listMyKeymaps({
-          visibility: "all",
-          keyboard,
+        const items = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
           layoutVariationId: resolved?.layout?.variation.id,
-          page: 1,
-          limit: 50,
         });
-        if (!cancelled) setKeymaps(page.items);
+        if (!cancelled) setKeymaps(items);
       } catch (caught) {
         if (isAbyssUnauthorized(caught)) client.clearTokenSet();
         if (!cancelled) setKeymaps([]);
@@ -110,7 +109,7 @@ export function useAbyssImport(
     return () => {
       cancelled = true;
     };
-  }, [keyboard, resolved?.layout?.id, resolved?.layout?.variation.id]);
+  }, [hasDevice, resolved?.layout?.id, resolved?.layout?.variation.id]);
 
   const selectKeymap = useCallback(
     async (id: string | null) => {

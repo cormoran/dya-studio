@@ -1174,6 +1174,13 @@ const ja: Record<string, string> = {
   // Macro & Combo tab.
   "Module settings": "モジュール設定",
 
+  Visibility: "公開設定",
+  "Private — only you": "非公開 — 自分のみ",
+  "Public — anyone can find it": "公開 — 誰でも閲覧できます",
+  "Keymap JSON to upload": "アップロードする keymap JSON",
+  "Layout JSON to upload": "アップロードする layout JSON",
+  "Not available.": "利用できません。",
+
   // Import/Export — import section
   "Read the keyboard first to enable importing.":
     "インポートするには、先にキーボードを読み取ってください。",

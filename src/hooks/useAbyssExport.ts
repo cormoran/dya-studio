@@ -12,16 +12,18 @@
  * Exports are non-destructive on both sides: Abyss keeps version history, and
  * nothing is written to the keyboard.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   AbyssKeymapData,
   AbyssKeymapSummary,
+  AbyssKeymapVisibility,
   AbyssKeymapWriteResult,
   AbyssLayoutDefinition,
   AbyssLayoutResolveResult,
 } from "@keyboard-hub/abyss-client";
 import type { ZmkLoadedConnection } from "@keyboard-hub/adapter-zmk";
 import { getAbyssClient } from "../lib/abyss/abyssClient";
+import { listCandidateKeymaps } from "../lib/abyss/abyssKeymapList";
 import {
   ALL_SECTIONS,
   buildExportData,
@@ -51,6 +53,10 @@ export interface UseAbyssExportReturn {
   /** Name for a new keymap. Ignored when updating. */
   name: string;
   setName: (name: string) => void;
+  /** Who can see a new keymap on Abyss. Ignored when updating, since that
+   * appends a version rather than changing the record's metadata. */
+  visibility: AbyssKeymapVisibility;
+  setVisibility: (visibility: AbyssKeymapVisibility) => void;
   selection: AbyssSectionSelection;
   setSelection: (selection: AbyssSectionSelection) => void;
   isExporting: boolean;
@@ -60,6 +66,8 @@ export interface UseAbyssExportReturn {
   /** Whether the button should be enabled. */
   canExport: boolean;
   exportNow: () => Promise<void>;
+  /** The exact JSON that would be uploaded, for the preview panes. */
+  preview: { keymap: unknown; layout: unknown } | null;
 }
 
 /** `2026-07-26` — a stable default name suffix. */
@@ -76,6 +84,8 @@ export function useAbyssExport(
   const [isLoadingKeymaps, setIsLoadingKeymaps] = useState(false);
   const [selectedKeymapId, setSelectedKeymapId] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [visibility, setVisibility] =
+    useState<AbyssKeymapVisibility>("private");
   const [selection, setSelection] =
     useState<AbyssSectionSelection>(ALL_SECTIONS);
   const [isExporting, setIsExporting] = useState(false);
@@ -83,30 +93,28 @@ export function useAbyssExport(
   const [result, setResult] = useState<AbyssKeymapWriteResult | null>(null);
 
   const deviceName = loaded?.deviceName;
-  const keyboard = loaded?.state.currentKeymap.keyboard;
+  // A boolean, not `loaded` itself: the effect below must not re-run on every
+  // render just because a caller passed a fresh object.
+  const hasDevice = Boolean(loaded);
 
   // Seed the new-keymap name once a device has been read.
   useEffect(() => {
     if (deviceName) setName(`${deviceName} — ${today()}`);
   }, [deviceName]);
 
-  // Load the user's existing keymaps for this keyboard so "update" has options.
+  // Load the user's existing keymaps so "update" has options.
   useEffect(() => {
     const client = getAbyssClient();
-    if (!client || !keyboard) return;
+    if (!client || !hasDevice) return;
     let cancelled = false;
     setIsLoadingKeymaps(true);
     void (async () => {
       try {
-        const page = await client.listMyKeymaps({
-          visibility: "all",
-          keyboard,
+        const items = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
           layoutVariationId: resolved?.layout?.variation.id,
-          page: 1,
-          limit: 50,
         });
-        if (!cancelled) setKeymaps(page.items);
+        if (!cancelled) setKeymaps(items);
       } catch (caught) {
         if (isAbyssUnauthorized(caught)) client.clearTokenSet();
         if (!cancelled) setKeymaps([]);
@@ -117,7 +125,33 @@ export function useAbyssExport(
     return () => {
       cancelled = true;
     };
-  }, [keyboard, resolved?.layout?.id, resolved?.layout?.variation.id]);
+  }, [hasDevice, resolved?.layout?.id, resolved?.layout?.variation.id]);
+
+  /**
+   * The document that `exportNow` would upload, built with the same functions
+   * so the preview cannot drift from what is actually sent.
+   *
+   * For an update this needs the existing keymap's data as the merge base; list
+   * summaries usually carry it, and when they do not the preview falls back to
+   * the new-keymap shape rather than guessing at the merge.
+   */
+  const preview = useMemo(() => {
+    if (!loaded) return null;
+    const device = loaded.state.currentKeymap as unknown as KeymapDocument;
+    const layout = loaded.state.detectedLayout ?? null;
+    if (mode === "update") {
+      const existing = keymaps.find((keymap) => keymap.id === selectedKeymapId);
+      const base = (existing?.data ?? existing?.latestVersion?.data) as
+        | KeymapDocument
+        | undefined;
+      if (!base) return { keymap: null, layout };
+      return { keymap: buildExportData(device, base, selection), layout };
+    }
+    return {
+      keymap: buildNewExportData(device, selection, name.trim()),
+      layout,
+    };
+  }, [loaded, mode, keymaps, selectedKeymapId, selection, name]);
 
   const canExport = Boolean(
     loaded &&
@@ -169,7 +203,7 @@ export function useAbyssExport(
             name.trim(),
           ) as AbyssKeymapData,
           name: name.trim(),
-          visibility: "private",
+          visibility,
           layout,
           message: "Created from DYA Studio",
         });
@@ -183,7 +217,7 @@ export function useAbyssExport(
             name.trim(),
           ) as AbyssKeymapData,
           name: name.trim(),
-          visibility: "private",
+          visibility,
           layout,
           message: "Imported from DYA Studio",
         });
@@ -200,7 +234,16 @@ export function useAbyssExport(
     } finally {
       setIsExporting(false);
     }
-  }, [loaded, mode, keymaps, selectedKeymapId, selection, resolved, name]);
+  }, [
+    loaded,
+    mode,
+    keymaps,
+    selectedKeymapId,
+    selection,
+    resolved,
+    name,
+    visibility,
+  ]);
 
   return {
     mode,
@@ -211,6 +254,8 @@ export function useAbyssExport(
     setSelectedKeymapId,
     name,
     setName,
+    visibility,
+    setVisibility,
     selection,
     setSelection,
     isExporting,
@@ -218,5 +263,6 @@ export function useAbyssExport(
     result,
     canExport,
     exportNow,
+    preview,
   };
 }

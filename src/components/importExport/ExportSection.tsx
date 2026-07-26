@@ -12,6 +12,7 @@ import {
 import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
+import { JsonPreview } from "./JsonPreview";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssExportReturn } from "../../hooks/useAbyssExport";
 import { abyssBaseUrl, abyssHost } from "../../lib/abyss/abyssConfig";
@@ -34,6 +35,8 @@ export function ExportSection({
     setSelectedKeymapId,
     name,
     setName,
+    visibility,
+    setVisibility,
     selection,
     setSelection,
     isExporting,
@@ -41,6 +44,7 @@ export function ExportSection({
     result,
     canExport,
     exportNow,
+    preview,
   } = exporter;
 
   if (!loaded) {
@@ -82,17 +86,34 @@ export function ExportSection({
       </label>
 
       {mode === "new" ? (
-        <label className="block mb-4">
-          <span className="block text-xs text-[var(--color-text-muted)] mb-1">
-            {t("Keymap name")}
-          </span>
-          <input
-            className="input-field w-full tablet:w-80"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder={t("Keymap name")}
-          />
-        </label>
+        <>
+          <label className="block mb-4">
+            <span className="block text-xs text-[var(--color-text-muted)] mb-1">
+              {t("Keymap name")}
+            </span>
+            <input
+              className="input-field w-full tablet:w-80"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t("Keymap name")}
+            />
+          </label>
+          <label className="block mb-4">
+            <span className="block text-xs text-[var(--color-text-muted)] mb-1">
+              {t("Visibility")}
+            </span>
+            <select
+              className="input-field w-full tablet:w-80"
+              value={visibility}
+              onChange={(event) =>
+                setVisibility(event.target.value as typeof visibility)
+              }
+            >
+              <option value="private">{t("Private — only you")}</option>
+              <option value="public">{t("Public — anyone can find it")}</option>
+            </select>
+          </label>
+        </>
       ) : (
         <label className="block mb-4">
           <span className="block text-xs text-[var(--color-text-muted)] mb-1">
@@ -141,7 +162,9 @@ export function ExportSection({
             })}
             <a
               className="inline-flex items-center gap-1 underline"
-              href={`${abyssBaseUrl()}/keymaps/${result.id}`}
+              // Abyss routes a single keymap at /keymap/:id; /keymaps is the list
+              // page and /keymaps/:id matches no route at all.
+              href={`${abyssBaseUrl()}/keymap/${result.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -149,6 +172,19 @@ export function ExportSection({
               <IconExternalLink size={14} />
             </a>
           </p>
+        </div>
+      )}
+
+      {preview && (
+        <div className="mb-4 space-y-2">
+          <JsonPreview
+            title={t("Keymap JSON to upload")}
+            value={preview.keymap}
+          />
+          <JsonPreview
+            title={t("Layout JSON to upload")}
+            value={preview.layout}
+          />
         </div>
       )}
 

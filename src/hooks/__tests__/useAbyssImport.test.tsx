@@ -55,6 +55,14 @@ const diffWithChanges: KeymapDiff = {
 
 const read = jest.fn().mockResolvedValue(undefined);
 
+/**
+ * Returns a *fresh* object each call, on purpose.
+ *
+ * The hook must key its keymap-list effect on stable primitives rather than the
+ * device object; depending on the object made the effect re-run every render
+ * and cancel its own in-flight request, so the list never populated. Keep this
+ * unstable — it is what catches that regression.
+ */
 function makeDevice(): UseAbyssDeviceReturn {
   return {
     loaded: {
