@@ -90,6 +90,15 @@ export function isStudioUnlockError(x: unknown): boolean {
     if (meta?.simpleError === ErrorConditions.UNLOCK_REQUIRED) {
       return true;
     }
+    // The Abyss ZMK adapter reports a locked device with its own
+    // `FirmwareLockedError`. Matched by shape rather than imported, both to keep
+    // this module dependency-free and because the adapter's own
+    // `isFirmwareLockedError` also matches any message merely containing
+    // "locked" — too loose to route into the unlock modal.
+    const named = x as { code?: unknown; name?: unknown };
+    if (named.code === "LOCKED" || named.name === "FirmwareLockedError") {
+      return true;
+    }
   }
   return false;
 }

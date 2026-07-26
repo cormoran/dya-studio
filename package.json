@@ -19,6 +19,8 @@
   "dependencies": {
     "@cormoran/zmk-studio-react-hook": "github:cormoran/react-zmk-studio",
     "@keyboard-hub/abyss-client": "^0.0.1",
+    "@keyboard-hub/adapter-common": "^0.0.1",
+    "@keyboard-hub/adapter-zmk": "^0.0.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",

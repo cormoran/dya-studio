@@ -13,7 +13,9 @@
 import { IconCloudUpload } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { useAbyssAuth } from "../hooks/useAbyssAuth";
+import { useAbyssDevice } from "../hooks/useAbyssDevice";
 import { AbyssAccountCard } from "../components/importExport/AbyssAccountCard";
+import { DeviceSnapshotCard } from "../components/importExport/DeviceSnapshotCard";
 
 /** Route path for the Import/Export tab. Must equal the tab id in `App.tsx`. */
 export const IMPORT_EXPORT_TAB_ID = "import-export";
@@ -48,6 +50,8 @@ function PendingSection({
 export function ImportExportPage() {
   const { t } = useLanguage();
   const auth = useAbyssAuth();
+  // One snapshot shared by both sections — reading the device is expensive.
+  const device = useAbyssDevice();
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -75,6 +79,7 @@ export function ImportExportPage() {
 
           {auth.isAuthenticated && (
             <>
+              <DeviceSnapshotCard device={device} />
               <PendingSection
                 title={t("Export")}
                 description={t(

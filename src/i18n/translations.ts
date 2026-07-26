@@ -1128,6 +1128,27 @@ const ja: Record<string, string> = {
   "Not available in this build yet — the Abyss keyboard adapter has not been released.":
     "このビルドではまだ利用できません（Abyss のキーボードアダプタが未リリースです）。",
 
+  // Import/Export — device snapshot
+  "Keyboard snapshot": "キーボードの読み取り",
+  "Read the keyboard before exporting or importing.":
+    "エクスポート／インポートの前にキーボードを読み取ってください。",
+  "Read keyboard": "キーボードを読み取る",
+  "Read again": "再読み取り",
+  "Connected keyboard": "接続中のキーボード",
+  "Reading the keyboard. This is slower over Bluetooth than USB.":
+    "キーボードを読み取っています。Bluetooth 接続では USB より時間がかかります。",
+  "Matching the layout on Abyss...": "Abyss 上のレイアウトと照合しています...",
+  Keys: "キー数",
+  Modules: "モジュール",
+  "Matched the Abyss layout {{layout}}.":
+    "Abyss のレイアウト {{layout}} と一致しました。",
+  "No exact layout match. Exporting will add a new variation of {{layout}}.":
+    "完全に一致するレイアウトがありません。エクスポートすると {{layout}} の新しいバリエーションが作成されます。",
+  "This layout is not registered on Abyss yet. Exporting will add it.":
+    "このレイアウトはまだ Abyss に登録されていません。エクスポート時に追加されます。",
+  "This keyboard is not registered on Abyss yet. Exporting will create it under your account.":
+    "このキーボードはまだ Abyss に登録されていません。エクスポート時にあなたのアカウントで作成されます。",
+
   // Import/Export — OAuth callback route
   "Completing Abyss sign-in...": "Abyss のサインインを完了しています...",
   "Signed in to Abyss": "Abyss にサインインしました",
