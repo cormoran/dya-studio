@@ -1125,8 +1125,8 @@ const ja: Record<string, string> = {
     "接続中のキーボードのキーマップを、新規キーマップまたは既存キーマップの新しいバージョンとして Abyss にアップロードします。",
   "Pick a compatible keymap from Abyss, review what would change, and write it to the connected keyboard.":
     "Abyss から互換性のあるキーマップを選び、変更内容を確認したうえで接続中のキーボードに書き込みます。",
-  "Not available in this build yet — the Abyss keyboard adapter has not been released.":
-    "このビルドではまだ利用できません（Abyss のキーボードアダプタが未リリースです）。",
+  "Not available yet — this is still being built.":
+    "まだ利用できません（実装中です）。",
 
   // Import/Export — device snapshot
   "Keyboard snapshot": "キーボードの読み取り",
@@ -1148,6 +1148,31 @@ const ja: Record<string, string> = {
     "このレイアウトはまだ Abyss に登録されていません。エクスポート時に追加されます。",
   "This keyboard is not registered on Abyss yet. Exporting will create it under your account.":
     "このキーボードはまだ Abyss に登録されていません。エクスポート時にあなたのアカウントで作成されます。",
+
+  // Import/Export — export section
+  "Read the keyboard first to enable exporting.":
+    "エクスポートするには、先にキーボードを読み取ってください。",
+  "Exporting uploads this keymap to abyss.keyboard-hub.com under your account.":
+    "エクスポートすると、このキーマップがあなたのアカウントで abyss.keyboard-hub.com にアップロードされます。",
+  Destination: "保存先",
+  "Export as a new keymap": "新しいキーマップとしてエクスポート",
+  "Update an existing keymap": "既存のキーマップを更新",
+  "Export as new keymap": "新規キーマップとしてエクスポート",
+  "Update keymap": "キーマップを更新",
+  "Keymap name": "キーマップ名",
+  "Keymap to update": "更新するキーマップ",
+  "Loading your keymaps...": "キーマップを読み込んでいます...",
+  "No keymaps found for this keyboard":
+    "このキーボード用のキーマップが見つかりません",
+  "Select a keymap": "キーマップを選択",
+  "Saved to Abyss as version {{version}}.":
+    "Abyss にバージョン {{version}} として保存しました。",
+  "Open on Abyss": "Abyss で開く",
+  Include: "含める項目",
+  "Keymap (layers & key bindings)": "キーマップ（レイヤーとキー割り当て）",
+  // "Combos" and "Macros" are already translated above, shared with the
+  // Macro & Combo tab.
+  "Module settings": "モジュール設定",
 
   // Import/Export — OAuth callback route
   "Completing Abyss sign-in...": "Abyss のサインインを完了しています...",

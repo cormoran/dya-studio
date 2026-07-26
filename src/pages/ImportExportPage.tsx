@@ -16,6 +16,8 @@ import { useAbyssAuth } from "../hooks/useAbyssAuth";
 import { useAbyssDevice } from "../hooks/useAbyssDevice";
 import { AbyssAccountCard } from "../components/importExport/AbyssAccountCard";
 import { DeviceSnapshotCard } from "../components/importExport/DeviceSnapshotCard";
+import { ExportSection } from "../components/importExport/ExportSection";
+import { useAbyssExport } from "../hooks/useAbyssExport";
 
 /** Route path for the Import/Export tab. Must equal the tab id in `App.tsx`. */
 export const IMPORT_EXPORT_TAB_ID = "import-export";
@@ -38,9 +40,7 @@ function PendingSection({
       </p>
       <div className="p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
         <p className="text-sm text-[var(--color-text-muted)]">
-          {t(
-            "Not available in this build yet — the Abyss keyboard adapter has not been released.",
-          )}
+          {t("Not available yet — this is still being built.")}
         </p>
       </div>
     </div>
@@ -52,6 +52,7 @@ export function ImportExportPage() {
   const auth = useAbyssAuth();
   // One snapshot shared by both sections — reading the device is expensive.
   const device = useAbyssDevice();
+  const exporter = useAbyssExport(device.loaded, device.resolved);
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -80,12 +81,7 @@ export function ImportExportPage() {
           {auth.isAuthenticated && (
             <>
               <DeviceSnapshotCard device={device} />
-              <PendingSection
-                title={t("Export")}
-                description={t(
-                  "Upload the connected keyboard's keymap to Abyss, either as a new keymap or as a new version of an existing one.",
-                )}
-              />
+              <ExportSection device={device} exporter={exporter} />
               <PendingSection
                 title={t("Import")}
                 description={t(
