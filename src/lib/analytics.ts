@@ -16,6 +16,7 @@
  * and bump `NOTICE_VERSION` in `connectionNoticeStorage.ts` so users re-consent.
  */
 import type { ConnectionMethod } from "../components/DeviceConnection";
+import type { AbyssFailReason } from "./abyss/abyssErrors";
 
 /** Coarse, non-identifying bucket for a failed connection attempt. */
 export type ConnectFailReason =
@@ -58,6 +59,36 @@ export function trackConnectFailed(
   reason: ConnectFailReason,
 ): void {
   trackEvent("keyboard_connect_failed", { method, reason });
+}
+
+/** Keyboard Abyss operations worth counting in aggregate. */
+export type AbyssOperation = "login" | "export" | "import";
+
+/**
+ * A Keyboard Abyss operation succeeded.
+ *
+ * `sections` is the sorted list of data sections the user ticked (e.g.
+ * `"combos,keymap"`) — a UI preference, not configuration data. Nothing that
+ * identifies the keyboard, the keymap, or the Abyss account is sent: no
+ * keyboard slug, no keymap id, no Abyss user id, and no change counts (which
+ * would leak the shape of the keyboard).
+ */
+export function trackAbyssOperation(
+  operation: AbyssOperation,
+  params?: { mode?: "new" | "update"; sections?: string },
+): void {
+  trackEvent("abyss_operation", { operation, ...params });
+}
+
+/**
+ * A Keyboard Abyss operation failed. Only a coarse reason bucket is sent --
+ * never the API response body, which can echo request data back.
+ */
+export function trackAbyssFailed(
+  operation: AbyssOperation,
+  reason: AbyssFailReason,
+): void {
+  trackEvent("abyss_failed", { operation, reason });
 }
 
 /**

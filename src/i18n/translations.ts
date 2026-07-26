@@ -1108,6 +1108,57 @@ const ja: Record<string, string> = {
   Note: "補足",
   "These values are read from and written to your keyboard's firmware. Change them in small steps.":
     "これらの値はキーボードのファームウェアから読み書きされます。少しずつ変更してください。",
+
+  // Import/Export (Keyboard Abyss)
+  "Import/Export": "インポート／エクスポート",
+  "Sync keymaps with Keyboard Abyss": "Keyboard Abyss とキーマップを同期します",
+  "Keyboard Abyss": "Keyboard Abyss",
+  "Sign in to import and export keymaps.":
+    "サインインするとキーマップのインポート／エクスポートができます。",
+  "Sign in with Abyss": "Abyss でサインイン",
+  "Sign out": "サインアウト",
+  "A sign-in window opens at abyss.keyboard-hub.com. Your session lasts until this tab is closed.":
+    "abyss.keyboard-hub.com のサインイン画面が開きます。セッションはこのタブを閉じるまで有効です。",
+  Export: "エクスポート",
+  Import: "インポート",
+  "Upload the connected keyboard's keymap to Abyss, either as a new keymap or as a new version of an existing one.":
+    "接続中のキーボードのキーマップを、新規キーマップまたは既存キーマップの新しいバージョンとして Abyss にアップロードします。",
+  "Pick a compatible keymap from Abyss, review what would change, and write it to the connected keyboard.":
+    "Abyss から互換性のあるキーマップを選び、変更内容を確認したうえで接続中のキーボードに書き込みます。",
+  "Not available in this build yet — the Abyss keyboard adapter has not been released.":
+    "このビルドではまだ利用できません（Abyss のキーボードアダプタが未リリースです）。",
+
+  // Import/Export — OAuth callback route
+  "Completing Abyss sign-in...": "Abyss のサインインを完了しています...",
+  "Signed in to Abyss": "Abyss にサインインしました",
+  "You can close this window.": "このウィンドウは閉じて構いません。",
+  "Abyss sign-in failed": "Abyss のサインインに失敗しました",
+  "Back to DYA Studio": "DYA Studio に戻る",
+
+  // Import/Export — error messages
+  "Your Abyss session expired. Please log in again.":
+    "Abyss のセッションが失効しました。もう一度サインインしてください。",
+  "Your Abyss account does not have permission for this action.":
+    "この操作を行う権限が Abyss アカウントにありません。",
+  "This keymap no longer exists on Abyss.":
+    "このキーマップは Abyss 上に存在しません。",
+  "Abyss rejected this keymap. It may not match the connected keyboard.":
+    "Abyss がこのキーマップを受け付けませんでした。接続中のキーボードと一致していない可能性があります。",
+  "Too many requests to Abyss. Please wait a moment and try again.":
+    "Abyss へのリクエストが多すぎます。しばらく待ってから再試行してください。",
+  "Abyss is having trouble right now. Please try again later.":
+    "現在 Abyss に問題が発生しています。時間をおいて再試行してください。",
+  "Could not reach Abyss. Check your network connection.":
+    "Abyss に接続できませんでした。ネットワーク接続を確認してください。",
+  "The keyboard is locked. Unlock it and try again.":
+    "キーボードがロックされています。ロックを解除して再試行してください。",
+  "Abyss login was cancelled.": "Abyss のサインインがキャンセルされました。",
+  "Abyss sign-in could not be completed. Please start again from the Import/Export tab.":
+    "Abyss のサインインを完了できませんでした。インポート／エクスポートタブからやり直してください。",
+  "Something went wrong talking to Abyss.":
+    "Abyss との通信で問題が発生しました。",
+  "Abyss is not configured for this build.":
+    "このビルドには Abyss の設定がありません。",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = {

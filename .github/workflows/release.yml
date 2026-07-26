@@ -50,6 +50,9 @@ jobs:
         env:
           VITE_BASE: /
           VITE_GOOGLE_ANALYTICS_ID: ${{ secrets.VITE_GOOGLE_ANALYTICS_ID }}
+          # Keyboard Abyss OAuth client. Unset -> the Import/Export tab is not
+          # registered at all.
+          VITE_ABYSS_CLIENT_ID: ${{ secrets.VITE_ABYSS_CLIENT_ID }}
 
       - name: Deploy to Cloudflare Pages
         id: deploy

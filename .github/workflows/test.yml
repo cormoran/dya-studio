@@ -33,6 +33,11 @@ jobs:
           # deployment. The production release build (release.yml) leaves this
           # unset → no badge.
           VITE_BUILD_LABEL: ${{ github.event_name == 'pull_request' && 'PullRequest' || 'Dev' }}
+          # Keyboard Abyss OAuth client. Unset -> the Import/Export tab is not
+          # registered at all. Note that pull-request previews get a fresh
+          # origin per commit, so their redirect URI will not match a
+          # statically registered one unless the OAuth client allows a pattern.
+          VITE_ABYSS_CLIENT_ID: ${{ secrets.VITE_ABYSS_CLIENT_ID }}
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
