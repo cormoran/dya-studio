@@ -49,9 +49,26 @@ export function TabNavigation({
             className="h-full outline-none data-[state=inactive]:hidden"
             forceMount
           >
-            <PageTransition transitionKey={activeTab === tab.id ? tab.id : ""}>
-              {activeTab === tab.id ? tab.content : null}
-            </PageTransition>
+            {/*
+              Mount the transition only while the tab is active.
+
+              Previously this rendered a PageTransition for every tab, flipping
+              its key between "" and the tab id. `AnimatePresence mode="wait"`
+              holds the outgoing child until its exit animation finishes — and
+              inside a `display: none` panel that never happens, so the incoming
+              child never mounted. The tab looked blank until a reload, and the
+              stale subtree left behind still rendered DOM whose event handlers
+              updated a fiber React had discarded: clicks fired but setState did
+              nothing.
+
+              Rendering nothing when inactive means each tab's AnimatePresence
+              only ever holds one key, with no exit to wait on.
+            */}
+            {activeTab === tab.id && (
+              <PageTransition transitionKey={tab.id}>
+                {tab.content}
+              </PageTransition>
+            )}
           </Tabs.Content>
         ))}
       </div>

@@ -30,6 +30,13 @@ export function ImportExportPage() {
   const device = useAbyssDevice();
   const exporter = useAbyssExport(device.loaded, device.resolved);
   const importer = useAbyssImport(device);
+  // The catalog slug is not in the resolveLayout response, so take it from the
+  // keymaps listed for this keyboard — the device snapshot's own slug is
+  // derived from the ZMK device name and does not identify the catalog entry.
+  const keyboardSlug =
+    importer.keymaps.find((keymap) => keymap.keyboardSlug ?? keymap.keyboard)
+      ?.keyboardSlug ??
+    importer.keymaps.find((keymap) => keymap.keyboard?.slug)?.keyboard?.slug;
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -57,7 +64,7 @@ export function ImportExportPage() {
 
           {auth.isAuthenticated && (
             <>
-              <DeviceSnapshotCard device={device} />
+              <DeviceSnapshotCard device={device} keyboardSlug={keyboardSlug} />
               <ExportSection device={device} exporter={exporter} />
               <ImportSection device={device} importer={importer} />
             </>

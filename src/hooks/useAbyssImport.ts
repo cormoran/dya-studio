@@ -45,6 +45,8 @@ function keyCountOf(keymap: KeymapDocument | undefined): number {
 export interface UseAbyssImportReturn {
   keymaps: AbyssKeymapSummary[];
   isLoadingKeymaps: boolean;
+  /** Why the keymap list is empty, when it failed rather than being empty. */
+  listError: string | null;
   selectedKeymapId: string | null;
   /** Selecting fetches the keymap's data and recomputes the diff. */
   selectKeymap: (id: string | null) => Promise<void>;
@@ -53,6 +55,8 @@ export interface UseAbyssImportReturn {
   setSelection: (selection: AbyssSectionSelection) => void;
   /** The diff after the section filter, i.e. exactly what would be written. */
   diff: KeymapDiff;
+  /** The selected Abyss keymap's raw document, for the JSON diff view. */
+  targetKeymap: KeymapDocument | null;
   isInSync: boolean;
   preflight: ReturnType<typeof runPreflight>;
   canWrite: boolean;
@@ -70,6 +74,7 @@ export function useAbyssImport(
   const { runWithUnlock } = useStudioUnlock();
   const [keymaps, setKeymaps] = useState<AbyssKeymapSummary[]>([]);
   const [isLoadingKeymaps, setIsLoadingKeymaps] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [selectedKeymapId, setSelectedKeymapId] = useState<string | null>(null);
   const [targetKeymap, setTargetKeymap] = useState<KeymapDocument | null>(null);
   const [isLoadingSelection, setIsLoadingSelection] = useState(false);
@@ -92,16 +97,22 @@ export function useAbyssImport(
     if (!client || !hasDevice) return;
     let cancelled = false;
     setIsLoadingKeymaps(true);
+    setListError(null);
     void (async () => {
       try {
-        const items = await listCandidateKeymaps(client, {
+        const result = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
           layoutVariationId: resolved?.layout?.variation.id,
         });
-        if (!cancelled) setKeymaps(items);
+        if (!cancelled) setKeymaps(result.items);
       } catch (caught) {
         if (isAbyssUnauthorized(caught)) client.clearTokenSet();
-        if (!cancelled) setKeymaps([]);
+        if (!cancelled) {
+          setKeymaps([]);
+          // Without this a failed request is indistinguishable from an empty
+          // account, which is exactly how the earlier slug bug hid itself.
+          setListError(abyssErrorMessageKey(caught));
+        }
       } finally {
         if (!cancelled) setIsLoadingKeymaps(false);
       }
@@ -203,12 +214,14 @@ export function useAbyssImport(
   return {
     keymaps,
     isLoadingKeymaps,
+    listError,
     selectedKeymapId,
     selectKeymap,
     isLoadingSelection,
     selection,
     setSelection,
     diff,
+    targetKeymap,
     isInSync,
     preflight,
     canWrite,

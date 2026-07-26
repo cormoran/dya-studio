@@ -9,8 +9,12 @@
 import type { AbyssClient } from "@keyboard-hub/abyss-client";
 import { listCandidateKeymaps } from "../abyssKeymapList";
 
-function fakeClient(items: unknown[] = []) {
-  const listMyKeymaps = jest.fn().mockResolvedValue({ items });
+function fakeClient(...pages: unknown[][]) {
+  const listMyKeymaps = jest.fn();
+  for (const items of pages.length ? pages : [[]]) {
+    listMyKeymaps.mockResolvedValueOnce({ items });
+  }
+  listMyKeymaps.mockResolvedValue({ items: [] });
   return {
     client: { listMyKeymaps } as unknown as AbyssClient,
     listMyKeymaps,
@@ -64,6 +68,43 @@ describe("listCandidateKeymaps", () => {
 
   it("returns the page items", async () => {
     const { client } = fakeClient([{ id: "k1" }, { id: "k2" }]);
-    await expect(listCandidateKeymaps(client, {})).resolves.toHaveLength(2);
+    const result = await listCandidateKeymaps(client, {});
+
+    expect(result.items).toHaveLength(2);
+    expect(result.widened).toBe(false);
+  });
+
+  it("widens the search when the layout filter matches nothing", async () => {
+    // resolveLayout matches on the geometry the firmware reports, so a keymap
+    // saved against a slightly different variation of the same layout falls
+    // outside the filter — which looked exactly like having no keymaps at all.
+    const { client, listMyKeymaps } = fakeClient([], [{ id: "k1" }]);
+
+    const result = await listCandidateKeymaps(client, {
+      layoutId: "layout-1",
+      layoutVariationId: "variation-1",
+    });
+
+    expect(listMyKeymaps).toHaveBeenCalledTimes(2);
+    expect(listMyKeymaps.mock.calls[1][0]).not.toHaveProperty("layoutId");
+    expect(result.items).toHaveLength(1);
+    expect(result.widened).toBe(true);
+  });
+
+  it("does not retry when the filtered query already found something", async () => {
+    const { client, listMyKeymaps } = fakeClient([{ id: "k1" }]);
+
+    await listCandidateKeymaps(client, { layoutId: "layout-1" });
+
+    expect(listMyKeymaps).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry when there was no filter to widen", async () => {
+    const { client, listMyKeymaps } = fakeClient([]);
+
+    const result = await listCandidateKeymaps(client, {});
+
+    expect(listMyKeymaps).toHaveBeenCalledTimes(1);
+    expect(result.widened).toBe(false);
   });
 });

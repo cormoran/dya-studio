@@ -1181,6 +1181,28 @@ const ja: Record<string, string> = {
   "Layout JSON to upload": "アップロードする layout JSON",
   "Not available.": "利用できません。",
 
+  // Import/Export — JSON diff modal
+  "Review changes": "変更内容を確認",
+  "Review changes as JSON": "JSON で変更内容を確認",
+  "Changes to upload": "アップロードする変更",
+  "Changes to write": "書き込む変更",
+  "Left: the keymap currently on Abyss. Right: what this export would save.":
+    "左: 現在 Abyss にあるキーマップ。右: このエクスポートで保存される内容。",
+  "Left: what is on the keyboard now. Right: the keymap from Abyss.":
+    "左: 現在キーボードにある内容。右: Abyss のキーマップ。",
+  Inline: "インライン",
+  "Side by side": "左右に並べる",
+  "Around changes": "変更箇所のみ",
+  "Entire file": "ファイル全体",
+  "No differences.": "差分はありません。",
+  // "Close" is already translated near the top of this dictionary.
+
+  // Import/Export — Abyss links
+  "Open this keyboard on Abyss": "このキーボードを Abyss で開く",
+  "Register on Abyss": "Abyss で登録する",
+  "This keyboard is not registered on Abyss yet. Register it on Abyss first so exports land in the catalog.":
+    "このキーボードはまだ Abyss に登録されていません。エクスポートをカタログに反映させるには、先に Abyss で登録してください。",
+
   // Import/Export — import section
   "Read the keyboard first to enable importing.":
     "インポートするには、先にキーボードを読み取ってください。",

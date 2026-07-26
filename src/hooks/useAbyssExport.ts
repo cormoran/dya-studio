@@ -48,6 +48,8 @@ export interface UseAbyssExportReturn {
   /** Existing keymaps for this keyboard, for the "update" dropdown. */
   keymaps: AbyssKeymapSummary[];
   isLoadingKeymaps: boolean;
+  /** Why the keymap list is empty, when it failed rather than being empty. */
+  listError: string | null;
   selectedKeymapId: string | null;
   setSelectedKeymapId: (id: string | null) => void;
   /** Name for a new keymap. Ignored when updating. */
@@ -82,6 +84,7 @@ export function useAbyssExport(
   const [mode, setMode] = useState<AbyssExportMode>("new");
   const [keymaps, setKeymaps] = useState<AbyssKeymapSummary[]>([]);
   const [isLoadingKeymaps, setIsLoadingKeymaps] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [selectedKeymapId, setSelectedKeymapId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [visibility, setVisibility] =
@@ -108,16 +111,22 @@ export function useAbyssExport(
     if (!client || !hasDevice) return;
     let cancelled = false;
     setIsLoadingKeymaps(true);
+    setListError(null);
     void (async () => {
       try {
-        const items = await listCandidateKeymaps(client, {
+        const result = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
           layoutVariationId: resolved?.layout?.variation.id,
         });
-        if (!cancelled) setKeymaps(items);
+        if (!cancelled) setKeymaps(result.items);
       } catch (caught) {
         if (isAbyssUnauthorized(caught)) client.clearTokenSet();
-        if (!cancelled) setKeymaps([]);
+        if (!cancelled) {
+          setKeymaps([]);
+          // Without this a failed request is indistinguishable from an empty
+          // account, which is exactly how the earlier slug bug hid itself.
+          setListError(abyssErrorMessageKey(caught));
+        }
       } finally {
         if (!cancelled) setIsLoadingKeymaps(false);
       }
@@ -250,6 +259,7 @@ export function useAbyssExport(
     setMode,
     keymaps,
     isLoadingKeymaps,
+    listError,
     selectedKeymapId,
     setSelectedKeymapId,
     name,

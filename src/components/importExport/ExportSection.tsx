@@ -4,15 +4,18 @@
  * Nothing here writes to the keyboard, and Abyss keeps version history, so this
  * side of the tab is safe to retry.
  */
+import { useState } from "react";
 import {
   IconCloudUpload,
   IconExternalLink,
+  IconFileDiff,
   IconLoader2,
 } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
 import { JsonPreview } from "./JsonPreview";
+import { JsonDiffModal } from "./JsonDiffModal";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssExportReturn } from "../../hooks/useAbyssExport";
 import { abyssBaseUrl, abyssHost } from "../../lib/abyss/abyssConfig";
@@ -25,12 +28,14 @@ export function ExportSection({
   exporter: UseAbyssExportReturn;
 }) {
   const { t } = useLanguage();
+  const [showDiff, setShowDiff] = useState(false);
   const { loaded } = device;
   const {
     mode,
     setMode,
     keymaps,
     isLoadingKeymaps,
+    listError,
     selectedKeymapId,
     setSelectedKeymapId,
     name,
@@ -46,6 +51,12 @@ export function ExportSection({
     exportNow,
     preview,
   } = exporter;
+
+  const selectedExisting = keymaps.find(
+    (keymap) => keymap.id === selectedKeymapId,
+  );
+  const selectedExistingData =
+    selectedExisting?.data ?? selectedExisting?.latestVersion?.data ?? null;
 
   if (!loaded) {
     return (
@@ -144,6 +155,8 @@ export function ExportSection({
         </label>
       )}
 
+      {listError && <SectionError message={listError} />}
+
       <DataSectionSelector
         selection={selection}
         onChange={setSelection}
@@ -151,6 +164,16 @@ export function ExportSection({
         // its key bindings.
         forced={mode === "new" ? ["keymap"] : []}
       />
+
+      {mode === "update" && selectedKeymapId && Boolean(preview?.keymap) && (
+        <button
+          className="btn-ghost flex items-center gap-2 text-sm mb-4"
+          onClick={() => setShowDiff(true)}
+        >
+          <IconFileDiff size={16} />
+          {t("Review changes")}
+        </button>
+      )}
 
       {error && <SectionError message={error} />}
 
@@ -200,6 +223,17 @@ export function ExportSection({
         )}
         {mode === "new" ? t("Export as new keymap") : t("Update keymap")}
       </button>
+
+      <JsonDiffModal
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title={t("Changes to upload")}
+        description={t(
+          "Left: the keymap currently on Abyss. Right: what this export would save.",
+        )}
+        before={selectedExistingData}
+        after={preview?.keymap}
+      />
     </div>
   );
 }

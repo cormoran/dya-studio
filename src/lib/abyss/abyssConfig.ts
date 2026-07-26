@@ -43,3 +43,13 @@ export function abyssHost(): string {
     return DEFAULT_ABYSS_BASE_URL.replace("https://", "");
   }
 }
+
+/** Public page for a keyboard in the Abyss catalog. */
+export function abyssKeyboardUrl(slug: string): string {
+  return `${abyssBaseUrl()}/keyboard/${encodeURIComponent(slug)}`;
+}
+
+/** Where a user registers a keyboard/keymap that Abyss does not know yet. */
+export function abyssRegisterUrl(): string {
+  return `${abyssBaseUrl()}/keymaps/register`;
+}

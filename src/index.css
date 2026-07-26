@@ -519,3 +519,48 @@
     opacity: 0.6;
   }
 }
+
+/* JSON diff viewer (react-diff-view)
+   The library ships a light-only stylesheet, so the palette is re-pointed at
+   the app's theme tokens. Without this the diff is unreadable in dark mode. */
+.abyss-diff .diff {
+  background: transparent;
+  color: var(--color-text);
+  font-size: 11px;
+}
+
+.abyss-diff .diff-gutter,
+.abyss-diff .diff-code {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.abyss-diff .diff-gutter {
+  color: var(--color-text-muted);
+}
+
+.abyss-diff .diff-code-insert,
+.abyss-diff .diff-gutter-insert {
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.abyss-diff .diff-code-delete,
+.abyss-diff .diff-gutter-delete {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+/* Character-level highlight inside a changed line. */
+.abyss-diff .diff-code-insert ins {
+  background: rgba(34, 197, 94, 0.3);
+  text-decoration: none;
+}
+
+.abyss-diff .diff-code-delete del {
+  background: rgba(239, 68, 68, 0.3);
+  text-decoration: none;
+}
+
+.abyss-diff .diff-hunk-header {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}

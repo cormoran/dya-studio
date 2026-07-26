@@ -16,23 +16,13 @@ export interface KeymapListFilter {
   layoutVariationId?: string;
 }
 
-/**
- * Fetches candidate keymaps.
- *
- * Deliberately does *not* filter by keyboard slug. The slug on the device
- * snapshot is derived by the adapter from the ZMK device name
- * (`normalizeKeyboardSlug(deviceName)`), which is a different thing from the
- * Abyss catalog slug — a keyboard reporting itself as "DYA Keyboard" yields
- * "dya-keyboard" while the catalog knows it as "dya2". Passing that through
- * filtered every result out, so both dropdowns were permanently empty.
- *
- * The layout ids from `resolveLayout` *are* catalog identities, so they are
- * used when available. When the layout was not recognised there is nothing
- * trustworthy to filter on, and showing the user's full list beats showing an
- * empty one — the pre-flight checks catch a genuinely incompatible choice
- * before anything is written.
- */
-export async function listCandidateKeymaps(
+export interface KeymapListResult {
+  items: AbyssKeymapSummary[];
+  /** True when the layout filter matched nothing and the list was widened. */
+  widened: boolean;
+}
+
+async function fetchPage(
   client: AbyssClient,
   filter: KeymapListFilter,
 ): Promise<AbyssKeymapSummary[]> {
@@ -46,4 +36,34 @@ export async function listCandidateKeymaps(
     limit: 50,
   });
   return page.items;
+}
+
+/**
+ * Fetches candidate keymaps, widening the search rather than showing nothing.
+ *
+ * Deliberately never filters by keyboard slug. The slug on the device snapshot
+ * is derived by the adapter from the ZMK device name
+ * (`normalizeKeyboardSlug(deviceName)`), which is a different thing from the
+ * Abyss catalog slug — a board reporting itself as "DYA Keyboard" yields
+ * "dya-keyboard" while the catalog knows it as "dya2". Passing that through
+ * filtered every result out.
+ *
+ * The layout ids from `resolveLayout` *are* catalog identities, so they narrow
+ * the list when available. But `resolveLayout` matches on the geometry the
+ * firmware reports, and a keymap saved against a slightly different variation
+ * of the same layout then falls outside the filter — which looked exactly like
+ * having no keymaps at all. So when the filtered query comes back empty, the
+ * search is retried unfiltered and the caller is told it was widened. The
+ * pre-flight checks are what actually stop an incompatible write.
+ */
+export async function listCandidateKeymaps(
+  client: AbyssClient,
+  filter: KeymapListFilter,
+): Promise<KeymapListResult> {
+  const hasFilter = Boolean(filter.layoutId || filter.layoutVariationId);
+  const filtered = await fetchPage(client, filter);
+  if (filtered.length > 0 || !hasFilter) {
+    return { items: filtered, widened: false };
+  }
+  return { items: await fetchPage(client, {}), widened: true };
 }

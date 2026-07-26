@@ -9,12 +9,14 @@ import {
   IconAlertTriangle,
   IconCheck,
   IconDownload,
+  IconFileDiff,
   IconLoader2,
 } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
 import { KeymapDiffView } from "./KeymapDiffView";
+import { JsonDiffModal } from "./JsonDiffModal";
 import { countDiff } from "../../lib/abyss/abyssDiff";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssImportReturn } from "../../hooks/useAbyssImport";
@@ -28,15 +30,18 @@ export function ImportSection({
 }) {
   const { t } = useLanguage();
   const [confirming, setConfirming] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
   const {
     keymaps,
     isLoadingKeymaps,
+    listError,
     selectedKeymapId,
     selectKeymap,
     isLoadingSelection,
     selection,
     setSelection,
     diff,
+    targetKeymap,
     isInSync,
     preflight,
     canWrite,
@@ -108,6 +113,7 @@ export function ImportSection({
         </p>
       )}
 
+      {listError && <SectionError message={listError} />}
       {error && <SectionError message={error} />}
 
       {preflight.map((check) => (
@@ -154,6 +160,13 @@ export function ImportSection({
 
       {!isInSync && counts.total > 0 && (
         <div className="mb-4">
+          <button
+            className="btn-ghost flex items-center gap-2 text-sm mb-3"
+            onClick={() => setShowDiff(true)}
+          >
+            <IconFileDiff size={16} />
+            {t("Review changes as JSON")}
+          </button>
           <KeymapDiffView diff={diff} />
         </div>
       )}
@@ -198,6 +211,17 @@ export function ImportSection({
           {t("Write to keyboard")}
         </button>
       )}
+
+      <JsonDiffModal
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title={t("Changes to write")}
+        description={t(
+          "Left: what is on the keyboard now. Right: the keymap from Abyss.",
+        )}
+        before={device.loaded?.state.currentKeymap}
+        after={targetKeymap}
+      />
     </div>
   );
 }

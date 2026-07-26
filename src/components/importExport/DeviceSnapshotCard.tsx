@@ -6,10 +6,34 @@
  * rather than automatic because it goes through the official ZMK protocol —
  * one `getBehaviorDetails` round trip per behavior — which is slow over BLE.
  */
-import { IconDeviceUsb, IconLoader2, IconRefresh } from "@tabler/icons-react";
+import {
+  IconDeviceUsb,
+  IconExternalLink,
+  IconLoader2,
+  IconRefresh,
+} from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
+import {
+  abyssKeyboardUrl,
+  abyssRegisterUrl,
+} from "../../lib/abyss/abyssConfig";
+
+/** Every Abyss link leaves the app, so they all open in a new tab. */
+function AbyssLink({ href, children }: { href: string; children: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 underline"
+    >
+      {children}
+      <IconExternalLink size={14} />
+    </a>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
@@ -54,16 +78,31 @@ function LayoutVerdict({ device }: { device: UseAbyssDeviceReturn }) {
             "This layout is not registered on Abyss yet. Exporting will add it.",
           )
         : t(
-            "This keyboard is not registered on Abyss yet. Exporting will create it under your account.",
-          )}
+            "This keyboard is not registered on Abyss yet. Register it on Abyss first so exports land in the catalog.",
+          )}{" "}
+      {!resolved.keyboardExists && (
+        <AbyssLink href={abyssRegisterUrl()}>
+          {t("Register on Abyss")}
+        </AbyssLink>
+      )}
     </p>
   );
 }
 
 export function DeviceSnapshotCard({
   device,
+  keyboardSlug,
 }: {
   device: UseAbyssDeviceReturn;
+  /**
+   * Catalog slug for the connected keyboard, when known.
+   *
+   * `resolveLayout` only reports whether the keyboard exists, not which one it
+   * is, so this comes from the keymaps listed for it — the slug on the device
+   * snapshot is derived from the ZMK device name and does not identify the
+   * catalog entry.
+   */
+  keyboardSlug?: string;
 }) {
   const { t } = useLanguage();
   const { loaded, phase, isReading, error, read } = device;
@@ -134,6 +173,13 @@ export function DeviceSnapshotCard({
             />
           </div>
           <LayoutVerdict device={device} />
+          {keyboardSlug && (
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+              <AbyssLink href={abyssKeyboardUrl(keyboardSlug)}>
+                {t("Open this keyboard on Abyss")}
+              </AbyssLink>
+            </p>
+          )}
         </>
       )}
     </div>
