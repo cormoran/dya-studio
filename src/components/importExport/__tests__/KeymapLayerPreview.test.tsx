@@ -2,6 +2,7 @@
  * Tests for the layer preview's fit-to-width scaling.
  */
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { KeymapLayerPreview } from "../KeymapLayerPreview";
 import {
   normalizePositions,
@@ -99,6 +100,47 @@ describe("KeymapLayerPreview", () => {
     expect(screen.getByText("▽")).toBeInTheDocument();
     expect(screen.getByText("MO(2)")).toBeInTheDocument();
     expect(screen.getByText("✕")).toBeInTheDocument();
+  });
+
+  it("opens the detail on tap when the pointer cannot hover", async () => {
+    // A tap produces neither hover nor focus, so Radix's Tooltip never opens on
+    // a touch screen; the detail is the whole point of the highlight.
+    const matchMedia = window.matchMedia as unknown as jest.Mock;
+    matchMedia.mockImplementation((query: string) => ({
+      matches: query === "(pointer: coarse)",
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    }));
+
+    render(
+      <KeymapLayerPreview
+        positions={positions}
+        bindings={[{ type: "trans" }, { type: "trans" }, { type: "trans" }]}
+        changes={
+          new Map([
+            [1, { from: { type: "trans" }, to: { type: "mo", layer: 2 } }],
+          ])
+        }
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Key 1" }));
+
+    expect(await screen.findByText("MO(2)")).toBeInTheDocument();
+  });
+
+  it("makes changed keys focusable buttons", () => {
+    render(
+      <KeymapLayerPreview
+        positions={positions}
+        bindings={[{ type: "trans" }, { type: "trans" }, { type: "trans" }]}
+        changes={new Map([[2, { from: undefined, to: { type: "none" } }]])}
+      />,
+    );
+
+    // Unchanged keys stay plain: a board of 87 buttons is unusable by keyboard.
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
   it("marks only the changed keys", () => {

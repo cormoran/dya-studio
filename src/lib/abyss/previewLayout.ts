@@ -79,3 +79,20 @@ export function normalizePositions(
     ry: position.ry === undefined ? undefined : position.ry * scale,
   }));
 }
+
+/**
+ * Whether the primary pointer cannot hover — i.e. a touch screen.
+ *
+ * Radix's Tooltip opens on hover and focus, neither of which a tap produces, so
+ * on touch the key detail has to come from a click-driven Popover instead.
+ * Read once at call time rather than tracked: a device does not change pointer
+ * type mid-session in any way worth re-rendering for.
+ */
+export function isCoarsePointer(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+}

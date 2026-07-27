@@ -111,7 +111,10 @@ export function JsonDiffModal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] h-[90vh] max-w-6xl z-50 flex flex-col glass-card p-0 overflow-hidden">
+        {/* Full-bleed on phones — a 95vw/90vh sheet wastes edges that matter
+            most where there are fewest of them, and a diff is the densest thing
+            in this app. From tablet up it becomes a centred dialog. */}
+        <Dialog.Content className="fixed inset-0 w-full h-full max-w-none rounded-none border-0 z-50 flex flex-col glass-card p-0 overflow-hidden tablet:inset-auto tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl tablet:border">
           <div className="flex items-start gap-3 p-4 border-b border-[var(--color-border)]">
             <div className="min-w-0 flex-1">
               <Dialog.Title className="text-sm font-medium text-[var(--color-text)]">

@@ -12,10 +12,12 @@
  * here.
  */
 import { useEffect, useRef, useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useLanguage } from "../../hooks/useLanguage";
 import { bindingLabel } from "../../lib/abyss/abyssDiff";
 import {
+  isCoarsePointer,
   normalizePositions,
   previewScale,
 } from "../../lib/abyss/previewLayout";
@@ -47,64 +49,97 @@ function KeyCap({
   index,
   binding,
   change,
+  touch,
 }: {
   position: PreviewPosition;
   index: number;
   binding: unknown;
   change?: PreviewChange;
+  /** True on touch screens, where the detail opens on tap rather than hover. */
+  touch: boolean;
 }) {
   const { t } = useLanguage();
   const width = (position.w ?? 1) * UNIT - GAP;
   const height = (position.h ?? 1) * UNIT - GAP;
   const rotation = (position.r ?? 0) / 100;
 
-  const cap = (
-    <div
-      className={`absolute flex items-center justify-center overflow-hidden rounded text-[9px] leading-none ${
-        change
-          ? "bg-[var(--color-neon)]/25 border border-[var(--color-neon)] text-[var(--color-text)]"
-          : "bg-[var(--color-border)] border border-[var(--color-border-hover)] text-[var(--color-text-muted)]"
-      }`}
-      style={{
-        left: position.x * UNIT,
-        top: position.y * UNIT,
-        width,
-        height,
-        transform: rotation ? `rotate(${rotation}deg)` : undefined,
-        transformOrigin:
-          position.rx !== undefined && position.ry !== undefined
-            ? `${(position.rx - position.x) * UNIT}px ${(position.ry - position.y) * UNIT}px`
-            : undefined,
-      }}
-    >
-      <span className="px-0.5 truncate">{bindingLabel(binding)}</span>
-    </div>
+  const shared = {
+    className: `absolute flex items-center justify-center overflow-hidden rounded text-[9px] leading-none ${
+      change
+        ? "bg-[var(--color-neon)]/25 border border-[var(--color-neon)] text-[var(--color-text)] cursor-pointer"
+        : "bg-[var(--color-border)] border border-[var(--color-border-hover)] text-[var(--color-text-muted)]"
+    }`,
+    style: {
+      left: position.x * UNIT,
+      top: position.y * UNIT,
+      width,
+      height,
+      transform: rotation ? `rotate(${rotation}deg)` : undefined,
+      transformOrigin:
+        position.rx !== undefined && position.ry !== undefined
+          ? `${(position.rx - position.x) * UNIT}px ${(position.ry - position.y) * UNIT}px`
+          : undefined,
+    },
+    children: <span className="px-0.5 truncate">{bindingLabel(binding)}</span>,
+  };
+
+  // Changed keys are buttons: a plain div is neither tappable as a Popover
+  // trigger nor reachable by keyboard, and the detail is the point of the view.
+  const cap = change ? (
+    <button
+      type="button"
+      aria-label={t("Key {{index}}", { index })}
+      {...shared}
+    />
+  ) : (
+    <div {...shared} />
   );
 
-  // Only changed keys get a tooltip; a tooltip on every key would make the
+  // Only changed keys are interactive; a tooltip on every key would make the
   // board unusable to move a pointer across.
   if (!change) return cap;
+
+  const detail = (
+    <>
+      <p className="text-[var(--color-text-muted)] mb-1">
+        {t("Key {{index}}", { index })}
+      </p>
+      <p className="text-[var(--color-text)]">
+        <span className="text-[var(--color-text-muted)] line-through">
+          {bindingLabel(change.from)}
+        </span>
+        {" → "}
+        <span className="text-[var(--color-neon)]">
+          {bindingLabel(change.to)}
+        </span>
+      </p>
+    </>
+  );
+  const panelClass =
+    "px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs shadow-lg z-50 max-w-xs";
+
+  // A tap produces neither hover nor focus, so Tooltip never opens on a touch
+  // screen. Popover opens on click, which is the gesture that exists there.
+  if (touch) {
+    return (
+      <Popover.Root>
+        <Popover.Trigger asChild>{cap}</Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content className={panelClass} sideOffset={5}>
+            {detail}
+            <Popover.Arrow className="fill-[var(--color-surface-elevated)]" />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    );
+  }
 
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>{cap}</Tooltip.Trigger>
       <Tooltip.Portal>
-        <Tooltip.Content
-          className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs shadow-lg z-50 max-w-xs"
-          sideOffset={5}
-        >
-          <p className="text-[var(--color-text-muted)] mb-1">
-            {t("Key {{index}}", { index })}
-          </p>
-          <p className="text-[var(--color-text)]">
-            <span className="text-[var(--color-text-muted)] line-through">
-              {bindingLabel(change.from)}
-            </span>
-            {" → "}
-            <span className="text-[var(--color-neon)]">
-              {bindingLabel(change.to)}
-            </span>
-          </p>
+        <Tooltip.Content className={panelClass} sideOffset={5}>
+          {detail}
           <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
         </Tooltip.Content>
       </Tooltip.Portal>
@@ -126,6 +161,7 @@ export function KeymapLayerPreview({
   const { t } = useLanguage();
   // Geometry may arrive in key units or in ZMK's hundredths; normalize first.
   const keys = normalizePositions(positions);
+  const touch = isCoarsePointer();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [available, setAvailable] = useState(0);
 
@@ -183,6 +219,7 @@ export function KeymapLayerPreview({
                 position={position}
                 binding={bindings[index]}
                 change={changes.get(index)}
+                touch={touch}
               />
             ))}
           </div>

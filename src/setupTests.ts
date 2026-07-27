@@ -38,6 +38,19 @@ global.TransformStream =
 global.BroadcastChannel =
   BroadcastChannel as unknown as typeof global.BroadcastChannel;
 
+// jsdom implements no layout, so it has no ResizeObserver. Radix's floating
+// primitives (Popover, and anything else positioned against a trigger) construct
+// one unconditionally, and the keymap preview measures its own container with
+// one. A stub that never fires is enough: nothing under test depends on being
+// notified of a resize, only on the constructor existing.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.ResizeObserver =
+  ResizeObserverStub as unknown as typeof global.ResizeObserver;
+
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,

@@ -58,6 +58,19 @@ describe("JsonDiffModal", () => {
     expect(screen.queryByText("Changes to write")).not.toBeInTheDocument();
   });
 
+  it("fills the screen on phones and centres from tablet up", () => {
+    open();
+
+    // A 95vw/90vh sheet wastes edges that matter most where there are fewest of
+    // them, and a diff is the densest thing in this app.
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("inset-0");
+    expect(dialog.className).toContain("w-full");
+    expect(dialog.className).toContain("h-full");
+    expect(dialog.className).toContain("tablet:w-[95vw]");
+    expect(dialog.className).toContain("tablet:h-[90vh]");
+  });
+
   it("shows the title and which side is which", () => {
     open();
 
