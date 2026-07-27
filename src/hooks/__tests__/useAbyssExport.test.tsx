@@ -61,7 +61,7 @@ type FakeClient = {
 
 function setUpAbyssClient(overrides: Partial<FakeClient> = {}): FakeClient {
   const client: FakeClient = {
-    listMyKeymaps: jest.fn().mockResolvedValue({ items: [] }),
+    listMyKeymaps: jest.fn().mockResolvedValue({ items: [], pageCount: 1 }),
     getKeymap: jest.fn(),
     createKeymap: jest.fn().mockResolvedValue({ id: "k1", version: 1 }),
     updateKeymap: jest.fn().mockResolvedValue({ id: "k1", version: 2 }),
@@ -115,6 +115,7 @@ describe("useAbyssExport", () => {
   it("appends a version and preserves the existing keymap's name", async () => {
     const client = setUpAbyssClient({
       listMyKeymaps: jest.fn().mockResolvedValue({
+        pageCount: 1,
         items: [
           {
             id: "existing-1",

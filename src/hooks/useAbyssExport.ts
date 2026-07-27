@@ -116,7 +116,6 @@ export function useAbyssExport(
       try {
         const result = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
-          layoutVariationId: resolved?.layout?.variation.id,
         });
         if (!cancelled) setKeymaps(result.items);
       } catch (caught) {
@@ -134,7 +133,7 @@ export function useAbyssExport(
     return () => {
       cancelled = true;
     };
-  }, [hasDevice, resolved?.layout?.id, resolved?.layout?.variation.id]);
+  }, [hasDevice, resolved?.layout?.id]);
 
   /**
    * The document that `exportNow` would upload, built with the same functions

@@ -9,11 +9,24 @@ import type {
   AbyssKeymapSummary,
 } from "@keyboard-hub/abyss-client";
 
+/**
+ * `GET /me/keymaps` rejects `limit` above 20 outright — a 400
+ * `VALIDATION_ERROR`, not a clamp — so candidates have to be paged in. Matches
+ * what Abyss's own import modal does.
+ */
+const PAGE_SIZE = 20;
+const MAX_PAGES = 5;
+
 export interface KeymapListFilter {
-  /** Abyss layout id from `resolveLayout`, when the layout was recognised. */
+  /**
+   * Abyss layout id from `resolveLayout`, when the layout was recognised.
+   *
+   * Deliberately the only filter. Narrowing further by `layoutVariationId`
+   * excluded keymaps saved against a different variation of the *same* layout,
+   * which are still perfectly writable — the pre-flight checks are what decide
+   * whether a given keymap actually fits the connected keyboard.
+   */
   layoutId?: string;
-  /** Abyss layout variation id from `resolveLayout`. */
-  layoutVariationId?: string;
 }
 
 export interface KeymapListResult {
@@ -22,20 +35,26 @@ export interface KeymapListResult {
   widened: boolean;
 }
 
-async function fetchPage(
+/** Pages through the user's keymaps, up to {@link MAX_PAGES}. */
+async function fetchAll(
   client: AbyssClient,
   filter: KeymapListFilter,
 ): Promise<AbyssKeymapSummary[]> {
-  const page = await client.listMyKeymaps({
-    visibility: "all",
-    ...(filter.layoutId ? { layoutId: filter.layoutId } : {}),
-    ...(filter.layoutVariationId
-      ? { layoutVariationId: filter.layoutVariationId }
-      : {}),
-    page: 1,
-    limit: 50,
-  });
-  return page.items;
+  const collected: AbyssKeymapSummary[] = [];
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const result = await client.listMyKeymaps({
+      visibility: "all",
+      ...(filter.layoutId ? { layoutId: filter.layoutId } : {}),
+      page,
+      limit: PAGE_SIZE,
+    });
+    collected.push(...result.items);
+    // Stop on a short page as well as on `pageCount`: a full page is the only
+    // reliable signal that another one might exist, and it keeps the loop
+    // terminating even if the field is missing.
+    if (result.items.length < PAGE_SIZE || page >= result.pageCount) break;
+  }
+  return collected;
 }
 
 /**
@@ -45,25 +64,23 @@ async function fetchPage(
  * is derived by the adapter from the ZMK device name
  * (`normalizeKeyboardSlug(deviceName)`), which is a different thing from the
  * Abyss catalog slug — a board reporting itself as "DYA Keyboard" yields
- * "dya-keyboard" while the catalog knows it as "dya2". Passing that through
- * filtered every result out.
+ * "dya-keyboard" while the catalog knows it as "dya2".
  *
- * The layout ids from `resolveLayout` *are* catalog identities, so they narrow
- * the list when available. But `resolveLayout` matches on the geometry the
- * firmware reports, and a keymap saved against a slightly different variation
- * of the same layout then falls outside the filter — which looked exactly like
- * having no keymaps at all. So when the filtered query comes back empty, the
- * search is retried unfiltered and the caller is told it was widened. The
- * pre-flight checks are what actually stop an incompatible write.
+ * The layout id from `resolveLayout` *is* a catalog identity, so it narrows the
+ * list when available — but only the layout, never the variation: a keymap on
+ * another variation of the same layout is still a valid update target. When
+ * even that comes back empty the search is retried unfiltered and the caller is
+ * told it was widened; the pre-flight checks are what actually stop an
+ * incompatible write.
  */
 export async function listCandidateKeymaps(
   client: AbyssClient,
   filter: KeymapListFilter,
 ): Promise<KeymapListResult> {
-  const hasFilter = Boolean(filter.layoutId || filter.layoutVariationId);
-  const filtered = await fetchPage(client, filter);
+  const hasFilter = Boolean(filter.layoutId);
+  const filtered = await fetchAll(client, filter);
   if (filtered.length > 0 || !hasFilter) {
     return { items: filtered, widened: false };
   }
-  return { items: await fetchPage(client, {}), widened: true };
+  return { items: await fetchAll(client, {}), widened: true };
 }

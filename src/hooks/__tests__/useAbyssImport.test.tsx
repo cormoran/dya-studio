@@ -85,7 +85,7 @@ function setUpAbyssClient(
   items: unknown[] = [{ id: "k1", name: "Saved", data: abyssKeymap }],
 ) {
   const client = {
-    listMyKeymaps: jest.fn().mockResolvedValue({ items }),
+    listMyKeymaps: jest.fn().mockResolvedValue({ items, pageCount: 1 }),
     getKeymap: jest.fn().mockResolvedValue({ data: abyssKeymap }),
     clearTokenSet: jest.fn(),
   };
