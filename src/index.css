@@ -564,3 +564,40 @@
   background: var(--color-border);
   color: var(--color-text-muted);
 }
+
+/* JSON diff viewer on small screens.
+   The library's gutters are sized for a desktop code review: two line-number
+   columns cost 98px of a 373px phone, a quarter of the width, to show numbers
+   nobody reads on a phone. Narrow them and let the code have the space. */
+@media (max-width: 767px) {
+  .abyss-diff .diff-gutter {
+    min-width: 0;
+    width: 1.6rem;
+    padding: 0 0.25rem;
+    font-size: 9px;
+  }
+
+  /* The width actually comes from the table's <col>, which wins over the cell
+     in table layout — narrowing the <td> alone changed nothing. Two 49px
+     columns become two 24px ones, handing ~50px back to the code. */
+  .abyss-diff .diff-gutter-col {
+    width: 1.5rem;
+  }
+
+  .abyss-diff .diff-code {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+  }
+}
+
+/* Full-bleed diff sheet on phones.
+   `.glass-card` is plain CSS rather than a Tailwind utility, so it wins over
+   `rounded-none`/`border-0` on the same element — the sheet kept a 12px radius
+   and a 1px border while covering the whole screen, leaving the page showing
+   through at the corners. */
+@media (max-width: 767px) {
+  .diff-sheet {
+    border-radius: 0;
+    border-width: 0;
+  }
+}

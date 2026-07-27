@@ -64,7 +64,11 @@ describe("JsonDiffModal", () => {
     // A 95vw/90vh sheet wastes edges that matter most where there are fewest of
     // them, and a diff is the densest thing in this app.
     const dialog = screen.getByRole("dialog");
-    expect(dialog.className).toContain("inset-0");
+    // `w-screen` rather than `inset-x-0`: a fixed element's containing block is
+    // not always the layout viewport, and where they differ inset-x stretched
+    // the sheet past the screen and pushed the close button off it.
+    expect(dialog.className).toContain("w-screen");
+    expect(dialog.className).toContain("diff-sheet");
     // dvh rather than vh: mobile browser chrome shrinks the visual viewport,
     // and 100vh would extend behind it.
     expect(dialog.className).toContain("h-dvh");
