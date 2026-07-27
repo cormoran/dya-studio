@@ -64,12 +64,12 @@ async function openTrackball(page: Page): Promise<Locator> {
   return waitForInvertSwitch(page);
 }
 
-// Force a device re-read: TrackballPage unmounts on tab switch, so leaving and
-// returning re-fetches the processors from the firmware.
+// Force a device re-read. Tab panels keep their state across switches (they stay
+// mounted), so a tab round-trip no longer re-fetches; the Processors card's
+// reload button re-runs loadProcessors.
 async function reReadTrackball(page: Page): Promise<Locator> {
-  await page.getByRole("tab", { name: "Home" }).click();
+  await page.getByRole("button", { name: "Reload processors" }).click();
   await page.waitForTimeout(1_000);
-  await page.getByRole("tab", { name: "Trackball" }).click();
   return waitForInvertSwitch(page);
 }
 

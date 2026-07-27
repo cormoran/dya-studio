@@ -499,6 +499,9 @@ const ja: Record<string, string> = {
   "Changes are written to keyboard memory after a short delay. Save a section to persist them.":
     "変更は少し遅れてキーボードのメモリに書き込まれます。永続化するにはセクションを保存してください。",
   Reload: "再読み込み",
+  "Reload the keymap from the keyboard": "キーボードからキーマップを再読み込み",
+  "Reload settings from the keyboard": "キーボードから設定を再読み込み",
+  "Reload processors": "プロセッサーを再読み込み",
   "Advanced settings can change firmware behavior immediately. Incorrect values may make the keyboard hard to use; discard or reset a section if the device starts behaving unexpectedly.":
     "詳細設定はファームウェアの動作を即座に変更します。誤った値を設定するとキーボードが使いにくくなる可能性があります。デバイスが予期せず動作し始めた場合は、セクションを破棄またはリセットしてください。",
   "Custom settings subsystem is not available for this keyboard.":

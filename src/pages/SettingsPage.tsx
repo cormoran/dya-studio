@@ -14,6 +14,7 @@ import {
   IconAlertTriangle,
   IconTrash,
   IconLoader2,
+  IconRefresh,
 } from "@tabler/icons-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AdvancedSettingsSection } from "../components/AdvancedSettingsSection";
@@ -244,8 +245,14 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
 export function SettingsPage() {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
-  const { isAvailable, devices, isLoading, error, setActivitySettings } =
-    useSettings();
+  const {
+    isAvailable,
+    devices,
+    isLoading,
+    error,
+    setActivitySettings,
+    loadAllSettings,
+  } = useSettings();
   const {
     resetAllSettings,
     isResetting,
@@ -335,6 +342,22 @@ export function SettingsPage() {
               {t("Device configuration and power management")}
             </p>
           </div>
+          {/* The page keeps its state across tab switches, so re-reading the
+              device is an explicit action. */}
+          {isAvailable && (
+            <button
+              className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0 ml-auto"
+              onClick={() => void loadAllSettings()}
+              disabled={isLoading}
+              title={t("Reload settings from the keyboard")}
+            >
+              <IconRefresh
+                size={16}
+                className={isLoading ? "animate-spin" : undefined}
+              />
+              {t("Reload")}
+            </button>
+          )}
         </div>
 
         {!isAvailable && !isLoading && !error && (

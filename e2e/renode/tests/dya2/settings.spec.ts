@@ -9,7 +9,7 @@ import { connectDya2 } from "./dya2.helpers";
 // This spec proves the zmk__settings path end-to-end against the REAL dya2
 // firmware in Renode: the central's activity settings load over the emulated
 // USB CDC, the Idle Timeout is changed to a new preset, the debounced
-// write-through persists it (setActivitySettings RPC), a tab round-trip re-reads
+// write-through persists it (setActivitySettings RPC), the Reload button re-reads
 // it from the device (loadAllSettings via getAllActivitySettings + activity
 // notifications), and finally it is REVERTED to the exact original value so the
 // device NVS is left exactly as found. Net-zero.
@@ -59,12 +59,17 @@ async function setIdleMinutes(page: Page, minutes: number): Promise<void> {
   await expect(menu).toBeHidden();
 }
 
-// Force a device re-read: SettingsPage unmounts on tab switch (TabNavigation
-// renders only the active tab's content), so leaving and returning re-runs
-// useSettings' load-on-ready effect and re-fetches from the firmware.
+// Force a device re-read. Tab panels keep their state across switches (they stay
+// mounted), so a tab round-trip no longer re-fetches; the Settings header's
+// Reload button re-runs loadAllSettings. It is disabled for the duration of the
+// load, so waiting for disabled -> enabled proves the assertions below read
+// fresh device data.
 async function reReadSettings(page: Page): Promise<void> {
-  await page.getByRole("tab", { name: "Home" }).click();
-  await page.getByRole("tab", { name: "Settings" }).click();
+  const reload = page.getByRole("button", { name: "Reload", exact: true });
+  await expect(reload).toBeEnabled();
+  await reload.click();
+  await expect(reload).toBeDisabled();
+  await expect(reload).toBeEnabled({ timeout: 180_000 });
 }
 
 // Preset minutes -> the exact label the dropdown renders for them, used to
@@ -78,8 +83,8 @@ const PRESET_LABEL: Record<number, string> = {
 test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (zmk__settings)", async ({
   page,
 }) => {
-  // Two-machine wired-split emulation is slow: initial load + one write + a tab
-  // round-trip re-read + a revert write + a final re-read. Be generous.
+  // Two-machine wired-split emulation is slow: initial load + one write + a
+  // re-read + a revert write + a final re-read. Be generous.
   test.setTimeout(360_000);
   if (process.env.E2E_DEBUG) {
     page.on("console", (m) => console.log(`PAGE [${m.type()}] ${m.text()}`));
