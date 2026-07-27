@@ -21,6 +21,7 @@ import {
   IconInfoCircle,
   IconPencil,
   IconLock,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -41,6 +42,7 @@ import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
 import { useStudioUnlock } from "../hooks/useStudioUnlock";
 import { useLanguage } from "../hooks/useLanguage";
+import { useIsTabActive } from "../hooks/useIsTabActive";
 
 export function KeymapPage() {
   const { t } = useLanguage();
@@ -54,6 +56,7 @@ export function KeymapPage() {
   // compete with the keymap load. autoLoad:false suppresses the on-mount fetch.
   const runtimeMacro = useRuntimeMacro({ autoLoad: false });
   const inputStream = useInputStream();
+  const isTabActive = useIsTabActive();
   // Proactive lock state: the fast-keymap subsystem is unsecured, so the keymap
   // is viewable while Studio is locked. We use this to (a) show a lock badge in
   // place of Save/Reset and (b) prompt for unlock the moment the user tries to
@@ -177,6 +180,14 @@ export function KeymapPage() {
     } finally {
       setIsSaving(false);
     }
+  }, [keymap]);
+
+  // Re-read the keymap from the keyboard. The page keeps its state across tab
+  // switches now, so this is the way to pick up changes made outside the app
+  // (or to retry after a failed load). Unsaved edits are staged on the device
+  // itself, so a reload shows them again rather than dropping them.
+  const handleReload = useCallback(() => {
+    void keymap.loadKeymapData();
   }, [keymap]);
 
   // Handle discard
@@ -345,6 +356,17 @@ export function KeymapPage() {
     setSelectedLayerIndex(inputStream.activeLayerIndex);
   }, [inputStream.activeLayerIndex, keymap.keymap?.layers]);
 
+  // Stream mode highlights (and beeps on) every key press, which only makes
+  // sense while the Keymap tab is on screen. The page stays mounted when you
+  // switch tabs, so turn the stream off on the way out instead of letting it
+  // keep chirping in the background.
+  const { isEnabled: isStreamEnabled, toggleStream } = inputStream;
+  useEffect(() => {
+    if (!isTabActive && isStreamEnabled) {
+      void toggleStream();
+    }
+  }, [isTabActive, isStreamEnabled, toggleStream]);
+
   // Load the runtime-macro list as the FINAL step of the keymap tab load: only
   // after the keymap has fully loaded (preview + background behaviors/layers) so
   // the macro RPCs (list_macros / get_macro_global_settings) run last instead of
@@ -412,6 +434,20 @@ export function KeymapPage() {
                   </Switch.Root>
                 </div>
               )}
+              {/* Reading is allowed while locked, so Reload sits outside the
+                  lock branch below. */}
+              <button
+                className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
+                onClick={handleReload}
+                disabled={keymap.isLoading}
+                title={t("Reload the keymap from the keyboard")}
+              >
+                <IconRefresh
+                  size={16}
+                  className={keymap.isLoading ? "animate-spin" : undefined}
+                />
+                {t("Reload")}
+              </button>
               {/* When Studio is locked, editing is disabled — show a lock badge
                   (click to unlock) instead of the Save / Reset controls. */}
               {locked ? (

@@ -12,10 +12,17 @@ const RENODE_TESTER_KEYS = ["A", "B", "C", "D"];
 // an unambiguous proof that our edit took effect (and round-tripped).
 const NEW_KEYCODE = "F";
 
+// Tab panels stay mounted once visited, so scope every text match to the panel
+// that is currently showing — otherwise a `toHaveCount(0)` would also count
+// matches inside a hidden (but still rendered) tab.
+function activePanel(page: Page) {
+  return page.locator('[role="tabpanel"][data-state="active"]');
+}
+
 // A key in the on-screen physical-keymap grid renders its binding's short label
 // (for `&kp A` that's just "A") in a span. Match that label exactly.
 function keyLabel(page: Page, label: string) {
-  return page.getByText(label, { exact: true });
+  return activePanel(page).getByText(label, { exact: true });
 }
 
 test("dya-studio Keymap tab: renders the keymap + behaviors and round-trips a binding edit against official ZMK in Renode", async ({
@@ -93,13 +100,18 @@ test("dya-studio Keymap tab: renders the keymap + behaviors and round-trips a bi
   });
   await expect(saveButton).toBeDisabled();
 
-  // 7) ROUND-TRIP: leave the Keymap tab and come back. KeymapPage unmounts on
-  //    tab switch, so returning re-reads the keymap from the device — proving
-  //    the change was persisted to the firmware and read back (not just held in
-  //    the browser). The new keycode must still be there, and the four original
-  //    (minus the edited A) plus F must be consistent.
-  await page.getByRole("tab", { name: "Home" }).click();
-  await page.getByRole("tab", { name: "Keymap" }).click();
+  // 7) ROUND-TRIP: re-read the keymap from the device via the header's Reload
+  //    button (tab panels stay mounted, so leaving and returning no longer
+  //    re-fetches) — proving the change was persisted to the firmware and read
+  //    back (not just held in the browser). The Reload button is disabled while
+  //    the load runs, so disabled -> enabled marks the fresh data landing. The
+  //    new keycode must still be there, and the four original (minus the edited
+  //    A) plus F must be consistent.
+  const reload = page.getByRole("button", { name: "Reload", exact: true });
+  await expect(reload).toBeEnabled();
+  await reload.click();
+  await expect(reload).toBeDisabled();
+  await expect(reload).toBeEnabled({ timeout: 60_000 });
 
   await expect(keyLabel(page, NEW_KEYCODE).first()).toBeVisible({
     timeout: 60_000,
