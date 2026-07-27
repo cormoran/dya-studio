@@ -114,13 +114,13 @@ export function JsonDiffModal({
         {/* Full-bleed on phones — a 95vw/90vh sheet wastes edges that matter
             most where there are fewest of them, and a diff is the densest thing
             in this app. From tablet up it becomes a centred dialog. */}
-        <Dialog.Content className="fixed inset-0 w-full h-full max-w-none rounded-none border-0 z-50 flex flex-col glass-card p-0 overflow-hidden tablet:inset-auto tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl tablet:border">
-          <div className="flex items-start gap-3 p-4 border-b border-[var(--color-border)]">
+        <Dialog.Content className="fixed inset-0 w-screen h-dvh max-w-none max-h-dvh rounded-none border-0 z-50 flex flex-col glass-card p-0 overflow-hidden tablet:inset-auto tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-h-[90vh] tablet:max-w-6xl tablet:rounded-xl tablet:border">
+          <div className="shrink-0 flex items-start gap-3 p-4 border-b border-[var(--color-border)]">
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="text-sm font-medium text-[var(--color-text)]">
+              <Dialog.Title className="text-sm font-medium text-[var(--color-text)] break-words">
                 {title}
               </Dialog.Title>
-              <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
+              <Dialog.Description className="text-xs text-[var(--color-text-muted)] break-words">
                 {description}
               </Dialog.Description>
             </div>
@@ -132,7 +132,7 @@ export function JsonDiffModal({
             </Dialog.Close>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--color-border)]">
+          <div className="shrink-0 flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--color-border)]">
             <SegmentedControl
               value={viewMode}
               onChange={setViewMode}
@@ -153,7 +153,11 @@ export function JsonDiffModal({
             )}
           </div>
 
-          <div className="flex-1 overflow-auto p-4 text-xs abyss-diff">
+          {/* `min-h-0`/`min-w-0` are load-bearing: a flex child defaults to
+              `min-height: auto`, so without them a long diff refuses to shrink
+              and pushes the dialog past the bottom of the screen instead of
+              scrolling inside it. Same story horizontally for a wide table. */}
+          <div className="flex-1 min-h-0 min-w-0 overflow-auto p-4 text-xs abyss-diff">
             {diff && !diff.hasChanges ? (
               <p className="text-sm text-[var(--color-text-muted)]">
                 {t("No differences.")}

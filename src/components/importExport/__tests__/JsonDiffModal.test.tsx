@@ -65,10 +65,24 @@ describe("JsonDiffModal", () => {
     // them, and a diff is the densest thing in this app.
     const dialog = screen.getByRole("dialog");
     expect(dialog.className).toContain("inset-0");
-    expect(dialog.className).toContain("w-full");
-    expect(dialog.className).toContain("h-full");
+    // dvh rather than vh: mobile browser chrome shrinks the visual viewport,
+    // and 100vh would extend behind it.
+    expect(dialog.className).toContain("h-dvh");
+    expect(dialog.className).toContain("max-h-dvh");
     expect(dialog.className).toContain("tablet:w-[95vw]");
     expect(dialog.className).toContain("tablet:h-[90vh]");
+  });
+
+  it("lets the diff scroll inside the dialog instead of growing it", () => {
+    // A flex child defaults to `min-height: auto`, so without min-h-0 a long
+    // diff refuses to shrink and pushes the dialog past the bottom of the
+    // screen. This is the whole reason the modal overflowed.
+    const { container } = open();
+
+    const scroller = container.ownerDocument.querySelector(".abyss-diff");
+    expect(scroller?.className).toContain("min-h-0");
+    expect(scroller?.className).toContain("min-w-0");
+    expect(scroller?.className).toContain("overflow-auto");
   });
 
   it("shows the title and which side is which", () => {
