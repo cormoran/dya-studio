@@ -19,25 +19,21 @@ import type { RpcConnection } from "@zmkfirmware/zmk-studio-ts-client";
 import type { ConnectionMethod } from "../../components/DeviceConnection";
 
 /**
- * Accessing this throws rather than returning `undefined`.
+ * Placeholder for the transport the adapter is not allowed to touch.
  *
  * `transportConnection` is required by `ZmkConnection`, but DYA Studio owns the
  * transport and must not hand it over — the adapter closing it would kill the
- * user's session. Nothing in the adapter's load or writeback paths reads it
- * today; if that changes, this turns a silent `undefined` dereference into an
- * obvious failure naming the cause.
+ * user's session. Nothing in the adapter's load or writeback paths reads it.
+ *
+ * This was briefly a Proxy that threw on any access, to turn a future misuse
+ * into a loud error. That broke the app: the loaded connection is stored in
+ * React state, and something in the render path introspects state objects, so
+ * the throw fired during rendering and silently froze the whole subtree —
+ * every button on the page stopped responding after the first device read.
+ * A plain frozen object is worth more than a tripwire that maims the host.
  */
-const FORBIDDEN_TRANSPORT = new Proxy(
+const UNAVAILABLE_TRANSPORT = Object.freeze(
   {},
-  {
-    get(_target, property) {
-      throw new Error(
-        `The Abyss ZMK adapter read connection.transportConnection.${String(
-          property,
-        )}, but DYA Studio owns the transport and does not expose it.`,
-      );
-    },
-  },
 ) as ZmkConnection["transportConnection"];
 
 /** Maps a DYA Studio connection method onto the adapter's transport label. */
@@ -78,7 +74,7 @@ export function createAbyssZmkConnection({
     rpcConnection,
     // The adapter never aborts this; DYA Studio owns the connection lifecycle.
     rpcAbortController: new AbortController(),
-    transportConnection: FORBIDDEN_TRANSPORT,
+    transportConnection: UNAVAILABLE_TRANSPORT,
     notificationSource,
     // Disconnecting is the app's decision, not the adapter's.
     disconnect: () => {},

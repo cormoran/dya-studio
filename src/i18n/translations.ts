@@ -1181,6 +1181,23 @@ const ja: Record<string, string> = {
   "Layout JSON to upload": "アップロードする layout JSON",
   "Not available.": "利用できません。",
 
+  // Import/Export — visual diff preview
+  // "Layers" and "Keys" are already translated above.
+  "Key {{index}}": "キー {{index}}",
+  "No layout geometry available for a preview.":
+    "プレビュー用のレイアウト情報がありません。",
+  "This layer does not exist in the selected keymap.":
+    "選択したキーマップにこのレイヤーはありません。",
+  "No keys": "キーなし",
+  "Unnamed macro": "名前のないマクロ",
+  "No steps": "ステップなし",
+  "wait {{ms}}ms": "{{ms}}ms 待機",
+  "tap {{ms}}ms": "{{ms}}ms タップ",
+  Added: "追加",
+  Removed: "削除",
+  Changed: "変更",
+  Raw: "生データ",
+
   // Import/Export — JSON diff modal
   "Review changes": "変更内容を確認",
   "Review changes as JSON": "JSON で変更内容を確認",

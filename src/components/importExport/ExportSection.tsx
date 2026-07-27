@@ -16,8 +16,13 @@ import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
 import { JsonPreview } from "./JsonPreview";
 import { JsonDiffModal } from "./JsonDiffModal";
+import { KeymapDiffPreview } from "./KeymapDiffPreview";
+import { ComboMacroDiff } from "./ComboMacroDiff";
+import { countDiff } from "../../lib/abyss/abyssDiff";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssExportReturn } from "../../hooks/useAbyssExport";
+import type { PreviewPosition } from "./KeymapLayerPreview";
+import type { PreviewLayer } from "./KeymapDiffPreview";
 import { abyssBaseUrl, abyssHost } from "../../lib/abyss/abyssConfig";
 
 export function ExportSection({
@@ -50,6 +55,7 @@ export function ExportSection({
     canExport,
     exportNow,
     preview,
+    diff,
   } = exporter;
 
   const selectedExisting = keymaps.find(
@@ -60,22 +66,14 @@ export function ExportSection({
 
   if (!loaded) {
     return (
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-medium text-[var(--color-text)] mb-2">
-          {t("Export")}
-        </h3>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {t("Read the keyboard first to enable exporting.")}
-        </p>
-      </div>
+      <p className="text-sm text-[var(--color-text-muted)]">
+        {t("Read the keyboard first to enable exporting.")}
+      </p>
     );
   }
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-sm font-medium text-[var(--color-text)] mb-1">
-        {t("Export")}
-      </h3>
+    <div>
       <p className="text-xs text-[var(--color-text-muted)] mb-4">
         {t("Exporting uploads this keymap to {{host}} under your account.", {
           host: abyssHost(),
@@ -164,6 +162,35 @@ export function ExportSection({
         // its key bindings.
         forced={mode === "new" ? ["keymap"] : []}
       />
+
+      {mode === "update" && selectedKeymapId && countDiff(diff).total > 0 && (
+        <div className="mb-4 space-y-3">
+          <KeymapDiffPreview
+            positions={
+              (
+                loaded.state.detectedLayout as
+                  | { positions?: PreviewPosition[] }
+                  | undefined
+              )?.positions ?? []
+            }
+            layers={
+              ((preview?.keymap as { layers?: PreviewLayer[] } | undefined)
+                ?.layers ?? []) as PreviewLayer[]
+            }
+            diff={diff}
+          />
+          <ComboMacroDiff
+            title={t("Combos")}
+            kind="combo"
+            changes={diff.comboChanges}
+          />
+          <ComboMacroDiff
+            title={t("Macros")}
+            kind="macro"
+            changes={diff.macroChanges}
+          />
+        </div>
+      )}
 
       {mode === "update" && selectedKeymapId && Boolean(preview?.keymap) && (
         <button

@@ -22,7 +22,9 @@ import type {
   AbyssLayoutResolveResult,
 } from "@keyboard-hub/abyss-client";
 import type { ZmkLoadedConnection } from "@keyboard-hub/adapter-zmk";
+import { compareKeyboardHubKeymaps } from "@keyboard-hub/adapter-common";
 import { getAbyssClient } from "../lib/abyss/abyssClient";
+import { EMPTY_DIFF, type KeymapDiff } from "../lib/abyss/abyssDiff";
 import { listCandidateKeymaps } from "../lib/abyss/abyssKeymapList";
 import {
   ALL_SECTIONS,
@@ -70,6 +72,19 @@ export interface UseAbyssExportReturn {
   exportNow: () => Promise<void>;
   /** The exact JSON that would be uploaded, for the preview panes. */
   preview: { keymap: unknown; layout: unknown } | null;
+  /** What the upload would change on Abyss, for the visual preview. */
+  diff: KeymapDiff;
+  /** The selected keymap's current document on Abyss. */
+  selectedExistingData: unknown;
+}
+
+/** Most recently updated keymap, or the first when timestamps are absent. */
+function latestKeymapId(items: AbyssKeymapSummary[]): string | null {
+  if (items.length === 0) return null;
+  const sorted = [...items].sort((left, right) =>
+    (right.updatedAt ?? "").localeCompare(left.updatedAt ?? ""),
+  );
+  return sorted[0].id;
 }
 
 /** `2026-07-26` — a stable default name suffix. */
@@ -81,7 +96,9 @@ export function useAbyssExport(
   loaded: ZmkLoadedConnection | null,
   resolved: AbyssLayoutResolveResult | null,
 ): UseAbyssExportReturn {
-  const [mode, setMode] = useState<AbyssExportMode>("new");
+  // Updating is the common case once a keymap exists on Abyss; creating a new
+  // one every save would litter the account with near-duplicates.
+  const [mode, setMode] = useState<AbyssExportMode>("update");
   const [keymaps, setKeymaps] = useState<AbyssKeymapSummary[]>([]);
   const [isLoadingKeymaps, setIsLoadingKeymaps] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
@@ -117,7 +134,15 @@ export function useAbyssExport(
         const result = await listCandidateKeymaps(client, {
           layoutId: resolved?.layout?.id,
         });
-        if (!cancelled) setKeymaps(result.items);
+        if (!cancelled) {
+          setKeymaps(result.items);
+          // Preselect the most recently updated one: with "update" as the
+          // default mode, an empty picker would make the primary action
+          // unavailable until the user works out what to choose.
+          setSelectedKeymapId(
+            (current) => current ?? latestKeymapId(result.items),
+          );
+        }
       } catch (caught) {
         if (isAbyssUnauthorized(caught)) client.clearTokenSet();
         if (!cancelled) {
@@ -135,6 +160,14 @@ export function useAbyssExport(
     };
   }, [hasDevice, resolved?.layout?.id]);
 
+  /** The selected keymap's document on Abyss, i.e. the merge base. */
+  const selectedExistingData = useMemo(() => {
+    const existing = keymaps.find((keymap) => keymap.id === selectedKeymapId);
+    return (existing?.data ??
+      existing?.latestVersion?.data ??
+      null) as KeymapDocument | null;
+  }, [keymaps, selectedKeymapId]);
+
   /**
    * The document that `exportNow` would upload, built with the same functions
    * so the preview cannot drift from what is actually sent.
@@ -148,18 +181,32 @@ export function useAbyssExport(
     const device = loaded.state.currentKeymap as unknown as KeymapDocument;
     const layout = loaded.state.detectedLayout ?? null;
     if (mode === "update") {
-      const existing = keymaps.find((keymap) => keymap.id === selectedKeymapId);
-      const base = (existing?.data ?? existing?.latestVersion?.data) as
-        | KeymapDocument
-        | undefined;
-      if (!base) return { keymap: null, layout };
-      return { keymap: buildExportData(device, base, selection), layout };
+      if (!selectedExistingData) return { keymap: null, layout };
+      return {
+        keymap: buildExportData(device, selectedExistingData, selection),
+        layout,
+      };
     }
     return {
       keymap: buildNewExportData(device, selection, name.trim()),
       layout,
     };
-  }, [loaded, mode, keymaps, selectedKeymapId, selection, name]);
+  }, [loaded, mode, selectedExistingData, selection, name]);
+
+  /**
+   * What the upload would change on Abyss, for the visual preview.
+   *
+   * Argument order is (target, current): the payload is the target, the keymap
+   * already on Abyss is current, so `to` is the value that would be saved.
+   */
+  const diff = useMemo<KeymapDiff>(() => {
+    const base = selectedExistingData;
+    if (mode !== "update" || !base || !preview?.keymap) return EMPTY_DIFF;
+    return compareKeyboardHubKeymaps(
+      preview.keymap as never,
+      base as never,
+    ) as unknown as KeymapDiff;
+  }, [mode, preview, selectedExistingData]);
 
   const canExport = Boolean(
     loaded &&
@@ -273,5 +320,7 @@ export function useAbyssExport(
     canExport,
     exportNow,
     preview,
+    diff,
+    selectedExistingData,
   };
 }

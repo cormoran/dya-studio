@@ -16,10 +16,14 @@ import { useLanguage } from "../../hooks/useLanguage";
 import { SectionError } from "../troubleshooting/SectionCard";
 import { DataSectionSelector } from "./DataSectionSelector";
 import { KeymapDiffView } from "./KeymapDiffView";
+import { KeymapDiffPreview } from "./KeymapDiffPreview";
+import { ComboMacroDiff } from "./ComboMacroDiff";
 import { JsonDiffModal } from "./JsonDiffModal";
 import { countDiff } from "../../lib/abyss/abyssDiff";
 import type { UseAbyssDeviceReturn } from "../../hooks/useAbyssDevice";
 import type { UseAbyssImportReturn } from "../../hooks/useAbyssImport";
+import type { PreviewPosition } from "./KeymapLayerPreview";
+import type { PreviewLayer } from "./KeymapDiffPreview";
 
 export function ImportSection({
   device,
@@ -53,24 +57,16 @@ export function ImportSection({
 
   if (!device.loaded) {
     return (
-      <div className="glass-card p-6">
-        <h3 className="text-sm font-medium text-[var(--color-text)] mb-2">
-          {t("Import")}
-        </h3>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {t("Read the keyboard first to enable importing.")}
-        </p>
-      </div>
+      <p className="text-sm text-[var(--color-text-muted)]">
+        {t("Read the keyboard first to enable importing.")}
+      </p>
     );
   }
 
   const counts = countDiff(diff);
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-sm font-medium text-[var(--color-text)] mb-1">
-        {t("Import")}
-      </h3>
+    <div>
       <p className="text-xs text-[var(--color-text-muted)] mb-4">
         {t(
           "Writing changes the keyboard. Review the changes before confirming.",
@@ -160,8 +156,36 @@ export function ImportSection({
 
       {!isInSync && counts.total > 0 && (
         <div className="mb-4">
+          <KeymapDiffPreview
+            positions={
+              (
+                device.loaded.state.detectedLayout as
+                  | { positions?: PreviewPosition[] }
+                  | undefined
+              )?.positions ?? []
+            }
+            layers={
+              ((targetKeymap as { layers?: PreviewLayer[] } | null)?.layers ??
+                []) as PreviewLayer[]
+            }
+            diff={diff}
+          />
+
+          <div className="mt-3 space-y-3">
+            <ComboMacroDiff
+              title={t("Combos")}
+              kind="combo"
+              changes={diff.comboChanges}
+            />
+            <ComboMacroDiff
+              title={t("Macros")}
+              kind="macro"
+              changes={diff.macroChanges}
+            />
+          </div>
+
           <button
-            className="btn-ghost flex items-center gap-2 text-sm mb-3"
+            className="btn-ghost flex items-center gap-2 text-sm mt-3 mb-3"
             onClick={() => setShowDiff(true)}
           >
             <IconFileDiff size={16} />

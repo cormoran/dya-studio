@@ -31,17 +31,21 @@ describe("createAbyssZmkConnection", () => {
     );
   });
 
-  it("throws if the adapter reaches for the transport", () => {
+  it("hands over an inert transport placeholder", () => {
     const connection = createAbyssZmkConnection({
       rpcConnection,
       method: "serial",
     });
 
-    // DYA Studio owns the transport; the adapter closing it would kill the
-    // user's session. Fail loudly rather than hand over undefined.
+    // This was briefly a Proxy that threw on access. The loaded connection is
+    // stored in React state and something in the render path introspects state
+    // objects, so the throw fired during rendering and froze the whole page
+    // after the first device read. It must be inert, and safe to read.
+    expect(() => JSON.stringify(connection.transportConnection)).not.toThrow();
     expect(
-      () => (connection.transportConnection as { label: string }).label,
-    ).toThrow(/owns the transport/);
+      (connection.transportConnection as { label?: string }).label,
+    ).toBeUndefined();
+    expect(Object.isFrozen(connection.transportConnection)).toBe(true);
   });
 
   it("never aborts the connection it was handed", () => {

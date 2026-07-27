@@ -9,6 +9,7 @@
  * `@keyboard-hub/adapter-common`; this page is the wiring and the UI around
  * them.
  */
+import { useState } from "react";
 import { IconCloudUpload } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { useAbyssAuth } from "../hooks/useAbyssAuth";
@@ -30,6 +31,7 @@ export function ImportExportPage() {
   const device = useAbyssDevice();
   const exporter = useAbyssExport(device.loaded, device.resolved);
   const importer = useAbyssImport(device);
+  const [direction, setDirection] = useState<"export" | "import">("export");
   // The catalog slug is not in the resolveLayout response, so take it from the
   // keymaps listed for this keyboard — the device snapshot's own slug is
   // derived from the ZMK device name and does not identify the catalog entry.
@@ -65,8 +67,41 @@ export function ImportExportPage() {
           {auth.isAuthenticated && (
             <>
               <DeviceSnapshotCard device={device} keyboardSlug={keyboardSlug} />
-              <ExportSection device={device} exporter={exporter} />
-              <ImportSection device={device} importer={importer} />
+              {/*
+                Export and import are alternatives, not a checklist. Stacking
+                both cards meant scrolling past a long export form to reach
+                import, and the diff previews made that worse. One card, one
+                direction at a time.
+              */}
+              <div className="glass-card p-6">
+                <div
+                  role="tablist"
+                  aria-label={t("Import/Export")}
+                  className="flex gap-1 mb-5"
+                >
+                  {(["export", "import"] as const).map((value) => (
+                    <button
+                      key={value}
+                      role="tab"
+                      aria-selected={direction === value}
+                      onClick={() => setDirection(value)}
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors border ${
+                        direction === value
+                          ? "border-[var(--color-electric)] bg-[var(--color-electric)]/15 text-[var(--color-electric)]"
+                          : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                      }`}
+                    >
+                      {value === "export" ? t("Export") : t("Import")}
+                    </button>
+                  ))}
+                </div>
+
+                {direction === "export" ? (
+                  <ExportSection device={device} exporter={exporter} />
+                ) : (
+                  <ImportSection device={device} importer={importer} />
+                )}
+              </div>
             </>
           )}
         </div>

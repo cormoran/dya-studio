@@ -83,6 +83,7 @@ describe("useAbyssExport", () => {
   it("creates against the resolved variation when the layout matched exactly", async () => {
     const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
+    act(() => result.current.setMode("new"));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
     await act(async () => {
@@ -102,6 +103,7 @@ describe("useAbyssExport", () => {
     // unregistered keyboard must not go through createKeymap.
     const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, unregistered));
+    act(() => result.current.setMode("new"));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
     await act(async () => {
@@ -156,6 +158,7 @@ describe("useAbyssExport", () => {
   it("omits deselected sections from a new keymap", async () => {
     const client = setUpAbyssClient();
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
+    act(() => result.current.setMode("new"));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
     act(() => {
@@ -181,6 +184,7 @@ describe("useAbyssExport", () => {
       createKeymap: jest.fn().mockRejectedValue(new TypeError("offline")),
     });
     const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
+    act(() => result.current.setMode("new"));
     await waitFor(() => expect(result.current.canExport).toBe(true));
 
     await act(async () => {
@@ -192,6 +196,41 @@ describe("useAbyssExport", () => {
     expect(result.current.error).toBe(
       "Could not reach Abyss. Check your network connection.",
     );
+  });
+
+  it("defaults to updating the most recently updated keymap", async () => {
+    // Creating a new keymap on every save would litter the account with
+    // near-duplicates, so updating is the default — and it needs a target
+    // preselected or the primary action starts unavailable.
+    setUpAbyssClient({
+      listMyKeymaps: jest.fn().mockResolvedValue({
+        pageCount: 1,
+        items: [
+          { id: "older", name: "Older", updatedAt: "2026-01-01T00:00:00Z" },
+          { id: "newest", name: "Newest", updatedAt: "2026-07-01T00:00:00Z" },
+        ],
+      }),
+    });
+
+    const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
+
+    expect(result.current.mode).toBe("update");
+    await waitFor(() => expect(result.current.selectedKeymapId).toBe("newest"));
+  });
+
+  it("does not override a keymap the user already picked", async () => {
+    setUpAbyssClient({
+      listMyKeymaps: jest.fn().mockResolvedValue({
+        pageCount: 1,
+        items: [{ id: "newest", name: "Newest", updatedAt: "2026-07-01Z" }],
+      }),
+    });
+
+    const { result } = renderHook(() => useAbyssExport(loaded, exactMatch));
+    act(() => result.current.setSelectedKeymapId("chosen"));
+
+    await waitFor(() => expect(result.current.keymaps).toHaveLength(1));
+    expect(result.current.selectedKeymapId).toBe("chosen");
   });
 
   it("cannot export before a device has been read", () => {
