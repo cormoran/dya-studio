@@ -38,17 +38,18 @@ function xInvertSwitch(page: Page): Locator {
 }
 
 // Wait for a processor's settings to actually render on the (already-open)
-// Trackball tab. Waits out the initial load first, then, on each retry, bounces
-// Home <-> Trackball to re-run listProcessors so the device re-delivers the
-// processorChanged notifications that populate the processor.
+// Trackball tab. Waits out the initial load first, then, on each retry, clicks
+// the Processors card's reload button to re-run listProcessors so the device
+// re-delivers the processorChanged notifications that populate the processor.
+// (A Home <-> Trackball bounce no longer works: tab panels stay mounted, so
+// returning does not re-run the load.)
 async function waitForInvertSwitch(page: Page): Promise<Locator> {
   const sw = xInvertSwitch(page);
   let firstAttempt = true;
   await expect(async () => {
     if (!firstAttempt) {
-      await page.getByRole("tab", { name: "Home" }).click();
+      await page.getByRole("button", { name: "Reload processors" }).click();
       await page.waitForTimeout(1_500);
-      await page.getByRole("tab", { name: "Trackball" }).click();
     }
     firstAttempt = false;
     await expect(sw).toBeVisible({ timeout: 20_000 });
@@ -64,12 +65,12 @@ async function openTrackball(page: Page): Promise<Locator> {
   return waitForInvertSwitch(page);
 }
 
-// Force a device re-read: TrackballPage unmounts on tab switch, so leaving and
-// returning re-fetches the processors from the firmware.
+// Force a device re-read. Tab panels keep their state across switches (they stay
+// mounted), so a tab round-trip no longer re-fetches; the Processors card's
+// reload button re-runs loadProcessors.
 async function reReadTrackball(page: Page): Promise<Locator> {
-  await page.getByRole("tab", { name: "Home" }).click();
+  await page.getByRole("button", { name: "Reload processors" }).click();
   await page.waitForTimeout(1_000);
-  await page.getByRole("tab", { name: "Trackball" }).click();
   return waitForInvertSwitch(page);
 }
 

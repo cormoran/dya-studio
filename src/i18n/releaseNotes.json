@@ -96,6 +96,10 @@
             "en": "Anonymous usage analytics to help prioritize improvements (no keymap or configuration data is ever sent).",
             "ja": "改善の優先度付けのため匿名の利用状況分析を追加しました（キーマップや設定データは一切送信されません）。",
             "pr": 145
+          },
+          {
+            "en": "Switching tabs no longer discards what a tab was showing: each tab keeps its loaded data and in-progress edits, so returning to it is instant. Keymap, Settings and Trackball gained a Reload button for re-reading from the keyboard on demand.",
+            "ja": "タブを切り替えても、そのタブの読み込み済みデータや編集途中の内容が破棄されなくなりました。戻ったときの再読み込み待ちがなくなります。キーマップ・設定・トラックボールには、必要なときにキーボードから読み直せる再読み込みボタンを追加しました。"
           }
         ],
         "patch": [

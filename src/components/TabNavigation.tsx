@@ -1,5 +1,6 @@
 import * as Tabs from "@radix-ui/react-tabs";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { TabActiveContext } from "../contexts/TabActiveContext";
 import { PageTransition } from "./PageTransition";
 
 export interface TabItem {
@@ -20,6 +21,21 @@ export function TabNavigation({
   activeTab,
   onTabChange,
 }: TabNavigationProps) {
+  // A tab stays mounted once it has been visited, so switching away and back
+  // keeps everything the page was holding (loaded device data, in-progress
+  // edits, selected layer, scroll position) instead of tearing it down and
+  // re-reading from the keyboard. Tabs that were never opened are not mounted
+  // at all, so we still don't fire every page's device RPCs up front.
+  const [visitedTabs, setVisitedTabs] = useState<ReadonlySet<string>>(
+    () => new Set([activeTab]),
+  );
+  // Adjusted during render (React's "adjust state when props change" pattern)
+  // rather than in an effect, so the newly-selected tab is mounted in this same
+  // render instead of one frame later.
+  if (!visitedTabs.has(activeTab)) {
+    setVisitedTabs(new Set(visitedTabs).add(activeTab));
+  }
+
   return (
     <Tabs.Root
       value={activeTab}
@@ -42,35 +58,22 @@ export function TabNavigation({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {tabs.map((tab) => (
-          <Tabs.Content
-            key={tab.id}
-            value={tab.id}
-            className="h-full outline-none data-[state=inactive]:hidden"
-            forceMount
-          >
-            {/*
-              Mount the transition only while the tab is active.
-
-              Previously this rendered a PageTransition for every tab, flipping
-              its key between "" and the tab id. `AnimatePresence mode="wait"`
-              holds the outgoing child until its exit animation finishes — and
-              inside a `display: none` panel that never happens, so the incoming
-              child never mounted. The tab looked blank until a reload, and the
-              stale subtree left behind still rendered DOM whose event handlers
-              updated a fiber React had discarded: clicks fired but setState did
-              nothing.
-
-              Rendering nothing when inactive means each tab's AnimatePresence
-              only ever holds one key, with no exit to wait on.
-            */}
-            {activeTab === tab.id && (
-              <PageTransition transitionKey={tab.id}>
-                {tab.content}
-              </PageTransition>
-            )}
-          </Tabs.Content>
-        ))}
+        {tabs
+          .filter((tab) => visitedTabs.has(tab.id))
+          .map((tab) => (
+            <Tabs.Content
+              key={tab.id}
+              value={tab.id}
+              className="h-full outline-none data-[state=inactive]:hidden"
+              forceMount
+            >
+              <TabActiveContext.Provider value={activeTab === tab.id}>
+                <PageTransition isActive={activeTab === tab.id}>
+                  {tab.content}
+                </PageTransition>
+              </TabActiveContext.Provider>
+            </Tabs.Content>
+          ))}
       </div>
     </Tabs.Root>
   );

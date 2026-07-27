@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   IconCheck,
   IconClipboardCopy,
@@ -20,6 +20,7 @@ import { KscanDiagnosticsSection } from "../components/troubleshooting/KscanDiag
 import { Pmw3610Section } from "../components/troubleshooting/Pmw3610Section";
 import { DevtoolStackUsageSection } from "../components/troubleshooting/DevtoolStackUsageSection";
 import { buildSupportReport } from "../lib/troubleshootingReport";
+import { useIsTabActive } from "../hooks/useIsTabActive";
 
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -34,6 +35,17 @@ export function TroubleshootingPage() {
   const stackUsage = useDevtoolStackUsage();
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTabActive = useIsTabActive();
+
+  // The page stays mounted while another tab is showing, so stop the stack-usage
+  // polling on the way out — nobody is watching those numbers, and every tick is
+  // a device round-trip.
+  const { isPolling: isStackPolling, setPolling: setStackPolling } = stackUsage;
+  useEffect(() => {
+    if (!isTabActive && isStackPolling) {
+      setStackPolling(false);
+    }
+  }, [isTabActive, isStackPolling, setStackPolling]);
 
   const refreshAll = () => {
     if (deviceInfo.isAvailable) void deviceInfo.refresh();
