@@ -11,9 +11,14 @@
  * "three keys changed" are indistinguishable in a list of 300 rows and obvious
  * here.
  */
+import { useEffect, useRef, useState } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useLanguage } from "../../hooks/useLanguage";
 import { bindingLabel } from "../../lib/abyss/abyssDiff";
+import {
+  normalizePositions,
+  previewScale,
+} from "../../lib/abyss/previewLayout";
 
 /** Geometry for one key, in key units, as the Abyss layout document stores it. */
 export interface PreviewPosition {
@@ -33,7 +38,7 @@ export interface PreviewChange {
   to?: unknown;
 }
 
-/** Pixels per key unit. Small enough that a 60% board fits without scrolling. */
+/** Pixels per key unit at full size. The rendered board is then scaled to fit. */
 const UNIT = 34;
 const GAP = 2;
 
@@ -119,8 +124,27 @@ export function KeymapLayerPreview({
   changes: Map<number, PreviewChange>;
 }) {
   const { t } = useLanguage();
+  // Geometry may arrive in key units or in ZMK's hundredths; normalize first.
+  const keys = normalizePositions(positions);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [available, setAvailable] = useState(0);
 
-  if (positions.length === 0) {
+  // Track the container so the board shrinks with the panel — the tab is inside
+  // a card inside a page that reflows, and a fixed scale would overflow on
+  // narrow windows and waste space on wide ones.
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    setAvailable(element.clientWidth);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      setAvailable(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  if (keys.length === 0) {
     return (
       <p className="text-xs text-[var(--color-text-muted)]">
         {t("No layout geometry available for a preview.")}
@@ -128,22 +152,40 @@ export function KeymapLayerPreview({
     );
   }
 
-  const width = Math.max(...positions.map((p) => p.x + (p.w ?? 1))) * UNIT;
-  const height = Math.max(...positions.map((p) => p.y + (p.h ?? 1))) * UNIT;
+  const width = Math.max(...keys.map((p) => p.x + (p.w ?? 1))) * UNIT;
+  const height = Math.max(...keys.map((p) => p.y + (p.h ?? 1))) * UNIT;
+  const scale = previewScale(width, available);
 
   return (
     <Tooltip.Provider delayDuration={150} disableHoverableContent>
-      <div className="overflow-x-auto">
-        <div className="relative" style={{ width, height }}>
-          {positions.map((position, index) => (
-            <KeyCap
-              key={index}
-              index={index}
-              position={position}
-              binding={bindings[index]}
-              change={changes.get(index)}
-            />
-          ))}
+      {/* Measured separately from the scaled board: reading the width off the
+          board itself would feed its own scaled size back in. */}
+      <div ref={containerRef} className="overflow-x-auto">
+        <div
+          style={{
+            width: width * scale,
+            height: height * scale,
+          }}
+        >
+          <div
+            className="relative"
+            style={{
+              width,
+              height,
+              transform: scale === 1 ? undefined : `scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {keys.map((position, index) => (
+              <KeyCap
+                key={index}
+                index={index}
+                position={position}
+                binding={bindings[index]}
+                change={changes.get(index)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </Tooltip.Provider>
