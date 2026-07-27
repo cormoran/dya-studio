@@ -16,8 +16,15 @@ import { connect, openKeymap, layerTabs } from "../support/connect";
 const KEYS = ["A", "B", "C", "D"]; // renode_tester default_layer bindings
 const EDITED_KEYCODE = "F"; // not in the default keymap
 
+// Tab panels stay mounted once visited, so scope every text match to the panel
+// that is currently showing — otherwise a `toHaveCount(0)` would also count
+// matches inside a hidden (but still rendered) tab.
+function activePanel(page: import("@playwright/test").Page) {
+  return page.locator('[role="tabpanel"][data-state="active"]');
+}
+
 function keyLabel(page: import("@playwright/test").Page, label: string) {
-  return page.getByText(label, { exact: true });
+  return activePanel(page).getByText(label, { exact: true });
 }
 
 test("Reset all settings restores the keyboard to firmware defaults (core.resetSettings)", async ({
@@ -67,11 +74,19 @@ test("Reset all settings restores the keyboard to firmware defaults (core.resetS
   // On success the dialog closes and no error is surfaced.
   await expect(confirm).toBeHidden({ timeout: 30_000 });
 
-  // 3) Re-read the keymap (tab remount forces a fresh get_keymap) and prove the
-  //    device is back to firmware defaults: A/B/C/D are restored and the saved
-  //    `F` edit is gone. This confirms reset_settings wiped the persisted change.
-  await page.getByRole("tab", { name: "Home" }).click();
+  // 3) Re-read the keymap and prove the device is back to firmware defaults:
+  //    A/B/C/D are restored and the saved `F` edit is gone, confirming
+  //    reset_settings wiped the persisted change. Tab panels keep their state
+  //    across switches (they stay mounted), so returning to the Keymap tab shows
+  //    the pre-reset keymap until its Reload button re-runs get_keymap. Reload is
+  //    disabled for the duration of the load, so disabled -> enabled marks the
+  //    fresh device data landing.
   await page.getByRole("tab", { name: "Keymap" }).click();
+  const reload = page.getByRole("button", { name: "Reload", exact: true });
+  await expect(reload).toBeEnabled();
+  await reload.click();
+  await expect(reload).toBeDisabled();
+  await expect(reload).toBeEnabled({ timeout: 60_000 });
 
   for (const k of KEYS) {
     await expect(keyLabel(page, k).first()).toBeVisible({ timeout: 60_000 });
