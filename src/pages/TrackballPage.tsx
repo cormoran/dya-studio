@@ -25,6 +25,9 @@ import { useDebouncedSave } from "../hooks/useDebouncedSave";
 import { useKeymap } from "../hooks/useKeymap";
 import { MEMORY_WRITE_DEBOUNCE_MS } from "../hooks/useDebouncedMemoryWrite";
 import { useLanguage } from "../hooks/useLanguage";
+import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
+import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
+import { useTrackballVersionHistory } from "../hooks/versionHistory/useTrackballVersionHistory";
 
 // Which detail is shown in the right pane: the selected runtime input
 // processor, or one PMW3610 driver section (keyed by its subsystem index).
@@ -151,6 +154,7 @@ function formatScalingValue(value: number): string {
 
 export function TrackballPage() {
   const { t } = useLanguage();
+  const inputProcessor = useRuntimeInputProcessor();
   const {
     isAvailable,
     processors,
@@ -171,7 +175,7 @@ export function TrackballPage() {
     setYInvert,
     setXyToScrollEnabled,
     setXySwapEnabled,
-  } = useRuntimeInputProcessor();
+  } = inputProcessor;
 
   // PMW3610 driver sections (custom settings) shown in the left list. Scoped to
   // the pmw3610 subsystem so unrelated custom subsystems aren't fetched here.
@@ -187,6 +191,19 @@ export function TrackballPage() {
       })) ?? [],
     [keymap?.layers, t],
   );
+  // Version history over the processor tuning plus the PMW3610 custom
+  // settings. Processor writes are persistent write-throughs and the tab has
+  // no firmware-default RPC, so the menu offers captured versions only.
+  const versionHistory = useTrackballVersionHistory({
+    inputProcessor,
+    customSettings,
+    isLoaded:
+      !isLoading &&
+      !customSettings.isLoading &&
+      (!isAvailable || processors.length > 0),
+    t,
+  });
+
   const pmw3610Sections = useMemo(
     () =>
       customSettings.sections.filter(
@@ -515,6 +532,17 @@ export function TrackballPage() {
               {t("Adjust sensitivity and behavior via runtime input processor")}
             </p>
           </div>
+          {isAvailable && (
+            <div className="ml-auto">
+              <ResetVersionMenu
+                label={t("Versions")}
+                versions={versionHistory.versions}
+                onSelectVersion={versionHistory.selectVersion}
+                disabled={isLoading}
+                isBusy={versionHistory.isBusy}
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 desktop:grid-cols-[300px_1fr] gap-4 min-w-0">
@@ -1438,6 +1466,12 @@ export function TrackballPage() {
           </div>
         </div>
       </div>
+
+      {/* Restore-a-version diff modal (opened from the versions dropdown) */}
+      <VersionDiffModal
+        {...versionHistory.diffModalProps}
+        labeler={versionHistory.labeler}
+      />
     </div>
   );
 }

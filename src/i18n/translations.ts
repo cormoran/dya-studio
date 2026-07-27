@@ -1108,6 +1108,81 @@ const ja: Record<string, string> = {
   Note: "補足",
   "These values are read from and written to your keyboard's firmware. Change them in small steps.":
     "これらの値はキーボードのファームウェアから読み書きされます。少しずつ変更してください。",
+
+  // Version history — reset dropdown
+  Versions: "バージョン",
+  "Reset to initial state": "初期状態に戻す",
+  "Saved versions": "保存されたバージョン",
+  "No versions saved yet. A version is saved each time this tab reads the keyboard and finds something changed.":
+    "保存されたバージョンはまだありません。このタブがキーボードを読み込み、前回との差分があったときにバージョンが保存されます。",
+  "Restores the keyboard's built-in default keymap and writes it to flash immediately.":
+    "キーボード内蔵のデフォルトキーマップに戻し、すぐにフラッシュへ書き込みます。",
+  "Drops the unsaved edits in keyboard memory and reloads the keymap stored on the keyboard.":
+    "キーボードのメモリ上にある未保存の編集を破棄し、キーボードに保存済みのキーマップを読み直します。",
+  "Puts every macro and combo back to the firmware's compile-time defaults.":
+    "すべてのマクロとコンボをファームウェアのビルド時デフォルトに戻します。",
+  "Drops the edits held in keyboard memory and reloads the macros and combos saved on the keyboard.":
+    "キーボードのメモリ上にある編集を破棄し、キーボードに保存済みのマクロとコンボを読み直します。",
+  "Reset every runtime macro and combo to the firmware defaults? Your customizations will be lost.":
+    "すべてのランタイムマクロとコンボをファームウェアのデフォルトに戻しますか？カスタマイズは失われます。",
+  "Wipes every persisted setting on the keyboard — keymap included — back to the firmware defaults.":
+    "キーマップを含め、キーボードに保存されたすべての設定をファームウェアのデフォルトに戻します。",
+
+  // Version history — diff modal
+  "Restore this version?": "このバージョンに戻しますか？",
+  "Saved {{timestamp}}. The values below are written to keyboard memory — press Save afterwards to store them permanently.":
+    "{{timestamp}} に保存されたバージョンです。以下の値がキーボードのメモリに書き込まれます。恒久的に保存するには、その後「保存」を押してください。",
+  "Reading the current state from the keyboard...":
+    "キーボードから現在の状態を読み込み中...",
+  "This version matches the current state — nothing to write.":
+    "このバージョンは現在の状態と同じです。書き込む変更はありません。",
+  "Write to keyboard": "キーボードに書き込む",
+  Field: "項目",
+  "Selected version": "選択したバージョン",
+  "and {{count}} more changes": "他 {{count}} 件の変更",
+  "(source {{source}})": "(ソース {{source}})",
+
+  // Version history — field names in the diff
+  "Physical layout": "物理レイアウト",
+  "Layer {{index}}": "レイヤー {{index}}",
+  "{{layer}} › Name": "{{layer}} › 名前",
+  "{{layer}} › Layer ID": "{{layer}} › レイヤー ID",
+  "{{layer}} › Key {{position}}": "{{layer}} › キー {{position}}",
+  "Macro {{index}}": "マクロ {{index}}",
+  "{{macro}} › Name": "{{macro}} › 名前",
+  "{{macro}} › Step {{step}}": "{{macro}} › ステップ {{step}}",
+  "Macro tap duration (ms)": "マクロのタップ時間 (ms)",
+  "Key positions": "キー位置",
+  "Timeout (ms)": "タイムアウト (ms)",
+  "Require prior idle (ms)": "直前アイドル要求 (ms)",
+  "Combo timeout (ms)": "コンボのタイムアウト (ms)",
+  "Combo slow release": "コンボのスローリリース",
+  "Combo require prior idle (ms)": "コンボの直前アイドル要求 (ms)",
+  "Delay {{ms}} ms": "{{ms}} ms 待機",
+  "Type text": "文字列を入力",
+  Press: "押す",
+  Release: "離す",
+  "Profile {{index}} › Name": "プロファイル {{index}} › 名前",
+  "Output priority": "出力の優先度",
+  "Default layer › Connection {{index}}": "デフォルトレイヤー › 接続 {{index}}",
+  "Default layer › OS {{os}}": "デフォルトレイヤー › OS {{os}}",
+  "Sensitivity multiplier": "感度の倍率",
+  "Sensitivity divisor": "感度の除数",
+  "Rotation (degrees)": "回転 (度)",
+  "Temporary layer enabled": "一時レイヤーの有効化",
+  "Temporary layer": "一時レイヤー",
+  "Temporary layer activation delay (ms)": "一時レイヤーの有効化遅延 (ms)",
+  "Temporary layer deactivation delay (ms)": "一時レイヤーの解除遅延 (ms)",
+  "Active layers": "有効なレイヤー",
+  "Axis snap mode": "軸スナップのモード",
+  "Axis snap threshold": "軸スナップのしきい値",
+  "Axis snap timeout (ms)": "軸スナップのタイムアウト (ms)",
+  "Invert X": "X を反転",
+  "Invert Y": "Y を反転",
+  "XY to scroll": "XY をスクロールに変換",
+  "Swap XY": "XY を入れ替え",
+  "Idle timeout": "アイドルタイムアウト",
+  "Deep sleep timeout": "ディープスリープのタイムアウト",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = {

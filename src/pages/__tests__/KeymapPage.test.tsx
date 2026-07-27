@@ -188,6 +188,11 @@ describe("KeymapPage", () => {
     );
   };
 
+  /** Opens the action-bar dropdown that holds Reset, Discard and the versions. */
+  const openResetMenu = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole("button", { name: /Reset/ }));
+  };
+
   const mockPhysicalLayoutModule = {
     kind: "trackball" as const,
     identifier: "trackball0",
@@ -335,7 +340,8 @@ describe("KeymapPage", () => {
       expect(screen.getByText("Reset")).toBeInTheDocument();
     });
 
-    it("hides the Discard button when there are no unsaved changes", () => {
+    it("disables Discard in the reset menu when there are no unsaved changes", async () => {
+      const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
         {
@@ -346,10 +352,12 @@ describe("KeymapPage", () => {
         },
       );
 
-      expect(screen.queryByText("Discard")).not.toBeInTheDocument();
+      await openResetMenu(user);
+      expect(screen.getByText("Discard").closest("button")).toBeDisabled();
     });
 
-    it("shows the Discard button only when there are unsaved changes", () => {
+    it("enables Discard in the reset menu when there are unsaved changes", async () => {
+      const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
         {
@@ -360,10 +368,12 @@ describe("KeymapPage", () => {
         },
       );
 
-      expect(screen.getByText("Discard")).toBeInTheDocument();
+      await openResetMenu(user);
+      expect(screen.getByText("Discard").closest("button")).not.toBeDisabled();
     });
 
-    it("disables Reset when the fast-keymap subsystem is unavailable", () => {
+    it("disables reset-to-initial-state when the fast-keymap subsystem is unavailable", async () => {
+      const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
         {
@@ -374,7 +384,10 @@ describe("KeymapPage", () => {
         },
       );
 
-      expect(screen.getByText("Reset").closest("button")).toBeDisabled();
+      await openResetMenu(user);
+      expect(
+        screen.getByText("Reset to initial state").closest("button"),
+      ).toBeDisabled();
     });
 
     it("resets to default via the confirmation dialog when fast-keymap is available", async () => {
@@ -391,9 +404,12 @@ describe("KeymapPage", () => {
         },
       );
 
-      const resetButton = screen.getByText("Reset").closest("button");
-      expect(resetButton).not.toBeDisabled();
-      await user.click(resetButton!);
+      await openResetMenu(user);
+      const resetOption = screen
+        .getByText("Reset to initial state")
+        .closest("button");
+      expect(resetOption).not.toBeDisabled();
+      await user.click(resetOption!);
 
       // Confirmation dialog appears; reset only fires after confirming.
       expect(screen.getByText("Reset to default keymap?")).toBeInTheDocument();

@@ -23,6 +23,9 @@ import { useSettings } from "../hooks/useSettings";
 import { useResetSettings } from "../hooks/useResetSettings";
 import { useDebouncedMemoryWrite } from "../hooks/useDebouncedMemoryWrite";
 import { useLanguage } from "../hooks/useLanguage";
+import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
+import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
+import { useSettingsVersionHistory } from "../hooks/versionHistory/useSettingsVersionHistory";
 
 // Helper to format milliseconds to human readable
 function formatMs(
@@ -244,8 +247,9 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
 export function SettingsPage() {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
+  const settings = useSettings();
   const { isAvailable, devices, isLoading, error, setActivitySettings } =
-    useSettings();
+    settings;
   const {
     resetAllSettings,
     isResetting,
@@ -255,6 +259,14 @@ export function SettingsPage() {
 
   // Confirmation modal for the full "reset all settings" action.
   const [showResetAllDialog, setShowResetAllDialog] = useState(false);
+
+  // Version history over the power-management timeouts (what this tab reads
+  // eagerly — Advanced Settings loads lazily and keeps its own controls).
+  const versionHistory = useSettingsVersionHistory({
+    settings,
+    isLoaded: !isLoading && devices.length > 0,
+    t,
+  });
 
   const handleResetAll = useCallback(async () => {
     const ok = await resetAllSettings();
@@ -335,6 +347,25 @@ export function SettingsPage() {
               {t("Device configuration and power management")}
             </p>
           </div>
+          {isAvailable && (
+            <div className="ml-auto">
+              <ResetVersionMenu
+                versions={versionHistory.versions}
+                onSelectVersion={versionHistory.selectVersion}
+                isBusy={isResetting || versionHistory.isBusy}
+                resetToDefault={{
+                  description: t(
+                    "Wipes every persisted setting on the keyboard — keymap included — back to the firmware defaults.",
+                  ),
+                  onSelect: () => {
+                    clearResetError();
+                    setShowResetAllDialog(true);
+                  },
+                  disabled: isResetting,
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {!isAvailable && !isLoading && !error && (
@@ -543,6 +574,12 @@ export function SettingsPage() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* Restore-a-version diff modal (opened from the reset dropdown) */}
+      <VersionDiffModal
+        {...versionHistory.diffModalProps}
+        labeler={versionHistory.labeler}
+      />
     </div>
   );
 }

@@ -13,6 +13,9 @@ import {
   IconAlertTriangleFilled,
 } from "@tabler/icons-react";
 import { useBLEProfiles } from "../hooks/useBLEProfiles";
+import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
+import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
+import { useConnectionVersionHistory } from "../hooks/versionHistory/useConnectionVersionHistory";
 import { useOsDetection } from "../hooks/useOsDetection";
 import { useDefaultLayer } from "../hooks/useDefaultLayer";
 import { useLayerNames, layerLabel } from "../hooks/useLayerNames";
@@ -45,6 +48,7 @@ const OVERRIDE_OPTIONS: Os[] = [
 export function ConnectionPage() {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
+  const bleProfiles = useBLEProfiles();
   const {
     isAvailable,
     profiles,
@@ -57,11 +61,23 @@ export function ConnectionPage() {
     loadProfiles,
     getOutputPriority,
     setOutputPriority,
-  } = useBLEProfiles();
+  } = bleProfiles;
 
   const osDetection = useOsDetection();
   const defaultLayer = useDefaultLayer();
   const { layerNames, load: loadLayerNames } = useLayerNames();
+
+  // Version history. Both domains write straight through to persistent
+  // storage, so there is nothing to discard and no firmware-default RPC —
+  // the menu offers the captured versions only.
+  const profilesRead = !isAvailable || (!isLoading && outputPriority !== null);
+  const layersRead = !defaultLayer.isAvailable || defaultLayer.state !== null;
+  const versionHistory = useConnectionVersionHistory({
+    bleProfiles,
+    defaultLayer,
+    isLoaded: profilesRead && layersRead,
+    t,
+  });
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -114,12 +130,16 @@ export function ConnectionPage() {
     setPendingOutputPriority(null);
   };
 
-  const reload = () => {
-    loadProfiles();
-    getOutputPriority();
-    osDetection.load();
-    defaultLayer.load();
-    loadLayerNames();
+  const reload = async () => {
+    await Promise.all([
+      loadProfiles(),
+      getOutputPriority(),
+      osDetection.load(),
+      defaultLayer.load(),
+      loadLayerNames(),
+    ]);
+    // A completed read is when a new version may be worth keeping.
+    await versionHistory.capture();
   };
 
   const cards = useMemo(
@@ -187,18 +207,27 @@ export function ConnectionPage() {
           <div className="flex items-center gap-2 ml-auto">
             {/* Refresh Button */}
             {connection.isConnected && (
-              <button
-                className="btn-ghost flex items-center gap-2"
-                onClick={reload}
-                disabled={isLoading}
-                aria-label={t("Refresh profiles")}
-              >
-                <IconRefresh
-                  size={16}
-                  className={isLoading ? "animate-spin" : ""}
+              <>
+                <button
+                  className="btn-ghost flex items-center gap-2"
+                  onClick={() => void reload()}
+                  disabled={isLoading}
+                  aria-label={t("Refresh profiles")}
+                >
+                  <IconRefresh
+                    size={16}
+                    className={isLoading ? "animate-spin" : ""}
+                  />
+                  {t("Refresh")}
+                </button>
+                <ResetVersionMenu
+                  label={t("Versions")}
+                  versions={versionHistory.versions}
+                  onSelectVersion={versionHistory.selectVersion}
+                  disabled={isLoading}
+                  isBusy={versionHistory.isBusy}
                 />
-                {t("Refresh")}
-              </button>
+              </>
             )}
           </div>
         </div>
@@ -925,6 +954,12 @@ export function ConnectionPage() {
           </div>
         )}
       </div>
+
+      {/* Restore-a-version diff modal (opened from the versions dropdown) */}
+      <VersionDiffModal
+        {...versionHistory.diffModalProps}
+        labeler={versionHistory.labeler}
+      />
     </div>
   );
 }
