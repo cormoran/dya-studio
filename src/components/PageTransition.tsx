@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface PageTransitionProps {
   children: ReactNode;
-  transitionKey: string;
+  /** Whether this page is the visible one. */
+  isActive: boolean;
 }
 
 const pageVariants = {
@@ -29,22 +30,18 @@ const pageVariants = {
   },
 };
 
-export function PageTransition({
-  children,
-  transitionKey,
-}: PageTransitionProps) {
+// The page is animated in place rather than through AnimatePresence: pages stay
+// mounted while their tab is inactive (so they keep their state), and a keyed
+// AnimatePresence would remount — and therefore reset — them on every switch.
+export function PageTransition({ children, isActive }: PageTransitionProps) {
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={transitionKey}
-        variants={pageVariants}
-        initial="initial"
-        animate="enter"
-        exit="exit"
-        className="h-full"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate={isActive ? "enter" : "exit"}
+      className="h-full"
+    >
+      {children}
+    </motion.div>
   );
 }

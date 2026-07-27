@@ -7,8 +7,8 @@ import { connectDya2 } from "./dya2.helpers";
 //
 // This spec proves that path end-to-end against the REAL dya2 firmware in
 // Renode: the keymap renders (named layers + per-key behaviors), then a single
-// simple-keypress binding is edited, saved to flash, re-read after a tab
-// round-trip, and finally REVERTED so the device is left exactly as found.
+// simple-keypress binding is edited, saved to flash, re-read from the device via
+// the Reload button, and finally REVERTED so the device is left exactly as found.
 //
 // Edit target: `&kp J` is a UNIQUE single-letter keypress on the Base layer
 // (this split layout duplicates Y/G/H/B, so those are avoided). It is reassigned
@@ -19,10 +19,17 @@ import { connectDya2 } from "./dya2.helpers";
 const ORIG_KEY = "J";
 const NEW_KEY = "F13";
 
+// Tab panels stay mounted once visited, so scope every text match to the panel
+// that is currently showing — otherwise a `toHaveCount(0)` would also count
+// matches inside a hidden (but still rendered) tab.
+function activePanel(page: Page): Locator {
+  return page.locator('[role="tabpanel"][data-state="active"]');
+}
+
 // A key in the on-screen physical-keymap grid renders its binding's short label
 // (for `&kp J` that's just "J") in a span; match that label exactly.
 function keyLabel(page: Page, label: string): Locator {
-  return page.getByText(label, { exact: true });
+  return activePanel(page).getByText(label, { exact: true });
 }
 
 // Open the binding editor for the (unique) key currently showing `label`.
@@ -49,18 +56,23 @@ async function pickKeycode(
   await expect(page.getByRole("dialog")).toBeHidden();
 }
 
-// Force a device re-read: KeymapPage unmounts on tab switch, so leaving and
-// returning re-fetches the keymap from the firmware.
+// Force a device re-read. Tab panels keep their state across switches, so a tab
+// round-trip no longer re-fetches; the Keymap header's Reload button re-runs the
+// keymap load. It is disabled for the duration of the load, so waiting for
+// disabled -> enabled proves the assertions below read fresh device data.
 async function reReadKeymap(page: Page): Promise<void> {
-  await page.getByRole("tab", { name: "Home" }).click();
-  await page.getByRole("tab", { name: "Keymap" }).click();
+  const reload = page.getByRole("button", { name: "Reload", exact: true });
+  await expect(reload).toBeEnabled();
+  await reload.click();
+  await expect(reload).toBeDisabled();
+  await expect(reload).toBeEnabled({ timeout: 180_000 });
 }
 
 test("dya2 Keymap tab: renders the rich keymap and round-trips (+reverts) a binding edit", async ({
   page,
 }) => {
   // The dya2 two-machine wired-split emulation is slow, and this test loads the
-  // keymap three times (initial + two tab re-reads) plus two saves; be generous.
+  // keymap three times (initial + two reloads) plus two saves; be generous.
   test.setTimeout(480_000);
   if (process.env.E2E_DEBUG) {
     page.on("console", (m) => console.log(`PAGE [${m.type()}] ${m.text()}`));

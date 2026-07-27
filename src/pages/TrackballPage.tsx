@@ -161,6 +161,7 @@ export function TrackballPage() {
     layers,
     isLoading,
     error,
+    loadProcessors,
     setScaling,
     setRotation,
     setTempLayerEnabled,
@@ -558,12 +559,25 @@ export function TrackballPage() {
                   </h2>
                   <DocTip content={processorDoc(t)} />
                 </div>
-                {isLoading && (
-                  <IconLoader2
-                    size={14}
-                    className="animate-spin text-[var(--color-electric)]"
-                  />
-                )}
+                <div className="flex items-center gap-1">
+                  {isLoading && (
+                    <IconLoader2
+                      size={14}
+                      className="animate-spin text-[var(--color-electric)]"
+                    />
+                  )}
+                  {/* The page keeps its state across tab switches, so re-reading
+                      the processor list is an explicit action. */}
+                  <button
+                    className="p-1 rounded hover:bg-[var(--color-border)] text-[var(--color-electric)] disabled:opacity-40 transition-colors"
+                    onClick={() => void loadProcessors()}
+                    disabled={isLoading}
+                    title={t("Reload")}
+                    aria-label={t("Reload processors")}
+                  >
+                    <IconRefresh size={15} />
+                  </button>
+                </div>
               </div>
               <div className="space-y-1">
                 {processors.length === 0 ? (
