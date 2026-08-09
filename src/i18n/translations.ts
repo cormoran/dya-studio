@@ -1310,13 +1310,11 @@ const ja: Record<string, string> = {
     "キーボードはすでにこのキーマップと一致しています。",
   "Written to the keyboard and re-read to confirm.":
     "キーボードに書き込み、再読み取りで確認しました。",
-  "Write to keyboard": "キーボードに書き込む",
   "Write {{count}} changes to the keyboard? This replaces the current settings and cannot be undone.":
     "{{count}} 件の変更をキーボードに書き込みますか？現在の設定を置き換え、元に戻せません。",
   // "Cancel" is already translated near the top of this dictionary.
 
   // Import/Export — diff view
-  "Layer {{index}}": "レイヤー {{index}}",
   "{{count}} changes": "{{count}} 件の変更",
   Rename: "名前の変更",
   Module: "モジュール",
