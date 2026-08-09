@@ -1,6 +1,7 @@
 import { useContext, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  IconCloudUpload,
   IconHome,
   IconKeyboard,
   IconPlugConnected,
@@ -33,6 +34,13 @@ import { MacroComboPage } from "./pages/MacroComboPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { CustomSubsystemsPage } from "./pages/CustomSubsystemsPage";
 import { TroubleshootingPage } from "./pages/TroubleshootingPage";
+import {
+  ImportExportPage,
+  IMPORT_EXPORT_TAB_ID,
+} from "./pages/ImportExportPage";
+import { AbyssCallbackPage } from "./pages/AbyssCallbackPage";
+import { isAbyssConfigured } from "./lib/abyss/abyssConfig";
+import { OAUTH_CALLBACK_PATH } from "./lib/abyss/abyssOAuth";
 import { useLanguage } from "./hooks/useLanguage";
 import { useUrlTab, pathnameFromTabId } from "./hooks/useUrlTab";
 import { useDevtool } from "./hooks/useDevtool";
@@ -89,6 +97,18 @@ function getTabs(t: (key: string) => string): TabItem[] {
       icon: <IconPuzzle size={18} />,
       content: <CustomSubsystemsPage />,
     },
+    // Hidden entirely when the build has no Abyss OAuth client id — the tab's
+    // only entry point is a sign-in that could not succeed.
+    ...(isAbyssConfigured()
+      ? [
+          {
+            id: IMPORT_EXPORT_TAB_ID,
+            label: t("Import/Export"),
+            icon: <IconCloudUpload size={18} />,
+            content: <ImportExportPage />,
+          },
+        ]
+      : []),
   ];
 }
 
@@ -132,19 +152,29 @@ function AppContent() {
     // Notify both this route state and useUrlTab's own popstate listener.
     window.dispatchEvent(new PopStateEvent("popstate"));
   }, []);
+  // Same as navigatePath but without a history entry, so Back never returns to
+  // a URL carrying a spent OAuth authorization code.
+  const replacePath = useCallback((path: string) => {
+    window.history.replaceState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, []);
   const onReleaseNotes = pathname === RELEASE_NOTES_PATH;
+  const onOauthCallback = pathname === OAUTH_CALLBACK_PATH;
 
   useEffect(() => {
     // Canonicalize unknown paths (e.g. a stale/typo'd link) to the home tab,
-    // but leave the standalone release notes route alone.
+    // but leave the standalone routes alone. The OAuth callback especially:
+    // rewriting it to "/" would discard the ?code=&state= query string before
+    // AbyssCallbackPage ever gets to read it.
     if (
       !onReleaseNotes &&
+      !onOauthCallback &&
       urlTab !== activeTab &&
       window.location.pathname !== "/"
     ) {
       window.history.replaceState(null, "", "/");
     }
-  }, [urlTab, activeTab, onReleaseNotes]);
+  }, [urlTab, activeTab, onReleaseNotes, onOauthCallback]);
 
   const setActiveTabWithTracking = useCallback(
     (tabId: string) => {
@@ -159,6 +189,13 @@ function AppContent() {
     },
     [navigateToTab, tabs],
   );
+
+  // Both standalone routes return before the connection gate: the user lands on
+  // the OAuth callback with no keyboard connected whenever the popup was
+  // blocked and the whole page navigated to Abyss.
+  if (onOauthCallback) {
+    return <AbyssCallbackPage onDone={replacePath} />;
+  }
 
   if (onReleaseNotes) {
     return <ReleaseNotesPage onBack={() => navigatePath("/")} />;

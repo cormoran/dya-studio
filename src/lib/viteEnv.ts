@@ -34,3 +34,24 @@ export const RPC_LOG_ENABLED: boolean =
 export const BUILD_LABEL: string | null =
   (import.meta.env.VITE_BUILD_LABEL as string | undefined) ||
   (import.meta.env.DEV ? "Dev" : null);
+
+/**
+ * OAuth client id issued by Keyboard Abyss (Settings > Developer), or `""` when
+ * the build was produced without one.
+ *
+ * The Import/Export tab is hidden entirely when this is empty — a local
+ * `vite dev` without a `.env` should not show a tab whose only action is a login
+ * that cannot succeed. Set `VITE_ABYSS_CLIENT_ID` in the build environment
+ * (`.github/workflows/test.yml` and `.github/workflows/release.yml`) to enable
+ * it.
+ */
+export const ABYSS_CLIENT_ID: string =
+  (import.meta.env.VITE_ABYSS_CLIENT_ID as string | undefined) || "";
+
+/**
+ * Base URL of the Keyboard Abyss instance to talk to. Empty means "use the
+ * library default" (https://abyss.keyboard-hub.com). Overridden by
+ * `VITE_ABYSS_BASE_URL` when pointing a build at a local or staging Abyss.
+ */
+export const ABYSS_BASE_URL: string =
+  (import.meta.env.VITE_ABYSS_BASE_URL as string | undefined) || "";

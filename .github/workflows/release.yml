@@ -50,6 +50,12 @@ jobs:
         env:
           VITE_BASE: /
           VITE_GOOGLE_ANALYTICS_ID: ${{ secrets.VITE_GOOGLE_ANALYTICS_ID }}
+          # Keyboard Abyss OAuth client, registered on the production instance.
+          # Unset -> the Import/Export tab is not registered at all.
+          # VITE_ABYSS_BASE_URL is deliberately unset here so the build falls
+          # back to https://abyss.keyboard-hub.com; only dev/PR builds (test.yml)
+          # point at the staging deployment.
+          VITE_ABYSS_CLIENT_ID: ${{ secrets.VITE_ABYSS_CLIENT_ID }}
 
       - name: Deploy to Cloudflare Pages
         id: deploy

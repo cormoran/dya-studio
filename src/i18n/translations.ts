@@ -1111,6 +1111,192 @@ const ja: Record<string, string> = {
   Note: "補足",
   "These values are read from and written to your keyboard's firmware. Change them in small steps.":
     "これらの値はキーボードのファームウェアから読み書きされます。少しずつ変更してください。",
+
+  // Import/Export (Keyboard Abyss)
+  "Import/Export": "インポート／エクスポート",
+  "Sync keymaps with Keyboard Abyss": "Keyboard Abyss とキーマップを同期します",
+  "Keyboard Abyss": "Keyboard Abyss",
+  "Sign in to import and export keymaps.":
+    "サインインするとキーマップのインポート／エクスポートができます。",
+  "Sign in with Abyss": "Abyss でサインイン",
+  "Sign out": "サインアウト",
+  "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.":
+    "{{host}} のサインイン画面が開きます。セッションはこのタブを閉じるまで有効です。",
+  Export: "エクスポート",
+  Import: "インポート",
+  "Upload the connected keyboard's keymap to Abyss, either as a new keymap or as a new version of an existing one.":
+    "接続中のキーボードのキーマップを、新規キーマップまたは既存キーマップの新しいバージョンとして Abyss にアップロードします。",
+  "Pick a compatible keymap from Abyss, review what would change, and write it to the connected keyboard.":
+    "Abyss から互換性のあるキーマップを選び、変更内容を確認したうえで接続中のキーボードに書き込みます。",
+  "Not available yet — this is still being built.":
+    "まだ利用できません（実装中です）。",
+
+  // Import/Export — device snapshot
+  "Keyboard snapshot": "キーボードの読み取り",
+  "Read the keyboard before exporting or importing.":
+    "エクスポート／インポートの前にキーボードを読み取ってください。",
+  "Read keyboard": "キーボードを読み取る",
+  "Read again": "再読み取り",
+  "Connected keyboard": "接続中のキーボード",
+  "Reading the keyboard. This is slower over Bluetooth than USB.":
+    "キーボードを読み取っています。Bluetooth 接続では USB より時間がかかります。",
+  "Matching the layout on Abyss...": "Abyss 上のレイアウトと照合しています...",
+  Keys: "キー数",
+  Modules: "モジュール",
+  "Matched the Abyss layout {{layout}}.":
+    "Abyss のレイアウト {{layout}} と一致しました。",
+  "No exact layout match. Exporting will add a new variation of {{layout}}.":
+    "完全に一致するレイアウトがありません。エクスポートすると {{layout}} の新しいバリエーションが作成されます。",
+  "This layout is not registered on Abyss yet. Exporting will add it.":
+    "このレイアウトはまだ Abyss に登録されていません。エクスポート時に追加されます。",
+  "This keyboard is not registered on Abyss yet. Exporting will create it under your account.":
+    "このキーボードはまだ Abyss に登録されていません。エクスポート時にあなたのアカウントで作成されます。",
+
+  // Import/Export — export section
+  "Read the keyboard first to enable exporting.":
+    "エクスポートするには、先にキーボードを読み取ってください。",
+  "Exporting uploads this keymap to {{host}} under your account.":
+    "エクスポートすると、このキーマップがあなたのアカウントで {{host}} にアップロードされます。",
+  Destination: "保存先",
+  "Export as a new keymap": "新しいキーマップとしてエクスポート",
+  "Update an existing keymap": "既存のキーマップを更新",
+  "Export as new keymap": "新規キーマップとしてエクスポート",
+  "Update keymap": "キーマップを更新",
+  "Keymap name": "キーマップ名",
+  "Keymap to update": "更新するキーマップ",
+  "Loading your keymaps...": "キーマップを読み込んでいます...",
+  "No keymaps found for this keyboard":
+    "このキーボード用のキーマップが見つかりません",
+  "Select a keymap": "キーマップを選択",
+  "Saved to Abyss as version {{version}}.":
+    "Abyss にバージョン {{version}} として保存しました。",
+  "Open on Abyss": "Abyss で開く",
+  Include: "含める項目",
+  "Keymap (layers & key bindings)": "キーマップ（レイヤーとキー割り当て）",
+  // "Combos" and "Macros" are already translated above, shared with the
+  // Macro & Combo tab.
+  "Module settings": "モジュール設定",
+
+  Visibility: "公開設定",
+  "Private — only you": "非公開 — 自分のみ",
+  "Public — anyone can find it": "公開 — 誰でも閲覧できます",
+  "Keymap JSON to upload": "アップロードする keymap JSON",
+  "Layout JSON to upload": "アップロードする layout JSON",
+  "Not available.": "利用できません。",
+
+  // Import/Export — visual diff preview
+  // "Layers" and "Keys" are already translated above.
+  "Key {{index}}": "キー {{index}}",
+  "No layout geometry available for a preview.":
+    "プレビュー用のレイアウト情報がありません。",
+  "This layer does not exist in the selected keymap.":
+    "選択したキーマップにこのレイヤーはありません。",
+  "No keys": "キーなし",
+  "Unnamed macro": "名前のないマクロ",
+  "No steps": "ステップなし",
+  "wait {{ms}}ms": "{{ms}}ms 待機",
+  "tap {{ms}}ms": "{{ms}}ms タップ",
+  Added: "追加",
+  Removed: "削除",
+  Changed: "変更",
+  Raw: "生データ",
+
+  // Import/Export — JSON diff modal
+  "Review changes": "変更内容を確認",
+  "Review changes as JSON": "JSON で変更内容を確認",
+  "Changes to upload": "アップロードする変更",
+  "Changes to write": "書き込む変更",
+  "Left: the keymap currently on Abyss. Right: what this export would save.":
+    "左: 現在 Abyss にあるキーマップ。右: このエクスポートで保存される内容。",
+  "Left: what is on the keyboard now. Right: the keymap from Abyss.":
+    "左: 現在キーボードにある内容。右: Abyss のキーマップ。",
+  Inline: "インライン",
+  "Side by side": "左右に並べる",
+  "Around changes": "変更箇所のみ",
+  "Entire file": "ファイル全体",
+  "No differences.": "差分はありません。",
+  // "Close" is already translated near the top of this dictionary.
+
+  // Import/Export — Abyss links
+  "Open this keyboard on Abyss": "このキーボードを Abyss で開く",
+  "Register on Abyss": "Abyss で登録する",
+  "This keyboard is not registered on Abyss yet. Register it on Abyss first so exports land in the catalog.":
+    "このキーボードはまだ Abyss に登録されていません。エクスポートをカタログに反映させるには、先に Abyss で登録してください。",
+
+  // Import/Export — import section
+  "Read the keyboard first to enable importing.":
+    "インポートするには、先にキーボードを読み取ってください。",
+  "Writing changes the keyboard. Review the changes before confirming.":
+    "書き込みはキーボードを変更します。確認する前に変更内容を確認してください。",
+  "Keymap to write": "書き込むキーマップ",
+  "No compatible keymaps found for this keyboard":
+    "このキーボードと互換性のあるキーマップが見つかりません",
+  "Loading the keymap...": "キーマップを読み込んでいます...",
+  "The keyboard already matches this keymap.":
+    "キーボードはすでにこのキーマップと一致しています。",
+  "Written to the keyboard and re-read to confirm.":
+    "キーボードに書き込み、再読み取りで確認しました。",
+  "Write to keyboard": "キーボードに書き込む",
+  "Write {{count}} changes to the keyboard? This replaces the current settings and cannot be undone.":
+    "{{count}} 件の変更をキーボードに書き込みますか？現在の設定を置き換え、元に戻せません。",
+  // "Cancel" is already translated near the top of this dictionary.
+
+  // Import/Export — diff view
+  "Layer {{index}}": "レイヤー {{index}}",
+  "{{count}} changes": "{{count}} 件の変更",
+  Rename: "名前の変更",
+  Module: "モジュール",
+  "Show all {{count}} keys": "{{count}} 件すべて表示",
+  "This replaces most of the keymap ({{count}} keys). The full list is long.":
+    "キーマップの大部分を置き換えます（{{count}} キー）。一覧は非常に長くなります。",
+  "Show the full list anyway": "それでも一覧を表示",
+  bindings: "キー割り当て",
+  "layer names": "レイヤー名",
+  combos: "コンボ",
+  macros: "マクロ",
+  modules: "モジュール",
+
+  // Import/Export — pre-flight checks
+  "This keymap has {{target}} keys per layer but the keyboard has {{device}}.":
+    "このキーマップは1レイヤーあたり {{target}} キーですが、キーボードは {{device}} キーです。",
+  "This keymap covers {{target}} of the keyboard's {{device}} keys. The rest are left unchanged.":
+    "このキーマップはキーボードの {{device}} キーのうち {{target}} キーを対象にしています。残りは変更されません。",
+  "Writing needs {{needed}} layers; the keyboard has {{device}}. The missing ones will be added.":
+    "書き込みには {{needed}} レイヤーが必要ですが、キーボードには {{device}} レイヤーあります。不足分は追加されます。",
+  "This keymap was made for the {{target}} layout; the keyboard reports {{device}}.":
+    "このキーマップは {{target}} レイアウト向けですが、キーボードは {{device}} と報告しています。",
+
+  // Import/Export — OAuth callback route
+  "Completing Abyss sign-in...": "Abyss のサインインを完了しています...",
+  "Signed in to Abyss": "Abyss にサインインしました",
+  "You can close this window.": "このウィンドウは閉じて構いません。",
+  "Abyss sign-in failed": "Abyss のサインインに失敗しました",
+  "Back to DYA Studio": "DYA Studio に戻る",
+
+  // Import/Export — error messages
+  "Your Abyss session expired. Please log in again.":
+    "Abyss のセッションが失効しました。もう一度サインインしてください。",
+  "Your Abyss account does not have permission for this action.":
+    "この操作を行う権限が Abyss アカウントにありません。",
+  "This keymap no longer exists on Abyss.":
+    "このキーマップは Abyss 上に存在しません。",
+  "Abyss rejected this keymap. It may not match the connected keyboard.":
+    "Abyss がこのキーマップを受け付けませんでした。接続中のキーボードと一致していない可能性があります。",
+  "Too many requests to Abyss. Please wait a moment and try again.":
+    "Abyss へのリクエストが多すぎます。しばらく待ってから再試行してください。",
+  "Abyss is having trouble right now. Please try again later.":
+    "現在 Abyss に問題が発生しています。時間をおいて再試行してください。",
+  "Could not reach Abyss. Check your network connection.":
+    "Abyss に接続できませんでした。ネットワーク接続を確認してください。",
+  "The keyboard is locked. Unlock it and try again.":
+    "キーボードがロックされています。ロックを解除して再試行してください。",
+  "Abyss login was cancelled.": "Abyss のサインインがキャンセルされました。",
+  "Abyss sign-in could not be completed. Please start again from the Import/Export tab.":
+    "Abyss のサインインを完了できませんでした。インポート／エクスポートタブからやり直してください。",
+  "Something went wrong talking to Abyss.":
+    "Abyss との通信で問題が発生しました。",
+  "Abyss is not configured for this build.":
+    "このビルドには Abyss の設定がありません。",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = {

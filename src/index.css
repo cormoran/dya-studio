@@ -519,3 +519,85 @@
     opacity: 0.6;
   }
 }
+
+/* JSON diff viewer (react-diff-view)
+   The library ships a light-only stylesheet, so the palette is re-pointed at
+   the app's theme tokens. Without this the diff is unreadable in dark mode. */
+.abyss-diff .diff {
+  background: transparent;
+  color: var(--color-text);
+  font-size: 11px;
+}
+
+.abyss-diff .diff-gutter,
+.abyss-diff .diff-code {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.abyss-diff .diff-gutter {
+  color: var(--color-text-muted);
+}
+
+.abyss-diff .diff-code-insert,
+.abyss-diff .diff-gutter-insert {
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.abyss-diff .diff-code-delete,
+.abyss-diff .diff-gutter-delete {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+/* Character-level highlight inside a changed line. */
+.abyss-diff .diff-code-insert ins {
+  background: rgba(34, 197, 94, 0.3);
+  text-decoration: none;
+}
+
+.abyss-diff .diff-code-delete del {
+  background: rgba(239, 68, 68, 0.3);
+  text-decoration: none;
+}
+
+.abyss-diff .diff-hunk-header {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* JSON diff viewer on small screens.
+   The library's gutters are sized for a desktop code review: two line-number
+   columns cost 98px of a 373px phone, a quarter of the width, to show numbers
+   nobody reads on a phone. Narrow them and let the code have the space. */
+@media (max-width: 767px) {
+  .abyss-diff .diff-gutter {
+    min-width: 0;
+    width: 1.6rem;
+    padding: 0 0.25rem;
+    font-size: 9px;
+  }
+
+  /* The width actually comes from the table's <col>, which wins over the cell
+     in table layout — narrowing the <td> alone changed nothing. Two 49px
+     columns become two 24px ones, handing ~50px back to the code. */
+  .abyss-diff .diff-gutter-col {
+    width: 1.5rem;
+  }
+
+  .abyss-diff .diff-code {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+  }
+}
+
+/* Full-bleed diff sheet on phones.
+   `.glass-card` is plain CSS rather than a Tailwind utility, so it wins over
+   `rounded-none`/`border-0` on the same element — the sheet kept a 12px radius
+   and a 1px border while covering the whole screen, leaving the page showing
+   through at the corners. */
+@media (max-width: 767px) {
+  .diff-sheet {
+    border-radius: 0;
+    border-width: 0;
+  }
+}
