@@ -59,6 +59,10 @@
           {
             "en": "Faster keymap loading via the fast-keymap module with incremental per-layer loading and an official-protocol fallback.",
             "ja": "fast-keymap モジュールによりキーマップ読み込みを高速化。レイヤーごとの逐次読み込みに対応し、非対応時は公式プロトコルにフォールバックします。"
+          },
+          {
+            "en": "New Import/Export tab: sign in to Keyboard Abyss to upload your keymap, or write a saved keymap back to the keyboard after reviewing exactly what changes.",
+            "ja": "インポート／エクスポートタブを追加。Keyboard Abyss にサインインしてキーマップをアップロードしたり、保存済みキーマップの変更内容を確認したうえでキーボードに書き戻せます。"
           }
         ],
         "minor": [

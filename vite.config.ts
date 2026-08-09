@@ -14,10 +14,26 @@ function htmlEnvVarReplacePlugin(env: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * `@keyboard-hub/adapter-zmk` is built against its own copy of the ZMK Studio
+ * client, but `call_rpc` serializes through a module-level mutex. Two copies
+ * means one `RpcConnection` guarded by two independent mutexes, and concurrent
+ * calls corrupt the shared request/response streams. The two clients are the
+ * same upstream with identical wire types, so collapse them onto the fork DYA
+ * Studio already uses.
+ *
+ * Mirrored in `tsconfig.app.json` (`paths`) and `jest.config.ts`
+ * (`moduleNameMapper`) — all three must agree.
+ */
+const ZMK_STUDIO_CLIENT_ALIAS = {
+  "@keyboard-hub/zmk-studio-ts-client": "@zmkfirmware/zmk-studio-ts-client",
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   return {
+    resolve: { alias: ZMK_STUDIO_CLIENT_ALIAS },
     plugins: [
       tailwindcss(),
       react({

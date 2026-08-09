@@ -49,6 +49,20 @@ describe("isStudioUnlockError", () => {
     expect(isStudioUnlockError({ meta: { simpleError: 99 } })).toBe(false);
   });
 
+  it("is true for the Abyss adapter's locked-firmware error", () => {
+    // Matched by shape so a locked device reached through the Abyss adapter
+    // opens the same unlock modal as every other feature.
+    expect(isStudioUnlockError({ name: "FirmwareLockedError" })).toBe(true);
+    expect(isStudioUnlockError({ code: "LOCKED" })).toBe(true);
+  });
+
+  it("is false for an unrelated error that merely mentions being locked", () => {
+    // The adapter's own isFirmwareLockedError matches any message containing
+    // "locked"; that looseness must not leak in here, or unrelated failures get
+    // routed into the unlock modal and retried forever.
+    expect(isStudioUnlockError(new Error("the file is locked"))).toBe(false);
+  });
+
   it("is false for unrelated errors, null, and plain values", () => {
     expect(isStudioUnlockError(new Error("boom"))).toBe(false);
     expect(isStudioUnlockError(null)).toBe(false);
