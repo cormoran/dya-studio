@@ -24,6 +24,9 @@ import { useSettings } from "../hooks/useSettings";
 import { useResetSettings } from "../hooks/useResetSettings";
 import { useDebouncedMemoryWrite } from "../hooks/useDebouncedMemoryWrite";
 import { useLanguage } from "../hooks/useLanguage";
+import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
+import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
+import { useSettingsVersionHistory } from "../hooks/versionHistory/useSettingsVersionHistory";
 
 // Helper to format milliseconds to human readable
 function formatMs(
@@ -245,6 +248,7 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
 export function SettingsPage() {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
+  const settings = useSettings();
   const {
     isAvailable,
     devices,
@@ -252,7 +256,7 @@ export function SettingsPage() {
     error,
     setActivitySettings,
     loadAllSettings,
-  } = useSettings();
+  } = settings;
   const {
     resetAllSettings,
     isResetting,
@@ -262,6 +266,22 @@ export function SettingsPage() {
 
   // Confirmation modal for the full "reset all settings" action.
   const [showResetAllDialog, setShowResetAllDialog] = useState(false);
+
+  // Version history over the power-management timeouts (what this tab reads
+  // eagerly — Advanced Settings loads lazily and keeps its own controls).
+  const versionHistory = useSettingsVersionHistory({
+    settings,
+    isLoaded: !isLoading && devices.length > 0,
+    t,
+  });
+
+  // The tab stays mounted across switches, so Reload is the only re-read after
+  // the first load — and a completed read is when a version may be worth
+  // keeping.
+  const handleReload = useCallback(async () => {
+    await loadAllSettings();
+    await versionHistory.capture();
+  }, [loadAllSettings, versionHistory]);
 
   const handleResetAll = useCallback(async () => {
     const ok = await resetAllSettings();
@@ -345,18 +365,35 @@ export function SettingsPage() {
           {/* The page keeps its state across tab switches, so re-reading the
               device is an explicit action. */}
           {isAvailable && (
-            <button
-              className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0 ml-auto"
-              onClick={() => void loadAllSettings()}
-              disabled={isLoading}
-              title={t("Reload settings from the keyboard")}
-            >
-              <IconRefresh
-                size={16}
-                className={isLoading ? "animate-spin" : undefined}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
+                onClick={() => void handleReload()}
+                disabled={isLoading}
+                title={t("Reload settings from the keyboard")}
+              >
+                <IconRefresh
+                  size={16}
+                  className={isLoading ? "animate-spin" : undefined}
+                />
+                {t("Reload")}
+              </button>
+              <ResetVersionMenu
+                versions={versionHistory.versions}
+                onSelectVersion={versionHistory.selectVersion}
+                isBusy={isResetting || versionHistory.isBusy}
+                resetToDefault={{
+                  description: t(
+                    "Wipes every persisted setting on the keyboard — keymap included — back to the firmware defaults.",
+                  ),
+                  onSelect: () => {
+                    clearResetError();
+                    setShowResetAllDialog(true);
+                  },
+                  disabled: isResetting,
+                }}
               />
-              {t("Reload")}
-            </button>
+            </div>
           )}
         </div>
 
@@ -566,6 +603,12 @@ export function SettingsPage() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* Restore-a-version diff modal (opened from the reset dropdown) */}
+      <VersionDiffModal
+        {...versionHistory.diffModalProps}
+        labeler={versionHistory.labeler}
+      />
     </div>
   );
 }

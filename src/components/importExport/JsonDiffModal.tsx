@@ -114,7 +114,7 @@ export function JsonDiffModal({
         {/* Full-bleed on phones — a 95vw/90vh sheet wastes edges that matter
             most where there are fewest of them, and a diff is the densest thing
             in this app. From tablet up it becomes a centred dialog.
-            
+
             Sized with `w-screen` rather than `inset-x-0`: a fixed element's
             containing block is not always the layout viewport (an ancestor with
             a filter or transform establishes one), and where they differ

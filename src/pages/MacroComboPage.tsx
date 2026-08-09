@@ -15,7 +15,6 @@ import {
   IconLock,
   IconPlus,
   IconRefresh,
-  IconRestore,
   IconSettings,
   IconWand,
 } from "@tabler/icons-react";
@@ -45,6 +44,9 @@ import {
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
 import { DocTip } from "../components/DocTip";
+import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
+import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
+import { useMacroComboVersionHistory } from "../hooks/versionHistory/useMacroComboVersionHistory";
 import { macroDoc, comboDoc } from "../i18n/featureDocs";
 import type { Combo } from "../hooks/useRuntimeCombo";
 import type { MacroSummary } from "../proto/cormoran/runtime_macro/runtime_macro";
@@ -70,6 +72,7 @@ export function MacroComboPage() {
   const [rightView, setRightView] = useState<RightView>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const macroAvailable = runtimeMacro.isAvailable;
   const comboAvailable = runtimeCombo.isAvailable;
@@ -77,6 +80,29 @@ export function MacroComboPage() {
   const anyLoading = runtimeMacro.isLoading || runtimeCombo.isLoading;
   const hasPendingChanges =
     runtimeMacro.hasUnsavedChanges || runtimeCombo.hasPendingChanges;
+
+  // Version history capture point. Every macro/combo edit toggles the hooks'
+  // `isLoading` too, so "the tab finished reading the keyboard" can't be read
+  // off that alone: this flips true once after the first load settles, and the
+  // explicit actions below re-capture by hand.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  // Global settings arrive with the first successful load of each domain, so
+  // they are the signal that the domain has actually been read.
+  const macroRead = !macroAvailable || runtimeMacro.globalSettings !== null;
+  const comboRead = !comboAvailable || runtimeCombo.globalSettings !== null;
+  useEffect(() => {
+    if (anyAvailable && !anyLoading && macroRead && comboRead) {
+      setInitialLoadDone(true);
+    }
+  }, [anyAvailable, anyLoading, comboRead, macroRead]);
+
+  const versionHistory = useMacroComboVersionHistory({
+    runtimeMacro,
+    runtimeCombo,
+    behaviors: keymap.behaviors,
+    isLoaded: initialLoadDone,
+    t,
+  });
 
   const layersForSelector = useMemo(() => {
     if (!keymap.keymap?.layers) return [];
@@ -188,10 +214,60 @@ export function MacroComboPage() {
 
   // --- Unified top-bar actions (both domains at once) ---
 
-  const handleRefresh = useCallback(() => {
-    if (macroAvailable) void runtimeMacro.loadMacros();
-    if (comboAvailable) void runtimeCombo.reload();
-  }, [comboAvailable, macroAvailable, runtimeCombo, runtimeMacro]);
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      macroAvailable ? runtimeMacro.loadMacros() : Promise.resolve(),
+      comboAvailable ? runtimeCombo.reload() : Promise.resolve(),
+    ]);
+    // A completed read is exactly when a new version may be worth keeping.
+    await versionHistory.capture();
+  }, [
+    comboAvailable,
+    macroAvailable,
+    runtimeCombo,
+    runtimeMacro,
+    versionHistory,
+  ]);
+
+  // "Reset to initial state": put every macro and combo slot back to the
+  // firmware's compile-time defaults. Both reset RPCs are per-slot, so this
+  // walks them; the result is reloaded (and captured) like any other read.
+  const handleResetToInitial = useCallback(async () => {
+    if (!requireUnlocked()) return;
+    if (
+      !confirm(
+        t(
+          "Reset every runtime macro and combo to the firmware defaults? Your customizations will be lost.",
+        ),
+      )
+    ) {
+      return;
+    }
+    setIsResetting(true);
+    try {
+      if (macroAvailable) {
+        for (const macro of [...runtimeMacro.macros]) {
+          await runtimeMacro.resetMacro(macro.slot);
+        }
+      }
+      if (comboAvailable) {
+        for (const combo of [...runtimeCombo.combos]) {
+          await runtimeCombo.resetCombo(combo.index);
+        }
+      }
+      await handleRefresh();
+    } finally {
+      setIsResetting(false);
+    }
+  }, [
+    comboAvailable,
+    handleRefresh,
+    macroAvailable,
+    requireUnlocked,
+    runtimeCombo,
+    runtimeMacro,
+    t,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (!requireUnlocked()) return;
@@ -215,6 +291,8 @@ export function MacroComboPage() {
           );
         }
       }
+      // What is now on the keyboard is worth keeping as a version.
+      await versionHistory.capture();
     } finally {
       setIsSaving(false);
     }
@@ -227,6 +305,7 @@ export function MacroComboPage() {
     runtimeCombo,
     runtimeMacro,
     t,
+    versionHistory,
   ]);
 
   const handleDiscard = useCallback(async () => {
@@ -256,6 +335,8 @@ export function MacroComboPage() {
           setRightView((view) => (view === "combo" ? null : view));
         }
       }
+      // Memory now mirrors what is stored on the keyboard again.
+      await versionHistory.capture();
     } finally {
       setIsDiscarding(false);
     }
@@ -268,6 +349,7 @@ export function MacroComboPage() {
     runtimeCombo,
     runtimeMacro,
     t,
+    versionHistory,
   ]);
 
   const firstError =
@@ -299,7 +381,7 @@ export function MacroComboPage() {
             <div className="flex items-center gap-2 ml-auto flex-wrap">
               <button
                 className="btn-ghost text-sm flex items-center gap-1.5"
-                onClick={handleRefresh}
+                onClick={() => void handleRefresh()}
                 disabled={anyLoading}
               >
                 <IconRefresh size={16} />
@@ -323,18 +405,29 @@ export function MacroComboPage() {
                       {t("Unsaved changes")}
                     </span>
                   )}
-                  <button
-                    className="btn-ghost text-sm flex items-center gap-1.5"
-                    onClick={handleDiscard}
-                    disabled={isDiscarding || anyLoading || !hasPendingChanges}
-                  >
-                    {isDiscarding ? (
-                      <IconLoader2 size={16} className="animate-spin" />
-                    ) : (
-                      <IconRestore size={16} />
-                    )}
-                    {t("Discard")}
-                  </button>
+                  {/* Reset, Discard and every captured version in one menu. */}
+                  <ResetVersionMenu
+                    versions={versionHistory.versions}
+                    onSelectVersion={versionHistory.selectVersion}
+                    disabled={anyLoading}
+                    isBusy={
+                      isDiscarding || isResetting || versionHistory.isBusy
+                    }
+                    resetToDefault={{
+                      description: t(
+                        "Puts every macro and combo back to the firmware's compile-time defaults.",
+                      ),
+                      onSelect: () => void handleResetToInitial(),
+                      disabled: isResetting || anyLoading,
+                    }}
+                    discard={{
+                      description: t(
+                        "Drops the edits held in keyboard memory and reloads the macros and combos saved on the keyboard.",
+                      ),
+                      onSelect: () => void handleDiscard(),
+                      disabled: isDiscarding || !hasPendingChanges,
+                    }}
+                  />
                   <button
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
@@ -678,6 +771,12 @@ export function MacroComboPage() {
           </div>
         )}
       </div>
+
+      {/* Restore-a-version diff modal (opened from the reset dropdown) */}
+      <VersionDiffModal
+        {...versionHistory.diffModalProps}
+        labeler={versionHistory.labeler}
+      />
     </div>
   );
 }

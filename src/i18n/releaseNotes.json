@@ -26,6 +26,10 @@
       "changes": {
         "major": [
           {
+            "en": "Version history: each tab now saves what it reads from the keyboard, so you can pick an earlier version from the reset dropdown, review the differences, and write it back.",
+            "ja": "バージョン管理に対応。各タブがキーボードから読み込んだ内容を保存するようになり、リセットのドロップダウンから以前のバージョンを選び、差分を確認して書き戻せます。"
+          },
+          {
             "en": "New Connection tab (evolved from the BLE tab) with OS detection and a default-layer selector for supported keyboards.",
             "ja": "接続タブを刷新（旧 BLE タブ）。対応キーボード向けに OS 検出とデフォルトレイヤー選択の UI を追加しました。"
           },
