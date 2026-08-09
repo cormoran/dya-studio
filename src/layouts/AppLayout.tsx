@@ -30,7 +30,15 @@ export function AppLayout({
   return (
     <div className="flex flex-col h-screen bg-gradient-dark">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header className="relative flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+        {BUILD_LABEL && (
+          <span
+            className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
+            title={`${BUILD_LABEL} build — not the production release`}
+          >
+            {BUILD_LABEL}
+          </span>
+        )}
         {/* Logo & Brand */}
         <div className="flex items-center gap-4 flex-shrink-0 mr-4">
           <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
@@ -42,14 +50,6 @@ export function AppLayout({
               Studio
             </span>
           </div>
-          {BUILD_LABEL && (
-            <span
-              className="rounded-full border border-[var(--color-warning)] px-2 py-0.5 text-[10px] font-semibold tracking-widest text-[var(--color-warning)] uppercase leading-none"
-              title={`${BUILD_LABEL} build — not the production release`}
-            >
-              {BUILD_LABEL}
-            </span>
-          )}
         </div>
 
         {/* Connection Status & Theme Toggle */}
