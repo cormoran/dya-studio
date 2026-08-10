@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const IDLE_CLEAR_DELAY_MS = 1_500;
-const KEY_REMOVE_INTERVAL_MS = 150;
+const KEY_VISIBLE_DURATION_MS = 1_200;
+const KEY_CLEANUP_INTERVAL_MS = 100;
 
 const READABLE_KEY_NAMES: Record<string, string> = {
   " ": "Space",
@@ -26,53 +26,28 @@ function humanReadableKey(event: KeyboardEvent): string {
  * or shortcuts.
  */
 export function BrowserKeyInputOverlay() {
-  const [keys, setKeys] = useState<string[]>([]);
-  const idleTimeoutRef = useRef<number | null>(null);
-  const removeIntervalRef = useRef<number | null>(null);
+  const [keys, setKeys] = useState<{ value: string; receivedAt: number }[]>([]);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const clearTimers = useCallback(() => {
-    if (idleTimeoutRef.current !== null) {
-      window.clearTimeout(idleTimeoutRef.current);
-      idleTimeoutRef.current = null;
-    }
-    if (removeIntervalRef.current !== null) {
-      window.clearInterval(removeIntervalRef.current);
-      removeIntervalRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
-    const startClearing = () => {
-      removeIntervalRef.current = window.setInterval(() => {
-        setKeys((current) => {
-          if (current.length <= 1) {
-            if (removeIntervalRef.current !== null) {
-              window.clearInterval(removeIntervalRef.current);
-              removeIntervalRef.current = null;
-            }
-            return [];
-          }
-          return current.slice(1);
-        });
-      }, KEY_REMOVE_INTERVAL_MS);
+    const onKeyDown = (event: KeyboardEvent) => {
+      setKeys((current) => [
+        ...current,
+        { value: humanReadableKey(event), receivedAt: Date.now() },
+      ]);
     };
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      clearTimers();
-      setKeys((current) => [...current, humanReadableKey(event)]);
-      idleTimeoutRef.current = window.setTimeout(
-        startClearing,
-        IDLE_CLEAR_DELAY_MS,
-      );
-    };
+    const cleanup = window.setInterval(() => {
+      const expiry = Date.now() - KEY_VISIBLE_DURATION_MS;
+      setKeys((current) => current.filter((key) => key.receivedAt > expiry));
+    }, KEY_CLEANUP_INTERVAL_MS);
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      clearTimers();
+      window.clearInterval(cleanup);
     };
-  }, [clearTimers]);
+  }, []);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -99,10 +74,10 @@ export function BrowserKeyInputOverlay() {
       <div
         ref={viewportRef}
         data-testid="browser-key-input-overlay"
-        className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]"
+        className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black)]"
       >
         <span className="flex min-w-full w-max justify-center whitespace-pre text-lg font-medium tracking-wide text-[var(--color-text)]">
-          {keys.join(" ")}
+          {keys.map((key) => key.value).join(" ")}
         </span>
       </div>
     </div>

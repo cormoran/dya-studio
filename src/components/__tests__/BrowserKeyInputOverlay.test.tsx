@@ -28,21 +28,24 @@ describe("BrowserKeyInputOverlay", () => {
     );
   });
 
-  it("removes the oldest key first after input is idle", () => {
+  it("removes the oldest key even while newer input continues", () => {
     render(<BrowserKeyInputOverlay />);
 
     press("a");
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
     press("b");
 
     act(() => {
-      jest.advanceTimersByTime(1_650);
+      jest.advanceTimersByTime(1_000);
     });
     expect(screen.getByTestId("browser-key-input-overlay")).toHaveTextContent(
       "b",
     );
 
     act(() => {
-      jest.advanceTimersByTime(150);
+      jest.advanceTimersByTime(200);
     });
     expect(screen.queryByTestId("browser-key-input-overlay")).toBeNull();
   });
