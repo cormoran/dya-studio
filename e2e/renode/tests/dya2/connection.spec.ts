@@ -60,7 +60,7 @@ test("dya2 Connection tab: reads connection info and round-trips (+reverts) a sa
   // The connections list rendered at least one card (BLE profile and/or USB).
   // ble-management reports the profile rows; assert a Bluetooth "Profile"/OS
   // card or the USB card is present so the read coverage is explicit.
-  await expect(page.locator("div.glass-card").first()).toBeVisible();
+  await expect(page.locator("div.glass-card:visible").first()).toBeVisible();
 
   // 2) Pick an ENABLED default-layer <select> that exposes at least two real
   //    layer options (value >= 0), so we have a distinct target to write.

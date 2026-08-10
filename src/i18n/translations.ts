@@ -624,6 +624,7 @@ const ja: Record<string, string> = {
   "Special thanks to": "Special thanks to",
   "ZMK community": "ZMK community",
   "Release notes": "リリースノート",
+  "Keyboard developer guide": "キーボード開発者向けガイド",
   "Release notes ({{version}})": "リリースノート ({{version}})",
   "Release Notes": "リリースノート",
   "What's new in DYA Studio": "DYA Studio の新機能",
