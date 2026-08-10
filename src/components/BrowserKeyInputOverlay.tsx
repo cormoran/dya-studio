@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const KEY_VISIBLE_DURATION_MS = 1_200;
+const KEY_VISIBLE_DURATION_MS = 3_000;
 const KEY_CLEANUP_INTERVAL_MS = 100;
 
 const READABLE_KEY_NAMES: Record<string, string> = {

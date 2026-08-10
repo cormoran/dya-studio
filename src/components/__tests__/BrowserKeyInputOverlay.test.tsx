@@ -38,7 +38,7 @@ describe("BrowserKeyInputOverlay", () => {
     press("b");
 
     act(() => {
-      jest.advanceTimersByTime(1_000);
+      jest.advanceTimersByTime(2_800);
     });
     expect(screen.getByTestId("browser-key-input-overlay")).toHaveTextContent(
       "b",
