@@ -4,8 +4,21 @@ const KEY_VISIBLE_DURATION_MS = 3_000;
 const KEY_CLEANUP_INTERVAL_MS = 100;
 
 const READABLE_KEY_NAMES: Record<string, string> = {
-  " ": "Space",
-  Escape: "Esc",
+  " ": "␣",
+  Alt: "⌥",
+  Backspace: "⌫",
+  CapsLock: "⇪",
+  Control: "⌃",
+  Delete: "⌦",
+  End: "⇲",
+  Enter: "↵",
+  Escape: "⎋",
+  Home: "⇱",
+  Meta: "⌘",
+  PageDown: "⇟",
+  PageUp: "⇞",
+  Shift: "⇧",
+  Tab: "⇥",
   ArrowUp: "↑",
   ArrowDown: "↓",
   ArrowLeft: "←",

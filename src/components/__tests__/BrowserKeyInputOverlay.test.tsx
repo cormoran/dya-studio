@@ -20,11 +20,13 @@ describe("BrowserKeyInputOverlay", () => {
     render(<BrowserKeyInputOverlay />);
 
     press("a", "KeyA");
+    press("Shift", "ShiftLeft");
     press(" ", "Space");
+    press("Enter", "Enter");
     press("Dead", "Quote");
 
     expect(screen.getByTestId("browser-key-input-overlay")).toHaveTextContent(
-      "a Space Quote",
+      "a ⇧ ␣ ↵ Quote",
     );
   });
 
