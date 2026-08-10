@@ -29,6 +29,7 @@ import * as Switch from "@radix-ui/react-switch";
 import { ConnectionContext } from "../components/DeviceConnection";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
 import { KeyboardLayout } from "../components/KeyboardLayout";
+import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
 import { KeycodeSelector } from "../components/KeycodeSelector";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -803,7 +804,7 @@ export function KeymapPage() {
               </Tooltip.Provider>
             </div>
 
-            <div className="flex items-center gap-2 justify-between flex-wrap mb-4">
+            <div className="relative flex items-center gap-2 justify-between flex-wrap mb-4">
               {/* Physical Layout Selector (if multiple layouts) */}
               {keymap.physicalLayouts &&
                 keymap.physicalLayouts.layouts.length > 1 && (
@@ -885,6 +886,8 @@ export function KeymapPage() {
                   </Tooltip.Root>
                 </Tooltip.Provider>
               </div>
+
+              {inputStream.isEnabled && <BrowserKeyInputOverlay />}
             </div>
 
             {/* Keyboard Layout */}
