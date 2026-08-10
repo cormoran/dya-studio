@@ -19,6 +19,8 @@ interface SplashScreenProps {
   error: string | null;
   /** Navigate to the standalone release notes page. */
   onShowReleaseNotes: () => void;
+  /** Navigate to the connection-free keyboard developer guide. */
+  onShowDeveloperGuide: () => void;
 }
 
 function LoadingDots() {
@@ -57,6 +59,7 @@ export function SplashScreen({
   isConnecting,
   error,
   onShowReleaseNotes,
+  onShowDeveloperGuide,
 }: SplashScreenProps) {
   const { t } = useLanguage();
   const version = getCurrentVersion();
@@ -286,18 +289,28 @@ export function SplashScreen({
         .
       </motion.p>
 
-      {/* Release notes link */}
-      <motion.button
-        onClick={onShowReleaseNotes}
-        className="absolute bottom-5 text-xs font-light tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-electric)] transition-colors underline"
+      {/* Standalone documentation links */}
+      <motion.div
+        className="absolute bottom-5 flex items-center gap-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.1 }}
       >
-        {version
-          ? t("Release notes ({{version}})", { version })
-          : t("Release notes")}
-      </motion.button>
+        <button
+          onClick={onShowDeveloperGuide}
+          className="hover:text-[var(--color-electric)] transition-colors underline"
+        >
+          {t("Keyboard developer guide")}
+        </button>
+        <button
+          onClick={onShowReleaseNotes}
+          className="hover:text-[var(--color-electric)] transition-colors underline"
+        >
+          {version
+            ? t("Release notes ({{version}})", { version })
+            : t("Release notes")}
+        </button>
+      </motion.div>
 
       {/* Connection Notice Dialog */}
       <ConnectionNoticeDialog

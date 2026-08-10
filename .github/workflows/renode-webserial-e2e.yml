@@ -25,6 +25,11 @@ on:
     paths:
       - "e2e/renode/**"
       - ".github/workflows/renode-webserial-e2e.yml"
+      # The developer-guide captures run against the built-in demo keyboard and
+      # do not exercise Renode or firmware. Do not schedule the 15–20 minute
+      # firmware matrix when a PR changes only this documentation workflow.
+      - "!e2e/renode/tests/developer-guide-screenshots.spec.ts"
+      - "!e2e/renode/capture-developer-guide.sh"
 
 env:
   # cormoran/zmk-west-commands provides the Renode harness (run side). The DUT
@@ -127,7 +132,7 @@ jobs:
             {
               "id": "dya2-unlocked",
               "repo": "cormoran/zmk-keyboard-dya2",
-              "ref": "support-new-zmk-modules",
+              "ref": "main",
               "manifest": "config/west-workspace.yml",
               "keymap_overlay": "",
               "build": "west zmk-build config -af right_trackball_studio_unlocked -d build",
@@ -144,7 +149,7 @@ jobs:
             {
               "id": "dya2-nonsplit-unlocked",
               "repo": "cormoran/zmk-keyboard-dya2",
-              "ref": "support-new-zmk-modules",
+              "ref": "main",
               "manifest": "config/west-workspace.yml",
               "keymap_overlay": "",
               "build": "west zmk-build config -b xiao_ble//zmk -s dya2_right -S studio-rpc-usb-uart right-trackball -a nonsplit --cmake-args \"-DCONFIG_ZMK_STUDIO_LOCKING=n -DEXTRA_DTC_OVERLAY_FILE=$GITHUB_WORKSPACE/_overlay-src/e2e/renode/firmware/dya2_nonsplit.overlay -DEXTRA_CONF_FILE=$GITHUB_WORKSPACE/_overlay-src/e2e/renode/firmware/dya2_nonsplit.conf\" -d build",

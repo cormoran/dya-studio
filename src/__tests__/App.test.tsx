@@ -9,6 +9,7 @@
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import App from "../App";
+import { DEVELOPER_GUIDE_PATH } from "../content/developerGuide";
 import { OAUTH_CALLBACK_PATH } from "../lib/abyss/abyssOAuth";
 import { RELEASE_NOTES_PATH } from "../pages/ReleaseNotesPage";
 
@@ -20,6 +21,9 @@ jest.mock("../pages/AbyssCallbackPage", () => ({
 jest.mock("../pages/ReleaseNotesPage", () => ({
   RELEASE_NOTES_PATH: "/release-notes",
   ReleaseNotesPage: () => <div data-testid="release-notes" />,
+}));
+jest.mock("../components/developerGuide", () => ({
+  DeveloperGuidePage: () => <div data-testid="developer-guide" />,
 }));
 // Stubbed so routing tests do not pull the Abyss SDK into the module graph.
 jest.mock("../pages/ImportExportPage", () => ({
@@ -65,6 +69,17 @@ describe("App routing", () => {
 
     expect(await screen.findByTestId("release-notes")).toBeInTheDocument();
     expect(window.location.pathname).toBe(RELEASE_NOTES_PATH);
+  });
+
+  it("renders the static developer guide without connecting a keyboard", async () => {
+    goTo(DEVELOPER_GUIDE_PATH);
+    replaceStateSpy.mockClear();
+
+    render(<App />);
+
+    expect(await screen.findByTestId("developer-guide")).toBeInTheDocument();
+    expect(window.location.pathname).toBe(DEVELOPER_GUIDE_PATH);
+    expect(replaceStateSpy).not.toHaveBeenCalledWith(null, "", "/");
   });
 
   it("canonicalizes an unknown path back to the home tab", async () => {

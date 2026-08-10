@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "screenshots:developer-guide": "bash capture-developer-guide.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
