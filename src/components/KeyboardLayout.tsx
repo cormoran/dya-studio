@@ -77,6 +77,8 @@ interface KeyboardLayoutProps {
   highlightedKeys?: ReadonlySet<number>;
   /** Runtime macro summaries for macro behavior display */
   runtimeMacros?: Array<{ slot: number; name?: string }>;
+  /** Accessible name for the keyboard preview region */
+  ariaLabel?: string;
 }
 
 type LayoutGeometry = Pick<
@@ -132,6 +134,7 @@ export function KeyboardLayout({
   modules = [],
   highlightedKeys,
   runtimeMacros = [],
+  ariaLabel,
 }: KeyboardLayoutProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1.0);
@@ -302,7 +305,12 @@ export function KeyboardLayout({
   );
 
   return (
-    <div ref={containerRef} className="relative overflow-auto w-full">
+    <div
+      ref={containerRef}
+      className="relative overflow-auto w-full"
+      role="group"
+      aria-label={ariaLabel}
+    >
       <div
         className="relative mx-auto"
         style={{

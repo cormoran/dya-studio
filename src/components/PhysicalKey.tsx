@@ -65,6 +65,7 @@ interface PhysicalKeyProps {
 
 export function PhysicalKey({
   attrs,
+  keyPosition,
   isModified,
   isOriginalKnown = true,
   isChangedFromDefault = false,
@@ -82,6 +83,10 @@ export function PhysicalKey({
 }: PhysicalKeyProps) {
   const { t } = useLanguage();
   const [isHovered, setIsHovered] = useState(false);
+  const accessibleName = t("Key position {{position}}: {{binding}}", {
+    position: keyPosition,
+    binding: longDisplayName || displayName || t("No binding"),
+  });
 
   // Calculate dimensions and position with scale
   // ZMK uses centimils (1/100 of a key unit) for dimensions
@@ -120,10 +125,12 @@ export function PhysicalKey({
 
   // Key content
   const keyContent = (
-    <div
+    <button
+      type="button"
       className={`
-        absolute rounded-lg border cursor-pointer transition-all duration-150
+        relative w-full h-full rounded-lg border cursor-pointer transition-all duration-150
         flex flex-col items-center justify-center p-1.5 overflow-hidden
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-electric)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]
         ${
           isHighlighted
             ? "bg-amber-400/20 border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.45)]"
@@ -136,10 +143,11 @@ export function PhysicalKey({
                   : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5"
         }
       `}
-      style={style}
       onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      aria-label={accessibleName}
+      aria-current={isSelected ? "true" : undefined}
+      data-key-position={keyPosition}
+      data-binding-label={longDisplayName || displayName}
     >
       {/* Display Name */}
       <span
@@ -174,19 +182,95 @@ export function PhysicalKey({
       {isHighlighted && (
         <div className="absolute inset-0 rounded-lg border-2 border-amber-200/70 pointer-events-none animate-pulse" />
       )}
+    </button>
+  );
 
-      {/* Reset button on hover when modified. When the original is known it
-          reverts to that saved value; when it's unknown (e.g. after a tab
-          switch lost it) it reverts to the hard-coded default instead — and is
-          only shown if a default is available to revert to. */}
+  // Always wrap with tooltip to show binding info
+  return (
+    <div
+      className="absolute"
+      style={style}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Tooltip.Provider delayDuration={200} disableHoverableContent>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>{keyContent}</Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
+              sideOffset={5}
+            >
+              <div className="space-y-1">
+                {/* Always show displayName */}
+                <div>
+                  <span className="font-medium">
+                    {longDisplayName || displayName}
+                  </span>
+                </div>
+                {/* Show binding description only if different from displayName */}
+                {bindingDescription &&
+                  bindingDescription !== displayName &&
+                  longDisplayName !== bindingDescription && (
+                    <div>
+                      <span className="text-[var(--color-text-muted)]">
+                        {t("Binding")}:{" "}
+                      </span>
+                      <span>{bindingDescription}</span>
+                    </div>
+                  )}
+                {/* Original binding info when modified and still known */}
+                {isModified && isOriginalKnown && originalDisplayName && (
+                  <div>
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Original")}:{" "}
+                    </span>
+                    <span>{originalDisplayName}</span>
+                  </div>
+                )}
+                {/* Original lost (e.g. after a tab switch): we can't recover the
+                  saved value, so say so and fall back to the default below. */}
+                {isModified && !isOriginalKnown && (
+                  <div>
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Original")}:{" "}
+                    </span>
+                    <span>{t("Unknown")}</span>
+                  </div>
+                )}
+                {/* Default binding: shown when the persisted value differs from it
+                  (changed-from-default), or as the fall-back reference for a
+                  modified key whose original is unknown. */}
+                {((isChangedFromDefault && !isModified) ||
+                  (isModified && !isOriginalKnown)) &&
+                  defaultDisplayName && (
+                    <div>
+                      <span className="text-[var(--color-text-muted)]">
+                        {t("Default")}:{" "}
+                      </span>
+                      <span className="text-[var(--color-electric)]">
+                        {defaultDisplayName}
+                      </span>
+                    </div>
+                  )}
+              </div>
+              <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+
+      {/* Keep reset actions as siblings of the main key button so the DOM
+          never contains an invalid nested button. */}
       {isModified && isHovered && isOriginalKnown && (
         <button
+          type="button"
           className="absolute bottom-1 right-1 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReset();
-          }}
+          onClick={onReset}
           title={t("Reset to original")}
+          aria-label={t("Reset key position {{position}} to original", {
+            position: keyPosition,
+          })}
         >
           <IconRotateClockwise
             size={12}
@@ -194,108 +278,33 @@ export function PhysicalKey({
           />
         </button>
       )}
-
-      {/* Modified but the original is unknown: revert to the hard-coded default
-          instead (only when one is available). */}
       {isModified && isHovered && !isOriginalKnown && onResetToDefault && (
         <button
+          type="button"
           className="absolute bottom-1 right-1 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
-          onClick={(e) => {
-            e.stopPropagation();
-            onResetToDefault();
-          }}
+          onClick={onResetToDefault}
           title={t("Reset to default")}
+          aria-label={t("Reset key position {{position}} to default", {
+            position: keyPosition,
+          })}
         >
           <IconHistory size={12} className="text-[var(--color-electric)]" />
         </button>
       )}
-
-      {/* Reset-to-default button on hover when changed from default (and not
-          currently modified — that state shows the reset-to-original button
-          above instead) */}
       {isChangedFromDefault && !isModified && isHovered && onResetToDefault && (
         <button
+          type="button"
           className="absolute bottom-1 right-1 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
-          onClick={(e) => {
-            e.stopPropagation();
-            onResetToDefault();
-          }}
+          onClick={onResetToDefault}
           title={t("Reset to default")}
+          aria-label={t("Reset key position {{position}} to default", {
+            position: keyPosition,
+          })}
         >
           <IconHistory size={12} className="text-[var(--color-electric)]" />
         </button>
       )}
     </div>
-  );
-
-  // Always wrap with tooltip to show binding info
-  return (
-    <Tooltip.Provider delayDuration={200} disableHoverableContent>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>{keyContent}</Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
-            sideOffset={5}
-          >
-            <div className="space-y-1">
-              {/* Always show displayName */}
-              <div>
-                <span className="font-medium">
-                  {longDisplayName || displayName}
-                </span>
-              </div>
-              {/* Show binding description only if different from displayName */}
-              {bindingDescription &&
-                bindingDescription !== displayName &&
-                longDisplayName !== bindingDescription && (
-                  <div>
-                    <span className="text-[var(--color-text-muted)]">
-                      {t("Binding")}:{" "}
-                    </span>
-                    <span>{bindingDescription}</span>
-                  </div>
-                )}
-              {/* Original binding info when modified and still known */}
-              {isModified && isOriginalKnown && originalDisplayName && (
-                <div>
-                  <span className="text-[var(--color-text-muted)]">
-                    {t("Original")}:{" "}
-                  </span>
-                  <span>{originalDisplayName}</span>
-                </div>
-              )}
-              {/* Original lost (e.g. after a tab switch): we can't recover the
-                  saved value, so say so and fall back to the default below. */}
-              {isModified && !isOriginalKnown && (
-                <div>
-                  <span className="text-[var(--color-text-muted)]">
-                    {t("Original")}:{" "}
-                  </span>
-                  <span>{t("Unknown")}</span>
-                </div>
-              )}
-              {/* Default binding: shown when the persisted value differs from it
-                  (changed-from-default), or as the fall-back reference for a
-                  modified key whose original is unknown. */}
-              {((isChangedFromDefault && !isModified) ||
-                (isModified && !isOriginalKnown)) &&
-                defaultDisplayName && (
-                  <div>
-                    <span className="text-[var(--color-text-muted)]">
-                      {t("Default")}:{" "}
-                    </span>
-                    <span className="text-[var(--color-electric)]">
-                      {defaultDisplayName}
-                    </span>
-                  </div>
-                )}
-            </div>
-            <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
   );
 }
 

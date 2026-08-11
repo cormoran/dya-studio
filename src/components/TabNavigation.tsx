@@ -48,6 +48,7 @@ export function TabNavigation({
           <Tabs.Trigger
             key={tab.id}
             value={tab.id}
+            aria-label={tab.label}
             className="tab-trigger flex items-center gap-2 whitespace-nowrap"
           >
             <span className="opacity-70">{tab.icon}</span>

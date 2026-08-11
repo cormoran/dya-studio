@@ -45,6 +45,22 @@ function renderTabs(tabs: TabItem[], initialTab = tabs[0].id) {
 }
 
 describe("TabNavigation", () => {
+  test("tabs keep an accessible name when their visible label is hidden", () => {
+    renderTabs([
+      {
+        id: "first",
+        label: "First",
+        icon: null,
+        content: <div>first body</div>,
+      },
+    ]);
+
+    expect(screen.getByRole("tab", { name: "First" })).toHaveAttribute(
+      "aria-label",
+      "First",
+    );
+  });
+
   test("a visited tab keeps its state after switching away and back", async () => {
     const user = userEvent.setup();
     const onMountFirst = jest.fn();
