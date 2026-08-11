@@ -1,12 +1,18 @@
 import {
   IconArrowLeft,
   IconArrowRight,
+  IconChevronDown,
   IconChevronRight,
+  IconHome,
   IconLink,
+  IconMenu2,
+  IconMoon,
   IconPhoto,
+  IconSun,
 } from "@tabler/icons-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
+import { useTheme } from "../../hooks/useTheme";
 import type {
   DeveloperGuideLink,
   DeveloperGuideNavigationItem,
@@ -78,6 +84,22 @@ function NavigationItems({
       })}
     </ul>
   );
+}
+
+function findNavigationLabel(
+  items: DeveloperGuideNavigationItem[],
+  activeId?: string,
+): string | undefined {
+  for (const item of items) {
+    if (item.id === activeId) return item.label;
+
+    const nestedLabel = item.items
+      ? findNavigationLabel(item.items, activeId)
+      : undefined;
+    if (nestedLabel) return nestedLabel;
+  }
+
+  return undefined;
 }
 
 function Section({ section }: { section: DeveloperGuideSection }) {
@@ -342,10 +364,14 @@ export function DeveloperGuidePage({
 }: {
   page: DeveloperGuidePageDefinition;
 }) {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const guideLabel = language === "en" ? "Developer guide" : "開発者ガイド";
   const onThisPageLabel =
     language === "en" ? "On this page" : "このページの内容";
+  const menuLabel = language === "en" ? "Menu" : "メニュー";
+  const activeNavigationLabel =
+    findNavigationLabel(page.navigation, page.activeNavigationId) ?? guideLabel;
   const breadcrumbs = [
     { label: guideLabel, href: "/developer-guide" },
     ...(page.breadcrumbs ?? []),
@@ -360,6 +386,7 @@ export function DeveloperGuidePage({
     if (!href?.startsWith("/developer-guide")) return;
 
     event.preventDefault();
+    link?.closest("details")?.removeAttribute("open");
     window.scrollTo(0, 0);
     window.history.pushState({}, "", href);
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -372,9 +399,43 @@ export function DeveloperGuidePage({
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 tablet:flex-row tablet:items-start tablet:p-6">
         <aside className="shrink-0 tablet:sticky tablet:top-6 tablet:w-56">
+          <details className="group rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] tablet:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 marker:content-none [&::-webkit-details-marker]:hidden">
+              <IconMenu2
+                size={20}
+                className="shrink-0 text-[var(--color-electric)]"
+                aria-hidden="true"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                  {guideLabel}
+                </span>
+                <span className="block truncate text-sm font-medium text-[var(--color-text)]">
+                  {activeNavigationLabel}
+                </span>
+              </span>
+              <span className="text-xs text-[var(--color-text-muted)]">
+                {menuLabel}
+              </span>
+              <IconChevronDown
+                size={18}
+                className="shrink-0 text-[var(--color-text-muted)] transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </summary>
+            <nav
+              aria-label={guideLabel}
+              className="border-t border-[var(--color-border)] p-2"
+            >
+              <NavigationItems
+                items={page.navigation}
+                activeId={page.activeNavigationId}
+              />
+            </nav>
+          </details>
           <nav
             aria-label={guideLabel}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+            className="hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 tablet:block"
           >
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
               {guideLabel}
@@ -441,17 +502,35 @@ export function DeveloperGuidePage({
           </nav>
 
           <header className="mb-10 border-t border-[var(--color-border)] pt-6">
-            <div className="mb-4 flex justify-end gap-1 text-xs">
-              {(["ja", "en"] as const).map((locale) => (
-                <button
-                  key={locale}
-                  type="button"
-                  onClick={() => setLanguage(locale)}
-                  className={`rounded px-2 py-1 ${language === locale ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
-                >
-                  {locale === "ja" ? "日本語" : "English"}
-                </button>
-              ))}
+            <div className="mb-4 flex items-center justify-end gap-2 text-xs">
+              <div className="flex gap-1">
+                {(["ja", "en"] as const).map((locale) => (
+                  <button
+                    key={locale}
+                    type="button"
+                    onClick={() => setLanguage(locale)}
+                    className={`rounded px-2 py-1 ${language === locale ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
+                  >
+                    {locale === "ja" ? "日本語" : "English"}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="theme-toggle"
+                aria-label={
+                  theme === "dark"
+                    ? t("Switch to light mode")
+                    : t("Switch to dark mode")
+                }
+              >
+                {theme === "dark" ? (
+                  <IconSun size={18} aria-hidden="true" />
+                ) : (
+                  <IconMoon size={18} aria-hidden="true" />
+                )}
+              </button>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)] tablet:text-3xl">
               {page.title}
@@ -519,6 +598,16 @@ export function DeveloperGuidePage({
               )}
             </nav>
           )}
+
+          <footer className="mt-10 border-t border-[var(--color-border)] pt-6">
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-electric)]"
+            >
+              <IconHome size={17} aria-hidden="true" />
+              {t("Back to DYA Studio")}
+            </a>
+          </footer>
         </main>
       </div>
     </div>
