@@ -46,6 +46,7 @@ import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu"
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
 import { useIsTabActive } from "../hooks/useIsTabActive";
+import { useKeymapWebMcpTools } from "../hooks/useKeymapWebMcpTools";
 
 export function KeymapPage() {
   const { t } = useLanguage();
@@ -63,6 +64,7 @@ export function KeymapPage() {
   // "restore a previous version" flow behind the reset dropdown.
   const versionHistory = useKeymapVersionHistory(keymap, t);
   const isTabActive = useIsTabActive();
+  useKeymapWebMcpTools(keymap, isTabActive);
   // Proactive lock state: the fast-keymap subsystem is unsecured, so the keymap
   // is viewable while Studio is locked. We use this to (a) show a lock badge in
   // place of Save/Reset and (b) prompt for unlock the moment the user tries to

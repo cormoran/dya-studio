@@ -7,11 +7,12 @@
  * before the callback page could read it — a failure that only shows up as
  * "login silently does nothing". These tests pin that down.
  */
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import App from "../App";
 import { DEVELOPER_GUIDE_PATH } from "../content/developerGuide";
 import { OAUTH_CALLBACK_PATH } from "../lib/abyss/abyssOAuth";
 import { RELEASE_NOTES_PATH } from "../pages/ReleaseNotesPage";
+import type { WebMcpTool } from "../lib/webMcp";
 
 // The standalone pages are rendered by App directly; stub them so these tests
 // stay about routing rather than page internals.
@@ -88,5 +89,42 @@ describe("App routing", () => {
     render(<App />);
 
     await waitFor(() => expect(window.location.pathname).toBe("/"));
+  });
+});
+
+describe("App WebMCP navigation", () => {
+  afterEach(() => {
+    Object.defineProperty(document, "modelContext", {
+      configurable: true,
+      value: undefined,
+    });
+  });
+
+  it("registers app tools and switches tabs through the tracked navigation path", async () => {
+    const registered: WebMcpTool[] = [];
+    Object.defineProperty(document, "modelContext", {
+      configurable: true,
+      value: {
+        registerTool: (tool: WebMcpTool) => {
+          registered.push(tool);
+        },
+      },
+    });
+    goTo("/");
+
+    render(<App />);
+    await waitFor(() =>
+      expect(registered.some((tool) => tool.name === "dya_switch_tab")).toBe(
+        true,
+      ),
+    );
+    const switchTab = registered.find((tool) => tool.name === "dya_switch_tab");
+    if (!switchTab) throw new Error("dya_switch_tab was not registered");
+
+    await act(async () => {
+      await switchTab.execute({ tab: "keymap" });
+    });
+
+    expect(window.location.pathname).toBe("/keymap");
   });
 });

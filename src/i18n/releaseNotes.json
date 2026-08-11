@@ -6,7 +6,12 @@
       "changes": {
         "major": [],
         "minor": [],
-        "patch": []
+        "patch": [
+          {
+            "en": "Added WebMCP tools so AI agents can inspect DYA Studio, switch tabs, and edit, save, or discard keymap changes.",
+            "ja": "AI エージェントが DYA Studio の状態確認・タブ切り替え・キーマップの編集、保存、破棄を行える WebMCP ツールを追加しました。"
+          }
+        ]
       }
     },
     {

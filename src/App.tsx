@@ -1,4 +1,4 @@
-import { useContext, useCallback, useEffect, useState } from "react";
+import { useContext, useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IconCloudUpload,
@@ -46,6 +46,7 @@ import { useUrlTab, pathnameFromTabId } from "./hooks/useUrlTab";
 import { useDevtool } from "./hooks/useDevtool";
 import { DevtoolWindow } from "./components/DevtoolWindow";
 import { trackPageView } from "./lib/analytics";
+import { requireString, useWebMcpTools, type WebMcpTool } from "./lib/webMcp";
 import { DeveloperGuidePage } from "./components/developerGuide";
 import {
   DEVELOPER_GUIDE_PATH,
@@ -169,7 +170,7 @@ function AppContent() {
   const connection = useContext(ConnectionContext);
   const { t } = useLanguage();
   const [urlTab, navigateToTab] = useUrlTab();
-  const tabs = getTabs(t);
+  const tabs = useMemo(() => getTabs(t), [t]);
   const { isAvailable: isDevtoolAvailable } = useDevtool();
   const [devtoolOpen, setDevtoolOpen] = useState(false);
   const activeTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "home";
@@ -226,6 +227,73 @@ function AppContent() {
     },
     [navigateToTab, tabs],
   );
+
+  const webMcpTools = useMemo<readonly WebMcpTool[]>(() => {
+    const availableTabs = tabs.map(({ id, label }) => ({ id, label }));
+    const availableTabIds = availableTabs.map(({ id }) => id);
+
+    return [
+      {
+        name: "dya_get_app_state",
+        title: "Get DYA Studio state",
+        description:
+          "Get the keyboard connection state, connected device name, active tab, and tabs available in DYA Studio.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+        annotations: { readOnlyHint: true, openWorldHint: false },
+        execute: () => ({
+          connected: connection.isConnected,
+          deviceName: connection.deviceName ?? null,
+          activeTab,
+          availableTabs,
+        }),
+      },
+      {
+        name: "dya_switch_tab",
+        title: "Switch DYA Studio tab",
+        description:
+          "Switch the visible DYA Studio tab. Use dya_get_app_state to inspect available tabs and the current tab.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            tab: {
+              type: "string",
+              enum: availableTabIds,
+              description: "ID of the tab to show.",
+            },
+          },
+          required: ["tab"],
+          additionalProperties: false,
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+        execute: (input) => {
+          const tab = requireString(input, "tab");
+          if (!availableTabIds.includes(tab)) {
+            throw new RangeError(`Unknown tab: ${tab}`);
+          }
+          // Keep navigation, URL updates, and analytics on the same path as a
+          // human tab click; WebMCP must not grow a second navigation flow.
+          setActiveTabWithTracking(tab);
+          return { activeTab: tab };
+        },
+      },
+    ];
+  }, [
+    activeTab,
+    connection.isConnected,
+    connection.deviceName,
+    tabs,
+    setActiveTabWithTracking,
+  ]);
+  useWebMcpTools(webMcpTools);
 
   // Both standalone routes return before the connection gate: the user lands on
   // the OAuth callback with no keyboard connected whenever the popup was
