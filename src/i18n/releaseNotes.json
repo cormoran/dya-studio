@@ -8,8 +8,8 @@
         "minor": [],
         "patch": [
           {
-            "en": "Added WebMCP tools so AI agents can inspect DYA Studio, switch tabs, and edit, save, or discard keymap changes.",
-            "ja": "AI エージェントが DYA Studio の状態確認・タブ切り替え・キーマップの編集、保存、破棄を行える WebMCP ツールを追加しました。"
+            "en": "Added WebMCP tools, including a polyfill for unsupported browsers, so AI agents can inspect DYA Studio, switch tabs, and edit, save, or discard keymap changes.",
+            "ja": "非対応ブラウザ向け polyfill を含む WebMCP ツールを追加し、AI エージェントが DYA Studio の状態確認・タブ切り替え・キーマップの編集、保存、破棄を行えるようにしました。"
           }
         ]
       }

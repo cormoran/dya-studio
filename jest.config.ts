@@ -55,10 +55,11 @@ const config: Config = {
     "!src/main.tsx",
     "!src/vite-env.d.ts",
   ],
-  // @keyboard-hub packages ship untranspiled ESM TypeScript sources, so they
-  // have to go through the transform like the ZMK client packages do.
+  // These packages ship ESM sources, so they have to go through the transform
+  // for Jest's CommonJS test runtime. The WebMCP polyfill pulls in the other
+  // two scopes as runtime dependencies.
   transformIgnorePatterns: [
-    "node_modules/(?!(@cormoran|@zmkfirmware|@keyboard-hub)/)",
+    "node_modules/(?!(@cormoran|@zmkfirmware|@keyboard-hub|@mcp-b|@cfworker|@standard-schema)/)",
   ],
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": [
