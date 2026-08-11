@@ -1,8 +1,10 @@
 import {
   IconArrowLeft,
   IconArrowRight,
+  IconChevronDown,
   IconChevronRight,
   IconLink,
+  IconMenu2,
   IconPhoto,
 } from "@tabler/icons-react";
 import type { MouseEvent, ReactNode } from "react";
@@ -78,6 +80,22 @@ function NavigationItems({
       })}
     </ul>
   );
+}
+
+function findNavigationLabel(
+  items: DeveloperGuideNavigationItem[],
+  activeId?: string,
+): string | undefined {
+  for (const item of items) {
+    if (item.id === activeId) return item.label;
+
+    const nestedLabel = item.items
+      ? findNavigationLabel(item.items, activeId)
+      : undefined;
+    if (nestedLabel) return nestedLabel;
+  }
+
+  return undefined;
 }
 
 function Section({ section }: { section: DeveloperGuideSection }) {
@@ -346,6 +364,9 @@ export function DeveloperGuidePage({
   const guideLabel = language === "en" ? "Developer guide" : "開発者ガイド";
   const onThisPageLabel =
     language === "en" ? "On this page" : "このページの内容";
+  const menuLabel = language === "en" ? "Menu" : "メニュー";
+  const activeNavigationLabel =
+    findNavigationLabel(page.navigation, page.activeNavigationId) ?? guideLabel;
   const breadcrumbs = [
     { label: guideLabel, href: "/developer-guide" },
     ...(page.breadcrumbs ?? []),
@@ -360,6 +381,7 @@ export function DeveloperGuidePage({
     if (!href?.startsWith("/developer-guide")) return;
 
     event.preventDefault();
+    link?.closest("details")?.removeAttribute("open");
     window.scrollTo(0, 0);
     window.history.pushState({}, "", href);
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -372,9 +394,43 @@ export function DeveloperGuidePage({
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 tablet:flex-row tablet:items-start tablet:p-6">
         <aside className="shrink-0 tablet:sticky tablet:top-6 tablet:w-56">
+          <details className="group rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] tablet:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 marker:content-none [&::-webkit-details-marker]:hidden">
+              <IconMenu2
+                size={20}
+                className="shrink-0 text-[var(--color-electric)]"
+                aria-hidden="true"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                  {guideLabel}
+                </span>
+                <span className="block truncate text-sm font-medium text-[var(--color-text)]">
+                  {activeNavigationLabel}
+                </span>
+              </span>
+              <span className="text-xs text-[var(--color-text-muted)]">
+                {menuLabel}
+              </span>
+              <IconChevronDown
+                size={18}
+                className="shrink-0 text-[var(--color-text-muted)] transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </summary>
+            <nav
+              aria-label={guideLabel}
+              className="border-t border-[var(--color-border)] p-2"
+            >
+              <NavigationItems
+                items={page.navigation}
+                activeId={page.activeNavigationId}
+              />
+            </nav>
+          </details>
           <nav
             aria-label={guideLabel}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+            className="hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 tablet:block"
           >
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
               {guideLabel}
