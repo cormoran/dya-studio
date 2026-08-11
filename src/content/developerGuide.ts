@@ -906,6 +906,41 @@ export const developerGuidePages: Record<
   },
 };
 
+const dyaStudioSampleRepository =
+  "https://github.com/cormoran/zmk-config-dya-studio-sample";
+
+const dyaStudioSamplePullRequests: Partial<
+  Record<DeveloperGuideRoute, string>
+> = {
+  "/developer-guide": "1",
+  "/developer-guide/level-1": "2",
+  "/developer-guide/level-2": "3",
+  "/developer-guide/modules/keymap": "4",
+  "/developer-guide/modules/trackball": "5",
+  "/developer-guide/modules/connection": "6",
+  "/developer-guide/modules/settings": "7",
+  "/developer-guide/modules/diagnostics": "8",
+  // The PMW3610 driver is itself a Custom Studio Protocol implementation.
+  "/developer-guide/level-3": "5",
+  "/developer-guide/reference/keyboard-config": "3",
+  "/developer-guide/troubleshooting": "8",
+};
+
+for (const [route, pullRequest] of Object.entries(
+  dyaStudioSamplePullRequests,
+)) {
+  developerGuidePages[route as DeveloperGuideRoute].sections.unshift({
+    title: "参照実装",
+    body: ["このページに対応する dya-studio-sample の PR です。"],
+    links: [
+      {
+        label: "GitHub で PR を開く",
+        href: `${dyaStudioSampleRepository}/pull/${pullRequest}`,
+      },
+    ],
+  });
+}
+
 export const developerGuideRoutes = Object.keys(
   developerGuidePages,
 ) as DeveloperGuideRoute[];
@@ -1505,6 +1540,10 @@ const englishText: Record<string, string> = {
   "接続先と OS": "Connections and OS",
   "レベル 3: 独自 RPC": "Level 3: Custom RPC",
   "DYA2 リファレンス": "DYA2 reference",
+  参照実装: "Reference implementation",
+  "このページに対応する dya-studio-sample の PR です。":
+    "This is the dya-studio-sample PR for this page.",
+  "GitHub で PR を開く": "Open PR on GitHub",
   開発者ガイド: "Developer guide",
   "関連: ": "Related: ",
   "次へ: ": "Next: ",
