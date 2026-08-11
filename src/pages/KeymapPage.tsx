@@ -532,13 +532,19 @@ export function KeymapPage() {
 
         {/* Error State (unlock errors are handled by the shared unlock modal) */}
         {keymap.error && (
-          <div className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 flex items-center gap-3">
+          <div
+            role="alert"
+            className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 flex items-center gap-3"
+          >
             <IconAlertCircle size={20} className="text-red-400" />
             <p className="text-sm text-red-400">{t(keymap.error)}</p>
           </div>
         )}
         {inputStream.error && (
-          <div className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 flex items-center gap-3">
+          <div
+            role="alert"
+            className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 flex items-center gap-3"
+          >
             <IconAlertCircle size={20} className="text-red-400" />
             <p className="text-sm text-red-400">{t(inputStream.error)}</p>
             <button
@@ -564,7 +570,11 @@ export function KeymapPage() {
           <>
             {/* Layer Tabs */}
             <div className="flex flex-wrap items-center gap-2 mb-6">
-              <div className="flex gap-2 flex-1 overflow-x-auto pb-2 basis-full sm:basis-auto">
+              <div
+                className="flex gap-2 flex-1 overflow-x-auto pb-2 basis-full sm:basis-auto"
+                role="group"
+                aria-label={t("Keymap layers")}
+              >
                 {keymap.keymap.layers.map((layer, index) => (
                   <button
                     key={layer.id}
@@ -574,6 +584,7 @@ export function KeymapPage() {
                         : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
                     }`}
                     onClick={() => setSelectedLayerIndex(index)}
+                    aria-pressed={index === selectedLayerIndex}
                   >
                     {layer.name || t("Layer {{id}}", { id: index })}
                   </button>
@@ -809,10 +820,14 @@ export function KeymapPage() {
               {keymap.physicalLayouts &&
                 keymap.physicalLayouts.layouts.length > 1 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[var(--color-text-muted)]">
+                    <label
+                      htmlFor="keymap-physical-layout"
+                      className="text-xs text-[var(--color-text-muted)]"
+                    >
                       {t("Physical Layout")}:
-                    </span>
+                    </label>
                     <select
+                      id="keymap-physical-layout"
                       value={keymap.physicalLayouts.activeLayoutIndex}
                       onChange={(e) =>
                         keymap.setActiveLayout(Number(e.target.value))
@@ -830,10 +845,14 @@ export function KeymapPage() {
 
               {/* Keyboard Layout Selector */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--color-text-muted)]">
+                <label
+                  htmlFor="keymap-os-layout"
+                  className="text-xs text-[var(--color-text-muted)]"
+                >
                   {t("OS Layout")}:
-                </span>
+                </label>
                 <select
+                  id="keymap-os-layout"
                   value={keyboardLayoutContext.layout}
                   onChange={(e) =>
                     keyboardLayoutContext.setLayout(
@@ -897,6 +916,9 @@ export function KeymapPage() {
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
                 <div
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
                   className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/70 text-xs"
                   title={
                     !keymap.hasUnsavedChanges &&
@@ -952,6 +974,11 @@ export function KeymapPage() {
                       : []
                   }
                   highlightedKeys={inputStream.highlightedKeys}
+                  ariaLabel={t("Keyboard layout for {{layer}}", {
+                    layer:
+                      currentLayer.name ||
+                      t("Layer {{id}}", { id: selectedLayerIndex }),
+                  })}
                 />
               </div>
             )}

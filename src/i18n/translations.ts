@@ -127,6 +127,14 @@ const ja: Record<string, string> = {
     "すべての変更を破棄しますか？",
   "Are you sure you want to delete this layer?": "このレイヤーを削除しますか？",
   "Layer {{id}}": "レイヤー {{id}}",
+  "Keymap layers": "キーマップのレイヤー",
+  "Keyboard layout for {{layer}}": "{{layer}} のキーボード配列",
+  "Key position {{position}}: {{binding}}":
+    "キー位置 {{position}}: {{binding}}",
+  "Reset key position {{position}} to original":
+    "キー位置 {{position}} を元の割り当てに戻す",
+  "Reset key position {{position}} to default":
+    "キー位置 {{position}} をデフォルトに戻す",
   Sort: "並び替え",
   "Move layer up (higher priority)": "レイヤーを上へ移動（優先度を上げる）",
   "Move layer down (lower priority)": "レイヤーを下へ移動（優先度を下げる）",

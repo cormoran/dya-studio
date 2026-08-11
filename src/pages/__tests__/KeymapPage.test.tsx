@@ -274,6 +274,35 @@ describe("KeymapPage", () => {
       expect(screen.getByText("Lower")).toBeInTheDocument();
     });
 
+    it("exposes the keymap controls with names and selection state", () => {
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      const layers = screen.getByRole("group", { name: "Keymap layers" });
+      expect(
+        within(layers).getByRole("button", { name: "Base" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        within(layers).getByRole("button", { name: "Lower" }),
+      ).toHaveAttribute("aria-pressed", "false");
+      expect(
+        screen.getByRole("combobox", { name: "OS Layout:" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("group", { name: "Keyboard layout for Base" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("button", { name: /Key position \d+:/ }),
+      ).toHaveLength(3);
+      expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    });
+
     it("should show unsaved changes indicator", () => {
       renderComponent(
         { isConnected: true },
