@@ -3,12 +3,16 @@ import {
   IconArrowRight,
   IconChevronDown,
   IconChevronRight,
+  IconHome,
   IconLink,
   IconMenu2,
+  IconMoon,
   IconPhoto,
+  IconSun,
 } from "@tabler/icons-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
+import { useTheme } from "../../hooks/useTheme";
 import type {
   DeveloperGuideLink,
   DeveloperGuideNavigationItem,
@@ -360,7 +364,8 @@ export function DeveloperGuidePage({
 }: {
   page: DeveloperGuidePageDefinition;
 }) {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const guideLabel = language === "en" ? "Developer guide" : "開発者ガイド";
   const onThisPageLabel =
     language === "en" ? "On this page" : "このページの内容";
@@ -497,17 +502,35 @@ export function DeveloperGuidePage({
           </nav>
 
           <header className="mb-10 border-t border-[var(--color-border)] pt-6">
-            <div className="mb-4 flex justify-end gap-1 text-xs">
-              {(["ja", "en"] as const).map((locale) => (
-                <button
-                  key={locale}
-                  type="button"
-                  onClick={() => setLanguage(locale)}
-                  className={`rounded px-2 py-1 ${language === locale ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
-                >
-                  {locale === "ja" ? "日本語" : "English"}
-                </button>
-              ))}
+            <div className="mb-4 flex items-center justify-end gap-2 text-xs">
+              <div className="flex gap-1">
+                {(["ja", "en"] as const).map((locale) => (
+                  <button
+                    key={locale}
+                    type="button"
+                    onClick={() => setLanguage(locale)}
+                    className={`rounded px-2 py-1 ${language === locale ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
+                  >
+                    {locale === "ja" ? "日本語" : "English"}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="theme-toggle"
+                aria-label={
+                  theme === "dark"
+                    ? t("Switch to light mode")
+                    : t("Switch to dark mode")
+                }
+              >
+                {theme === "dark" ? (
+                  <IconSun size={18} aria-hidden="true" />
+                ) : (
+                  <IconMoon size={18} aria-hidden="true" />
+                )}
+              </button>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)] tablet:text-3xl">
               {page.title}
@@ -575,6 +598,16 @@ export function DeveloperGuidePage({
               )}
             </nav>
           )}
+
+          <footer className="mt-10 border-t border-[var(--color-border)] pt-6">
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-electric)]"
+            >
+              <IconHome size={17} aria-hidden="true" />
+              {t("Back to DYA Studio")}
+            </a>
+          </footer>
         </main>
       </div>
     </div>

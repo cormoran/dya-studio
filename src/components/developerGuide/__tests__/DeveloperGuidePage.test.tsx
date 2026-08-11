@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { ThemeContext } from "../../../contexts/ThemeContext";
 import { DeveloperGuidePage } from "../DeveloperGuidePage";
 import type { DeveloperGuidePageDefinition } from "../types";
 
@@ -63,5 +64,26 @@ describe("DeveloperGuidePage navigation", () => {
 
     expect(disclosure).not.toHaveAttribute("open");
     expect(window.location.pathname).toBe("/developer-guide/modules/settings");
+  });
+
+  it("offers theme switching and a link back to DYA Studio", () => {
+    const toggleTheme = jest.fn();
+
+    render(
+      <ThemeContext.Provider
+        value={{ theme: "dark", toggleTheme, setTheme: jest.fn() }}
+      >
+        <DeveloperGuidePage page={page} />
+      </ThemeContext.Provider>,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Switch to light mode" }),
+    );
+
+    expect(toggleTheme).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("link", { name: "Back to DYA Studio" }),
+    ).toHaveAttribute("href", "/");
   });
 });
