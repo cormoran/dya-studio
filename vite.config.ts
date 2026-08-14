@@ -33,6 +33,8 @@ const ZMK_STUDIO_CLIENT_ALIAS = {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   return {
+    // `./` lets the Electron `file://` build resolve assets; web release sets `VITE_BASE=/`.
+    base: env.VITE_BASE || "./",
     resolve: { alias: ZMK_STUDIO_CLIENT_ALIAS },
     plugins: [
       tailwindcss(),
