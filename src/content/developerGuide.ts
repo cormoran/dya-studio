@@ -1733,9 +1733,9 @@ export function getDeveloperGuidePageDefinition(
   language: Language = "ja",
 ): DeveloperGuidePageDefinition | undefined {
   const pages =
-    language === "en"
-      ? englishDeveloperGuidePageDefinitions
-      : developerGuidePageDefinitions;
+    language === "ja"
+      ? developerGuidePageDefinitions
+      : englishDeveloperGuidePageDefinitions;
   return pages[route as DeveloperGuideRoute];
 }
 

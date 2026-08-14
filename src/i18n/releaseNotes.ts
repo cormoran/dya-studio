@@ -21,10 +21,11 @@ export type ChangeCategory = "major" | "minor" | "patch";
 
 export const CHANGE_CATEGORIES: ChangeCategory[] = ["major", "minor", "patch"];
 
-/** A piece of text authored in both supported languages. */
+/** A piece of text authored in the supported languages. */
 export interface LocalizedText {
   en: string;
   ja: string;
+  zh?: string;
 }
 
 /** A single change entry, authored in both supported languages. */

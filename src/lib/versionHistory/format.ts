@@ -7,7 +7,11 @@
  */
 import type { Language } from "../../i18n/translations";
 
-const LOCALES: Record<Language, string> = { en: "en-US", ja: "ja-JP" };
+const LOCALES: Record<Language, string> = {
+  en: "en-US",
+  ja: "ja-JP",
+  zh: "zh-CN",
+};
 
 /** Absolute capture time, e.g. `Jul 27, 2026, 11:39 PM`. */
 export function formatVersionTimestamp(
