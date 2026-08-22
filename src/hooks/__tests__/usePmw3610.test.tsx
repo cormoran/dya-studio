@@ -37,7 +37,7 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => {
 type NotificationCallback = (n: CustomNotification) => void;
 
 function createWrapper() {
-  let subscribedCallback: NotificationCallback | null = null;
+  const subscribedCallbacks = new Set<NotificationCallback>();
   const zmkAppValue = {
     state: { connection: {}, customSubsystems: [] },
     findSubsystem: () => ({ index: 12, identifier: "cormoran__pmw3610" }),
@@ -47,10 +47,10 @@ function createWrapper() {
       callback: NotificationCallback;
     }) => {
       if (subscription.type === "custom") {
-        subscribedCallback = subscription.callback;
+        subscribedCallbacks.add(subscription.callback);
       }
       return () => {
-        subscribedCallback = null;
+        subscribedCallbacks.delete(subscription.callback);
       };
     },
   };
@@ -61,8 +61,9 @@ function createWrapper() {
   );
   return {
     Wrapper,
-    emit: (notification: CustomNotification) =>
-      subscribedCallback?.(notification),
+    emit: (notification: CustomNotification) => {
+      for (const callback of subscribedCallbacks) callback(notification);
+    },
   };
 }
 
@@ -130,6 +131,86 @@ describe("usePmw3610 frame capture/streaming", () => {
     expect(result.current.isCapturing).toBe(false);
     expect(result.current.frame!.format).toBe(PixelFormat.PIXEL_FORMAT_PG7);
   });
+
+  it("discovers a split peripheral and routes diagnostics to its source", async () => {
+    const { Wrapper, emit } = createWrapper();
+    mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
+      const req = Request.decode(payload);
+      if (req.getInfo !== undefined) {
+        expect(req.getInfo.source).toBe(0xffffffff);
+        setTimeout(() => {
+          emit({
+            subsystemIndex: 12,
+            payload: Notification.encode(
+              Notification.create({
+                peripheralResponse: {
+                  source: 1,
+                  requestId: 31,
+                  response: Response.create({
+                    getInfo: {
+                      devices: [
+                        {
+                          ready: true,
+                          productId: 0x3e,
+                          deviceIndex: 0,
+                          settingsId: "mkb-rtb",
+                        },
+                      ],
+                    },
+                  }),
+                },
+              }),
+            ).finish(),
+          });
+        }, 0);
+        return encodeResponse({
+          getInfo: { devices: [], relayRequestId: 31 },
+        });
+      }
+      if (req.readDiagnostics !== undefined) {
+        expect(req.readDiagnostics).toMatchObject({
+          deviceIndex: 0,
+          source: 1,
+        });
+        setTimeout(() => {
+          emit({
+            subsystemIndex: 12,
+            payload: Notification.encode(
+              Notification.create({
+                peripheralResponse: {
+                  source: 1,
+                  requestId: 32,
+                  response: Response.create({
+                    readDiagnostics: { squal: 47, shutter: 9 },
+                  }),
+                },
+              }),
+            ).finish(),
+          });
+        }, 0);
+        return encodeResponse({ deferred: { requestId: 32 } });
+      }
+      return encodeResponse({ error: { message: "unhandled" } });
+    });
+
+    const { result } = renderHook(() => usePmw3610(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.devices).toHaveLength(1), {
+      timeout: 3_500,
+    });
+    expect(result.current.devices[0]).toMatchObject({
+      source: 1,
+      deviceIndex: 0,
+      settingsId: "mkb-rtb",
+    });
+
+    await act(async () => {
+      await result.current.readDiagnostics(0);
+    });
+    expect(result.current.diagnostics).toMatchObject({
+      squal: 47,
+      shutter: 9,
+    });
+  }, 10_000);
 
   it("captureOnce honors an explicit RAW8 format (no bit7 masking, no invalid bytes)", async () => {
     mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
