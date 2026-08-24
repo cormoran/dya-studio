@@ -107,9 +107,15 @@ export function Pmw3610Section({ pmw3610 }: { pmw3610: UsePmw3610Return }) {
             </p>
           )}
 
-          {devices.map((device, index) => (
-            <div key={index} className="mb-3">
+          {devices.map((device) => (
+            <div
+              key={`${device.source}:${device.deviceIndex}`}
+              className="mb-3"
+            >
               <div className="flex flex-wrap gap-4 text-xs text-[var(--color-text-secondary)]">
+                <span>
+                  {t("Source")}: <strong>{device.source}</strong>
+                </span>
                 <span>
                   {t("Ready")}:{" "}
                   <strong
@@ -148,7 +154,9 @@ export function Pmw3610Section({ pmw3610 }: { pmw3610: UsePmw3610Return }) {
                 )}
               </div>
               <button
-                onClick={() => void readDiagnostics(index)}
+                onClick={() =>
+                  void readDiagnostics(device.source, device.deviceIndex)
+                }
                 disabled={isLoading}
                 className="btn-ghost text-sm mt-2"
               >
@@ -180,7 +188,8 @@ export function Pmw3610Section({ pmw3610 }: { pmw3610: UsePmw3610Return }) {
           {devices.length > 0 && (
             <Pmw3610FrameViewer
               pmw3610={pmw3610}
-              deviceIndex={0}
+              source={devices[0].source}
+              deviceIndex={devices[0].deviceIndex}
               side={frameSide}
               onSideChange={setFrameSide}
             />

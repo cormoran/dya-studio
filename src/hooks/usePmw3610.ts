@@ -19,6 +19,10 @@ import {
   isValidPixelByte,
   type FrameChunk,
 } from "../lib/pmw3610Frame";
+import {
+  PMW3610_SOURCE_ALL,
+  Pmw3610RelayCorrelator,
+} from "../lib/pmw3610Relay";
 
 export const PMW3610_SUBSYSTEM_IDENTIFIER = "cormoran__pmw3610";
 
@@ -43,14 +47,18 @@ export interface CapturedFrame {
   format: PixelFormat;
 }
 
+export interface SourcedPmw3610Device extends DeviceInfo {
+  source: number;
+}
+
 export interface UsePmw3610Return {
   isAvailable: boolean;
-  devices: DeviceInfo[];
+  devices: SourcedPmw3610Device[];
   diagnostics: ReadDiagnosticsResponse | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  readDiagnostics: (deviceIndex: number) => Promise<void>;
+  readDiagnostics: (source: number, deviceIndex: number) => Promise<void>;
   /** Latest completed frame (one-shot capture or a completed streamed
    * frame), or null before any capture. */
   frame: CapturedFrame | null;
@@ -59,8 +67,16 @@ export interface UsePmw3610Return {
   /** Frames-per-second measured over ~1s windows while streaming; null
    * otherwise. */
   fps: number | null;
-  captureOnce: (deviceIndex: number, side: number) => Promise<void>;
-  startStreaming: (deviceIndex: number, side: number) => Promise<void>;
+  captureOnce: (
+    source: number,
+    deviceIndex: number,
+    side: number,
+  ) => Promise<void>;
+  startStreaming: (
+    source: number,
+    deviceIndex: number,
+    side: number,
+  ) => Promise<void>;
   stopStreaming: () => Promise<void>;
 }
 
@@ -73,13 +89,14 @@ export function usePmw3610(): UsePmw3610Return {
     PMW3610_SUBSYSTEM_IDENTIFIER,
     CODEC,
   );
-  const [devices, setDevices] = useState<DeviceInfo[]>([]);
+  const [devices, setDevices] = useState<SourcedPmw3610Device[]>([]);
   const [diagnostics, setDiagnostics] =
     useState<ReadDiagnosticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const subsystemIndex = subsystem?.index;
+  const relayRef = useRef(new Pmw3610RelayCorrelator());
 
   const callRpc = useCallback(
     async (request: Request): Promise<Response | null> => {
@@ -92,17 +109,41 @@ export function usePmw3610(): UsePmw3610Return {
     [ready, call],
   );
 
+  const callRpcAwaitingRelay = useCallback(
+    async (request: Request, source: number): Promise<Response | null> => {
+      const response = await callRpc(request);
+      if (!response?.deferred) return response;
+      return relayRef.current.waitFor(response.deferred.requestId, source);
+    },
+    [callRpc],
+  );
+
   const refresh = useCallback(async () => {
     if (!ready) return;
     setIsLoading(true);
     setError(null);
     try {
-      const resp = await callRpc(Request.create({ getInfo: {} }));
+      const resp = await callRpc(
+        Request.create({ getInfo: { source: PMW3610_SOURCE_ALL } }),
+      );
       if (!resp) return;
       if (resp.error) {
         throw new Error(resp.error.message);
       }
-      setDevices(resp.getInfo?.devices ?? []);
+      const found: SourcedPmw3610Device[] = (resp.getInfo?.devices ?? []).map(
+        (device) => ({ ...device, source: 0 }),
+      );
+      const requestId = resp.getInfo?.relayRequestId ?? 0;
+      if (requestId) {
+        const peripheralResponses =
+          await relayRef.current.collectBroadcast(requestId);
+        for (const { source, response } of peripheralResponses) {
+          for (const device of response.getInfo?.devices ?? []) {
+            found.push({ ...device, source });
+          }
+        }
+      }
+      setDevices(found);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -111,11 +152,12 @@ export function usePmw3610(): UsePmw3610Return {
   }, [ready, callRpc]);
 
   const readDiagnostics = useCallback(
-    async (deviceIndex: number) => {
+    async (source: number, deviceIndex: number) => {
       setError(null);
       try {
-        const resp = await callRpc(
-          Request.create({ readDiagnostics: { deviceIndex } }),
+        const resp = await callRpcAwaitingRelay(
+          Request.create({ readDiagnostics: { source, deviceIndex } }),
+          source,
         );
         if (!resp) return;
         if (resp.error) {
@@ -126,8 +168,24 @@ export function usePmw3610(): UsePmw3610Return {
         setError(err instanceof Error ? err.message : "Unknown error");
       }
     },
-    [callRpc],
+    [callRpcAwaitingRelay],
   );
+
+  useEffect(() => {
+    if (!zmkApp || subsystemIndex === undefined) return;
+    const relay = relayRef.current;
+    const unsubscribe = zmkApp.onNotification({
+      type: "custom",
+      subsystemIndex,
+      callback: (notification) => {
+        relay.handle(notification.payload);
+      },
+    });
+    return () => {
+      unsubscribe();
+      relay.clear();
+    };
+  }, [zmkApp, subsystemIndex]);
 
   // Auto-fetch sensor info when the subsystem becomes available.
   useEffect(() => {
@@ -149,6 +207,7 @@ export function usePmw3610(): UsePmw3610Return {
   const fpsWindowStartRef = useRef(0);
   const unsubscribeStreamRef = useRef<(() => void) | null>(null);
   const streamingDeviceIndexRef = useRef(0);
+  const streamingSourceRef = useRef(0);
   // Per-frame_id incremental assembler, keyed so a late chunk from a
   // previous frame_id (should not happen, but notifications are
   // best-effort/unordered in principle) cannot corrupt the current frame.
@@ -157,14 +216,15 @@ export function usePmw3610(): UsePmw3610Return {
   );
 
   const captureOnce = useCallback(
-    async (deviceIndex: number, side: number) => {
+    async (source: number, deviceIndex: number, side: number) => {
       setIsCapturing(true);
       setError(null);
       try {
-        const captureResp = await callRpc(
+        const captureResp = await callRpcAwaitingRelay(
           Request.create({
-            captureFrame: { deviceIndex, pixelCount: side * side },
+            captureFrame: { source, deviceIndex, pixelCount: side * side },
           }),
+          source,
         );
         if (!captureResp) return;
         if (captureResp.error) {
@@ -180,10 +240,15 @@ export function usePmw3610(): UsePmw3610Return {
         const offsets = chunkOffsets(totalLength, chunkSize);
         const chunks: FrameChunk[] = [];
         for (const offset of offsets) {
-          const chunkResp = await callRpc(
+          const chunkResp = await callRpcAwaitingRelay(
             Request.create({
-              getFrameChunk: { frameId: captureFrame.frameId, offset },
+              getFrameChunk: {
+                source,
+                frameId: captureFrame.frameId,
+                offset,
+              },
             }),
+            source,
           );
           if (!chunkResp) return;
           if (chunkResp.error) {
@@ -217,23 +282,26 @@ export function usePmw3610(): UsePmw3610Return {
         setIsCapturing(false);
       }
     },
-    [callRpc],
+    [callRpcAwaitingRelay],
   );
 
   const setFrameStreamRpc = useCallback(
     async (
+      source: number,
       deviceIndex: number,
       enable: boolean,
       side: number,
     ): Promise<boolean> => {
-      const resp = await callRpc(
+      const resp = await callRpcAwaitingRelay(
         Request.create({
           setFrameStream: {
+            source,
             deviceIndex,
             enable,
             pixelCount: enable ? side * side : 0,
           },
         }),
+        source,
       );
       if (!resp) return false;
       if (resp.error) {
@@ -241,7 +309,7 @@ export function usePmw3610(): UsePmw3610Return {
       }
       return resp.setFrameStream?.streaming ?? false;
     },
-    [callRpc],
+    [callRpcAwaitingRelay],
   );
 
   const stopStreaming = useCallback(async () => {
@@ -249,16 +317,22 @@ export function usePmw3610(): UsePmw3610Return {
     unsubscribeStreamRef.current?.();
     unsubscribeStreamRef.current = null;
     try {
-      await setFrameStreamRpc(streamingDeviceIndexRef.current, false, 0);
+      await setFrameStreamRpc(
+        streamingSourceRef.current,
+        streamingDeviceIndexRef.current,
+        false,
+        0,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     }
   }, [setFrameStreamRpc]);
 
   const startStreaming = useCallback(
-    async (deviceIndex: number, side: number) => {
+    async (source: number, deviceIndex: number, side: number) => {
       if (isStreaming || !zmkApp || subsystemIndex === undefined) return;
       setError(null);
+      streamingSourceRef.current = source;
       streamingDeviceIndexRef.current = deviceIndex;
       assemblersRef.current.clear();
       frameCountRef.current = 0;
@@ -277,7 +351,7 @@ export function usePmw3610(): UsePmw3610Return {
               return;
             }
             const chunk = decoded.frameStreamChunk;
-            if (!chunk) return;
+            if (!chunk || chunk.source !== source) return;
 
             const assemblers = assemblersRef.current;
             for (const key of assemblers.keys()) {
@@ -322,7 +396,12 @@ export function usePmw3610(): UsePmw3610Return {
             }
           },
         });
-        const streaming = await setFrameStreamRpc(deviceIndex, true, side);
+        const streaming = await setFrameStreamRpc(
+          source,
+          deviceIndex,
+          true,
+          side,
+        );
         setIsStreaming(streaming);
         if (!streaming) {
           unsubscribeStreamRef.current?.();

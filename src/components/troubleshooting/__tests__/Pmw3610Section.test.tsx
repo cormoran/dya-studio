@@ -13,6 +13,8 @@ function basePmw3610(
     isAvailable: true,
     devices: [
       {
+        source: 2,
+        deviceIndex: 0,
         ready: true,
         productId: 0x3610,
         revisionId: 1,
@@ -48,6 +50,8 @@ describe("Pmw3610Section", () => {
         pmw3610={basePmw3610({
           devices: [
             {
+              source: 2,
+              deviceIndex: 0,
               ready: false,
               productId: 0x3610,
               revisionId: 1,
@@ -81,7 +85,7 @@ describe("Pmw3610Section", () => {
     );
 
     fireEvent.click(screen.getByText("Capture Once"));
-    expect(captureOnce).toHaveBeenCalledWith(0, 22);
+    expect(captureOnce).toHaveBeenCalledWith(2, 0, 22);
   });
 
   it("disables Capture Once while streaming", () => {
@@ -132,7 +136,7 @@ describe("Pmw3610Section", () => {
     );
 
     fireEvent.click(screen.getByText("Start Streaming"));
-    expect(startStreaming).toHaveBeenCalledWith(0, 22);
+    expect(startStreaming).toHaveBeenCalledWith(2, 0, 22);
 
     rerender(
       <Pmw3610Section

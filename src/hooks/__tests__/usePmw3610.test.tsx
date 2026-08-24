@@ -37,7 +37,7 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => {
 type NotificationCallback = (n: CustomNotification) => void;
 
 function createWrapper() {
-  let subscribedCallback: NotificationCallback | null = null;
+  const subscribedCallbacks = new Set<NotificationCallback>();
   const zmkAppValue = {
     state: { connection: {}, customSubsystems: [] },
     findSubsystem: () => ({ index: 12, identifier: "cormoran__pmw3610" }),
@@ -47,10 +47,10 @@ function createWrapper() {
       callback: NotificationCallback;
     }) => {
       if (subscription.type === "custom") {
-        subscribedCallback = subscription.callback;
+        subscribedCallbacks.add(subscription.callback);
       }
       return () => {
-        subscribedCallback = null;
+        subscribedCallbacks.delete(subscription.callback);
       };
     },
   };
@@ -61,8 +61,9 @@ function createWrapper() {
   );
   return {
     Wrapper,
-    emit: (notification: CustomNotification) =>
-      subscribedCallback?.(notification),
+    emit: (notification: CustomNotification) => {
+      for (const callback of subscribedCallbacks) callback(notification);
+    },
   };
 }
 
@@ -118,7 +119,7 @@ describe("usePmw3610 frame capture/streaming", () => {
     await waitFor(() => expect(result.current.isAvailable).toBe(true));
 
     await act(async () => {
-      await result.current.captureOnce(0, 2);
+      await result.current.captureOnce(0, 0, 2);
     });
 
     expect(result.current.frame).not.toBeNull();
@@ -168,7 +169,7 @@ describe("usePmw3610 frame capture/streaming", () => {
     await waitFor(() => expect(result.current.isAvailable).toBe(true));
 
     await act(async () => {
-      await result.current.captureOnce(0, 2);
+      await result.current.captureOnce(0, 0, 2);
     });
 
     expect(result.current.frame).not.toBeNull();
@@ -197,7 +198,7 @@ describe("usePmw3610 frame capture/streaming", () => {
     await waitFor(() => expect(result.current.isAvailable).toBe(true));
 
     await act(async () => {
-      await result.current.startStreaming(0, 2);
+      await result.current.startStreaming(0, 0, 2);
     });
     expect(result.current.isStreaming).toBe(true);
 
@@ -242,7 +243,7 @@ describe("usePmw3610 frame capture/streaming", () => {
     await waitFor(() => expect(result.current.isAvailable).toBe(true));
 
     await act(async () => {
-      await result.current.startStreaming(0, 2);
+      await result.current.startStreaming(0, 0, 2);
     });
     expect(result.current.isStreaming).toBe(true);
 
@@ -292,7 +293,7 @@ describe("usePmw3610 frame capture/streaming", () => {
     await waitFor(() => expect(result.current.isAvailable).toBe(true));
 
     await act(async () => {
-      await result.current.startStreaming(0, 2);
+      await result.current.startStreaming(0, 0, 2);
     });
     expect(result.current.isStreaming).toBe(true);
 
@@ -309,6 +310,102 @@ describe("usePmw3610 frame capture/streaming", () => {
     const lastCall = setFrameStreamCalls[setFrameStreamCalls.length - 1];
     const lastReq = Request.decode(lastCall[0] as Uint8Array);
     expect(lastReq.setFrameStream?.enable).toBe(false);
+  });
+
+  it("discovers a peripheral sensor and routes diagnostics to its source", async () => {
+    jest.useFakeTimers();
+    mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
+      const req = Request.decode(payload);
+      if (req.getInfo !== undefined) {
+        return encodeResponse({ getInfo: { devices: [], relayRequestId: 40 } });
+      }
+      if (req.readDiagnostics !== undefined) {
+        expect(req.readDiagnostics.source).toBe(2);
+        return encodeResponse({ deferred: { requestId: 41 } });
+      }
+      return encodeResponse({ error: { message: "unhandled" } });
+    });
+
+    const { Wrapper, emit } = createWrapper();
+    const { result } = renderHook(() => usePmw3610(), { wrapper: Wrapper });
+    await act(async () => Promise.resolve());
+
+    act(() => {
+      for (const [source, devices] of [
+        [1, []],
+        [
+          2,
+          [
+            {
+              ready: true,
+              productId: 0x3e,
+              revisionId: 1,
+              initError: 0,
+              deviceIndex: 0,
+            },
+          ],
+        ],
+      ] as const) {
+        emit({
+          subsystemIndex: 12,
+          payload: Notification.encode(
+            Notification.create({
+              peripheralResponse: {
+                source,
+                requestId: 40,
+                response: Response.create({ getInfo: { devices } }),
+              },
+            }),
+          ).finish(),
+        });
+      }
+    });
+    await act(async () => jest.advanceTimersByTimeAsync(2000));
+
+    expect(result.current.devices).toHaveLength(1);
+    expect(result.current.devices[0]).toMatchObject({
+      source: 2,
+      deviceIndex: 0,
+      productId: 0x3e,
+    });
+
+    let diagnosticsPromise: Promise<void>;
+    act(() => {
+      diagnosticsPromise = result.current.readDiagnostics(2, 0);
+    });
+    await act(async () => Promise.resolve());
+    act(() => {
+      emit({
+        subsystemIndex: 12,
+        payload: Notification.encode(
+          Notification.create({
+            peripheralResponse: {
+              source: 1,
+              requestId: 41,
+              response: Response.create({ error: { message: "left" } }),
+            },
+          }),
+        ).finish(),
+      });
+      emit({
+        subsystemIndex: 12,
+        payload: Notification.encode(
+          Notification.create({
+            peripheralResponse: {
+              source: 2,
+              requestId: 41,
+              response: Response.create({
+                readDiagnostics: { squal: 37 },
+              }),
+            },
+          }),
+        ).finish(),
+      });
+    });
+    await act(async () => diagnosticsPromise!);
+
+    expect(result.current.diagnostics?.squal).toBe(37);
+    jest.useRealTimers();
   });
 });
 

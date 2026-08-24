@@ -58,6 +58,7 @@ function renderFrame(
 
 export interface Pmw3610FrameViewerProps {
   pmw3610: UsePmw3610Return;
+  source: number;
   deviceIndex: number;
   side: number;
   onSideChange: (side: number) => void;
@@ -65,6 +66,7 @@ export interface Pmw3610FrameViewerProps {
 
 export function Pmw3610FrameViewer({
   pmw3610,
+  source,
   deviceIndex,
   side,
   onSideChange,
@@ -122,7 +124,7 @@ export function Pmw3610FrameViewer({
           type="button"
           className="btn-ghost text-sm"
           disabled={isCapturing || isStreaming}
-          onClick={() => void captureOnce(deviceIndex, side)}
+          onClick={() => void captureOnce(source, deviceIndex, side)}
         >
           {isCapturing ? t("Capturing…") : t("Capture Once")}
         </button>
@@ -140,7 +142,7 @@ export function Pmw3610FrameViewer({
             type="button"
             className="btn-electric text-sm"
             disabled={isCapturing}
-            onClick={() => void startStreaming(deviceIndex, side)}
+            onClick={() => void startStreaming(source, deviceIndex, side)}
           >
             {t("Start Streaming")}
           </button>
