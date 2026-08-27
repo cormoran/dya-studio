@@ -13,6 +13,11 @@ import {
 import { LanguageContext } from "./language";
 
 const STORAGE_KEY = "dya-studio-language";
+const LANGUAGE_CYCLE: Language[] = ["en", "ja", "zh"];
+
+function isLanguage(value: string | null): value is Language {
+  return value === "en" || value === "ja" || value === "zh";
+}
 
 function detectBrowserLanguage(): Language {
   const candidates =
@@ -21,7 +26,11 @@ function detectBrowserLanguage(): Language {
       : [navigator.language];
 
   for (const candidate of candidates) {
-    if (candidate.toLowerCase().startsWith("ja")) {
+    const lower = candidate.toLowerCase();
+    if (lower.startsWith("zh")) {
+      return "zh";
+    }
+    if (lower.startsWith("ja")) {
       return "ja";
     }
   }
@@ -35,7 +44,7 @@ function getInitialLanguage(): Language {
   }
 
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "en" || stored === "ja") {
+  if (isLanguage(stored)) {
     return stored;
   }
 
@@ -56,7 +65,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const toggleLanguage = useCallback(() => {
     setLanguageState((current) => {
-      const next = current === "en" ? "ja" : "en";
+      const index = LANGUAGE_CYCLE.indexOf(current);
+      const next =
+        LANGUAGE_CYCLE[(index === -1 ? 0 : index + 1) % LANGUAGE_CYCLE.length];
       localStorage.setItem(STORAGE_KEY, next);
       return next;
     });

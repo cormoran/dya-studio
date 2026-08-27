@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "npm run generate && vite",
     "build": "npm run generate && tsc -b && vite build",
@@ -14,6 +15,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:app": "npm run generate && tsc -b && vite build && npm run build:electron",
+    "dist": "npm run build:app && electron-builder",
+    "dist:mac": "npm run build:app && electron-builder --mac",
+    "dist:win": "npm run build:app && electron-builder --win",
+    "dist:linux": "npm run build:app && electron-builder --linux",
     "prepare": "husky"
   },
   "dependencies": {
@@ -52,6 +59,8 @@
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
     "babel-plugin-react-compiler": "^1.0.0",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -82,6 +91,38 @@
       "prettier --write"
     ]
   },
+  "build": {
+    "appId": "works.cormoran.dya-studio",
+    "productName": "DYA Studio",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "icon": "build/icon",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    }
+  },
   "pnpm": {
     "overrides": {
       "vite": "npm:rolldown-vite@7.2.5"
@@ -91,7 +132,9 @@
     ],
     "onlyBuiltDependencies": [
       "@cormoran/zmk-studio-react-hook",
-      "@zmkfirmware/zmk-studio-ts-client"
+      "@zmkfirmware/zmk-studio-ts-client",
+      "electron",
+      "electron-builder"
     ]
   }
 }

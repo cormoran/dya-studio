@@ -366,10 +366,10 @@ export function DeveloperGuidePage({
 }) {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const guideLabel = language === "en" ? "Developer guide" : "開発者ガイド";
-  const onThisPageLabel =
-    language === "en" ? "On this page" : "このページの内容";
-  const menuLabel = language === "en" ? "Menu" : "メニュー";
+  const isJa = language === "ja";
+  const guideLabel = isJa ? "開発者ガイド" : "Developer guide";
+  const onThisPageLabel = isJa ? "このページの内容" : "On this page";
+  const menuLabel = isJa ? "メニュー" : "Menu";
   const activeNavigationLabel =
     findNavigationLabel(page.navigation, page.activeNavigationId) ?? guideLabel;
   const breadcrumbs = [

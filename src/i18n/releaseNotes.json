@@ -5,7 +5,18 @@
       "date": null,
       "changes": {
         "major": [],
-        "minor": [],
+        "minor": [
+          {
+            "en": "Add Chinese (中文) UI translation alongside English and Japanese",
+            "ja": "英語と日本語に加えて中国語（中文）のUI翻訳を追加",
+            "zh": "在英语和日语之外新增中文（中文）界面翻译"
+          },
+          {
+            "en": "Add Electron desktop app build support with macOS/Windows installers",
+            "ja": "macOS / Windows インストーラー対応のElectronデスクトップアプリビルドサポートを追加",
+            "zh": "新增 Electron 桌面应用构建支持，可生成 macOS/Windows 安装包"
+          }
+        ],
         "patch": []
       }
     },
