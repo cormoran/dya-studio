@@ -33,6 +33,14 @@ import { LoadingIndicator } from "./LoadingIndicator";
 import { useKeymap, type BehaviorDefinition } from "../hooks/useKeymap";
 import { useLanguage } from "../hooks/useLanguage";
 import {
+  useWebMCPTools,
+  type WebMCPToolDefinition,
+} from "../lib/webmcp/useWebMCPTools";
+import {
+  encodeSettingValue,
+  settingKey,
+} from "../lib/versionHistory/tabs/customSettings";
+import {
   type Setting,
   type SettingBehaviorValue,
   type SettingConstraint,
@@ -161,6 +169,124 @@ const PMW3610_FIELD_DESCRIPTIONS: Record<string, string> = {
 function fieldName(key: string): string {
   const at = key.indexOf("@");
   return at === -1 ? key : key.slice(0, at);
+}
+
+type WebMCPAdvancedSettingValue = {
+  kind: "int32" | "boolean" | "string" | "hex" | "behavior";
+  value?: unknown;
+  behaviorId?: number;
+  param1?: number;
+  param2?: number;
+};
+
+type WebMCPAdvancedSettingInput = {
+  customSubsystemIndex: number;
+  key: string;
+  source: number;
+  arrayIndex?: number;
+  value: WebMCPAdvancedSettingValue;
+};
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isInt32(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= -2147483648 &&
+    value <= 2147483647
+  );
+}
+
+function isUint32(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 4294967295
+  );
+}
+
+function isWebMCPAdvancedSettingInput(
+  value: unknown,
+): value is WebMCPAdvancedSettingInput {
+  if (
+    !isObject(value) ||
+    !isUint32(value.customSubsystemIndex) ||
+    typeof value.key !== "string" ||
+    value.key.length === 0 ||
+    !isUint32(value.source) ||
+    (value.arrayIndex !== undefined && !isUint32(value.arrayIndex)) ||
+    !isObject(value.value)
+  ) {
+    return false;
+  }
+
+  return (
+    value.value.kind === "int32" ||
+    value.value.kind === "boolean" ||
+    value.value.kind === "string" ||
+    value.value.kind === "hex" ||
+    value.value.kind === "behavior"
+  );
+}
+
+function webMCPValueForSetting(
+  currentValue: SettingValue | undefined,
+  input: WebMCPAdvancedSettingValue,
+): SettingValue | null {
+  const current = currentValue?.arrayValue?.value ?? currentValue;
+  if (!current) return null;
+
+  if (current.int32Value !== undefined) {
+    return input.kind === "int32" && isInt32(input.value)
+      ? { int32Value: input.value }
+      : null;
+  }
+  if (current.boolValue !== undefined) {
+    return input.kind === "boolean" && typeof input.value === "boolean"
+      ? { boolValue: input.value }
+      : null;
+  }
+  if (current.stringValue !== undefined) {
+    return input.kind === "string" && typeof input.value === "string"
+      ? { stringValue: input.value }
+      : null;
+  }
+  if (current.bytesValue !== undefined) {
+    if (
+      input.kind !== "hex" ||
+      typeof input.value !== "string" ||
+      !/^(?:[0-9a-fA-F]{2})*$/.test(input.value)
+    ) {
+      return null;
+    }
+    const bytes = new Uint8Array(input.value.length / 2);
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Number.parseInt(
+        input.value.slice(index * 2, index * 2 + 2),
+        16,
+      );
+    }
+    return { bytesValue: bytes };
+  }
+  if (current.behaviorValue !== undefined) {
+    return input.kind === "behavior" &&
+      isUint32(input.behaviorId) &&
+      isInt32(input.param1) &&
+      isInt32(input.param2)
+      ? {
+          behaviorValue: {
+            behaviorId: input.behaviorId,
+            param1: input.param1,
+            param2: input.param2,
+          },
+        }
+      : null;
+  }
+  return null;
 }
 
 function findScrollableAncestor(el: Element | null): Element | null {
@@ -847,7 +973,7 @@ interface SettingRowProps {
   description?: string;
   layers: { id: number; name: string }[];
   behaviors: Map<number, BehaviorDefinition>;
-  onWrite: (setting: Setting, value: SettingValue) => Promise<void>;
+  onWrite: (setting: Setting, value: SettingValue) => Promise<unknown>;
 }
 
 function SettingRow({
@@ -1239,6 +1365,177 @@ export function AdvancedSettingsSection() {
       void loadSettings();
     }
   }, [hasExpanded, loadSettings]);
+
+  const webMCPTools: WebMCPToolDefinition[] = [
+    {
+      name: "list_advanced_keyboard_settings",
+      description:
+        "List custom keyboard settings exposed by the connected firmware. Read this before changing a custom setting to obtain its exact subsystem index, key, source, array index, and current encoded value.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: true },
+      execute: async () => {
+        const settings = await customSettings.loadSettings();
+        return {
+          success: true,
+          settings: settings.map((setting) => ({
+            customSubsystemIndex: setting.customSubsystemIndex,
+            subsystem: customSettings.sections.find(
+              (section) =>
+                section.customSubsystemIndex === setting.customSubsystemIndex,
+            )?.identifier,
+            key: setting.key,
+            source: setting.source,
+            arrayIndex: setting.value?.arrayValue?.index,
+            value: encodeSettingValue(setting.value),
+            hasUnsavedValue: setting.hasUnsavedValue,
+          })),
+        };
+      },
+    },
+    {
+      name: "set_advanced_keyboard_setting",
+      description:
+        "Change one custom keyboard setting in memory. Use list_advanced_keyboard_settings first, then save the affected section to persist the change. The replacement value must have the same type as the listed value.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          customSubsystemIndex: { type: "integer", minimum: 0 },
+          key: { type: "string", minLength: 1 },
+          source: { type: "integer", minimum: 0 },
+          arrayIndex: { type: "integer", minimum: 0 },
+          value: {
+            type: "object",
+            properties: {
+              kind: {
+                type: "string",
+                enum: ["int32", "boolean", "string", "hex", "behavior"],
+              },
+              value: {},
+              behaviorId: { type: "integer", minimum: 0 },
+              param1: { type: "integer" },
+              param2: { type: "integer" },
+            },
+            required: ["kind"],
+            additionalProperties: false,
+          },
+        },
+        required: ["customSubsystemIndex", "key", "source", "value"],
+        additionalProperties: false,
+      },
+      execute: async (input) => {
+        if (!isWebMCPAdvancedSettingInput(input)) {
+          return {
+            success: false,
+            error:
+              "Provide a subsystem index, key, source, and a valid typed value.",
+          };
+        }
+
+        const settings = await customSettings.loadSettings();
+        const setting = settings.find(
+          (candidate) =>
+            candidate.customSubsystemIndex === input.customSubsystemIndex &&
+            candidate.key === input.key &&
+            candidate.source === input.source &&
+            candidate.value?.arrayValue?.index === input.arrayIndex,
+        );
+        if (!setting) {
+          return {
+            success: false,
+            error:
+              "That custom setting was not found. Refresh the list and use an exact setting identity.",
+          };
+        }
+
+        const value = webMCPValueForSetting(setting.value, input.value);
+        if (!value) {
+          return {
+            success: false,
+            error:
+              "The supplied value does not match this setting's type or is outside the supported WebMCP format.",
+          };
+        }
+
+        const success = await customSettings.writeSettingToMemory(
+          setting,
+          value,
+        );
+        return success
+          ? {
+              success: true,
+              setting: settingKey(setting),
+              persisted: false,
+              message:
+                "The setting is updated in memory. Call save_advanced_keyboard_settings_section to persist it.",
+            }
+          : {
+              success: false,
+              error:
+                "The firmware rejected the setting update. Check its constraints and unlock state.",
+            };
+      },
+    },
+    ...(["save", "discard", "reset"] as const).map((operation) => ({
+      name: `${operation}_advanced_keyboard_settings_section`,
+      description:
+        operation === "save"
+          ? "Persist all in-memory custom setting changes for one firmware subsystem."
+          : operation === "discard"
+            ? "Discard all in-memory custom setting changes for one firmware subsystem."
+            : "Reset every custom setting in one firmware subsystem to its firmware defaults. This discards local edits.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          customSubsystemIndex: { type: "integer", minimum: 0 },
+        },
+        required: ["customSubsystemIndex"],
+        additionalProperties: false,
+      },
+      execute: async (input: unknown) => {
+        if (!isObject(input) || !isUint32(input.customSubsystemIndex)) {
+          return {
+            success: false,
+            error: "customSubsystemIndex must be a non-negative integer.",
+          };
+        }
+        const index = Number(input.customSubsystemIndex);
+        const success =
+          operation === "save"
+            ? await customSettings.saveSection(index)
+            : operation === "discard"
+              ? await customSettings.discardSection(index)
+              : await customSettings.resetSection(index);
+        if (!success) {
+          return {
+            success: false,
+            error:
+              "The firmware rejected the section operation. Check the connection and unlock state.",
+          };
+        }
+        // The underlying operation reloads settings and reports any firmware
+        // error through its state. A fresh list makes the returned result
+        // independently inspectable by the agent.
+        const refreshed = await customSettings.loadSettings();
+        return {
+          success: true,
+          customSubsystemIndex: index,
+          operation,
+          settings: refreshed
+            .filter((setting) => setting.customSubsystemIndex === index)
+            .map((setting) => ({
+              key: settingKey(setting),
+              value: encodeSettingValue(setting.value),
+              hasUnsavedValue: setting.hasUnsavedValue,
+            })),
+        };
+      },
+    })),
+  ];
+  useWebMCPTools(webMCPTools);
 
   const layers = useMemo(
     () =>

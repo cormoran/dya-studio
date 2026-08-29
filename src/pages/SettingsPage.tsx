@@ -27,6 +27,10 @@ import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useSettingsVersionHistory } from "../hooks/versionHistory/useSettingsVersionHistory";
+import {
+  useWebMCPTools,
+  type WebMCPToolDefinition,
+} from "../lib/webmcp/useWebMCPTools";
 
 // Helper to format milliseconds to human readable
 function formatMs(
@@ -69,6 +73,19 @@ const SLEEP_PRESETS = [
   { value: 120, label: "2 hours" },
   { value: 240, label: "4 hours" },
 ];
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTimeout(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 0xffffffff
+  );
+}
 
 interface TimeDropdownProps {
   value: number; // in milliseconds
@@ -315,8 +332,11 @@ export function SettingsPage() {
 
   const write = useCallback(
     async (value: { idleMs: number; sleepMs: number }) => {
-      await setActivitySettings(value.idleMs, value.sleepMs);
+      const success = await setActivitySettings(value.idleMs, value.sleepMs);
       setPending(null);
+      if (!success) {
+        return;
+      }
       setShowSaved(true);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setShowSaved(false), 2000);
@@ -345,6 +365,110 @@ export function SettingsPage() {
   };
 
   const isSaving = saveState === "queued" || saveState === "saving";
+
+  const webMCPTools: WebMCPToolDefinition[] = [
+    {
+      name: "get_power_management_settings",
+      description:
+        "Read the connected keyboard's central power-management timeouts in milliseconds.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: true },
+      execute: async () => {
+        const current = (await loadAllSettings()).find(
+          (device) => device.sourceId === 0,
+        );
+        if (!current) {
+          return {
+            success: false,
+            error:
+              "Power-management settings are unavailable. Connect a compatible keyboard first.",
+          };
+        }
+        return {
+          success: true,
+          idleMs: current.idleMs,
+          sleepMs: current.sleepMs,
+          deviceName: current.deviceName,
+        };
+      },
+    },
+    {
+      name: "set_power_management_timeouts",
+      description:
+        "Persist the connected keyboard's idle and sleep timeouts. Both values are whole milliseconds; 0 disables that timeout.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          idleMs: {
+            type: "integer",
+            minimum: 0,
+            maximum: 4294967295,
+            description:
+              "Milliseconds before the keyboard enters idle mode; 0 means never.",
+          },
+          sleepMs: {
+            type: "integer",
+            minimum: 0,
+            maximum: 4294967295,
+            description: "Milliseconds before deep sleep; 0 means never.",
+          },
+        },
+        required: ["idleMs", "sleepMs"],
+        additionalProperties: false,
+      },
+      execute: async (input) => {
+        if (
+          !isObject(input) ||
+          !isTimeout(input.idleMs) ||
+          !isTimeout(input.sleepMs)
+        ) {
+          return {
+            success: false,
+            error:
+              "idleMs and sleepMs must be whole milliseconds from 0 to 4294967295.",
+          };
+        }
+
+        const success = await setActivitySettings(input.idleMs, input.sleepMs);
+        return success
+          ? { success: true, idleMs: input.idleMs, sleepMs: input.sleepMs }
+          : {
+              success: false,
+              error:
+                "The keyboard did not accept the power-management update. Check the connection and unlock state.",
+            };
+      },
+    },
+    {
+      name: "reset_all_keyboard_settings",
+      description:
+        "Factory-reset every persisted keyboard setting, including keymap and custom settings, to firmware defaults. This cannot be undone.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      execute: async () => {
+        const success = await resetAllSettings();
+        return success
+          ? {
+              success: true,
+              message:
+                "The keyboard reset request was accepted. The keyboard may reboot before the change is visible.",
+            }
+          : {
+              success: false,
+              error:
+                "The keyboard reset did not complete. Check the connection and unlock state.",
+            };
+      },
+    },
+  ];
+  useWebMCPTools(webMCPTools);
 
   return (
     <div className="p-6 h-full overflow-auto">
