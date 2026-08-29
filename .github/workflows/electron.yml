@@ -1,9 +1,19 @@
 name: Build Desktop App
 
+# Desktop builds are sliced off the release that `release.yml` just published,
+# so the tag must already exist before this workflow can attach installers to
+# it. Triggering on `release: published` (instead of `push: tags: v*`) means
+# this workflow fires once per version, in lock-step with `release.yml`, and it
+# uploads installers onto the *same* GitHub Release that `release.yml` created
+# with `gh release create` (date-based versions like `2026.08.11.1`, tagged
+# `v2026.08.11.1`).
+#
+# `workflow_dispatch` is kept so an installer-only build can be triggered
+# manually; in that case the `attach-release` job is skipped (no release to
+# attach to) and the artifacts are still available for download.
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -72,7 +82,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release'
     permissions:
       contents: write
     steps:
@@ -82,12 +92,15 @@ jobs:
           pattern: "*-installer"
           merge-multiple: true
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            release/*.dmg
-            release/*.exe
-          generate_release_notes: true
+      - name: Attach installers to the existing release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The release was already created (with --notes pointing at the in-app
+          # release-notes page) by `.github/workflows/release.yml`; we only
+          # upload the macOS .dmg and Windows .exe artifacts onto it.
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            release/*.dmg \
+            release/*.exe \
+            --clobber
