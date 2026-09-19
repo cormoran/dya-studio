@@ -50,7 +50,7 @@ export function MacroEditorCard({
                 )}
               </label>
               <input
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
+                className="w-full h-10 px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
                 value={macro.renameDraft}
                 maxLength={runtimeMacro.maxNameLength}
                 placeholder={formatMacroName(loadedMacro, loadedMacro.slot)}
@@ -63,7 +63,7 @@ export function MacroEditorCard({
                 {t("Size")}
               </label>
               <div
-                className={`px-3 py-2 rounded-lg border text-sm ${
+                className={`h-10 flex items-center px-3 py-2 rounded-lg border text-sm tabular-nums ${
                   macro.encodedSizeError
                     ? "border-red-500/40 text-red-400 bg-red-500/10"
                     : "border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-bg)]"
@@ -74,13 +74,13 @@ export function MacroEditorCard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-medium text-[var(--color-text)]">
                 {t("Steps")}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 className="btn-ghost text-sm flex items-center gap-1.5"
                 onClick={() => void macro.handleResetMacro()}

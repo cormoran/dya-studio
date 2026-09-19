@@ -184,11 +184,11 @@ export function ConnectionPage() {
       : t("Not set");
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-8">
-          <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPlugConnected
                 size={24}
@@ -204,7 +204,7 @@ export function ConnectionPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Refresh Button */}
             {connection.isConnected && (
               <>

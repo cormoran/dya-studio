@@ -50,7 +50,7 @@ export function SectionCard({
   const toggle = () => setOpen((v) => !v);
 
   return (
-    <div className="glass-card p-6">
+    <div className="glass-card p-4 sm:p-6">
       <div
         role="button"
         tabIndex={0}
@@ -77,7 +77,7 @@ export function SectionCard({
               className="text-[var(--color-text-muted)] flex-shrink-0"
             />
           )}
-          <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+          <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
             {icon}
           </div>
           <div className="min-w-0">

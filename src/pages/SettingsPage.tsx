@@ -38,9 +38,10 @@ function formatMs(
   t: (key: string, params?: Record<string, number | string>) => string,
 ): string {
   if (ms === 0) return t("Never");
-  if (ms < 60000) return t("{{count}}s", { count: ms / 1000 });
-  if (ms < 3600000) return t("{{count}}m", { count: ms / 60000 });
-  return t("{{count}}h", { count: ms / 3600000 });
+  const rounded = (value: number) => Math.round(value * 100) / 100;
+  if (ms < 60000) return t("{{count}}s", { count: rounded(ms / 1000) });
+  if (ms < 3600000) return t("{{count}}m", { count: rounded(ms / 60000) });
+  return t("{{count}}h", { count: rounded(ms / 3600000) });
 }
 
 // Convert milliseconds to minutes
@@ -171,7 +172,7 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
       <button
         ref={buttonRef}
         type="button"
-        className="input-field w-40 text-sm flex items-center justify-between"
+        className="w-40 min-h-9 px-3 py-2 rounded-lg text-sm flex items-center justify-between gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-hover)]"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>{displayText}</span>
@@ -471,25 +472,30 @@ export function SettingsPage() {
   useWebMCPTools(webMCPTools);
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
-            <IconSettings size={24} className="text-[var(--color-electric)]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-medium text-[var(--color-text)]">
-              {t("Settings")}
-            </h1>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              {t("Device configuration and power management")}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+              <IconSettings
+                size={24}
+                className="text-[var(--color-electric)]"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-medium text-[var(--color-text)]">
+                {t("Settings")}
+              </h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("Device configuration and power management")}
+              </p>
+            </div>
           </div>
           {/* The page keeps its state across tab switches, so re-reading the
               device is an explicit action. */}
           {isAvailable && (
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
                 onClick={() => void handleReload()}
@@ -560,13 +566,13 @@ export function SettingsPage() {
         {centralSettings ? (
           <div className="space-y-6">
             {/* Power Management */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
                 {t("Power Management")}
               </h3>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {t("Idle Timeout")}
@@ -582,7 +588,7 @@ export function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {t("Sleep Timeout")}
@@ -652,11 +658,11 @@ export function SettingsPage() {
             whenever a device is connected, independent of the settings RPC
             subsystem, since it is a core-protocol call. */}
         {connection.isConnected && (
-          <div className="glass-card p-6 border border-red-500/20 mt-6">
+          <div className="glass-card p-4 sm:p-6 border border-red-500/20 mt-6">
             <h3 className="text-sm font-medium text-red-400 mb-4">
               {t("Danger Zone")}
             </h3>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   {t("Reset all settings")}
