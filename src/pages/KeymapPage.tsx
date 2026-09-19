@@ -72,6 +72,31 @@ export function KeymapPage() {
   // fail→modal→retry path is handled inside useKeymap via runWithUnlock.
   const { requireUnlock: requireUnlocked } = useStudioUnlock();
 
+  const [selectorMode, setSelectorMode] = useState<"modal" | "floating">(() => {
+    try {
+      return localStorage.getItem("keymapSelectorMode") === "floating"
+        ? "floating"
+        : "modal";
+    } catch {
+      return "modal";
+    }
+  });
+  const [isApplyingBinding, setIsApplyingBinding] = useState(false);
+  const applyingBindingRef = useRef(false);
+  const selectionRevision = useRef(0);
+  const closeSelector = useCallback(() => {
+    selectionRevision.current += 1;
+    setShowKeycodeSelector(false);
+    setSelectedKeyPosition(null);
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("keymapSelectorMode", selectorMode);
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }, [selectorMode]);
+
   // Local UI state
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
@@ -140,6 +165,7 @@ export function KeymapPage() {
   const handleKeyClick = useCallback(
     (keyPosition: number) =>
       withUnlock(() => {
+        selectionRevision.current += 1;
         setSelectedKeyPosition(keyPosition);
         setShowKeycodeSelector(true);
       }),
@@ -171,12 +197,51 @@ export function KeymapPage() {
     (binding: BehaviorBinding) =>
       withUnlock(async () => {
         if (!currentLayer || selectedKeyPosition === null) return;
-        await keymap.setBinding(currentLayer.id, selectedKeyPosition, binding);
-        setShowKeycodeSelector(false);
-        setSelectedKeyPosition(null);
+        if (applyingBindingRef.current) return;
+        applyingBindingRef.current = true;
+        setIsApplyingBinding(true);
+        const revision = selectionRevision.current;
+        try {
+          const success = await keymap.setBinding(
+            currentLayer.id,
+            selectedKeyPosition,
+            binding,
+          );
+          if (!success || revision !== selectionRevision.current) return;
+          const count = Math.min(
+            currentLayer.bindings.length,
+            currentLayout?.keys.length ?? 0,
+          );
+          if (selectorMode === "floating" && selectedKeyPosition + 1 < count) {
+            setSelectedKeyPosition(selectedKeyPosition + 1);
+          } else {
+            closeSelector();
+          }
+        } finally {
+          applyingBindingRef.current = false;
+          setIsApplyingBinding(false);
+        }
       }),
-    [currentLayer, selectedKeyPosition, keymap, withUnlock],
+    [
+      currentLayer,
+      currentLayout,
+      selectedKeyPosition,
+      selectorMode,
+      keymap,
+      withUnlock,
+      closeSelector,
+    ],
   );
+
+  useEffect(() => {
+    closeSelector();
+  }, [
+    selectedLayerIndex,
+    currentLayout,
+    connection.isConnected,
+    isTabActive,
+    closeSelector,
+  ]);
 
   // Handle save
   const handleSave = useCallback(async () => {
@@ -909,6 +974,24 @@ export function KeymapPage() {
               {inputStream.isEnabled && <BrowserKeyInputOverlay />}
             </div>
 
+            <div className="flex justify-end mb-3">
+              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                {t("Binding editor")}
+                <select
+                  aria-label={t("Binding editor")}
+                  value={selectorMode}
+                  onChange={(event) => {
+                    selectionRevision.current += 1;
+                    setSelectorMode(event.target.value as "modal" | "floating");
+                  }}
+                  className="px-3 py-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
+                >
+                  <option value="modal">{t("Dialog mode")}</option>
+                  <option value="floating">{t("Floating mode")}</option>
+                </select>
+              </label>
+            </div>
+
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="glass-card p-8 relative">
@@ -1153,11 +1236,76 @@ export function KeymapPage() {
 
       {/* Keycode Selector Dialog */}
       <KeycodeSelector
-        open={showKeycodeSelector}
-        onClose={() => {
-          setShowKeycodeSelector(false);
-          setSelectedKeyPosition(null);
-        }}
+        open={showKeycodeSelector && isTabActive && connection.isConnected}
+        presentation={selectorMode}
+        selectionKey={`${currentLayer?.id}:${selectedKeyPosition}`}
+        busy={isApplyingBinding}
+        error={keymap.error}
+        toolbar={
+          selectorMode === "floating" &&
+          selectedKeyPosition !== null &&
+          currentLayer ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2 border-b border-[var(--color-border)]">
+              <span role="status" className="text-sm">
+                {currentLayer.name} ·{" "}
+                {t("Key {{position}} / {{count}}", {
+                  position: selectedKeyPosition + 1,
+                  count: Math.min(
+                    currentLayer.bindings.length,
+                    currentLayout?.keys.length ?? 0,
+                  ),
+                })}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={isApplyingBinding || selectedKeyPosition === 0}
+                  onClick={() => handleKeyClick(selectedKeyPosition - 1)}
+                >
+                  {t("Previous key")}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={
+                    isApplyingBinding ||
+                    selectedKeyPosition + 1 >=
+                      Math.min(
+                        currentLayer.bindings.length,
+                        currentLayout?.keys.length ?? 0,
+                      )
+                  }
+                  onClick={() => handleKeyClick(selectedKeyPosition + 1)}
+                >
+                  {t("Next key")}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    selectionRevision.current += 1;
+                    setSelectorMode("modal");
+                  }}
+                >
+                  {t("Dialog mode")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn-ghost self-end m-2"
+              onClick={() => {
+                selectionRevision.current += 1;
+                setSelectorMode("floating");
+              }}
+            >
+              {t("Floating mode")}
+            </button>
+          )
+        }
+        onClose={closeSelector}
         onSelect={handleBindingSelect}
         currentBinding={currentBinding}
         behaviors={keymap.behaviors}

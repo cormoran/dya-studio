@@ -9,7 +9,13 @@
  * - Close on select: Automatically close the dialog after selecting the last parameter
  *   (setting is persisted in localStorage)
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconRestore, IconX } from "@tabler/icons-react";
 import { MOUSE_KEYCODES } from "../lib/keycodes";
@@ -27,6 +33,7 @@ import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import { useFloatingWindow } from "../hooks/useFloatingWindow";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -48,6 +55,11 @@ interface SelectedBehaviorInfo {
 }
 
 interface KeycodeSelectorProps {
+  presentation?: "modal" | "floating";
+  selectionKey?: string;
+  toolbar?: ReactNode;
+  busy?: boolean;
+  error?: string | null;
   open: boolean;
   onClose: () => void;
   onSelect: (binding: BehaviorBinding) => void;
@@ -237,6 +249,11 @@ function hasParam(
 // =============================================================================
 
 export function KeycodeSelector({
+  presentation = "modal",
+  selectionKey,
+  toolbar,
+  busy = false,
+  error,
   open,
   onClose,
   onSelect,
@@ -248,15 +265,18 @@ export function KeycodeSelector({
   runtimeMacros = [],
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
+  const floating = presentation === "floating";
+  const floatingWindow = useFloatingWindow(floating);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
   const [param1, setParam1] = useState<number>(0);
   const [param2, setParam2] = useState<number>(0);
   const [activeParam, setActiveParam] = useState<1 | 2>(1);
-  const [closeOnSelect, setCloseOnSelect] = useState<boolean>(() => {
+  const [savedCloseOnSelect, setCloseOnSelect] = useState<boolean>(() => {
     const saved = localStorage.getItem("keycodeSelectorCloseOnSelect");
     return saved !== null ? saved === "true" : true;
   });
+  const closeOnSelect = floating || savedCloseOnSelect;
   const [wasOpened, setWasOpened] = useState<boolean>(false);
 
   // Initial values to detect changes
@@ -268,8 +288,11 @@ export function KeycodeSelector({
 
   // Save closeOnSelect setting to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("keycodeSelectorCloseOnSelect", String(closeOnSelect));
-  }, [closeOnSelect]);
+    localStorage.setItem(
+      "keycodeSelectorCloseOnSelect",
+      String(savedCloseOnSelect),
+    );
+  }, [savedCloseOnSelect]);
 
   // Check if values have changed
   const hasChanges = useMemo(() => {
@@ -320,10 +343,10 @@ export function KeycodeSelector({
           param1: 0,
           param2: 0,
         });
-        onClose();
+        if (!floating) onClose();
       }
     },
-    [behaviors, closeOnSelect, onSelect, onClose],
+    [behaviors, closeOnSelect, onSelect, onClose, floating],
   );
 
   const handleParam1Change = useCallback(
@@ -349,14 +372,22 @@ export function KeycodeSelector({
             param1: value,
             param2: 0,
           });
-          onClose();
+          if (!floating) onClose();
         }
         if (param2 !== 0) {
           setParam2(0);
         }
       }
     },
-    [behaviors, closeOnSelect, onClose, onSelect, param2, selectedBehavior],
+    [
+      behaviors,
+      closeOnSelect,
+      onClose,
+      onSelect,
+      param2,
+      selectedBehavior,
+      floating,
+    ],
   );
 
   const handleParam2Change = useCallback(
@@ -373,10 +404,10 @@ export function KeycodeSelector({
           param1,
           param2: value,
         });
-        onClose();
+        if (!floating) onClose();
       }
     },
-    [closeOnSelect, selectedBehavior, param1, onSelect, onClose],
+    [closeOnSelect, selectedBehavior, param1, onSelect, onClose, floating],
   );
 
   // Handle revert button click
@@ -424,7 +455,7 @@ export function KeycodeSelector({
         setWasOpened(true);
       } else {
         // Always apply changes when closing
-        if (selectedBehavior !== null && wasOpened) {
+        if (!floating && selectedBehavior !== null && wasOpened) {
           setWasOpened(false);
           onSelect({
             behaviorId: selectedBehavior,
@@ -449,6 +480,7 @@ export function KeycodeSelector({
       param2,
       onSelect,
       wasOpened,
+      floating,
     ],
   );
 
@@ -458,7 +490,7 @@ export function KeycodeSelector({
       handleOpenChange(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, selectionKey]);
 
   // Render parameter value selector based on type
   const renderParamValueSelector = useCallback(
@@ -628,191 +660,243 @@ export function KeycodeSelector({
   );
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+    <Dialog.Root open={open} modal={!floating} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden">
-          {/* Header with Cancel Button */}
-          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-            <Dialog.Title className="text-lg font-medium text-[var(--color-text)] flex items-center gap-2">
-              {t("Select Key Binding")}
-            </Dialog.Title>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                <input
-                  type="checkbox"
-                  checked={closeOnSelect}
-                  onChange={(e) => setCloseOnSelect(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
-                />
-                <span>{t("Close on select")}</span>
-              </label>
-              {hasChanges && (
-                <button
-                  className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                  onClick={handleRevert}
-                >
-                  <IconRestore size={16} className="animate-pulse" />
-                  <span className="hidden tablet:inline">{t("Revert")}</span>
-                </button>
-              )}
-              <Dialog.Close asChild>
-                <button
-                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
-                  aria-label={t("Close")}
-                >
-                  <IconX size={20} className="text-[var(--color-text-muted)]" />
-                </button>
-              </Dialog.Close>
+        {!floating && (
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        )}
+        <Dialog.Content
+          ref={floatingWindow.ref}
+          style={floatingWindow.style}
+          aria-describedby={undefined}
+          onInteractOutside={
+            floating ? (event) => event.preventDefault() : undefined
+          }
+          className={
+            floating
+              ? "fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[65dvh] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+              : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+          }
+        >
+          {toolbar}
+          {error && (
+            <p role="alert" className="px-4 text-sm text-red-500">
+              {error}
+            </p>
+          )}
+          <fieldset
+            disabled={busy}
+            className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
+          >
+            {/* Header with Cancel Button */}
+            <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+              <Dialog.Title
+                {...floatingWindow.handleProps}
+                className={`text-lg font-medium text-[var(--color-text)] flex items-center gap-2 ${floating ? "cursor-move touch-none select-none" : ""}`}
+              >
+                {t("Select Key Binding")}
+              </Dialog.Title>
+              <div className="flex items-center gap-2">
+                {!floating && (
+                  <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={closeOnSelect}
+                      onChange={(e) => setCloseOnSelect(e.target.checked)}
+                      className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
+                    />
+                    <span>{t("Close on select")}</span>
+                  </label>
+                )}
+                {hasChanges && (
+                  <button
+                    className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    onClick={handleRevert}
+                  >
+                    <IconRestore size={16} className="animate-pulse" />
+                    <span className="hidden tablet:inline">{t("Revert")}</span>
+                  </button>
+                )}
+                <Dialog.Close asChild>
+                  <button
+                    className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
+                    aria-label={t("Close")}
+                  >
+                    <IconX
+                      size={20}
+                      className="text-[var(--color-text-muted)]"
+                    />
+                  </button>
+                </Dialog.Close>
+              </div>
             </div>
-          </div>
 
-          {/* Behavior Selection */}
-          <div className="p-4 border-b border-[var(--color-border)]">
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-              {t("Behavior")}
-            </label>
-            {behaviors.size === 0 ? (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
-                ⚠️ {t("Behaviors not loaded from keyboard.")}
-              </div>
-            ) : (
-              <BehaviorDropdown
-                behaviors={behaviors}
-                selectedBehaviorId={selectedBehavior}
-                onSelect={handleBehaviorSelect}
-                onQuickSelect={handleBehaviorSelect}
-                quickSelects={behaviorQuickSelects}
-              />
-            )}
-          </div>
+            {/* Behavior Selection */}
+            <div className="p-4 border-b border-[var(--color-border)]">
+              <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                {t("Behavior")}
+              </label>
+              {behaviors.size === 0 ? (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
+                  ⚠️ {t("Behaviors not loaded from keyboard.")}
+                </div>
+              ) : (
+                <BehaviorDropdown
+                  behaviors={behaviors}
+                  selectedBehaviorId={selectedBehavior}
+                  onSelect={handleBehaviorSelect}
+                  onQuickSelect={handleBehaviorSelect}
+                  quickSelects={behaviorQuickSelects}
+                />
+              )}
+            </div>
 
-          {/* Parameter Selection - Horizontal Layout */}
-          {selectedBehaviorInfo && needsAnyParam && (
-            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-              {/* Parameters Label */}
-              <div className="px-4 pt-4 pb-1 hidden tablet:block">
-                <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-                  {t("Parameters")}
-                </label>
-              </div>
-              {/* Parameter Tabs (Horizontal) */}
-              <div className="flex border-b border-[var(--color-border)] mx-4 mb-2">
-                {needsParam1 && (
-                  <button
-                    className={`flex-1 p-2 text-center transition-colors border-b-2 ${
-                      activeParam === 1
-                        ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                    }`}
-                    onClick={() => setActiveParam(1)}
-                  >
-                    <div className="font-medium text-xs">
-                      {t("param1")}:
-                      <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo, 1, t)}
-                      </span>
-                    </div>
-                    <div
-                      className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                        activeParam === 1 ? "font-bold text-base" : ""
+            {/* Parameter Selection - Horizontal Layout */}
+            {selectedBehaviorInfo && needsAnyParam && (
+              <div
+                className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[380px] shrink-0" : "min-h-0"}`}
+              >
+                {/* Parameters Label */}
+                <div
+                  className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
+                >
+                  <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                    {t("Parameters")}
+                  </label>
+                </div>
+                {/* Parameter Tabs (Horizontal) */}
+                <div className="flex border-b border-[var(--color-border)] mx-4 mb-2">
+                  {needsParam1 && (
+                    <button
+                      className={`flex-1 p-2 text-center transition-colors border-b-2 ${
+                        activeParam === 1
+                          ? "border-[var(--color-electric)] text-[var(--color-electric)]"
+                          : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
                       }`}
+                      onClick={() => setActiveParam(1)}
                     >
-                      {formatParamValue(
-                        selectedBehaviorInfo,
-                        param1,
-                        param2,
-                        1,
-                        layers,
-                        keyboardLayout,
-                        runtimeMacros,
-                      )}
-                    </div>
-                  </button>
-                )}
-                {needsParam2 && (
-                  <button
-                    className={`flex-1 p-2 text-center transition-colors border-b-2 ${
-                      activeParam === 2
-                        ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                    }`}
-                    onClick={() => setActiveParam(2)}
-                  >
-                    <div className="font-medium text-xs">
-                      {t("param2")}:
-                      <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo, 2, t)}
-                      </span>
-                    </div>
-                    <div
-                      className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                        activeParam === 2 ? "font-bold text-base" : ""
+                      <div className="font-medium text-xs">
+                        {t("param1")}:
+                        <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                          {getParamTypeLabel(selectedBehaviorInfo, 1, t)}
+                        </span>
+                      </div>
+                      <div
+                        className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
+                          activeParam === 1 ? "font-bold text-base" : ""
+                        }`}
+                      >
+                        {formatParamValue(
+                          selectedBehaviorInfo,
+                          param1,
+                          param2,
+                          1,
+                          layers,
+                          keyboardLayout,
+                          runtimeMacros,
+                        )}
+                      </div>
+                    </button>
+                  )}
+                  {needsParam2 && (
+                    <button
+                      className={`flex-1 p-2 text-center transition-colors border-b-2 ${
+                        activeParam === 2
+                          ? "border-[var(--color-electric)] text-[var(--color-electric)]"
+                          : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
                       }`}
+                      onClick={() => setActiveParam(2)}
                     >
-                      {formatParamValue(
-                        selectedBehaviorInfo,
-                        param1,
-                        param2,
-                        2,
-                        layers,
-                        keyboardLayout,
-                        runtimeMacros,
-                      )}
-                    </div>
-                  </button>
-                )}
-              </div>
+                      <div className="font-medium text-xs">
+                        {t("param2")}:
+                        <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                          {getParamTypeLabel(selectedBehaviorInfo, 2, t)}
+                        </span>
+                      </div>
+                      <div
+                        className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
+                          activeParam === 2 ? "font-bold text-base" : ""
+                        }`}
+                      >
+                        {formatParamValue(
+                          selectedBehaviorInfo,
+                          param1,
+                          param2,
+                          2,
+                          layers,
+                          keyboardLayout,
+                          runtimeMacros,
+                        )}
+                      </div>
+                    </button>
+                  )}
+                </div>
 
-              {/* Parameter Description */}
-              <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] hidden tablet:block">
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  {activeParam === 1
-                    ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
-                    : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
-                </p>
-              </div>
+                {/* Parameter Description */}
+                <div
+                  className={`px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] ${floating ? "hidden" : "hidden tablet:block"}`}
+                >
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    {activeParam === 1
+                      ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
+                      : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
+                  </p>
+                </div>
 
-              {/* Parameter Value Selector */}
-              <div className="flex-1 p-4 overflow-hidden flex flex-col">
-                {activeParam === 1 && needsParam1
-                  ? renderParamValueSelector(
-                      param1,
-                      param2,
-                      handleParam1Change,
-                      1,
-                    )
-                  : activeParam === 2 && needsParam2
+                {/* Parameter Value Selector */}
+                <div className="flex-1 p-4 overflow-hidden flex flex-col">
+                  {activeParam === 1 && needsParam1
                     ? renderParamValueSelector(
                         param1,
                         param2,
-                        handleParam2Change,
-                        2,
+                        handleParam1Change,
+                        1,
                       )
-                    : null}
-              </div>
-            </div>
-          )}
-
-          {/* No Parameters Message */}
-          {selectedBehaviorInfo && !needsAnyParam && (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">
-                  {selectedBehaviorInfo.behavior.displayName === "none" ||
-                  selectedBehaviorInfo.behavior.displayName === "trans"
-                    ? "✓"
-                    : "⚡"}
+                    : activeParam === 2 && needsParam2
+                      ? renderParamValueSelector(
+                          param1,
+                          param2,
+                          handleParam2Change,
+                          2,
+                        )
+                      : null}
                 </div>
-                <p className="text-[var(--color-text-secondary)]">
-                  {selectedBehaviorInfo.behavior.displayName}
-                </p>
-                <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                  No parameters needed
-                </p>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* No Parameters Message */}
+            {selectedBehaviorInfo && !needsAnyParam && (
+              <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">
+                    {selectedBehaviorInfo.behavior.displayName === "none" ||
+                    selectedBehaviorInfo.behavior.displayName === "trans"
+                      ? "✓"
+                      : "⚡"}
+                  </div>
+                  <p className="text-[var(--color-text-secondary)]">
+                    {selectedBehaviorInfo.behavior.displayName}
+                  </p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                    No parameters needed
+                  </p>
+                </div>
+              </div>
+            )}
+            {floating && (
+              <button
+                type="button"
+                className="btn-electric m-2 shrink-0"
+                disabled={busy || selectedBehavior === null}
+                onClick={() => {
+                  if (selectedBehavior !== null)
+                    onSelect({ behaviorId: selectedBehavior, param1, param2 });
+                }}
+              >
+                {t("Apply and next")}
+              </button>
+            )}
+          </fieldset>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
