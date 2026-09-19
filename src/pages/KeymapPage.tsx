@@ -1287,7 +1287,7 @@ export function KeymapPage() {
           ) : (
             <button
               type="button"
-              className="p-1 rounded hover:bg-[var(--color-border)]"
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--color-border)]"
               aria-label={t("Floating mode")}
               title={t("Floating mode")}
               onClick={() => {
@@ -1296,6 +1296,7 @@ export function KeymapPage() {
               }}
             >
               <IconWindow size={16} />
+              <span>{t("Floating mode")}</span>
             </button>
           )
         }

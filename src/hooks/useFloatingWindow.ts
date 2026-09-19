@@ -14,9 +14,10 @@ export function useFloatingWindow(enabled: boolean, open: boolean) {
     return () => window.removeEventListener("resize", reset);
   }, []);
 
-  useEffect(() => {
-    if (!open) setPosition(undefined);
-  }, [open]);
+  // Reset while closed so reopening starts at a known visible position.
+  if (!open && position !== undefined) {
+    setPosition(undefined);
+  }
 
   return {
     ref,

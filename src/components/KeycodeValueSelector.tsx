@@ -62,6 +62,7 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
 
 interface KeycodeValueSelectorProps {
   toolbar?: ReactNode;
+  defaultModifiersExpanded?: boolean;
   value: number;
   onChange: (value: number, shouldNotClose?: boolean) => void;
   showModifiers?: boolean;
@@ -70,6 +71,7 @@ interface KeycodeValueSelectorProps {
 
 export function KeycodeValueSelector({
   toolbar,
+  defaultModifiersExpanded = true,
   value,
   onChange,
   keyboardLayout,
@@ -86,7 +88,9 @@ export function KeycodeValueSelector({
     const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return saved === "category" ? "category" : "layout";
   });
-  const [modifiersExpanded, setModifiersExpanded] = useState(false);
+  const [modifiersExpanded, setModifiersExpanded] = useState(
+    defaultModifiersExpanded,
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Persist view mode preference

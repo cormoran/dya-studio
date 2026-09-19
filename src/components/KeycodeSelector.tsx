@@ -642,6 +642,8 @@ export function KeycodeSelector({
             {/* hidUsages */}
             {groupByType.hidUsages.length > 0 && (
               <KeycodeValueSelector
+                key={floating ? "floating" : "modal"}
+                defaultModifiersExpanded={!floating}
                 toolbar={toolbar}
                 value={value}
                 onChange={onChange}
@@ -662,7 +664,7 @@ export function KeycodeSelector({
       }
       return null;
     },
-    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros],
+    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros, floating],
   );
 
   const activeDescriptions =
@@ -762,7 +764,7 @@ export function KeycodeSelector({
               {/* Header with Cancel Button */}
               <div
                 {...floatingWindow.handleProps}
-                className={`flex items-center gap-1 px-2 py-1 border-b border-[var(--color-border)] shrink-0 ${floating ? "cursor-move touch-none select-none" : ""}`}
+                className={`flex items-center border-b border-[var(--color-border)] shrink-0 ${floating ? "gap-1 px-2 py-1 cursor-move touch-none select-none" : "gap-3 p-4"}`}
               >
                 {floating && (
                   <IconGripVertical

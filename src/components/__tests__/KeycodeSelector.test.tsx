@@ -8,7 +8,13 @@ beforeEach(() => localStorage.clear());
 
 it("defaults to the keyboard layout with collapsed modifiers and no search", async () => {
   const user = userEvent.setup();
-  render(<KeycodeValueSelector value={0x70004} onChange={jest.fn()} />);
+  render(
+    <KeycodeValueSelector
+      value={0x70004}
+      onChange={jest.fn()}
+      defaultModifiersExpanded={false}
+    />,
+  );
   expect(
     screen.getByRole("button", { name: "Show keycodes by category" }),
   ).toBeInTheDocument();
@@ -107,4 +113,23 @@ it("waits for the second parameter before selecting a layer-tap binding", async 
     param2: 0x70005,
   });
   expect(onClose).not.toHaveBeenCalled();
+});
+
+it("expands modifiers initially in the modal editor", () => {
+  const keypress = BEHAVIORS.find(
+    (behavior) => behavior.displayName === "Key Press",
+  )!;
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: keypress.id, param1: 0x70004, param2: 0 }}
+      behaviors={new Map([[keypress.id, keypress]])}
+      layers={[]}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: "LCtrl", exact: true }),
+  ).toBeInTheDocument();
 });
