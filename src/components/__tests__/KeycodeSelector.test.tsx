@@ -39,6 +39,26 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
   ).toBeInTheDocument();
 });
 
+it("toggles search in keyboard-layout mode and returns to the keyboard when hidden", async () => {
+  const user = userEvent.setup();
+  render(<KeycodeValueSelector value={0x70004} onChange={jest.fn()} />);
+  const toggle = screen.getByRole("button", { name: "Search keycodes..." });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await user.click(toggle);
+  const input = screen.getByPlaceholderText("Search keycodes...");
+  await user.type(input, "Enter");
+  expect(
+    screen.queryByRole("button", { name: "A", exact: true }),
+  ).not.toBeInTheDocument();
+  await user.click(toggle);
+  expect(
+    screen.queryByPlaceholderText("Search keycodes..."),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "A", exact: true }),
+  ).toBeInTheDocument();
+});
+
 it("commits a complete numeric value with Enter instead of advancing while typing", async () => {
   const user = userEvent.setup();
   const onSelect = jest.fn();

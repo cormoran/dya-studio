@@ -267,6 +267,10 @@ export function KeycodeSelector({
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
+  const activePresentation = useRef(presentation);
+  useEffect(() => {
+    activePresentation.current = presentation;
+  }, [presentation]);
   const floatingWindow = useFloatingWindow(floating, open);
   const editingNumber = useRef(false);
   // State
@@ -727,7 +731,12 @@ export function KeycodeSelector({
   );
 
   return (
-    <Dialog.Root open={open} modal={!floating} onOpenChange={handleOpenChange}>
+    <Dialog.Root
+      key={presentation}
+      open={open}
+      modal={!floating}
+      onOpenChange={handleOpenChange}
+    >
       <Dialog.Portal>
         {!floating && (
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
@@ -743,6 +752,12 @@ export function KeycodeSelector({
             ref={floatingWindow.ref}
             style={floatingWindow.style}
             aria-describedby={undefined}
+            onCloseAutoFocus={(event) => {
+              // A mode switch replaces the Radix focus scope. Its delayed
+              // cleanup must not move focus out of the newly opened dialog.
+              if (activePresentation.current !== presentation)
+                event.preventDefault();
+            }}
             onInteractOutside={
               floating ? (event) => event.preventDefault() : undefined
             }

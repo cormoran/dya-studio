@@ -78,6 +78,7 @@ export function KeycodeValueSelector({
   showModifiers = true,
 }: KeycodeValueSelectorProps) {
   const { t } = useLanguage();
+  const [layoutSearchExpanded, setLayoutSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<KeycodeCategory>("letters");
@@ -122,7 +123,7 @@ export function KeycodeValueSelector({
     if (!isTouchDevice) {
       searchInputRef.current?.focus();
     }
-  }, [viewMode]);
+  }, [viewMode, layoutSearchExpanded]);
   const filteredKeycodes = useMemo((): KeycodeDefinition[] => {
     if (searchQuery.trim()) {
       return searchKeycodes(searchQuery, keyboardLayout);
@@ -167,6 +168,9 @@ export function KeycodeValueSelector({
     }
   }, [value, onChange]);
 
+  const showSearch = viewMode === "category" || layoutSearchExpanded;
+  const showSearchResults = showSearch && searchQuery.trim().length > 0;
+
   return (
     <div className="flex flex-col h-full">
       {/* Search + view mode toggle */}
@@ -189,40 +193,58 @@ export function KeycodeValueSelector({
               : ""}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() =>
-            setViewMode((m) => (m === "layout" ? "category" : "layout"))
-          }
-          aria-pressed={viewMode === "layout"}
-          title={
-            viewMode === "layout"
-              ? t("Show keycodes by category")
-              : t("Show key layout")
-          }
-          aria-label={
-            viewMode === "layout"
-              ? t("Show keycodes by category")
-              : t("Show key layout")
-          }
-          className={`ml-auto flex-shrink-0 p-1 rounded border transition-colors ${
-            viewMode === "layout"
-              ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-              : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
-          }`}
-        >
-          {viewMode === "layout" ? (
-            <IconLayoutGrid size={18} />
-          ) : (
-            <IconKeyboard size={18} />
+        <div className="ml-auto flex items-center gap-1 shrink-0">
+          {viewMode === "layout" && (
+            <button
+              type="button"
+              aria-label={t("Search keycodes...")}
+              title={t("Search keycodes...")}
+              aria-expanded={layoutSearchExpanded}
+              className={`p-1 rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+              onClick={() => {
+                setLayoutSearchExpanded(!layoutSearchExpanded);
+                if (layoutSearchExpanded) setSearchQuery("");
+              }}
+            >
+              <IconSearch size={18} />
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLayoutSearchExpanded(false);
+              setViewMode((m) => (m === "layout" ? "category" : "layout"));
+            }}
+            aria-pressed={viewMode === "layout"}
+            title={
+              viewMode === "layout"
+                ? t("Show keycodes by category")
+                : t("Show key layout")
+            }
+            aria-label={
+              viewMode === "layout"
+                ? t("Show keycodes by category")
+                : t("Show key layout")
+            }
+            className={`flex-shrink-0 p-1 rounded border transition-colors ${
+              viewMode === "layout"
+                ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
+                : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
+            }`}
+          >
+            {viewMode === "layout" ? (
+              <IconLayoutGrid size={18} />
+            ) : (
+              <IconKeyboard size={18} />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Modifier Flags */}
       {showModifiers && modifiersExpanded && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
+        <div className="mb-2 flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-[var(--color-text-muted)]">
               {t("Modifiers")}:
             </span>
@@ -236,7 +258,7 @@ export function KeycodeValueSelector({
               </button>
             )}
           </div>
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex min-w-0 gap-1 overflow-x-auto">
             {MODIFIER_FLAGS.map((mod) => (
               <button
                 key={mod.value}
@@ -254,7 +276,7 @@ export function KeycodeValueSelector({
         </div>
       )}
 
-      {viewMode === "category" && (
+      {showSearch && (
         <div className="relative mb-2 shrink-0">
           <IconSearch
             size={16}
@@ -286,7 +308,7 @@ export function KeycodeValueSelector({
       )}
 
       {/* Key Layout Preview */}
-      {viewMode === "layout" && (
+      {viewMode === "layout" && !showSearchResults && (
         <div className="flex-1 flex overflow-hidden min-h-0">
           <KeyLayoutSelector
             selectedCode={extractBaseKeycode(value)}
@@ -297,7 +319,7 @@ export function KeycodeValueSelector({
       )}
 
       {/* Category + Grid Layout */}
-      {viewMode === "category" && (
+      {(viewMode === "category" || showSearchResults) && (
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Category Sidebar */}
           {!searchQuery && (

@@ -388,16 +388,27 @@ describe("KeymapPage", () => {
       expect(setBinding).not.toHaveBeenCalled();
     });
 
-    it("switches between modes while open and remembers the preference", async () => {
-      const { user } = await setup();
-      await user.click(screen.getByRole("button", { name: "Dialog mode" }));
-      expect(
-        screen.getByRole("checkbox", { name: "Close on select" }),
-      ).toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Floating mode" }));
-      expect(
-        screen.queryByRole("checkbox", { name: "Close on select" }),
-      ).not.toBeInTheDocument();
+    it("switches repeatedly between modes without closing or applying a binding", async () => {
+      const { user, setBinding } = await setup();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await user.click(screen.getByRole("button", { name: "Dialog mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(
+          screen.getByRole("checkbox", { name: "Close on select" }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: "LCtrl", exact: true }),
+        ).toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: "Floating mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(
+          screen.queryByRole("checkbox", { name: "Close on select" }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: "LCtrl", exact: true }),
+        ).not.toBeInTheDocument();
+      }
+      expect(setBinding).not.toHaveBeenCalled();
       expect(localStorage.getItem("keymapSelectorMode")).toBe("floating");
     });
 
