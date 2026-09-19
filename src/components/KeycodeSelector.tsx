@@ -685,7 +685,7 @@ export function KeycodeSelector({
     <div
       className={
         floating
-          ? "flex flex-1 min-w-0 overflow-x-auto"
+          ? `flex h-7 min-w-0 shrink-0 overflow-x-auto ${inlineParamToolbar ? "flex-1" : "mx-2 mt-2"}`
           : "flex border-b border-[var(--color-border)] mx-4 mb-2"
       }
     >
