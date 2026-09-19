@@ -337,9 +337,9 @@ export function SensorRotationConfig({
 
                 {/* Rotation Bindings */}
                 <div className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {/* Counter-clockwise */}
-                    <div className="flex-1">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <IconRotateClockwise2
                           size={16}
@@ -351,7 +351,7 @@ export function SensorRotationConfig({
                         </span>
                       </div>
                       <button
-                        className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
+                        className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
                         onClick={() =>
                           handleBindingClick(sensor.index, "counterClockwise")
                         }
@@ -360,7 +360,7 @@ export function SensorRotationConfig({
                       </button>
                     </div>
                     {/* Clockwise */}
-                    <div className="flex-1">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <IconRotateClockwise
                           size={16}
@@ -371,7 +371,7 @@ export function SensorRotationConfig({
                         </span>
                       </div>
                       <button
-                        className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
+                        className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
                         onClick={() =>
                           handleBindingClick(sensor.index, "clockwise")
                         }
@@ -383,32 +383,37 @@ export function SensorRotationConfig({
 
                   {/* Tap Time */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-[var(--color-text-muted)] flex-1">
+                    <div className="grid grid-cols-2 items-center gap-2 mb-1">
+                      <label
+                        htmlFor={`sensor-tap-time-${sensor.index}`}
+                        className="text-xs text-[var(--color-text-muted)]"
+                      >
                         {t("Tap Time")}
-                      </span>
-                      {/* mobile: standard text size, tablet: small text size */}
-                      <input
-                        type="number"
-                        min={1}
-                        className="px-1 py-0.5 rounded text-base tablet:text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-electric)] text-right"
-                        value={
-                          pendingTapTimes.get(sensor.index) ??
-                          cwBinding?.tapMs ??
-                          ccwBinding?.tapMs ??
-                          5
-                        }
-                        step={5}
-                        onChange={(e) => {
-                          const newTapMs = Number(e.target.value);
-                          handleTapTimeChange(sensor.index, newTapMs);
-                        }}
-                      />
-                      <span className="ml-1 text-xs font-mono text-[var(--color-text-secondary)]">
-                        ms
-                      </span>
+                      </label>
+                      <div className="flex min-w-0 h-9 items-center rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] focus-within:border-[var(--color-electric)]">
+                        <input
+                          id={`sensor-tap-time-${sensor.index}`}
+                          type="number"
+                          min={1}
+                          className="w-full min-w-0 h-full px-3 rounded-md text-base tablet:text-sm tabular-nums text-[var(--color-text-secondary)] bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-electric)] text-right"
+                          value={
+                            pendingTapTimes.get(sensor.index) ??
+                            cwBinding?.tapMs ??
+                            ccwBinding?.tapMs ??
+                            5
+                          }
+                          step={5}
+                          onChange={(e) => {
+                            const newTapMs = Number(e.target.value);
+                            handleTapTimeChange(sensor.index, newTapMs);
+                          }}
+                        />
+                        <span className="shrink-0 pr-3 text-xs text-[var(--color-text-muted)]">
+                          ms
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-xs text-[var(--color-text-muted)] opacity-70 flex items-center gap-1 justify-between my-2">
+                    <div className="text-xs text-[var(--color-text-muted)] flex flex-wrap items-center gap-1 justify-between my-2">
                       <span>{t("Time between rotation triggers")}</span>
                       {pendingTapTimes.has(sensor.index) && (
                         <span className="text-[var(--color-electric)] ml-1">

@@ -39,7 +39,7 @@ import {
   IMPORT_EXPORT_TAB_ID,
 } from "./pages/ImportExportPage";
 import { AbyssCallbackPage } from "./pages/AbyssCallbackPage";
-import { isAbyssConfigured } from "./lib/abyss/abyssConfig";
+import { isAbyssTabVisible } from "./lib/abyss/abyssConfig";
 import { OAUTH_CALLBACK_PATH } from "./lib/abyss/abyssOAuth";
 import { useLanguage } from "./hooks/useLanguage";
 import { useUrlTab, pathnameFromTabId } from "./hooks/useUrlTab";
@@ -103,9 +103,9 @@ function getTabs(t: (key: string) => string): TabItem[] {
       icon: <IconPuzzle size={18} />,
       content: <CustomSubsystemsPage />,
     },
-    // Hidden entirely when the build has no Abyss OAuth client id — the tab's
-    // only entry point is a sign-in that could not succeed.
-    ...(isAbyssConfigured()
+    // A local Vite server keeps this available for UI development without
+    // credentials. Deployed builds require a real Abyss OAuth client id.
+    ...(isAbyssTabVisible()
       ? [
           {
             id: IMPORT_EXPORT_TAB_ID,

@@ -6,18 +6,34 @@
  * tab exists, and that question should not drag the Abyss SDK into the app
  * shell's module graph.
  */
-import { ABYSS_BASE_URL, ABYSS_CLIENT_ID } from "../viteEnv";
+import {
+  ABYSS_BASE_URL,
+  ABYSS_CLIENT_ID,
+  IS_LOCAL_DEVELOPMENT,
+} from "../viteEnv";
 
 export { ABYSS_BASE_URL, ABYSS_CLIENT_ID };
 
 /**
  * Whether this build was given an Abyss OAuth client id.
  *
- * When false the Import/Export tab is not registered at all — its only entry
- * point is a sign-in that could not succeed.
+ * When false, OAuth sign-in is unavailable. Tab visibility is decided
+ * separately so local development can still show the page.
  */
 export function isAbyssConfigured(): boolean {
   return ABYSS_CLIENT_ID.length > 0;
+}
+
+/**
+ * Whether the Import/Export tab should be registered in the app shell.
+ *
+ * Local development keeps the tab available without credentials so its UI can
+ * be developed against a local keyboard. OAuth remains unavailable until a
+ * client id is configured; deployed builds still require that client id before
+ * exposing the tab.
+ */
+export function isAbyssTabVisible(): boolean {
+  return IS_LOCAL_DEVELOPMENT || isAbyssConfigured();
 }
 
 /** Where the client library points when `VITE_ABYSS_BASE_URL` is unset. */

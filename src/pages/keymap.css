@@ -1,15 +1,15 @@
 /* Keep the existing keymap workspace and geometry; refine its controls and
    surfaces without changing the visual language of other pages. */
 .keymap-page {
-  --keymap-key-shadow: inset 0 -2px 0 var(--color-border);
+  --keymap-key-shadow: inset 0 -1px 0
+    color-mix(in srgb, var(--color-border) 50%, transparent);
 }
 
 :root.light .keymap-page {
   --color-electric: #007fa5;
   --color-neon: #00866b;
   --color-text-muted: #64748b;
-  --keymap-key-shadow:
-    0 1px 2px rgb(15 23 42 / 8%), inset 0 -2px 0 rgb(15 23 42 / 6%);
+  --keymap-key-shadow: inset 0 -1px 0 rgb(15 23 42 / 3%);
 }
 
 .keymap-actions .btn-ghost,

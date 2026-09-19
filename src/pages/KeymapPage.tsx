@@ -570,7 +570,7 @@ export function KeymapPage() {
         {connection.isConnected && keymap.keymap && currentLayout && (
           <>
             {/* Layer Tabs */}
-            <div className="keymap-layer-toolbar flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-[var(--color-border)]">
+            <div className="keymap-layer-toolbar flex flex-wrap items-center gap-2 mb-4 pb-4">
               <div
                 className="flex min-w-0 gap-1 flex-1 overflow-x-auto p-1 basis-full sm:basis-auto"
                 role="group"
