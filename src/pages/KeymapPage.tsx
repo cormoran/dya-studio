@@ -46,6 +46,7 @@ import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu"
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
 import { useIsTabActive } from "../hooks/useIsTabActive";
+import "./keymap.css";
 
 export function KeymapPage() {
   const { t } = useLanguage();
@@ -400,11 +401,11 @@ export function KeymapPage() {
   ]);
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="keymap-page p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-4">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconKeyboard
                 size={24}
@@ -423,9 +424,9 @@ export function KeymapPage() {
 
           {/* Action Buttons */}
           {connection.isConnected && keymap.keymap && (
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="keymap-actions flex flex-wrap items-center gap-2">
               {inputStream.isAvailable && (
-                <div className="flex items-center gap-2 px-2 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
                   <span className="text-xs text-[var(--color-text-muted)]">
                     {t("Stream")}
                   </span>
@@ -569,19 +570,19 @@ export function KeymapPage() {
         {connection.isConnected && keymap.keymap && currentLayout && (
           <>
             {/* Layer Tabs */}
-            <div className="flex flex-wrap items-center gap-2 mb-6">
+            <div className="keymap-layer-toolbar flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-[var(--color-border)]">
               <div
-                className="flex gap-2 flex-1 overflow-x-auto pb-2 basis-full sm:basis-auto"
+                className="flex min-w-0 gap-1 flex-1 overflow-x-auto p-1 basis-full sm:basis-auto"
                 role="group"
                 aria-label={t("Keymap layers")}
               >
                 {keymap.keymap.layers.map((layer, index) => (
                   <button
                     key={layer.id}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`keymap-layer px-4 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${
                       index === selectedLayerIndex
                         ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
-                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]"
                     }`}
                     onClick={() => setSelectedLayerIndex(index)}
                     aria-pressed={index === selectedLayerIndex}
@@ -815,7 +816,7 @@ export function KeymapPage() {
               </Tooltip.Provider>
             </div>
 
-            <div className="relative flex items-center gap-2 justify-between flex-wrap mb-4">
+            <div className="keymap-layout-options relative flex items-center gap-x-6 gap-y-3 justify-between flex-wrap mb-4">
               {/* Physical Layout Selector (if multiple layouts) */}
               {keymap.physicalLayouts &&
                 keymap.physicalLayouts.layouts.length > 1 && (
@@ -832,7 +833,7 @@ export function KeymapPage() {
                       onChange={(e) =>
                         keymap.setActiveLayout(Number(e.target.value))
                       }
-                      className="px-2 py-1 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                      className="select-field min-w-0 text-sm"
                     >
                       {keymap.physicalLayouts.layouts.map((layout, index) => (
                         <option key={index} value={index}>
@@ -860,7 +861,7 @@ export function KeymapPage() {
                         .value as import("../lib/keyboardLayouts").KeyboardLayoutType,
                     )
                   }
-                  className="px-2 py-1 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                  className="select-field min-w-0 text-sm"
                 >
                   {getAvailableLayouts().map((layoutType) => (
                     <option key={layoutType} value={layoutType}>
@@ -872,7 +873,13 @@ export function KeymapPage() {
                   {/* Tips: */}
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
-                      <IconInfoCircle size={14} />
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                        aria-label={t("Choose OS's keyboard layout setting")}
+                      >
+                        <IconInfoCircle size={16} />
+                      </button>
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
                       <Tooltip.Content
@@ -911,7 +918,7 @@ export function KeymapPage() {
 
             {/* Keyboard Layout */}
             {currentLayer && (
-              <div className="glass-card p-8 relative">
+              <div className="keymap-preview glass-card p-3 sm:p-6 relative">
                 {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
@@ -919,7 +926,7 @@ export function KeymapPage() {
                   role="status"
                   aria-live="polite"
                   aria-atomic="true"
-                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/70 text-xs"
+                  className="flex w-fit ml-auto mb-2 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
                   title={
                     !keymap.hasUnsavedChanges &&
                     keymap.isKeymapChangedFromDefault

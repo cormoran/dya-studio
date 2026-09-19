@@ -43,13 +43,13 @@ export function TabNavigation({
       className="flex flex-col h-full"
     >
       {/* Tab List */}
-      <Tabs.List className="flex items-center justify-center gap-1 px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50 backdrop-blur-sm overflow-x-auto scrollbar-none transition-colors duration-300">
+      <Tabs.List className="flex shrink-0 items-center gap-1 px-2 sm:px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50 backdrop-blur-sm overflow-x-auto scrollbar-none transition-colors duration-300">
         {tabs.map((tab) => (
           <Tabs.Trigger
             key={tab.id}
             value={tab.id}
             aria-label={tab.label}
-            className="tab-trigger flex items-center gap-2 whitespace-nowrap"
+            className="tab-trigger flex shrink-0 first:ml-auto last:mr-auto items-center gap-2 whitespace-nowrap"
           >
             <span className="opacity-70">{tab.icon}</span>
             <span className="hidden tablet:inline">{tab.label}</span>

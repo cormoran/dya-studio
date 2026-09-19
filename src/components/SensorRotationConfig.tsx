@@ -292,7 +292,7 @@ export function SensorRotationConfig({
 
   return (
     <>
-      <div className="glass-card p-6">
+      <div className="glass-card p-4 sm:p-6">
         <h3 className="text-sm font-medium text-[var(--color-text)] mb-2">
           {t("Rotary Encoder Configuration")}
         </h3>
@@ -316,7 +316,7 @@ export function SensorRotationConfig({
             return (
               <div
                 key={sensor.index}
-                className="flex-1 min-w-[280px] max-w-[400px] p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
+                className="flex-1 min-w-0 basis-[280px] max-w-[400px] p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
               >
                 {/* Sensor Name */}
                 <div className="flex items-center gap-2 mb-4">

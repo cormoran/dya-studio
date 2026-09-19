@@ -1,0 +1,94 @@
+/* Keep the existing keymap workspace and geometry; refine its controls and
+   surfaces without changing the visual language of other pages. */
+.keymap-page {
+  --keymap-key-shadow: inset 0 -2px 0 var(--color-border);
+}
+
+:root.light .keymap-page {
+  --color-electric: #007fa5;
+  --color-neon: #00866b;
+  --color-text-muted: #64748b;
+  --keymap-key-shadow:
+    0 1px 2px rgb(15 23 42 / 8%), inset 0 -2px 0 rgb(15 23 42 / 6%);
+}
+
+.keymap-actions .btn-ghost,
+.keymap-actions .btn-electric {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.keymap-actions .btn-electric {
+  color: var(--color-electric);
+  background: color-mix(in srgb, var(--color-electric) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-electric) 35%, transparent);
+}
+
+.keymap-actions .btn-electric:enabled:hover {
+  color: var(--color-electric);
+  background: color-mix(in srgb, var(--color-electric) 20%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-electric) 8%, transparent);
+}
+
+.keymap-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+
+.keymap-actions .btn-electric:disabled {
+  color: var(--color-text-muted);
+  background: var(--color-border);
+  border-color: var(--color-border);
+}
+
+.keymap-layer {
+  flex-shrink: 0;
+  line-height: 1.25rem;
+}
+
+.keymap-layer-toolbar > div,
+.keymap-layout-options > div {
+  max-width: 100%;
+}
+
+.keymap-layout-options label {
+  flex-shrink: 0;
+}
+
+.keymap-page :is(button, select, input):focus-visible {
+  outline: 2px solid var(--color-electric);
+  outline-offset: 2px;
+}
+
+.keymap-preview {
+  background: color-mix(in srgb, var(--color-surface) 65%, var(--color-bg));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 4%);
+}
+
+:root.light .keymap-preview {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
+}
+
+/* Inset the keycaps, preserving firmware coordinates and rotation. */
+.keymap-preview .physical-key-position {
+  padding: 2px;
+}
+
+.keymap-preview .physical-key {
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: var(--keymap-key-shadow);
+}
+
+.keymap-preview .physical-key:hover {
+  border-color: var(--color-electric);
+}
+
+.keymap-preview .physical-key[aria-current="true"] {
+  box-shadow: inset 0 0 0 1px var(--color-electric);
+}
