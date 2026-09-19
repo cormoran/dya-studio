@@ -9,6 +9,8 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Auto advance": "自動で次へ",
+  "Automatically select the next key": "選択後、自動で次のキーに移動",
   "Dialog mode": "ダイアログモード",
   "Floating mode": "フローティングモード",
   "Previous key": "前のキー",

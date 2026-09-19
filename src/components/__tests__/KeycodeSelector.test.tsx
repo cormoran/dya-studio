@@ -8,13 +8,7 @@ beforeEach(() => localStorage.clear());
 
 it("defaults to the keyboard layout with collapsed modifiers and no search", async () => {
   const user = userEvent.setup();
-  render(
-    <KeycodeValueSelector
-      value={0x70004}
-      onChange={jest.fn()}
-      defaultModifiersExpanded={false}
-    />,
-  );
+  render(<KeycodeValueSelector value={0x70004} onChange={jest.fn()} compact />);
   expect(
     screen.getByRole("button", { name: "Show keycodes by category" }),
   ).toBeInTheDocument();
@@ -26,6 +20,11 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Modifiers" }));
   expect(screen.getByRole("button", { name: "LCtrl" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Modifiers" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  expect(screen.queryByText("Modifiers:")).not.toBeInTheDocument();
   await user.click(
     screen.getByRole("button", { name: "Show keycodes by category" }),
   );
@@ -41,7 +40,7 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
 
 it("toggles search in keyboard-layout mode and returns to the keyboard when hidden", async () => {
   const user = userEvent.setup();
-  render(<KeycodeValueSelector value={0x70004} onChange={jest.fn()} />);
+  render(<KeycodeValueSelector compact value={0x70004} onChange={jest.fn()} />);
   const toggle = screen.getByRole("button", { name: "Search keycodes..." });
   expect(toggle).toHaveAttribute("aria-expanded", "false");
   await user.click(toggle);
@@ -135,7 +134,7 @@ it("waits for the second parameter before selecting a layer-tap binding", async 
   expect(onClose).not.toHaveBeenCalled();
 });
 
-it("expands modifiers initially in the modal editor", () => {
+it("always shows search and modifiers without toggles in the modal editor", () => {
   const keypress = BEHAVIORS.find(
     (behavior) => behavior.displayName === "Key Press",
   )!;
@@ -152,4 +151,12 @@ it("expands modifiers initially in the modal editor", () => {
   expect(
     screen.getByRole("button", { name: "LCtrl", exact: true }),
   ).toBeInTheDocument();
+  expect(screen.getByPlaceholderText("Search keycodes...")).toBeInTheDocument();
+  expect(screen.getByText("Modifiers:")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Modifiers", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Search keycodes..." }),
+  ).not.toBeInTheDocument();
 });

@@ -647,7 +647,7 @@ export function KeycodeSelector({
             {groupByType.hidUsages.length > 0 && (
               <KeycodeValueSelector
                 key={floating ? "floating" : "modal"}
-                defaultModifiersExpanded={!floating}
+                compact={floating}
                 toolbar={toolbar}
                 value={value}
                 onChange={onChange}

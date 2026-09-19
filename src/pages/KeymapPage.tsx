@@ -12,6 +12,7 @@ import {
   IconChevronRight,
   IconArrowsMaximize,
   IconWindow,
+  IconPlayerTrackNext,
   IconDeviceFloppy,
   IconChevronUp,
   IconChevronDown,
@@ -85,6 +86,20 @@ export function KeymapPage() {
       return "modal";
     }
   });
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    try {
+      return localStorage.getItem("keymapAutoAdvance") !== "false";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("keymapAutoAdvance", String(autoAdvance));
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }, [autoAdvance]);
   const [isApplyingBinding, setIsApplyingBinding] = useState(false);
   const applyingBindingRef = useRef(false);
   const selectionRevision = useRef(0);
@@ -212,6 +227,7 @@ export function KeymapPage() {
             binding,
           );
           if (!success || revision !== selectionRevision.current) return;
+          if (selectorMode === "floating" && !autoAdvance) return;
           const count = Math.min(
             currentLayer.bindings.length,
             currentLayout?.keys.length ?? 0,
@@ -231,6 +247,7 @@ export function KeymapPage() {
       currentLayout,
       selectedKeyPosition,
       selectorMode,
+      autoAdvance,
       keymap,
       withUnlock,
       closeSelector,
@@ -1224,7 +1241,7 @@ export function KeymapPage() {
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
-        selectionKey={`${currentLayer?.id}:${selectedKeyPosition}`}
+        selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
         busy={isApplyingBinding}
         error={keymap.error}
         toolbar={
@@ -1243,6 +1260,17 @@ export function KeymapPage() {
                 })}
               </span>
               <div className="flex gap-1 shrink-0">
+                <button
+                  type="button"
+                  aria-label={t("Auto advance")}
+                  title={t("Automatically select the next key")}
+                  aria-pressed={autoAdvance}
+                  disabled={isApplyingBinding}
+                  onClick={() => setAutoAdvance(!autoAdvance)}
+                  className={`p-1 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                >
+                  <IconPlayerTrackNext size={16} />
+                </button>
                 <button
                   type="button"
                   className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"

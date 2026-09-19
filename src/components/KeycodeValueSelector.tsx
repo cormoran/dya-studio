@@ -62,7 +62,7 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
 
 interface KeycodeValueSelectorProps {
   toolbar?: ReactNode;
-  defaultModifiersExpanded?: boolean;
+  compact?: boolean;
   value: number;
   onChange: (value: number, shouldNotClose?: boolean) => void;
   showModifiers?: boolean;
@@ -71,7 +71,7 @@ interface KeycodeValueSelectorProps {
 
 export function KeycodeValueSelector({
   toolbar,
-  defaultModifiersExpanded = true,
+  compact = false,
   value,
   onChange,
   keyboardLayout,
@@ -89,9 +89,8 @@ export function KeycodeValueSelector({
     const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return saved === "category" ? "category" : "layout";
   });
-  const [modifiersExpanded, setModifiersExpanded] = useState(
-    defaultModifiersExpanded,
-  );
+  const [modifiersExpanded, setModifiersExpanded] = useState(false);
+  const modifiersVisible = !compact || modifiersExpanded;
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Persist view mode preference
@@ -168,7 +167,8 @@ export function KeycodeValueSelector({
     }
   }, [value, onChange]);
 
-  const showSearch = viewMode === "category" || layoutSearchExpanded;
+  const showSearch =
+    !compact || viewMode === "category" || layoutSearchExpanded;
   const showSearchResults = showSearch && searchQuery.trim().length > 0;
 
   return (
@@ -176,12 +176,12 @@ export function KeycodeValueSelector({
       {/* Search + view mode toggle */}
       <div className="mb-2 flex items-center gap-2 shrink-0">
         {toolbar}
-        {showModifiers && (
+        {compact && showModifiers && (
           <button
             type="button"
             aria-expanded={modifiersExpanded}
             onClick={() => setModifiersExpanded(!modifiersExpanded)}
-            className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] whitespace-nowrap"
+            className={`px-2 py-1 text-xs rounded border whitespace-nowrap ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
           >
             {t("Modifiers")}
             {selectedModifiers !== 0
@@ -194,7 +194,7 @@ export function KeycodeValueSelector({
           </button>
         )}
         <div className="ml-auto flex items-center gap-1 shrink-0">
-          {viewMode === "layout" && (
+          {compact && viewMode === "layout" && (
             <button
               type="button"
               aria-label={t("Search keycodes...")}
@@ -242,22 +242,26 @@ export function KeycodeValueSelector({
       </div>
 
       {/* Modifier Flags */}
-      {showModifiers && modifiersExpanded && (
+      {showModifiers && modifiersVisible && (
         <div className="mb-2 flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-[var(--color-text-muted)]">
-              {t("Modifiers")}:
-            </span>
-            {selectedModifiers !== 0 && (
-              <button
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
-                onClick={handleClearModifiers}
-              >
-                <IconX size={12} />
-                {t("Clear")}
-              </button>
-            )}
-          </div>
+          {(!compact || selectedModifiers !== 0) && (
+            <div className="flex items-center gap-2 shrink-0">
+              {!compact && (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  {t("Modifiers")}:
+                </span>
+              )}
+              {selectedModifiers !== 0 && (
+                <button
+                  className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
+                  onClick={handleClearModifiers}
+                >
+                  <IconX size={12} />
+                  {t("Clear")}
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex min-w-0 gap-1 overflow-x-auto">
             {MODIFIER_FLAGS.map((mod) => (
               <button

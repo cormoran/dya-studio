@@ -342,6 +342,24 @@ describe("KeymapPage", () => {
       expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
     });
 
+    it("stays on the selected key when auto advance is off and remembers the setting", async () => {
+      const { user, setBinding } = await setup();
+      const toggle = screen.getByRole("button", { name: "Auto advance" });
+      expect(toggle).toHaveAttribute("aria-pressed", "true");
+      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      expect(localStorage.getItem("keymapAutoAdvance")).toBe("false");
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
     it("keeps the current key on failure and allows retry", async () => {
       const { user, setBinding } = await setup(
         jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
