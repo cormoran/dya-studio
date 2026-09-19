@@ -39,14 +39,14 @@ export interface UseCustomSettingsReturn {
   sections: CustomSettingsSection[];
   isLoading: boolean;
   error: string | null;
-  loadSettings: () => Promise<void>;
+  loadSettings: () => Promise<Setting[]>;
   writeSettingToMemory: (
     setting: Setting,
     value: SettingValue,
-  ) => Promise<void>;
-  saveSection: (customSubsystemIndex: number) => Promise<void>;
-  discardSection: (customSubsystemIndex: number) => Promise<void>;
-  resetSection: (customSubsystemIndex: number) => Promise<void>;
+  ) => Promise<boolean>;
+  saveSection: (customSubsystemIndex: number) => Promise<boolean>;
+  discardSection: (customSubsystemIndex: number) => Promise<boolean>;
+  resetSection: (customSubsystemIndex: number) => Promise<boolean>;
   createSetting: (
     key: string,
     value: SettingValue,
@@ -286,10 +286,10 @@ export function useCustomSettings(
     zmkApp,
   ]);
 
-  const loadSettings = useCallback(async () => {
+  const loadSettings = useCallback(async (): Promise<Setting[]> => {
     if (!ready) {
       setSettings([]);
-      return;
+      return [];
     }
 
     setIsLoading(true);
@@ -310,6 +310,7 @@ export function useCustomSettings(
               (b.value?.arrayValue?.index ?? -1),
         ),
       );
+      return listedSettings;
     } catch (err) {
       console.error("Failed to load custom settings:", err);
       setError(
@@ -317,13 +318,14 @@ export function useCustomSettings(
           ? err.message
           : t("Failed to load custom settings"),
       );
+      return [];
     } finally {
       setIsLoading(false);
     }
   }, [collectListSettings, ready, t]);
 
   const writeSettingToMemory = useCallback(
-    async (setting: Setting, value: SettingValue) => {
+    async (setting: Setting, value: SettingValue): Promise<boolean> => {
       const nextValue = valueWithArrayShape(setting, value);
 
       setSettings((prev) =>
@@ -377,6 +379,7 @@ export function useCustomSettings(
           );
         }
         setError(null);
+        return true;
       } catch (err) {
         console.error("Failed to write custom setting:", err);
         setError(
@@ -385,6 +388,7 @@ export function useCustomSettings(
             : t("Failed to write custom setting"),
         );
         await loadSettings();
+        return false;
       }
     },
     [callCustomRequest, loadSettings, t],
@@ -428,7 +432,7 @@ export function useCustomSettings(
     async (
       scope: SettingScope,
       type: "saveSettings" | "discardSettings" | "resetSettings",
-    ) => {
+    ): Promise<boolean> => {
       setIsLoading(true);
       setError(null);
       try {
@@ -440,6 +444,7 @@ export function useCustomSettings(
           }),
         );
         await loadSettings();
+        return true;
       } catch (err) {
         console.error(`Failed to ${type}:`, err);
         const fallback =
@@ -449,6 +454,7 @@ export function useCustomSettings(
               ? t("Failed to discard settings")
               : t("Failed to reset settings");
         setError(err instanceof Error ? err.message : fallback);
+        return false;
       } finally {
         setIsLoading(false);
       }

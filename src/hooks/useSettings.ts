@@ -32,8 +32,8 @@ export interface UseSettingsReturn {
   devices: DeviceActivitySettings[];
   isLoading: boolean;
   error: string | null;
-  loadAllSettings: () => Promise<void>;
-  setActivitySettings: (idleMs: number, sleepMs: number) => Promise<void>;
+  loadAllSettings: () => Promise<DeviceActivitySettings[]>;
+  setActivitySettings: (idleMs: number, sleepMs: number) => Promise<boolean>;
   resetToDefaults: () => Promise<void>;
 }
 
@@ -54,10 +54,12 @@ export function useSettings(): UseSettingsReturn {
   // Extract subsystem index as a stable primitive value for dependencies
   const subsystemIndex = subsystem?.index;
 
-  const loadAllSettings = useCallback(async () => {
+  const loadAllSettings = useCallback(async (): Promise<
+    DeviceActivitySettings[]
+  > => {
     if (!ready || !zmkApp || subsystemIndex === undefined) {
       setError("Not connected to device or subsystem not found");
-      return;
+      return [];
     }
 
     setIsLoading(true);
@@ -124,21 +126,37 @@ export function useSettings(): UseSettingsReturn {
         );
         unsubscribe();
       }
+      return Array.from(deviceMap.values());
     } catch (err) {
       console.error("Failed to load settings:", err);
       setError(
         `Failed to load settings: ${err instanceof Error ? err.message : "Unknown error"}`,
       );
+      return [];
     } finally {
       setIsLoading(false);
     }
   }, [zmkApp, ready, subsystemIndex, call]);
 
   const setActivitySettings = useCallback(
-    async (idleMs: number, sleepMs: number) => {
+    async (idleMs: number, sleepMs: number): Promise<boolean> => {
       if (!ready) {
         setError("Not connected to device or subsystem not found");
-        return;
+        return false;
+      }
+
+      if (
+        !Number.isSafeInteger(idleMs) ||
+        !Number.isSafeInteger(sleepMs) ||
+        idleMs < 0 ||
+        sleepMs < 0 ||
+        idleMs > 0xffffffff ||
+        sleepMs > 0xffffffff
+      ) {
+        setError(
+          "Activity timeouts must be whole milliseconds from 0 to 4294967295",
+        );
+        return false;
       }
 
       setIsLoading(true);
@@ -160,16 +178,21 @@ export function useSettings(): UseSettingsReturn {
         if (resp) {
           if (resp.error) {
             setError(resp.error.message);
+            return false;
           } else if (resp.setActivitySettings?.success) {
             // Successfully set, reload settings
             await loadAllSettings();
+            return true;
           }
         }
+        setError("Failed to update activity settings");
+        return false;
       } catch (err) {
         console.error("Failed to set activity settings:", err);
         setError(
           `Failed to set activity settings: ${err instanceof Error ? err.message : "Unknown error"}`,
         );
+        return false;
       } finally {
         setIsLoading(false);
       }

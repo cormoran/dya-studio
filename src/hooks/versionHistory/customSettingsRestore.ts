@@ -27,7 +27,7 @@ import type { DiffLabeler, JsonValue } from "../../lib/versionHistory";
  */
 export async function applyCustomSettingsSnapshot(
   readSections: () => CustomSettingsSection[],
-  write: (setting: Setting, value: SettingValue) => Promise<void>,
+  write: (setting: Setting, value: SettingValue) => Promise<unknown>,
   snapshot: CustomSettingsSnapshot,
 ): Promise<void> {
   for (const [identifier, values] of Object.entries(snapshot.sections)) {
