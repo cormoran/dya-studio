@@ -267,7 +267,7 @@ export function KeycodeSelector({
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
-  const floatingWindow = useFloatingWindow(floating);
+  const floatingWindow = useFloatingWindow(floating, open);
   const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
@@ -730,200 +730,208 @@ export function KeycodeSelector({
         {!floating && (
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         )}
-        <Dialog.Content
-          ref={floatingWindow.ref}
-          style={floatingWindow.style}
-          aria-describedby={undefined}
-          onInteractOutside={
-            floating ? (event) => event.preventDefault() : undefined
-          }
+        <div
           className={
             floating
-              ? "fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
-              : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+              ? "fixed inset-0 z-50 overflow-hidden pointer-events-none [contain:paint]"
+              : "contents"
           }
         >
-          {error && (
-            <p role="alert" className="px-4 text-sm text-red-500">
-              {error}
-            </p>
-          )}
-          <fieldset
-            disabled={busy}
-            className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
+          <Dialog.Content
+            ref={floatingWindow.ref}
+            style={floatingWindow.style}
+            aria-describedby={undefined}
+            onInteractOutside={
+              floating ? (event) => event.preventDefault() : undefined
+            }
+            className={
+              floating
+                ? "pointer-events-auto fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+            }
           >
-            {/* Header with Cancel Button */}
-            <div
-              {...floatingWindow.handleProps}
-              className={`flex items-center gap-1 px-2 py-1 border-b border-[var(--color-border)] shrink-0 ${floating ? "cursor-move touch-none select-none" : ""}`}
+            {error && (
+              <p role="alert" className="px-4 text-sm text-red-500">
+                {error}
+              </p>
+            )}
+            <fieldset
+              disabled={busy}
+              className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
             >
-              {floating && (
-                <IconGripVertical
-                  size={14}
-                  className="shrink-0 text-[var(--color-text-muted)]"
-                />
-              )}
-              {toolbar}
-              <Dialog.Title className="sr-only">
-                {t("Select Key Binding")}
-              </Dialog.Title>
-              <div className="ml-auto flex items-center gap-1">
-                {!floating && (
-                  <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={closeOnSelect}
-                      onChange={(e) => setCloseOnSelect(e.target.checked)}
-                      className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
-                    />
-                    <span>{t("Close on select")}</span>
-                  </label>
-                )}
-                {hasChanges && (
-                  <button
-                    className="p-1 rounded text-red-600 hover:bg-red-50"
-                    aria-label={t("Revert")}
-                    onClick={handleRevert}
-                  >
-                    <IconRestore size={16} className="animate-pulse" />
-                  </button>
-                )}
-                <Dialog.Close asChild>
-                  <button
-                    className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
-                    aria-label={t("Close")}
-                  >
-                    <IconX
-                      size={20}
-                      className="text-[var(--color-text-muted)]"
-                    />
-                  </button>
-                </Dialog.Close>
-              </div>
-            </div>
-
-            {/* Behavior Selection */}
-            <div
-              className={`${floating ? "px-2 py-1" : "p-4"} border-b border-[var(--color-border)] shrink-0`}
-            >
-              <label
-                className={
-                  floating
-                    ? "sr-only"
-                    : "block text-xs font-medium text-[var(--color-text-muted)] mb-1"
-                }
-              >
-                {t("Behavior")}
-              </label>
-              {behaviors.size === 0 ? (
-                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
-                  ⚠️ {t("Behaviors not loaded from keyboard.")}
-                </div>
-              ) : (
-                <BehaviorDropdown
-                  compact={floating}
-                  behaviors={behaviors}
-                  selectedBehaviorId={selectedBehavior}
-                  onSelect={handleBehaviorSelect}
-                  onQuickSelect={handleBehaviorSelect}
-                  quickSelects={behaviorQuickSelects}
-                />
-              )}
-            </div>
-
-            {/* Parameter Selection - Horizontal Layout */}
-            {selectedBehaviorInfo && needsAnyParam && (
+              {/* Header with Cancel Button */}
               <div
-                className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[240px]" : "min-h-0"}`}
+                {...floatingWindow.handleProps}
+                className={`flex items-center gap-1 px-2 py-1 border-b border-[var(--color-border)] shrink-0 ${floating ? "cursor-move touch-none select-none" : ""}`}
               >
-                {/* Parameters Label */}
-                <div
-                  className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
-                >
-                  <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-                    {t("Parameters")}
-                  </label>
+                {floating && (
+                  <IconGripVertical
+                    size={14}
+                    className="shrink-0 text-[var(--color-text-muted)]"
+                  />
+                )}
+                {toolbar}
+                <Dialog.Title className="sr-only">
+                  {t("Select Key Binding")}
+                </Dialog.Title>
+                <div className="ml-auto flex items-center gap-1">
+                  {!floating && (
+                    <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={closeOnSelect}
+                        onChange={(e) => setCloseOnSelect(e.target.checked)}
+                        className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
+                      />
+                      <span>{t("Close on select")}</span>
+                    </label>
+                  )}
+                  {hasChanges && (
+                    <button
+                      className="p-1 rounded text-red-600 hover:bg-red-50"
+                      aria-label={t("Revert")}
+                      onClick={handleRevert}
+                    >
+                      <IconRestore size={16} className="animate-pulse" />
+                    </button>
+                  )}
+                  <Dialog.Close asChild>
+                    <button
+                      className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
+                      aria-label={t("Close")}
+                    >
+                      <IconX
+                        size={20}
+                        className="text-[var(--color-text-muted)]"
+                      />
+                    </button>
+                  </Dialog.Close>
                 </div>
-                {!inlineParamToolbar && parameterTabs}
+              </div>
 
-                {/* Parameter Description */}
-                <div
-                  className={`px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] ${floating ? "hidden" : "hidden tablet:block"}`}
+              {/* Behavior Selection */}
+              <div
+                className={`${floating ? "px-2 py-1" : "p-4"} border-b border-[var(--color-border)] shrink-0`}
+              >
+                <label
+                  className={
+                    floating
+                      ? "sr-only"
+                      : "block text-xs font-medium text-[var(--color-text-muted)] mb-1"
+                  }
                 >
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    {activeParam === 1
-                      ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
-                      : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
-                  </p>
-                </div>
+                  {t("Behavior")}
+                </label>
+                {behaviors.size === 0 ? (
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
+                    ⚠️ {t("Behaviors not loaded from keyboard.")}
+                  </div>
+                ) : (
+                  <BehaviorDropdown
+                    compact={floating}
+                    behaviors={behaviors}
+                    selectedBehaviorId={selectedBehavior}
+                    onSelect={handleBehaviorSelect}
+                    onQuickSelect={handleBehaviorSelect}
+                    quickSelects={behaviorQuickSelects}
+                  />
+                )}
+              </div>
 
-                {/* Parameter Value Selector */}
+              {/* Parameter Selection - Horizontal Layout */}
+              {selectedBehaviorInfo && needsAnyParam && (
                 <div
-                  className={`flex-1 ${floating ? "p-2 overflow-y-auto" : "p-4 overflow-hidden"} flex flex-col`}
-                  onFocusCapture={(event) => {
-                    editingNumber.current =
-                      event.target instanceof HTMLInputElement &&
-                      event.target.type === "number";
-                  }}
-                  onBlurCapture={() => {
-                    editingNumber.current = false;
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      floating &&
-                      event.key === "Enter" &&
-                      event.target instanceof HTMLInputElement &&
-                      event.target.type === "number"
-                    ) {
-                      event.preventDefault();
+                  className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[240px]" : "min-h-0"}`}
+                >
+                  {/* Parameters Label */}
+                  <div
+                    className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
+                  >
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                      {t("Parameters")}
+                    </label>
+                  </div>
+                  {!inlineParamToolbar && parameterTabs}
+
+                  {/* Parameter Description */}
+                  <div
+                    className={`px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] ${floating ? "hidden" : "hidden tablet:block"}`}
+                  >
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {activeParam === 1
+                        ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
+                        : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
+                    </p>
+                  </div>
+
+                  {/* Parameter Value Selector */}
+                  <div
+                    className={`flex-1 ${floating ? "p-2 overflow-y-auto" : "p-4 overflow-hidden"} flex flex-col`}
+                    onFocusCapture={(event) => {
+                      editingNumber.current =
+                        event.target instanceof HTMLInputElement &&
+                        event.target.type === "number";
+                    }}
+                    onBlurCapture={() => {
                       editingNumber.current = false;
-                      if (activeParam === 1) handleParam1Change(param1);
-                      else handleParam2Change(param2);
-                    }
-                  }}
-                >
-                  {activeParam === 1 && needsParam1
-                    ? renderParamValueSelector(
-                        param1,
-                        param2,
-                        handleParam1Change,
-                        1,
-                        inlineParamToolbar ? parameterTabs : undefined,
-                      )
-                    : activeParam === 2 && needsParam2
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        floating &&
+                        event.key === "Enter" &&
+                        event.target instanceof HTMLInputElement &&
+                        event.target.type === "number"
+                      ) {
+                        event.preventDefault();
+                        editingNumber.current = false;
+                        if (activeParam === 1) handleParam1Change(param1);
+                        else handleParam2Change(param2);
+                      }
+                    }}
+                  >
+                    {activeParam === 1 && needsParam1
                       ? renderParamValueSelector(
                           param1,
                           param2,
-                          handleParam2Change,
-                          2,
+                          handleParam1Change,
+                          1,
                           inlineParamToolbar ? parameterTabs : undefined,
                         )
-                      : null}
-                </div>
-              </div>
-            )}
-
-            {/* No Parameters Message */}
-            {selectedBehaviorInfo && !needsAnyParam && (
-              <div className="flex-1 flex items-center justify-center p-8">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">
-                    {selectedBehaviorInfo.behavior.displayName === "none" ||
-                    selectedBehaviorInfo.behavior.displayName === "trans"
-                      ? "✓"
-                      : "⚡"}
+                      : activeParam === 2 && needsParam2
+                        ? renderParamValueSelector(
+                            param1,
+                            param2,
+                            handleParam2Change,
+                            2,
+                            inlineParamToolbar ? parameterTabs : undefined,
+                          )
+                        : null}
                   </div>
-                  <p className="text-[var(--color-text-secondary)]">
-                    {selectedBehaviorInfo.behavior.displayName}
-                  </p>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                    No parameters needed
-                  </p>
                 </div>
-              </div>
-            )}
-          </fieldset>
-        </Dialog.Content>
+              )}
+
+              {/* No Parameters Message */}
+              {selectedBehaviorInfo && !needsAnyParam && (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">
+                      {selectedBehaviorInfo.behavior.displayName === "none" ||
+                      selectedBehaviorInfo.behavior.displayName === "trans"
+                        ? "✓"
+                        : "⚡"}
+                    </div>
+                    <p className="text-[var(--color-text-secondary)]">
+                      {selectedBehaviorInfo.behavior.displayName}
+                    </p>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                      No parameters needed
+                    </p>
+                  </div>
+                </div>
+              )}
+            </fieldset>
+          </Dialog.Content>
+        </div>
       </Dialog.Portal>
     </Dialog.Root>
   );

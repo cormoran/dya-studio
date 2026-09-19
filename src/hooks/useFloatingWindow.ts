@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 
-/** Drag by the title, keeping the entire window inside the viewport. */
-export function useFloatingWindow(enabled: boolean) {
+/** Allow clipped overflow while leaving enough of the header to drag back. */
+export function useFloatingWindow(enabled: boolean, open: boolean) {
   const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; headerHeight: number } | null>(
+    null,
+  );
   const [position, setPosition] = useState<{ left: number; top: number }>();
 
   useEffect(() => {
@@ -11,6 +13,10 @@ export function useFloatingWindow(enabled: boolean) {
     window.addEventListener("resize", reset);
     return () => window.removeEventListener("resize", reset);
   }, []);
+
+  useEffect(() => {
+    if (!open) setPosition(undefined);
+  }, [open]);
 
   return {
     ref,
@@ -30,6 +36,7 @@ export function useFloatingWindow(enabled: boolean) {
         drag.current = {
           x: event.clientX - rect.left,
           y: event.clientY - rect.top,
+          headerHeight: event.currentTarget.getBoundingClientRect().height,
         };
         event.currentTarget.setPointerCapture(event.pointerId);
         event.preventDefault();
@@ -37,18 +44,26 @@ export function useFloatingWindow(enabled: boolean) {
       onPointerMove(event: PointerEvent<HTMLElement>) {
         if (!enabled || !drag.current || !ref.current) return;
         const rect = ref.current.getBoundingClientRect();
+        // Keep a draggable header area visible, including when the controls at
+        // its right edge occupy part of the remaining strip.
+        const visibleWidth = Math.min(160, rect.width, window.innerWidth);
+        const visibleHeight = Math.min(
+          24,
+          drag.current.headerHeight,
+          window.innerHeight,
+        );
         setPosition({
           left: Math.max(
-            0,
+            visibleWidth - rect.width,
             Math.min(
-              window.innerWidth - rect.width,
+              window.innerWidth - visibleWidth,
               event.clientX - drag.current.x,
             ),
           ),
           top: Math.max(
-            0,
+            visibleHeight - drag.current.headerHeight,
             Math.min(
-              window.innerHeight - rect.height,
+              window.innerHeight - visibleHeight,
               event.clientY - drag.current.y,
             ),
           ),
