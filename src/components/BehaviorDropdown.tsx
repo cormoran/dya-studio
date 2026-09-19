@@ -36,6 +36,7 @@ interface BehaviorOption {
 }
 
 interface BehaviorDropdownProps {
+  compact?: boolean;
   behaviors: Map<number, BehaviorDefinition>;
   selectedBehaviorId: number | null;
   onSelect: (behaviorId: number) => void;
@@ -44,6 +45,7 @@ interface BehaviorDropdownProps {
 }
 
 export function BehaviorDropdown({
+  compact = false,
   behaviors,
   selectedBehaviorId,
   onSelect,
@@ -180,17 +182,22 @@ export function BehaviorDropdown({
     : null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div
+      className={`relative ${compact ? "flex items-center gap-1" : ""}`}
+      ref={dropdownRef}
+    >
       {/* Main Row: Dropdown + Quick Select */}
       {/* Dropdown Trigger */}
       <button
-        className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors"
+        className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "w-full px-3 py-1.5"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-sm text-[var(--color-text)]">
+        <span
+          className={`${compact ? "text-xs truncate" : "text-sm"} text-[var(--color-text)]`}
+        >
           {selectedBehaviorOverrideMeta?.displayNameVariants?.at(0) ||
             t("Select behavior")}
-          {selectedBehaviorOverrideMeta?.description && (
+          {!compact && selectedBehaviorOverrideMeta?.description && (
             <span className="mx-1 text-xs text-[var(--color-text-muted)]">
               - {t(selectedBehaviorOverrideMeta.description)}
             </span>
@@ -203,14 +210,18 @@ export function BehaviorDropdown({
       </button>
 
       {/* Quick Select Buttons with label (moved to bottom) */}
-      <div className="items-center gap-1 mt-2 pl-2 overflow-x-auto flex">
-        <span className="text-xs text-[var(--color-text-muted)] mr-1 flex-shrink-0">
+      <div
+        className={`items-center gap-1 overflow-x-auto flex ${compact ? "min-w-0" : "mt-2 pl-2"}`}
+      >
+        <span
+          className={`${compact ? "sr-only" : "text-xs text-[var(--color-text-muted)] mr-1 flex-shrink-0"}`}
+        >
           {t("Quick Select")}:
         </span>
         {quickSelectBehaviors.map((qb) => (
           <button
             key={qb.id}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ${
+            className={`${compact ? "px-2 py-1 rounded" : "px-3 py-1.5 rounded-lg"} text-xs font-medium transition-colors flex-shrink-0 ${
               selectedBehaviorId === qb.id
                 ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
                 : qb.isRecent

@@ -14,10 +14,11 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconRestore, IconX } from "@tabler/icons-react";
+import { IconRestore, IconX, IconGripVertical } from "@tabler/icons-react";
 import { MOUSE_KEYCODES } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
@@ -267,6 +268,7 @@ export function KeycodeSelector({
   const { t } = useLanguage();
   const floating = presentation === "floating";
   const floatingWindow = useFloatingWindow(floating);
+  const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
   const [param1, setParam1] = useState<number>(0);
@@ -352,6 +354,7 @@ export function KeycodeSelector({
   const handleParam1Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam1(value);
+      if (floating && editingNumber.current) return;
       const nextSelectedBehaviorInfo = buildSelectedBehaviorInfo(
         behaviors,
         selectedBehavior,
@@ -393,6 +396,7 @@ export function KeycodeSelector({
   const handleParam2Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam2(value);
+      if (floating && editingNumber.current) return;
       // If param2 is set and closeOnSelect is enabled, apply and close
       if (
         shouldNotClose !== true &&
@@ -674,11 +678,10 @@ export function KeycodeSelector({
           }
           className={
             floating
-              ? "fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[65dvh] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+              ? "fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
               : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
           }
         >
-          {toolbar}
           {error && (
             <p role="alert" className="px-4 text-sm text-red-500">
               {error}
@@ -689,14 +692,21 @@ export function KeycodeSelector({
             className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
           >
             {/* Header with Cancel Button */}
-            <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-              <Dialog.Title
-                {...floatingWindow.handleProps}
-                className={`text-lg font-medium text-[var(--color-text)] flex items-center gap-2 ${floating ? "cursor-move touch-none select-none" : ""}`}
-              >
+            <div
+              {...floatingWindow.handleProps}
+              className={`flex items-center gap-1 px-2 py-1 border-b border-[var(--color-border)] shrink-0 ${floating ? "cursor-move touch-none select-none" : ""}`}
+            >
+              {floating && (
+                <IconGripVertical
+                  size={14}
+                  className="shrink-0 text-[var(--color-text-muted)]"
+                />
+              )}
+              {toolbar}
+              <Dialog.Title className="sr-only">
                 {t("Select Key Binding")}
               </Dialog.Title>
-              <div className="flex items-center gap-2">
+              <div className="ml-auto flex items-center gap-1">
                 {!floating && (
                   <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
                     <input
@@ -710,16 +720,16 @@ export function KeycodeSelector({
                 )}
                 {hasChanges && (
                   <button
-                    className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    className="p-1 rounded text-red-600 hover:bg-red-50"
+                    aria-label={t("Revert")}
                     onClick={handleRevert}
                   >
                     <IconRestore size={16} className="animate-pulse" />
-                    <span className="hidden tablet:inline">{t("Revert")}</span>
                   </button>
                 )}
                 <Dialog.Close asChild>
                   <button
-                    className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
+                    className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
                     aria-label={t("Close")}
                   >
                     <IconX
@@ -732,8 +742,16 @@ export function KeycodeSelector({
             </div>
 
             {/* Behavior Selection */}
-            <div className="p-4 border-b border-[var(--color-border)]">
-              <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
+            <div
+              className={`${floating ? "px-2 py-1" : "p-4"} border-b border-[var(--color-border)] shrink-0`}
+            >
+              <label
+                className={
+                  floating
+                    ? "sr-only"
+                    : "block text-xs font-medium text-[var(--color-text-muted)] mb-1"
+                }
+              >
                 {t("Behavior")}
               </label>
               {behaviors.size === 0 ? (
@@ -742,6 +760,7 @@ export function KeycodeSelector({
                 </div>
               ) : (
                 <BehaviorDropdown
+                  compact={floating}
                   behaviors={behaviors}
                   selectedBehaviorId={selectedBehavior}
                   onSelect={handleBehaviorSelect}
@@ -754,7 +773,7 @@ export function KeycodeSelector({
             {/* Parameter Selection - Horizontal Layout */}
             {selectedBehaviorInfo && needsAnyParam && (
               <div
-                className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[380px] shrink-0" : "min-h-0"}`}
+                className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[240px]" : "min-h-0"}`}
               >
                 {/* Parameters Label */}
                 <div
@@ -765,10 +784,12 @@ export function KeycodeSelector({
                   </label>
                 </div>
                 {/* Parameter Tabs (Horizontal) */}
-                <div className="flex border-b border-[var(--color-border)] mx-4 mb-2">
+                <div
+                  className={`flex border-b border-[var(--color-border)] ${floating ? "mx-2" : "mx-4 mb-2"}`}
+                >
                   {needsParam1 && (
                     <button
-                      className={`flex-1 p-2 text-center transition-colors border-b-2 ${
+                      className={`flex-1 ${floating ? "flex items-center justify-center gap-2 px-2 py-1" : "p-2"} text-center transition-colors border-b-2 ${
                         activeParam === 1
                           ? "border-[var(--color-electric)] text-[var(--color-electric)]"
                           : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
@@ -777,14 +798,14 @@ export function KeycodeSelector({
                     >
                       <div className="font-medium text-xs">
                         {t("param1")}:
-                        <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                        <span
+                          className={`${floating ? "hidden" : "ml-1 text-[10px] text-[var(--color-text-muted)]"}`}
+                        >
                           {getParamTypeLabel(selectedBehaviorInfo, 1, t)}
                         </span>
                       </div>
                       <div
-                        className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                          activeParam === 1 ? "font-bold text-base" : ""
-                        }`}
+                        className={`${floating ? "text-xs" : "mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
                       >
                         {formatParamValue(
                           selectedBehaviorInfo,
@@ -800,7 +821,7 @@ export function KeycodeSelector({
                   )}
                   {needsParam2 && (
                     <button
-                      className={`flex-1 p-2 text-center transition-colors border-b-2 ${
+                      className={`flex-1 ${floating ? "flex items-center justify-center gap-2 px-2 py-1" : "p-2"} text-center transition-colors border-b-2 ${
                         activeParam === 2
                           ? "border-[var(--color-electric)] text-[var(--color-electric)]"
                           : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
@@ -809,14 +830,14 @@ export function KeycodeSelector({
                     >
                       <div className="font-medium text-xs">
                         {t("param2")}:
-                        <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                        <span
+                          className={`${floating ? "hidden" : "ml-1 text-[10px] text-[var(--color-text-muted)]"}`}
+                        >
                           {getParamTypeLabel(selectedBehaviorInfo, 2, t)}
                         </span>
                       </div>
                       <div
-                        className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                          activeParam === 2 ? "font-bold text-base" : ""
-                        }`}
+                        className={`${floating ? "text-xs" : "mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
                       >
                         {formatParamValue(
                           selectedBehaviorInfo,
@@ -844,7 +865,30 @@ export function KeycodeSelector({
                 </div>
 
                 {/* Parameter Value Selector */}
-                <div className="flex-1 p-4 overflow-hidden flex flex-col">
+                <div
+                  className={`flex-1 ${floating ? "p-2 overflow-y-auto" : "p-4 overflow-hidden"} flex flex-col`}
+                  onFocusCapture={(event) => {
+                    editingNumber.current =
+                      event.target instanceof HTMLInputElement &&
+                      event.target.type === "number";
+                  }}
+                  onBlurCapture={() => {
+                    editingNumber.current = false;
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      floating &&
+                      event.key === "Enter" &&
+                      event.target instanceof HTMLInputElement &&
+                      event.target.type === "number"
+                    ) {
+                      event.preventDefault();
+                      editingNumber.current = false;
+                      if (activeParam === 1) handleParam1Change(param1);
+                      else handleParam2Change(param2);
+                    }
+                  }}
+                >
                   {activeParam === 1 && needsParam1
                     ? renderParamValueSelector(
                         param1,
@@ -882,19 +926,6 @@ export function KeycodeSelector({
                   </p>
                 </div>
               </div>
-            )}
-            {floating && (
-              <button
-                type="button"
-                className="btn-electric m-2 shrink-0"
-                disabled={busy || selectedBehavior === null}
-                onClick={() => {
-                  if (selectedBehavior !== null)
-                    onSelect({ behaviorId: selectedBehavior, param1, param2 });
-                }}
-              >
-                {t("Apply and next")}
-              </button>
             )}
           </fieldset>
         </Dialog.Content>

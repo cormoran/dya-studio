@@ -292,13 +292,10 @@ describe("KeymapPage", () => {
           setBinding,
         },
       );
-      await user.selectOptions(
-        screen.getByRole("combobox", { name: "Binding editor" }),
-        "floating",
-      );
       await user.click(
         screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
       );
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
       return { user, setBinding };
     };
 
@@ -314,16 +311,16 @@ describe("KeymapPage", () => {
           ],
         ).toHaveAttribute("aria-current", "true");
         await user.click(
-          screen.getByRole("button", { name: "Apply and next" }),
+          screen.getByRole("button", { name: "A", exact: true }),
         );
         await waitFor(() =>
           expect(setBinding).toHaveBeenCalledTimes(position + 1),
         );
-        expect(setBinding).toHaveBeenLastCalledWith(
-          0,
-          position,
-          mockKeymap.layers[0].bindings[position],
-        );
+        expect(setBinding).toHaveBeenLastCalledWith(0, position, {
+          behaviorId: 1,
+          param1: 0x70004,
+          param2: 0,
+        });
       }
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
@@ -349,9 +346,9 @@ describe("KeymapPage", () => {
       const { user, setBinding } = await setup(
         jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
       );
-      await user.click(screen.getByRole("button", { name: "Apply and next" }));
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
       expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Apply and next" }));
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
       expect(setBinding).toHaveBeenCalledTimes(2);
       expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
     });
@@ -366,9 +363,9 @@ describe("KeymapPage", () => {
             }),
         ),
       );
-      await user.click(screen.getByRole("button", { name: "Apply and next" }));
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
       expect(
-        screen.getByRole("button", { name: "Apply and next" }),
+        screen.getByRole("button", { name: "A", exact: true }),
       ).toBeDisabled();
       await user.click(
         screen.getAllByRole("button", { name: /Key position \d+:/ })[2],

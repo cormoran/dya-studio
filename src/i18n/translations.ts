@@ -9,10 +9,8 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
-  "Binding editor": "キー割り当てエディター",
   "Dialog mode": "ダイアログモード",
   "Floating mode": "フローティングモード",
-  "Apply and next": "適用して次へ",
   "Previous key": "前のキー",
   "Next key": "次のキー",
   "Key {{position}} / {{count}}": "キー {{position}} / {{count}}",

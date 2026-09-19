@@ -8,6 +8,10 @@ import {
 } from "react";
 import {
   IconKeyboard,
+  IconChevronLeft,
+  IconChevronRight,
+  IconArrowsMaximize,
+  IconWindow,
   IconDeviceFloppy,
   IconChevronUp,
   IconChevronDown,
@@ -974,24 +978,6 @@ export function KeymapPage() {
               {inputStream.isEnabled && <BrowserKeyInputOverlay />}
             </div>
 
-            <div className="flex justify-end mb-3">
-              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                {t("Binding editor")}
-                <select
-                  aria-label={t("Binding editor")}
-                  value={selectorMode}
-                  onChange={(event) => {
-                    selectionRevision.current += 1;
-                    setSelectorMode(event.target.value as "modal" | "floating");
-                  }}
-                  className="px-3 py-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
-                >
-                  <option value="modal">{t("Dialog mode")}</option>
-                  <option value="floating">{t("Floating mode")}</option>
-                </select>
-              </label>
-            </div>
-
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="glass-card p-8 relative">
@@ -1245,8 +1231,8 @@ export function KeymapPage() {
           selectorMode === "floating" &&
           selectedKeyPosition !== null &&
           currentLayer ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 p-2 border-b border-[var(--color-border)]">
-              <span role="status" className="text-sm">
+            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
+              <span role="status" className="text-xs truncate">
                 {currentLayer.name} ·{" "}
                 {t("Key {{position}} / {{count}}", {
                   position: selectedKeyPosition + 1,
@@ -1256,18 +1242,22 @@ export function KeymapPage() {
                   ),
                 })}
               </span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1 shrink-0">
                 <button
                   type="button"
-                  className="btn-ghost"
+                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                  aria-label={t("Previous key")}
+                  title={t("Previous key")}
                   disabled={isApplyingBinding || selectedKeyPosition === 0}
                   onClick={() => handleKeyClick(selectedKeyPosition - 1)}
                 >
-                  {t("Previous key")}
+                  <IconChevronLeft size={16} />
                 </button>
                 <button
                   type="button"
-                  className="btn-ghost"
+                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                  aria-label={t("Next key")}
+                  title={t("Next key")}
                   disabled={
                     isApplyingBinding ||
                     selectedKeyPosition + 1 >=
@@ -1278,30 +1268,34 @@ export function KeymapPage() {
                   }
                   onClick={() => handleKeyClick(selectedKeyPosition + 1)}
                 >
-                  {t("Next key")}
+                  <IconChevronRight size={16} />
                 </button>
                 <button
                   type="button"
-                  className="btn-ghost"
+                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                  aria-label={t("Dialog mode")}
+                  title={t("Dialog mode")}
                   onClick={() => {
                     selectionRevision.current += 1;
                     setSelectorMode("modal");
                   }}
                 >
-                  {t("Dialog mode")}
+                  <IconArrowsMaximize size={16} />
                 </button>
               </div>
             </div>
           ) : (
             <button
               type="button"
-              className="btn-ghost self-end m-2"
+              className="p-1 rounded hover:bg-[var(--color-border)]"
+              aria-label={t("Floating mode")}
+              title={t("Floating mode")}
               onClick={() => {
                 selectionRevision.current += 1;
                 setSelectorMode("floating");
               }}
             >
-              {t("Floating mode")}
+              <IconWindow size={16} />
             </button>
           )
         }

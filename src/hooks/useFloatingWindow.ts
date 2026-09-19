@@ -21,6 +21,11 @@ export function useFloatingWindow(enabled: boolean) {
     handleProps: {
       onPointerDown(event: PointerEvent<HTMLElement>) {
         if (!enabled || event.button !== 0 || !ref.current) return;
+        if (
+          event.target instanceof Element &&
+          event.target.closest("button, input, select, label")
+        )
+          return;
         const rect = ref.current.getBoundingClientRect();
         drag.current = {
           x: event.clientX - rect.left,

@@ -35,7 +35,8 @@ import { useLanguage } from "../hooks/useLanguage";
 /** Selection UI mode: category grid or physical key layout preview */
 type ViewMode = "category" | "layout";
 
-const VIEW_MODE_STORAGE_KEY = "keycodeSelectorViewMode";
+// Start with the keyboard layout even for browsers that auto-saved the old category default.
+const VIEW_MODE_STORAGE_KEY = "keycodeSelectorViewModeV2";
 
 // Keycode categories in display order
 const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
@@ -74,8 +75,9 @@ export function KeycodeValueSelector({
   );
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    return saved === "layout" ? "layout" : "category";
+    return saved === "category" ? "category" : "layout";
   });
+  const [modifiersExpanded, setModifiersExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Persist view mode preference
@@ -107,7 +109,7 @@ export function KeycodeValueSelector({
     if (!isTouchDevice) {
       searchInputRef.current?.focus();
     }
-  }, []);
+  }, [viewMode]);
   const filteredKeycodes = useMemo((): KeycodeDefinition[] => {
     if (searchQuery.trim()) {
       return searchKeycodes(searchQuery, keyboardLayout);
@@ -155,7 +157,7 @@ export function KeycodeValueSelector({
   return (
     <div className="flex flex-col h-full">
       {/* Modifier Flags */}
-      {showModifiers && (
+      {showModifiers && modifiersExpanded && (
         <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-[var(--color-text-muted)]">
@@ -190,35 +192,54 @@ export function KeycodeValueSelector({
       )}
 
       {/* Search + view mode toggle */}
-      <div className="mb-3 flex items-center gap-2">
-        <div className="relative flex-1">
-          <IconSearch
-            size={16}
-            className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
-          />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder={t("Search keycodes...")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] tablet:text-sm text-base text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-              onClick={() => {
-                setSearchQuery("");
-                searchInputRef.current?.focus();
-              }}
-              aria-label={t("Clear search")}
-              tabIndex={0}
-            >
-              <IconX size={16} />
-            </button>
-          )}
-        </div>
+      <div className="mb-2 flex items-center gap-2 shrink-0">
+        {showModifiers && (
+          <button
+            type="button"
+            aria-expanded={modifiersExpanded}
+            onClick={() => setModifiersExpanded(!modifiersExpanded)}
+            className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] whitespace-nowrap"
+          >
+            {t("Modifiers")}
+            {selectedModifiers !== 0
+              ? ` (${MODIFIER_FLAGS.filter(
+                  (mod) => selectedModifiers & mod.value,
+                )
+                  .map((mod) => mod.label)
+                  .join("+")})`
+              : ""}
+          </button>
+        )}
+        {viewMode === "category" && (
+          <div className="relative flex-1">
+            <IconSearch
+              size={16}
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+            />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder={t("Search keycodes...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] tablet:text-sm text-base text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                aria-label={t("Clear search")}
+                tabIndex={0}
+              >
+                <IconX size={16} />
+              </button>
+            )}
+          </div>
+        )}
         <button
           type="button"
           onClick={() =>
@@ -235,7 +256,7 @@ export function KeycodeValueSelector({
               ? t("Show keycodes by category")
               : t("Show key layout")
           }
-          className={`flex-shrink-0 p-2 rounded-lg border transition-colors ${
+          className={`ml-auto flex-shrink-0 p-1 rounded border transition-colors ${
             viewMode === "layout"
               ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
               : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
@@ -250,7 +271,7 @@ export function KeycodeValueSelector({
       </div>
 
       {/* Key Layout Preview */}
-      {viewMode === "layout" && !searchQuery.trim() && (
+      {viewMode === "layout" && (
         <div className="flex-1 flex overflow-hidden min-h-0">
           <KeyLayoutSelector
             selectedCode={extractBaseKeycode(value)}
@@ -261,7 +282,7 @@ export function KeycodeValueSelector({
       )}
 
       {/* Category + Grid Layout */}
-      {(viewMode === "category" || searchQuery.trim()) && (
+      {viewMode === "category" && (
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Category Sidebar */}
           {!searchQuery && (
