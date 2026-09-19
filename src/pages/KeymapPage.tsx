@@ -488,7 +488,7 @@ export function KeymapPage() {
   ]);
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="keymap-page p-4 sm:p-6 h-full overflow-auto">
       <div ref={keyboardPreviewRef} className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-4">
