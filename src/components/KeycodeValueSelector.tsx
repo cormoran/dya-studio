@@ -3,7 +3,14 @@
  *
  * Grid-based keycode selector with search, category filtering, and modifier support.
  */
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react";
 import {
   IconSearch,
   IconX,
@@ -54,6 +61,7 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
 ];
 
 interface KeycodeValueSelectorProps {
+  toolbar?: ReactNode;
   value: number;
   onChange: (value: number, shouldNotClose?: boolean) => void;
   showModifiers?: boolean;
@@ -61,6 +69,7 @@ interface KeycodeValueSelectorProps {
 }
 
 export function KeycodeValueSelector({
+  toolbar,
   value,
   onChange,
   keyboardLayout,
@@ -156,6 +165,56 @@ export function KeycodeValueSelector({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Search + view mode toggle */}
+      <div className="mb-2 flex items-center gap-2 shrink-0">
+        {toolbar}
+        {showModifiers && (
+          <button
+            type="button"
+            aria-expanded={modifiersExpanded}
+            onClick={() => setModifiersExpanded(!modifiersExpanded)}
+            className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] whitespace-nowrap"
+          >
+            {t("Modifiers")}
+            {selectedModifiers !== 0
+              ? ` (${MODIFIER_FLAGS.filter(
+                  (mod) => selectedModifiers & mod.value,
+                )
+                  .map((mod) => mod.label)
+                  .join("+")})`
+              : ""}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() =>
+            setViewMode((m) => (m === "layout" ? "category" : "layout"))
+          }
+          aria-pressed={viewMode === "layout"}
+          title={
+            viewMode === "layout"
+              ? t("Show keycodes by category")
+              : t("Show key layout")
+          }
+          aria-label={
+            viewMode === "layout"
+              ? t("Show keycodes by category")
+              : t("Show key layout")
+          }
+          className={`ml-auto flex-shrink-0 p-1 rounded border transition-colors ${
+            viewMode === "layout"
+              ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
+              : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
+          }`}
+        >
+          {viewMode === "layout" ? (
+            <IconLayoutGrid size={18} />
+          ) : (
+            <IconKeyboard size={18} />
+          )}
+        </button>
+      </div>
+
       {/* Modifier Flags */}
       {showModifiers && modifiersExpanded && (
         <div className="mb-3">
@@ -191,84 +250,36 @@ export function KeycodeValueSelector({
         </div>
       )}
 
-      {/* Search + view mode toggle */}
-      <div className="mb-2 flex items-center gap-2 shrink-0">
-        {showModifiers && (
-          <button
-            type="button"
-            aria-expanded={modifiersExpanded}
-            onClick={() => setModifiersExpanded(!modifiersExpanded)}
-            className="px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] whitespace-nowrap"
-          >
-            {t("Modifiers")}
-            {selectedModifiers !== 0
-              ? ` (${MODIFIER_FLAGS.filter(
-                  (mod) => selectedModifiers & mod.value,
-                )
-                  .map((mod) => mod.label)
-                  .join("+")})`
-              : ""}
-          </button>
-        )}
-        {viewMode === "category" && (
-          <div className="relative flex-1">
-            <IconSearch
-              size={16}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder={t("Search keycodes...")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] tablet:text-sm text-base text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                onClick={() => {
-                  setSearchQuery("");
-                  searchInputRef.current?.focus();
-                }}
-                aria-label={t("Clear search")}
-                tabIndex={0}
-              >
-                <IconX size={16} />
-              </button>
-            )}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() =>
-            setViewMode((m) => (m === "layout" ? "category" : "layout"))
-          }
-          aria-pressed={viewMode === "layout"}
-          title={
-            viewMode === "layout"
-              ? t("Show keycodes by category")
-              : t("Show key layout")
-          }
-          aria-label={
-            viewMode === "layout"
-              ? t("Show keycodes by category")
-              : t("Show key layout")
-          }
-          className={`ml-auto flex-shrink-0 p-1 rounded border transition-colors ${
-            viewMode === "layout"
-              ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-              : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
-          }`}
-        >
-          {viewMode === "layout" ? (
-            <IconLayoutGrid size={18} />
-          ) : (
-            <IconKeyboard size={18} />
+      {viewMode === "category" && (
+        <div className="relative mb-2 shrink-0">
+          <IconSearch
+            size={16}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+          />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder={t("Search keycodes...")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] tablet:text-sm text-base text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+              onClick={() => {
+                setSearchQuery("");
+                searchInputRef.current?.focus();
+              }}
+              aria-label={t("Clear search")}
+              tabIndex={0}
+            >
+              <IconX size={16} />
+            </button>
           )}
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Key Layout Preview */}
       {viewMode === "layout" && (

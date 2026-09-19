@@ -503,6 +503,7 @@ export function KeycodeSelector({
       param2: number,
       onChange: (v: number, shouldNotClose?: boolean) => void,
       paramNumber: 1 | 2,
+      toolbar?: ReactNode,
     ) => {
       const value = paramNumber === 1 ? param1 : param2;
 
@@ -641,6 +642,7 @@ export function KeycodeSelector({
             {/* hidUsages */}
             {groupByType.hidUsages.length > 0 && (
               <KeycodeValueSelector
+                toolbar={toolbar}
                 value={value}
                 onChange={onChange}
                 showModifiers={true}
@@ -661,6 +663,65 @@ export function KeycodeSelector({
       return null;
     },
     [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros],
+  );
+
+  const activeDescriptions =
+    activeParam === 1
+      ? selectedBehaviorInfo?.param1Descriptions
+      : selectedBehaviorInfo?.param2Descriptions;
+  const activeOverride =
+    activeParam === 1
+      ? selectedBehaviorInfo?.overrideMetadata?.param1Type
+      : selectedBehaviorInfo?.overrideMetadata?.param2Type;
+  const inlineParamToolbar =
+    floating &&
+    !["macro", "mouse_keycode", "mouse_movement", "mouse_scroll"].includes(
+      activeOverride ?? "",
+    ) &&
+    activeDescriptions?.some(
+      (description) => description.hidUsage !== undefined,
+    );
+  const parameterTabs = selectedBehaviorInfo && (
+    <div
+      className={
+        floating
+          ? "flex flex-1 min-w-0 overflow-x-auto"
+          : "flex border-b border-[var(--color-border)] mx-4 mb-2"
+      }
+    >
+      {([1, 2] as const)
+        .filter((number) => (number === 1 ? needsParam1 : needsParam2))
+        .map((number) => (
+          <button
+            key={number}
+            type="button"
+            onClick={() => setActiveParam(number)}
+            className={`min-w-0 border-b-2 transition-colors ${floating ? "flex items-center gap-1 px-2 py-1 text-xs" : "flex-1 p-2 text-center"} ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
+          >
+            <span className="text-xs whitespace-nowrap">
+              {t(number === 1 ? "param1" : "param2")}:
+              {!floating && (
+                <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                  {getParamTypeLabel(selectedBehaviorInfo, number, t)}
+                </span>
+              )}
+            </span>
+            <span
+              className={`${floating ? "truncate text-xs" : "block mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
+            >
+              {formatParamValue(
+                selectedBehaviorInfo,
+                param1,
+                param2,
+                number,
+                layers,
+                keyboardLayout,
+                runtimeMacros,
+              )}
+            </span>
+          </button>
+        ))}
+    </div>
   );
 
   return (
@@ -783,75 +844,7 @@ export function KeycodeSelector({
                     {t("Parameters")}
                   </label>
                 </div>
-                {/* Parameter Tabs (Horizontal) */}
-                <div
-                  className={`flex border-b border-[var(--color-border)] ${floating ? "mx-2" : "mx-4 mb-2"}`}
-                >
-                  {needsParam1 && (
-                    <button
-                      className={`flex-1 ${floating ? "flex items-center justify-center gap-2 px-2 py-1" : "p-2"} text-center transition-colors border-b-2 ${
-                        activeParam === 1
-                          ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                          : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                      }`}
-                      onClick={() => setActiveParam(1)}
-                    >
-                      <div className="font-medium text-xs">
-                        {t("param1")}:
-                        <span
-                          className={`${floating ? "hidden" : "ml-1 text-[10px] text-[var(--color-text-muted)]"}`}
-                        >
-                          {getParamTypeLabel(selectedBehaviorInfo, 1, t)}
-                        </span>
-                      </div>
-                      <div
-                        className={`${floating ? "text-xs" : "mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
-                      >
-                        {formatParamValue(
-                          selectedBehaviorInfo,
-                          param1,
-                          param2,
-                          1,
-                          layers,
-                          keyboardLayout,
-                          runtimeMacros,
-                        )}
-                      </div>
-                    </button>
-                  )}
-                  {needsParam2 && (
-                    <button
-                      className={`flex-1 ${floating ? "flex items-center justify-center gap-2 px-2 py-1" : "p-2"} text-center transition-colors border-b-2 ${
-                        activeParam === 2
-                          ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                          : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                      }`}
-                      onClick={() => setActiveParam(2)}
-                    >
-                      <div className="font-medium text-xs">
-                        {t("param2")}:
-                        <span
-                          className={`${floating ? "hidden" : "ml-1 text-[10px] text-[var(--color-text-muted)]"}`}
-                        >
-                          {getParamTypeLabel(selectedBehaviorInfo, 2, t)}
-                        </span>
-                      </div>
-                      <div
-                        className={`${floating ? "text-xs" : "mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
-                      >
-                        {formatParamValue(
-                          selectedBehaviorInfo,
-                          param1,
-                          param2,
-                          2,
-                          layers,
-                          keyboardLayout,
-                          runtimeMacros,
-                        )}
-                      </div>
-                    </button>
-                  )}
-                </div>
+                {!inlineParamToolbar && parameterTabs}
 
                 {/* Parameter Description */}
                 <div
@@ -895,6 +888,7 @@ export function KeycodeSelector({
                         param2,
                         handleParam1Change,
                         1,
+                        inlineParamToolbar ? parameterTabs : undefined,
                       )
                     : activeParam === 2 && needsParam2
                       ? renderParamValueSelector(
@@ -902,6 +896,7 @@ export function KeycodeSelector({
                           param2,
                           handleParam2Change,
                           2,
+                          inlineParamToolbar ? parameterTabs : undefined,
                         )
                       : null}
                 </div>
