@@ -122,7 +122,8 @@ export function KeymapPage() {
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
-  const keyboardPreviewRef = useRef<HTMLDivElement>(null);
+  // Header and preview share the same full-width content column.
+  const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
@@ -488,8 +489,8 @@ export function KeymapPage() {
   ]);
 
   return (
-    <div className="keymap-page p-4 sm:p-6 h-full overflow-auto">
-      <div ref={keyboardPreviewRef} className="max-w-6xl mx-auto">
+    <div className="p-6 h-full overflow-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-4">
           <div className="flex items-center gap-3 mb-4">
@@ -1243,7 +1244,7 @@ export function KeymapPage() {
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
-        floatingAnchorRef={keyboardPreviewRef}
+        floatingAnchorRef={keymapContentAnchorRef}
         selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
         busy={isApplyingBinding}
         error={keymap.error}
