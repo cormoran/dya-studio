@@ -36,6 +36,7 @@ import {
   getLayoutName,
   type KeyboardLayoutType,
 } from "../lib/keyboardLayouts";
+import { EditorTooltip } from "./EditorTooltip";
 import { KeyLayoutSelector } from "./KeyLayoutSelector";
 import { useLanguage } from "../hooks/useLanguage";
 
@@ -177,67 +178,73 @@ export function KeycodeValueSelector({
       <div className="mb-2 flex items-center gap-2 shrink-0">
         {toolbar}
         {compact && showModifiers && (
-          <button
-            type="button"
-            aria-expanded={modifiersExpanded}
-            onClick={() => setModifiersExpanded(!modifiersExpanded)}
-            className={`px-2 py-1 text-xs rounded border whitespace-nowrap ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
-          >
-            {t("Modifiers")}
-            {selectedModifiers !== 0
-              ? ` (${MODIFIER_FLAGS.filter(
-                  (mod) => selectedModifiers & mod.value,
-                )
-                  .map((mod) => mod.label)
-                  .join("+")})`
-              : ""}
-          </button>
+          <EditorTooltip content={t("Show or hide modifier keys")}>
+            <button
+              type="button"
+              aria-expanded={modifiersExpanded}
+              onClick={() => setModifiersExpanded(!modifiersExpanded)}
+              className={`px-2 py-1 text-xs rounded border whitespace-nowrap ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+            >
+              {t("Modifiers")}
+              {selectedModifiers !== 0
+                ? ` (${MODIFIER_FLAGS.filter(
+                    (mod) => selectedModifiers & mod.value,
+                  )
+                    .map((mod) => mod.label)
+                    .join("+")})`
+                : ""}
+            </button>
+          </EditorTooltip>
         )}
         <div className="ml-auto flex items-center gap-1 shrink-0">
           {compact && viewMode === "layout" && (
+            <EditorTooltip content={t("Show or hide keycode search")}>
+              <button
+                type="button"
+                aria-label={t("Search keycodes...")}
+                aria-expanded={layoutSearchExpanded}
+                className={`p-1 rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                onClick={() => {
+                  setLayoutSearchExpanded(!layoutSearchExpanded);
+                  if (layoutSearchExpanded) setSearchQuery("");
+                }}
+              >
+                <IconSearch size={18} />
+              </button>
+            </EditorTooltip>
+          )}
+          <EditorTooltip
+            content={
+              viewMode === "layout"
+                ? t("Show keycodes by category")
+                : t("Show key layout")
+            }
+          >
             <button
               type="button"
-              aria-label={t("Search keycodes...")}
-              title={t("Search keycodes...")}
-              aria-expanded={layoutSearchExpanded}
-              className={`p-1 rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
               onClick={() => {
-                setLayoutSearchExpanded(!layoutSearchExpanded);
-                if (layoutSearchExpanded) setSearchQuery("");
+                setLayoutSearchExpanded(false);
+                setViewMode((m) => (m === "layout" ? "category" : "layout"));
               }}
+              aria-pressed={viewMode === "layout"}
+              aria-label={
+                viewMode === "layout"
+                  ? t("Show keycodes by category")
+                  : t("Show key layout")
+              }
+              className={`flex-shrink-0 p-1 rounded border transition-colors ${
+                viewMode === "layout"
+                  ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
+                  : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
+              }`}
             >
-              <IconSearch size={18} />
+              {viewMode === "layout" ? (
+                <IconLayoutGrid size={18} />
+              ) : (
+                <IconKeyboard size={18} />
+              )}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setLayoutSearchExpanded(false);
-              setViewMode((m) => (m === "layout" ? "category" : "layout"));
-            }}
-            aria-pressed={viewMode === "layout"}
-            title={
-              viewMode === "layout"
-                ? t("Show keycodes by category")
-                : t("Show key layout")
-            }
-            aria-label={
-              viewMode === "layout"
-                ? t("Show keycodes by category")
-                : t("Show key layout")
-            }
-            className={`flex-shrink-0 p-1 rounded border transition-colors ${
-              viewMode === "layout"
-                ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-                : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
-            }`}
-          >
-            {viewMode === "layout" ? (
-              <IconLayoutGrid size={18} />
-            ) : (
-              <IconKeyboard size={18} />
-            )}
-          </button>
+          </EditorTooltip>
         </div>
       </div>
 
@@ -252,29 +259,35 @@ export function KeycodeValueSelector({
                 </span>
               )}
               {selectedModifiers !== 0 && (
-                <button
-                  className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
-                  onClick={handleClearModifiers}
-                >
-                  <IconX size={12} />
-                  {t("Clear")}
-                </button>
+                <EditorTooltip content={t("Clear modifiers")}>
+                  <button
+                    className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
+                    onClick={handleClearModifiers}
+                  >
+                    <IconX size={12} />
+                    {t("Clear")}
+                  </button>
+                </EditorTooltip>
               )}
             </div>
           )}
           <div className="flex min-w-0 gap-1 overflow-x-auto">
             {MODIFIER_FLAGS.map((mod) => (
-              <button
+              <EditorTooltip
                 key={mod.value}
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  selectedModifiers & mod.value
-                    ? "bg-[var(--color-cyber)]/20 text-[var(--color-cyber)] border border-[var(--color-cyber)]"
-                    : "bg-[var(--color-bg)] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:border-[var(--color-cyber)]/50"
-                }`}
-                onClick={() => handleModifierToggle(mod.value)}
+                content={t("Toggle {{modifier}}", { modifier: mod.label })}
               >
-                {mod.label}
-              </button>
+                <button
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    selectedModifiers & mod.value
+                      ? "bg-[var(--color-cyber)]/20 text-[var(--color-cyber)] border border-[var(--color-cyber)]"
+                      : "bg-[var(--color-bg)] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:border-[var(--color-cyber)]/50"
+                  }`}
+                  onClick={() => handleModifierToggle(mod.value)}
+                >
+                  {mod.label}
+                </button>
+              </EditorTooltip>
             ))}
           </div>
         </div>

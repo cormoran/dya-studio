@@ -355,9 +355,11 @@ describe("KeymapPage", () => {
       await user.click(screen.getByRole("button", { name: "Next key" }));
       await user.click(screen.getByRole("button", { name: "B", exact: true }));
       expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
-      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "Auto advance" }));
       await user.click(screen.getByRole("button", { name: "A", exact: true }));
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
     });
 
     it("keeps the current key on failure and allows retry", async () => {

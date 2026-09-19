@@ -35,6 +35,7 @@ import { ConnectionContext } from "../components/DeviceConnection";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
 import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
+import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -121,6 +122,7 @@ export function KeymapPage() {
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
+  const keyboardPreviewRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
@@ -997,7 +999,7 @@ export function KeymapPage() {
 
             {/* Keyboard Layout */}
             {currentLayer && (
-              <div className="glass-card p-8 relative">
+              <div ref={keyboardPreviewRef} className="glass-card p-8 relative">
                 {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
@@ -1241,6 +1243,7 @@ export function KeymapPage() {
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
+        floatingAnchorRef={keyboardPreviewRef}
         selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
         busy={isApplyingBinding}
         error={keymap.error}
@@ -1260,72 +1263,77 @@ export function KeymapPage() {
                 })}
               </span>
               <div className="flex gap-1 shrink-0">
-                <button
-                  type="button"
-                  aria-label={t("Auto advance")}
-                  title={t("Automatically select the next key")}
-                  aria-pressed={autoAdvance}
-                  disabled={isApplyingBinding}
-                  onClick={() => setAutoAdvance(!autoAdvance)}
-                  className={`p-1 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
-                >
-                  <IconPlayerTrackNext size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
-                  aria-label={t("Previous key")}
-                  title={t("Previous key")}
-                  disabled={isApplyingBinding || selectedKeyPosition === 0}
-                  onClick={() => handleKeyClick(selectedKeyPosition - 1)}
-                >
-                  <IconChevronLeft size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
-                  aria-label={t("Next key")}
-                  title={t("Next key")}
-                  disabled={
-                    isApplyingBinding ||
-                    selectedKeyPosition + 1 >=
-                      Math.min(
-                        currentLayer.bindings.length,
-                        currentLayout?.keys.length ?? 0,
-                      )
-                  }
-                  onClick={() => handleKeyClick(selectedKeyPosition + 1)}
-                >
-                  <IconChevronRight size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
-                  aria-label={t("Dialog mode")}
-                  title={t("Dialog mode")}
-                  onClick={() => {
-                    selectionRevision.current += 1;
-                    setSelectorMode("modal");
-                  }}
-                >
-                  <IconArrowsMaximize size={16} />
-                </button>
+                <EditorTooltip content={t("Automatically select the next key")}>
+                  <button
+                    type="button"
+                    aria-label={t("Auto advance")}
+                    aria-pressed={autoAdvance}
+                    disabled={isApplyingBinding}
+                    onClick={() => setAutoAdvance(!autoAdvance)}
+                    className={`p-1 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                  >
+                    <IconPlayerTrackNext size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Edit the previous key")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Previous key")}
+                    disabled={isApplyingBinding || selectedKeyPosition === 0}
+                    onClick={() => handleKeyClick(selectedKeyPosition - 1)}
+                  >
+                    <IconChevronLeft size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Edit the next key")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Next key")}
+                    disabled={
+                      isApplyingBinding ||
+                      selectedKeyPosition + 1 >=
+                        Math.min(
+                          currentLayer.bindings.length,
+                          currentLayout?.keys.length ?? 0,
+                        )
+                    }
+                    onClick={() => handleKeyClick(selectedKeyPosition + 1)}
+                  >
+                    <IconChevronRight size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Switch to dialog mode")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Dialog mode")}
+                    onClick={() => {
+                      selectionRevision.current += 1;
+                      setSelectorMode("modal");
+                    }}
+                  >
+                    <IconArrowsMaximize size={16} />
+                  </button>
+                </EditorTooltip>
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--color-border)]"
-              aria-label={t("Floating mode")}
-              title={t("Floating mode")}
-              onClick={() => {
-                selectionRevision.current += 1;
-                setSelectorMode("floating");
-              }}
-            >
-              <IconWindow size={16} />
-              <span>{t("Floating mode")}</span>
-            </button>
+            <EditorTooltip content={t("Switch to floating mode")}>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--color-border)]"
+                aria-label={t("Floating mode")}
+                onClick={() => {
+                  selectionRevision.current += 1;
+                  setSelectorMode("floating");
+                }}
+              >
+                <IconWindow size={16} />
+                <span>{t("Floating mode")}</span>
+              </button>
+            </EditorTooltip>
           )
         }
         onClose={closeSelector}

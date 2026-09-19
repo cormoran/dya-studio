@@ -16,6 +16,7 @@ import {
   useEffect,
   useRef,
   type ReactNode,
+  type RefObject,
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconRestore, IconX, IconGripVertical } from "@tabler/icons-react";
@@ -27,6 +28,7 @@ import {
   type BehaviorMetadata,
 } from "../lib/behaviorMetadata";
 import type { BehaviorBinding, BehaviorDefinition } from "../hooks/useKeymap";
+import { EditorTooltip } from "./EditorTooltip";
 import { BehaviorDropdown } from "./BehaviorDropdown";
 import { ButtonListSelector } from "./ButtonListSelector";
 import { KeycodeValueSelector } from "./KeycodeValueSelector";
@@ -59,6 +61,7 @@ interface KeycodeSelectorProps {
   presentation?: "modal" | "floating";
   selectionKey?: string;
   toolbar?: ReactNode;
+  floatingAnchorRef?: RefObject<HTMLElement | null>;
   busy?: boolean;
   error?: string | null;
   open: boolean;
@@ -253,6 +256,7 @@ export function KeycodeSelector({
   presentation = "modal",
   selectionKey,
   toolbar,
+  floatingAnchorRef,
   busy = false,
   error,
   open,
@@ -271,7 +275,7 @@ export function KeycodeSelector({
   useEffect(() => {
     activePresentation.current = presentation;
   }, [presentation]);
-  const floatingWindow = useFloatingWindow(floating, open);
+  const floatingWindow = useFloatingWindow(floating, open, floatingAnchorRef);
   const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
@@ -763,7 +767,7 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? "pointer-events-auto fixed bottom-3 right-3 w-[min(680px,calc(100vw-24px))] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
                 : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
             }
           >
@@ -793,36 +797,56 @@ export function KeycodeSelector({
                 </Dialog.Title>
                 <div className="ml-auto flex items-center gap-1">
                   {!floating && (
-                    <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={closeOnSelect}
-                        onChange={(e) => setCloseOnSelect(e.target.checked)}
-                        className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
-                      />
-                      <span>{t("Close on select")}</span>
-                    </label>
+                    <EditorTooltip
+                      content={t(
+                        "Apply the binding after selecting its final parameter",
+                      )}
+                    >
+                      <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={closeOnSelect}
+                          onChange={(e) => setCloseOnSelect(e.target.checked)}
+                          className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
+                        />
+                        <span>{t("Close on select")}</span>
+                      </label>
+                    </EditorTooltip>
                   )}
                   {hasChanges && (
-                    <button
-                      className="p-1 rounded text-red-600 hover:bg-red-50"
-                      aria-label={t("Revert")}
-                      onClick={handleRevert}
+                    <EditorTooltip
+                      content={t(
+                        "Restore the binding shown when this editor opened",
+                      )}
                     >
-                      <IconRestore size={16} className="animate-pulse" />
-                    </button>
+                      <button
+                        className="p-1 rounded text-red-600 hover:bg-red-50"
+                        aria-label={t("Revert")}
+                        onClick={handleRevert}
+                      >
+                        <IconRestore size={16} className="animate-pulse" />
+                      </button>
+                    </EditorTooltip>
                   )}
-                  <Dialog.Close asChild>
-                    <button
-                      className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
-                      aria-label={t("Close")}
-                    >
-                      <IconX
-                        size={20}
-                        className="text-[var(--color-text-muted)]"
-                      />
-                    </button>
-                  </Dialog.Close>
+                  <EditorTooltip
+                    content={
+                      floating
+                        ? t("Close without applying unfinished edits")
+                        : t("Apply changes and close")
+                    }
+                  >
+                    <Dialog.Close asChild>
+                      <button
+                        className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
+                        aria-label={t("Close")}
+                      >
+                        <IconX
+                          size={20}
+                          className="text-[var(--color-text-muted)]"
+                        />
+                      </button>
+                    </Dialog.Close>
+                  </EditorTooltip>
                 </div>
               </div>
 

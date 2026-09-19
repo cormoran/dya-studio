@@ -9,6 +9,22 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Edit the previous key": "前のキーを編集",
+  "Edit the next key": "次のキーを編集",
+  "Switch to dialog mode": "モーダルダイアログで編集",
+  "Switch to floating mode":
+    "キーマップを操作できるフローティングウィンドウで編集",
+  "Show or hide modifier keys": "修飾キーの選択欄を表示／非表示",
+  "Show or hide keycode search": "キーコードの検索欄を表示／非表示",
+  "Clear modifiers": "選択した修飾キーをすべて解除",
+  "Toggle {{modifier}}": "{{modifier}} の有効／無効を切り替え",
+  "Restore the binding shown when this editor opened":
+    "このキーの編集開始時の割り当てに戻す",
+  "Close without applying unfinished edits": "未確定の編集を適用せずに閉じる",
+  "Apply changes and close": "変更を適用して閉じる",
+  "Apply the binding after selecting its final parameter":
+    "最後のパラメーターを選択したら割り当てを適用",
+  "Select this behavior": "このビヘイビアを選択",
   "Auto advance": "自動で次へ",
   "Automatically select the next key": "選択後、自動で次のキーに移動",
   "Dialog mode": "ダイアログモード",

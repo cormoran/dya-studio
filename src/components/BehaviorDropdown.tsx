@@ -10,6 +10,7 @@ import {
   type BehaviorCategory,
 } from "../lib/behaviorMetadata";
 import type { BehaviorDefinition } from "../hooks/useKeymap";
+import { EditorTooltip } from "./EditorTooltip";
 import { useLanguage } from "../hooks/useLanguage";
 
 // Predefined behavior categories
@@ -219,23 +220,41 @@ export function BehaviorDropdown({
           {t("Quick Select")}:
         </span>
         {quickSelectBehaviors.map((qb) => (
-          <button
+          <EditorTooltip
             key={qb.id}
-            className={`${compact ? "px-2 py-1 rounded" : "px-3 py-1.5 rounded-lg"} text-xs font-medium transition-colors flex-shrink-0 ${
-              selectedBehaviorId === qb.id
-                ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
-                : qb.isRecent
-                  ? "bg-[var(--color-neon)]/10 text-[var(--color-neon)] border border-[var(--color-neon)]/30 hover:border-[var(--color-neon)]"
-                  : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
-            }`}
-            onClick={() => {
-              updateRecentBehaviors(qb.id);
-              onQuickSelect(qb.id);
-            }}
-            title={qb.isRecent ? t("Recently used") : undefined}
+            content={
+              <>
+                <div className="font-medium">{qb.displayName}</div>
+                <div>
+                  {t(
+                    getBehaviorMetadata(qb.name)?.description ??
+                      "Select this behavior",
+                  )}
+                </div>
+                {qb.isRecent && (
+                  <div className="mt-1 text-[var(--color-text-muted)]">
+                    {t("Recently used")}
+                  </div>
+                )}
+              </>
+            }
           >
-            {qb.displayName}
-          </button>
+            <button
+              className={`${compact ? "px-2 py-1 rounded" : "px-3 py-1.5 rounded-lg"} text-xs font-medium transition-colors flex-shrink-0 ${
+                selectedBehaviorId === qb.id
+                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
+                  : qb.isRecent
+                    ? "bg-[var(--color-neon)]/10 text-[var(--color-neon)] border border-[var(--color-neon)]/30 hover:border-[var(--color-neon)]"
+                    : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
+              }`}
+              onClick={() => {
+                updateRecentBehaviors(qb.id);
+                onQuickSelect(qb.id);
+              }}
+            >
+              {qb.displayName}
+            </button>
+          </EditorTooltip>
         ))}
       </div>
 

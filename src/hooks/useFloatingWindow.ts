@@ -1,12 +1,46 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 
 /** Allow clipped overflow while leaving enough of the header to drag back. */
-export function useFloatingWindow(enabled: boolean, open: boolean) {
+export function useFloatingWindow(
+  enabled: boolean,
+  open: boolean,
+  anchorRef?: RefObject<HTMLElement | null>,
+) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; headerHeight: number } | null>(
     null,
   );
   const [position, setPosition] = useState<{ left: number; top: number }>();
+
+  useLayoutEffect(() => {
+    if (!enabled || !open) return;
+    const align = () => {
+      const panel = ref.current;
+      if (!panel) return;
+      const rightEdge = Math.min(
+        anchorRef?.current?.getBoundingClientRect().right ?? window.innerWidth,
+        window.innerWidth,
+      );
+      const right =
+        rightEdge >= panel.offsetWidth ? window.innerWidth - rightEdge : 0;
+      panel.style.setProperty("--floating-right", `${right}px`);
+    };
+    align();
+    const observer = new ResizeObserver(align);
+    if (anchorRef?.current) observer.observe(anchorRef.current);
+    window.addEventListener("resize", align);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", align);
+    };
+  }, [enabled, open, anchorRef]);
 
   useEffect(() => {
     const reset = () => setPosition(undefined);
