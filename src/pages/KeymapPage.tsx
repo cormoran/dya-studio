@@ -489,7 +489,7 @@ export function KeymapPage() {
 
   return (
     <div className="p-6 h-full overflow-auto">
-      <div className="max-w-6xl mx-auto">
+      <div ref={keyboardPreviewRef} className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-4">
           <div className="flex items-center gap-3 mb-4">
@@ -999,7 +999,7 @@ export function KeymapPage() {
 
             {/* Keyboard Layout */}
             {currentLayer && (
-              <div ref={keyboardPreviewRef} className="glass-card p-8 relative">
+              <div className="glass-card p-8 relative">
                 {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
