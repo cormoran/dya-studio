@@ -268,7 +268,27 @@ describe("KeymapPage", () => {
         {
           keymap: mockKeymap,
           physicalLayouts: mockPhysicalLayouts,
-          behaviors: mockBehaviors,
+          behaviors: new Map([
+            [
+              1,
+              {
+                id: 1,
+                displayName: "Key Press",
+                metadata: [
+                  {
+                    param1: [
+                      {
+                        name: "Key",
+                        hidUsage: { keyboardMax: 255, consumerMax: 4095 },
+                      },
+                    ],
+                    param2: [],
+                  },
+                ],
+              },
+            ],
+            [2, { id: 2, displayName: "Transparent", metadata: [] }],
+          ]),
           setBinding,
         },
       );
