@@ -122,7 +122,7 @@ export function KeymapPage() {
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
-  // Header and preview share the same full-width content column.
+  // The info panel and keyboard preview share the same content-column edges.
   const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -1122,7 +1122,10 @@ export function KeymapPage() {
           </>
         )}
         {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+        <div
+          ref={keymapContentAnchorRef}
+          className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]"
+        >
           <p className="text-xs text-[var(--color-text-muted)]">
             {connection.isConnected
               ? t(
