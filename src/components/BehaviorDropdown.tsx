@@ -488,19 +488,21 @@ export function BehaviorDropdown({
             className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
-        <div ref={quickSelectSettingsTriggerRef}>
-          <EditorTooltip content={t("Configure Quick Select")}>
-            <button
-              type="button"
-              aria-label={t("Configure Quick Select")}
-              aria-expanded={isQuickSelectSettingsOpen}
-              className={`shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
-              onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
-            >
-              <IconAdjustments size={16} />
-            </button>
-          </EditorTooltip>
-        </div>
+        {!compact && (
+          <div ref={quickSelectSettingsTriggerRef} className="h-full">
+            <EditorTooltip content={t("Configure Quick Select")}>
+              <button
+                type="button"
+                aria-label={t("Configure Quick Select")}
+                aria-expanded={isQuickSelectSettingsOpen}
+                className={`h-full shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
+              >
+                <IconAdjustments size={16} />
+              </button>
+            </EditorTooltip>
+          </div>
+        )}
       </div>
 
       <div
@@ -609,6 +611,23 @@ export function BehaviorDropdown({
               </EditorTooltip>
             )}
             <div className="relative ml-auto">
+              {compact && (
+                <div ref={quickSelectSettingsTriggerRef}>
+                  <EditorTooltip content={t("Configure Quick Select")}>
+                    <button
+                      type="button"
+                      aria-label={t("Configure Quick Select")}
+                      aria-expanded={isQuickSelectSettingsOpen}
+                      className={`rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                      onClick={() =>
+                        setIsQuickSelectSettingsOpen((open) => !open)
+                      }
+                    >
+                      <IconAdjustments size={16} />
+                    </button>
+                  </EditorTooltip>
+                </div>
+              )}
               {isQuickSelectSettingsOpen && (
                 <div
                   ref={quickSelectSettingsRef}

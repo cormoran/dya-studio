@@ -23,6 +23,28 @@ function renderDropdown() {
   return onSelect;
 }
 
+it("keeps Quick Select settings inside the dropdown in floating mode", async () => {
+  const user = userEvent.setup();
+  render(
+    <BehaviorDropdown
+      compact
+      behaviors={behaviors}
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+    />,
+  );
+
+  expect(
+    screen.queryByRole("button", { name: "Configure Quick Select" }),
+  ).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(
+    screen.getByRole("button", { name: "Configure Quick Select" }),
+  ).toBeInTheDocument();
+});
+
 it("uses one Misc category, focuses search on desktop, and searches across categories", async () => {
   const user = userEvent.setup();
   renderDropdown();
