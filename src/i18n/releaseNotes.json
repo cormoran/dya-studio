@@ -4,6 +4,15 @@
       "version": "upcoming",
       "date": null,
       "changes": {
+        "major": [],
+        "minor": [],
+        "patch": []
+      }
+    },
+    {
+      "version": "2026.09.20.0",
+      "date": "2026-09-20",
+      "changes": {
         "major": [
           {
             "en": "Use DYA Studio in Simplified Chinese, with automatic browser-language detection and a three-language switcher.",
