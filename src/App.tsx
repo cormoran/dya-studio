@@ -269,7 +269,7 @@ function AppContent() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="app-connected-shell h-screen"
+          className="app-connected-shell"
         >
           <AppLayout
             isConnected={connection.isConnected}
