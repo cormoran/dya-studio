@@ -91,15 +91,13 @@ bumps with no user-visible effect) do **not** need an entry.
 
 ## Classifying a change: major / minor / patch
 
-Put each entry under the category that matches its user impact:
+Put each entry under the category that matches its primary user impact:
 
-- **major** — new capability or a significant, visible change to how the app
-  works: a new tab/page, a new editor, a redesign, a new integration, or
-  anything that changes existing behavior in a way users must notice.
-- **minor** — a new but self-contained enhancement to existing functionality:
-  an added option, a new control, a quality-of-life improvement, a performance
-  win users can feel.
-- **patch** — bug fixes, small polish, copy/wording updates, and other
-  corrections that don't add functionality.
+- **major** — a new feature, a behavior change or meaningful behavior
+  improvement, or a breaking change.
+- **minor** — visual refinement or a small behavior change.
+- **patch** — an internal, non-visible change, a small wording improvement, or
+  another similarly small correction worth communicating.
 
-When in doubt, pick the lower category (a fix is a `patch`, not a `minor`).
+When a change spans categories, use the category that best represents the
+outcome users experience rather than the implementation's size.
