@@ -18,6 +18,8 @@ Orca 1.4.205 の CLI には `orca dialog accept --page <id> --json` / `orca dial
 
 並列でブラウザ設定を変えるときは、可能なら worker ごとに別 origin（例: 別 port のローカル Vite）を割り当てる。別タブだけでは localStorage/IndexedDB の分離にならない。サーバーの起動・停止は coordinator が担当し、worker は割り当てられた URL だけを使う。
 
+観測中のアプリ版を固定する。`npm run generate`、`npm run build`（内部で generate）、source の format/edit、main の merge はブラウザセッションと同時に行わない。Vite の再読込が接続や state を変える可能性がある。必要な変更後はその影響を受けた charter を新しい初期状態からやり直し、旧版の報告を新しい版の pass に流用しない。
+
 ## 1 回のセッション
 
 ### 環境に到達できない場合
@@ -27,6 +29,8 @@ Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `ru
 環境情報は UI を開けなくても記録する。モデル/effort は worker launch 情報、app/spec commit は `git rev-parse HEAD` と仕様の作業ツリー差分から取得する。viewport は UI 到達後に読み取り専用の `window.innerWidth/innerHeight` で取得してよい。
 
 低コスト実行では snapshot JSON 全体（refs と tree の重複）を何度も読み込まず、`result.snapshot` を抽出する。例: `orca snapshot --page <id> --json | jq -r '.result.snapshot'`（jq 利用可能時）。操作に使う ref はその最新 tree から取得する。screenshot の base64 を会話へ大量に出力する代わりに、ツールが提供する画像/ファイルを扱う。画像を取得しただけで保存していなければ、存在しないファイルへのリンクは報告しない。
+
+抽出前に JSON の `ok` を確認する。さらに `rg` 等で期待語だけを抽出した結果が空でも、ブラウザや snapshot が壊れたと断定しない。絞り込みなしの `result.snapshot` と URL を再取得し、接続画面・別画面への遷移、stale ref、ツールエラーを切り分ける。画面変更後に以前の ref で Save/Reload を押さない。
 
 15–25 分または 3–5 charter を目安とし、完了を時間だけで判断しない。charter は「何を・どのリスクについて・何を証拠に」探索するかの短い宣言。
 

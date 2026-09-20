@@ -21,3 +21,17 @@
 ## Round 3: 未実行を正しく残すだけでは合格にしない
 
 [round3](keymap-luna-round3.md) では modal の draft → Escape 適用を観測し、Discard を blocked へ訂正できた。しかし floating 境界と設定復帰を省略しており gate 未達。Save 後の「再読み込み」はアプリ内操作か browser reload かの区別・想定外遷移の証拠が不足し、この部分は再確認が必要。新規の短いセッションで未完の 3 charter のみに絞る。標準を際限なく長くせず、テストガイドに必須ケースの未実行を未完了とする基準と Reload の操作識別を追加した。
+
+## Round 4: 境界と観測失敗の切り分け
+
+[round4](keymap-luna-round4.md) は auto advance OFF、末尾 Next 無効、末尾適用後の close、開いた floating からの layer 切替を確認。modifier popup 使用後の Escape は editor が残る候補として記録したが、focus/ネストした popup の条件を含め追加検証が必要であり受け入れ済みにしていない。
+
+Save/Reload は未完。coordinator が同じ page ID で未加工 snapshot を取得すると `ok=true` で接続画面が見えたため、report の「snapshot 無出力」はブラウザ停止の証拠ではなかった。絞り込み前の出力と URL を確認する手順を追加。加えて round3 付近に coordinator の build/generate と Vite HMR が重なっていたため、その再読込観測は確定根拠にせず隔離 origin の round5 で再確認する。以降は生成/merge を UI 観測と並行しない。
+
+古い pilot 用 5174 の 4 タブを閉じ、coordinator が起動したサーバーを停止した。これにより Demo のセッションは終了したが、5174 origin の localStorage の初期設定への完全復元は確認していない。実機・外部サービスへの変更はない。
+
+## Round 5: 保存フローの隔離再検証と v1 判定
+
+[round5](keymap-luna-round5.md) は新規 origin `5180`、`a8eeb6e` 上で A→B、Save、アプリ内 Reload 後の B/Saved、A へ復元保存を実観測。ページ ID typo はエラーとして再観測してから判定した。起動 receipt は luna-low。コードを読まず仕様 ID と UI 証拠を結びつけた。
+
+v1 は、round2 の基準編集、round3 の modal Escape、round4 の floating 境界・layer 切替、round5 の Save/Reload を合わせて、低コスト agent の探索を支援し、誤判定・未実行もレビューで識別できる標準として全ページへ展開する。これは各版/条件の限定的な実測で、全アプリ・全状態の pass ではない。floating modifier 後の Escape、native confirm、実機/RPC failure は未解決/未検証として残す。全ページ展開後は新しい並列探索で別の領域も評価する。

@@ -2,6 +2,16 @@
 
 <!-- Describe your changes -->
 
+## Product specifications
+
+<!-- Follow docs/spec/AUTHORING.md. Name affected specification IDs and update
+their requirements/current behavior/flows/errors in the same PR. If no observable
+behavior changed, identify the reviewed specifications and explain why no update
+is needed. Browser reports should separate evidence from blocked/not-run cases. -->
+
+- [ ] Updated affected specifications, or explained why no update is needed
+- [ ] Ran `npm run spec:check` when changing specifications
+
 ## Release notes
 
 <!--
