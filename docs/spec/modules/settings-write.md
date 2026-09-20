@@ -3,7 +3,7 @@
 ## 範囲・根拠
 
 - 種別: firmware custom settings の list、メモリ書込み、section Save / Discard / Reset と、表示する shared `CustomSettingsSectionCard` / `SettingRow` の共通契約。主 consumer は [Settings](../pages/settings.md) の `AdvancedSettingsSection` と [TrackballPage](../../../src/pages/TrackballPage.tsx)。
-- 確認: 2026-09-20、コード確認のみ。実機の firmware value validation、flash 永続化、notification timing は未実測。
+- 確認: 2026-09-20、`8627e4d`、コード確認のみ。実機の firmware value validation、flash 永続化、notification timing は未実測。
 - 関連仕様: page 固有の power timeout は [Settings](../pages/settings.md)。接続・unlock availability は [device session](device-session.md)。
 
 | 根拠 | ソース / symbol                                                                                                                                      | 確認内容                                     |

@@ -3,7 +3,7 @@
 ## 範囲・根拠
 
 - 種別: firmware が advertises した custom subsystem と外部 Web UI を列挙するページ。入口は [App](../../../src/App.tsx) の `getTabs` の `subsystems`。
-- 確認: 2026-09-20、コードと page test の確認のみ。外部 URL は開いていない。
+- 確認: 2026-09-20、`8627e4d`、コードと page test の確認のみ。外部 URL は開いていない。
 - 関連仕様: 接続状態は [device session](../modules/device-session.md)。既に dedicated UI を持つ subsystem の機能は各ページ仕様へ分離し、本ページは発見と外部遷移だけを扱う。
 
 | 根拠 | ソース / symbol                                                                                                                                    | 確認内容                                            |

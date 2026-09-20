@@ -26,7 +26,7 @@
 ## 前提・状態
 
 - 未接続時の全体 placeholder はこの Page に無く、アプリの connection gate が担う。各 section は subsystem/module 未提供なら module 名/リンク付き Not Available、提供済みなら loading/empty/error/data を独立表示する。
-- `Refresh All` は available の device info/watchdog/kscan/PMW3610/stack を並行ではなく同じ handler 内で開始する。ELF の再解析、clipboard、frame stream の開始/停止は含まない。
+- `Refresh All` は available の device info/watchdog/kscan/PMW3610/stack の refresh を同じ handler 内で開始し、前の完了を await しない。完了順は保証しない。ELF の再解析、clipboard、frame stream の開始/停止は含まない。
 - support report は browser clipboard に text を書く。device report は firmware flash を変えない。watchdog deletion/stat reset の firmware 永続性は protocol の外で未確認。
 
 ## 現行の機能仕様

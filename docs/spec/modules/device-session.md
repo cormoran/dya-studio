@@ -4,7 +4,7 @@
 
 - 種別: splash からの接続、page-load auto reconnect、disconnect、shared Studio unlock / retry、custom subsystem discovery の共通モジュール。通常画面の tab layout は [app shell](app-shell.md) を参照する。
 - 利用者: [App](../../../src/App.tsx) の `AppRouter` / `AppContent`、[SplashScreen](../../../src/components/SplashScreen.tsx)、全 `useCustomSubsystem` consumer とその pages。
-- 確認: 2026-09-20、コードと DeviceConnection / StudioUnlock context test の確認のみ。USB/BLE picker と実機 lock の UI 実測はしていない。
+- 確認: 2026-09-20、`8627e4d`、コードと DeviceConnection / StudioUnlock context test の確認のみ。USB/BLE picker と実機 lock の UI 実測はしていない。
 
 | 根拠 | ソース / symbol                                                                                                                                                             | 確認内容                                           |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |

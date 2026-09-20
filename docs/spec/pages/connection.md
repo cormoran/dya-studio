@@ -3,7 +3,7 @@
 ## 範囲・根拠
 
 - 種別: 接続済みキーボードの BLE profile、出力優先度、default layer、OS detection を表示・変更するページ。入口は [App](../../../src/App.tsx) の `getTabs` の `connection`。
-- 確認: 2026-09-20、コードと unit test の確認のみ。UI 実測はしていない。
+- 確認: 2026-09-20、`8627e4d`、コードと unit test の確認のみ。UI 実測はしていない。
 - 関連仕様: 接続の開始・再接続は [device session](../modules/device-session.md)、タブ可用性は [app shell](../modules/app-shell.md)。
 
 | 根拠 | ソース / symbol                                                                                                                    | 確認内容                                |

@@ -2,7 +2,7 @@
 
 ## 範囲・根拠
 
-各 tab が keyboard から完全読取した JSON snapshot を device/tab/schema ごとに保持し、version 選択→差分→confirm restore する共通機能を対象にする。各 page の通常 Save/Discard と key binding editing は[共通画面](app-shell.md)および[共通 binding editor](binding-editor.md)の責務である。コード確認: 2026-09-20、`8627e4d`。UI 実測は未実施。
+各 tab の読込済み state から JSON snapshot を device/tab/schema ごとに保持し、version 選択→差分→confirm restore する共通機能を対象にする。各 page の通常 Save/Discard と key binding editing は[共通画面](app-shell.md)および[共通 binding editor](binding-editor.md)の責務である。コード確認: 2026-09-20、`8627e4d`（追加レビュー `bcfa786`、app source 同一）。UI 実測は未実施。
 
 | 根拠 | ソース / symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,6 +22,12 @@
 | HIST-R03 | restore の keyboard persistence tier を tab ごとに正しく扱い、共通 RAM 説明を恒久保存 tab に誤適用しない | S4/S5 から推定    |
 
 ## 前提・状態
+
+入口の表示名は consumer で異なる。Keymap / Macro&Combo は `Reset` メニュー内に履歴があり、独立した `Versions` ボタンを探しても見つからない。Settings / Connection / Trackball などは `Versions` 表示を使う（S4）。メニュー内の timestamp を選んだ時だけ diff modal に進む。
+
+重要な判定上の限界: `collect()` の再呼出しは RPC による再読込と同義ではない。現行 consumer は主に hook の ref/state を集め、Macro は detail 取得も行う。画面の「Reading ... from the keyboard」という文言だけで最新実機値を保証しない。比較前に page の Refresh/Reload を行う。HIST-R01 は目標であり、notification collection の完全性や未送信の楽観 state の除外は未検証。
+
+以下の persistent/write-through は consumer adapter のコメント上の契約と「別 Save を呼ばない」実装を表す。RPC 先の flash 保持をコードコメントだけで確認済みにしない（Connection / input-processing の未確認事項と同じ）。HIST-010–012 は実機電源断テストの pass ではない。
 
 record identity は `deviceKey`（ConnectionContext の deviceName、欠ければ `unknown-device`）+ `tabId` である。record envelope は v1、payload は consumer ごとの schema version、timestamp epoch ms、plain JSON data。IndexedDB `dya-studio-version-history` v1 の `snapshots` store と `[deviceKey,tabId]` index を優先し、open 不可/非対応時は同じ semantics の page-process memory backend へ fallback する。memory backend は reload で失われる。
 
@@ -53,7 +59,7 @@ record identity は `deviceKey`（ConnectionContext の deviceName、欠けれ�
 ## 代表ユーザーフロー
 
 1. enabled consumer tab の完全 read を完了し、menu の saved version timestamp を確認する。変更なしで再 read して count が増えないことを確認する（HIST-001–003）。
-2. keyboard state を変え再 read、過去 version を選ぶ。fresh state 読取 spinner、current/selected value table を確認し Cancel する（HIST-005/006）。
+2. keyboard state を変え page の Refresh/Reload を完了してから過去 version を選ぶ。current/selected value table を確認し Cancel する（HIST-005/006）。collect の spinner は短く観測できない場合があり、最新実機値を読んだ証拠にはならない。
 3. keymap/macro-combo を restore して通常 page の Save をまだ押さず、RAM edit と flash 保存を分けて確認する（HIST-008/009）。
 4. settings/connection を restore して Save UI に依存しない persistent write-through を確認する（HIST-010/012）。trackball は processor と custom settings の異なる persistence tier を別々に確認する（HIST-011）。
 5. IndexedDB を使えない profile で version feature が page editing を妨げず、reload 後 memory history が消えることを確認する（HIST-001）。
@@ -69,6 +75,8 @@ record identity は `deviceKey`（ConnectionContext の deviceName、欠けれ�
 ## エラーと復帰
 
 IndexedDB open/transaction/list/add error は console warning に留め、tab 本体を失敗させない。IDB 非対応/open failure は default memory backend へ fallback するが、既に選ばれた IndexedDB backend の transaction failureをその場で memory へ移し替える実装ではない。collect/apply error は modal error（または console warning）となり再試行/Cancellation が可能。restore は複数 RPC の逐次処理で transaction/rollback がなく、途中 failure は混合 state を残し得るため read/diff で復帰状態を確認する。
+
+ここで modal error になるのは apply が例外を投げた場合。Settings の `setActivitySettings` は失敗時に `false` を返すが adapter は戻り値を検査しない。他 consumer も hook が error state に変換する場合があるため、modal が閉じただけでは restore 成功を証明できない。page alert と Refresh/Reload 後の差分を確認する（不具合候補、受け入れ根拠なし）。
 
 ## 探索の観点
 

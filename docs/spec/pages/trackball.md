@@ -23,7 +23,9 @@
 
 - `cormoran_rip` subsystem がない時は `Runtime input processor subsystem is not available...`、0 processors は `No processors found`。processor と keymap layer は非同期に読込む。
 - 左 pane は Processors と PMW3610 Drivers。right pane は選択 processor または driver settings。一つを選ぶと他方の detail は表示しない。
-- field は `useDebouncedSave` で pending 表示を先に変え、短い delay 後に processor RPC を送る。コードは request の RAM/flash を区別しないため、`Versions` は firmware 保存ではなく captured version history とする。
+- field は `useDebouncedSave` で pending 表示を先に変え、`MEMORY_WRITE_DEBOUNCE_MS`（1,500 ms）の quiet 後に processor RPC を送る。コードは request の RAM/flash を区別しないため、`Versions` は firmware 保存ではなく captured version history とする。
+
+UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary layer activation 0–1000 ms / deactivation 0–2000 ms、axis snap threshold 0–1000 / timeout 0–600 ms。HTML input の min/max は firmware 検証の保証ではない。直接入力と slider/step 操作の差は探索対象とする。
 
 ## 現行の機能仕様
 

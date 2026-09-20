@@ -56,7 +56,7 @@ route は AppContent の connection gate より前で return され、`/release-
 
 ## エラーと復帰
 
-runtime の data fetch・検索 API・明示 error state は存在しない。壊れた/存在しない hash は no-op、外部 PR link の network failure は browser の責務でアプリ内の復帰 UI はない。JSON import failure は build/runtime failure でありこの page が捕捉しない。
+runtime の data fetch・検索 API・明示 error state は存在しない。decode 可能だが存在しない hash は no-op。壊れた percent encoding（例 `%ZZ`）は `decodeURIComponent` が例外を投げ得て、この effect 内に catch はない。REL-004 の無視は「存在しない ID」の範囲であり、不正 encoding の安全な復帰は未検証。外部 PR link の network failure は browser の責務でアプリ内の復帰 UI はない。JSON import failure は build/runtime failure でありこの page が捕捉しない。
 
 ## 探索の観点
 

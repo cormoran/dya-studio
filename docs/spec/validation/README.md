@@ -37,3 +37,17 @@ Save/Reload は未完。coordinator が同じ page ID で未加工 snapshot を�
 v1 は、round2 の基準編集、round3 の modal Escape、round4 の floating 境界・layer 切替、round5 の Save/Reload を合わせて、低コスト agent の探索を支援し、誤判定・未実行もレビューで識別できる標準として全ページへ展開する。これは各版/条件の限定的な実測で、全アプリ・全状態の pass ではない。floating modifier 後の Escape、native confirm、実機/RPC failure は未解決/未検証として残す。全ページ展開後は新しい並列探索で別の領域も評価する。
 
 [coordinator の再観測](coordinator-review.md) では modifier draft 後の Escape は正常に閉じ、binding を適用しなかった。round4 の候補はこの条件で再現せず、原因を断定しない。最終 mode/auto/close の復帰も観測した。
+
+## 全ページ展開: terra-high 3 担当と source review
+
+`bcfa786` に全ページと共通モジュールを追加。起動 receipt で3担当とも `gpt-5.6-terra` / `high` を確認した。接続・設定系、編集・診断系、外部連携・単独画面系に専有ファイルを分け、同じ標準/テンプレートを使用した。Page ソース参照漏れも CI チェックへ追加した（route 網羅性や内容の正しさを証明するものではない）。
+
+レビューで修正した誤りと標準への反映:
+
+- Save の disabled 条件を有効条件へ逆に文章化していたため、boolean の具体例で点検する規則を追加。
+- OAuth は接続 UI gate の前だが provider の外ではないため、「未接続で表示」と内部 mount の区別を追加。
+- Settings の Central 基準値から peripheral 非変更を誤って推論していた。set RPC の対象まで追う規則を追加し、全 source の復帰をテスターへ依頼。
+- 履歴の「fresh read」「persistent」というコメントだけでは RPC 再読込・実機 flash の証拠にならない。consumer 実装と boolean 失敗を照合し、modal close だけでは成功としない説明を追加。
+- Trackball の待ち時間・数値範囲、Refresh All の非 await、Release Notes の存在しない hash と壊れた percent encoding の差を具体化。
+
+仕様生成 worker の完了報告はレビューの代用にならない。これらは製品コードの修正ではなく、実装事実・推定要求・未検証を正確に分けるための文書修正である。

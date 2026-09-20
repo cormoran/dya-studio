@@ -3,7 +3,7 @@
 ## 範囲・根拠
 
 - 種別: core settings RPC の power management と、全設定 factory reset を扱うページ。入口は [App](../../../src/App.tsx) の `getTabs` の `settings`。
-- 確認: 2026-09-20、コード確認のみ。Advanced Settings の共有契約は [settings write](../modules/settings-write.md) に分離する。
+- 確認: 2026-09-20、`8627e4d`（追加レビュー `bcfa786`、app source 同一）、コード確認のみ。Advanced Settings の共有契約は [settings write](../modules/settings-write.md) に分離する。
 - 関連仕様: 通常タブの接続条件は [app shell](../modules/app-shell.md)、接続開始・lock gate は [device session](../modules/device-session.md)。
 
 | 根拠 | ソース / symbol                                                                                                | 確認内容                         |
@@ -65,7 +65,7 @@
 ## 不変条件
 
 - SET-I01: timeout の debounce は最後に queue した idle/sleep の組を一回だけ送る。表示だけを成功や flash 永続化と見なさない（S1–S3）。
-- SET-I02: `sourceId === 0` だけを page の編集対象とし、表示された peripheral の値を中央設定で上書きしない（S1/S2）。
+- SET-I02: 編集フォームの基準値は `sourceId === 0` だが、peripheral 別の編集・隔離を保証しない。set RPC の `source: 0` は対象指定に使われないため、変更後は全 source の値を再取得して確認する（S1/S2）。
 - SET-I03: factory reset は confirmation 前、または Cancel / dialog close だけでは送信しない。busy 中の close/cancel を受け付けない（S1）。
 - SET-I04: Advanced custom settings のメモリ書込みと core activity settings の write-through を同じ Save / Discard 意味として扱わない（S1/S5）。
 

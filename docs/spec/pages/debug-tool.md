@@ -23,6 +23,7 @@
 ## 前提・状態
 
 - App shell は connection connected かつ `cormoran__devtool` subsystem available の時だけ Devtool toggle を表示する。subsystem が無ければ window 入口は無い。
+- 現行 [Demo registry](../../../src/lib/transport/demo-subsystems.ts) に devtool は含まれない。通常 Demo では入口不在の確認まで可能で、open/log/filter/close は対応実機が必要な blocked 条件。Subsystems の toggle で未登録の capability を追加することはできない。
 - `useDevtool` は `unlockGate: false` の passive consumer。lock required は unlock dialog を出さず no-op/response error とし得る。
 - window は portal で `document.body` に出す。初期位置は viewport right/bottom 寄り、初期 size 500×480、min 320×240。位置/size、filter、cap は browser persistent storage に保存しない。
 
