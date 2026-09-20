@@ -102,6 +102,14 @@ const ja: Record<string, string> = {
     "次世代 DYA キーボード。60% 分割、標準的なロウスタッガード配列。",
   "Coming Soon": "近日公開",
   "Watch Booth": "Booth を見る",
+  "Bring your keyboard to DYA Studio":
+    "あなたのキーボードを DYA Studio に対応させる",
+  "Learn how to make your ZMK keyboard work with DYA Studio, from standard keymap support to custom features.":
+    "標準のキーマップ対応からカスタム機能まで、ZMK キーボードを DYA Studio に対応させる方法を紹介します。",
+  "Developer Guide": "開発者ガイド",
+  "Read the note article": "note 記事を読む",
+  "Latest Release": "最新リリース",
+  "View all release notes": "リリースノートをすべて見る",
   "Q: Can my keyboard support DYA Studio?":
     "Q: 自分のキーボードは DYA Studio に対応できますか？",
   "A: Yes, you can use the keymap feature without any modification with your ZMK keyboard.":
@@ -1473,6 +1481,13 @@ const zh: Record<string, string> = {
     "下一代 DYA 键盘，60% 分体式，标准行错位布局。",
   "Coming Soon": "即将推出",
   "Watch Booth": "查看 Booth",
+  "Bring your keyboard to DYA Studio": "让您的键盘支持 DYA Studio",
+  "Learn how to make your ZMK keyboard work with DYA Studio, from standard keymap support to custom features.":
+    "了解如何让您的 ZMK 键盘支持 DYA Studio，包括标准键位映射和自定义功能。",
+  "Developer Guide": "开发者指南",
+  "Read the note article": "阅读 note 文章",
+  "Latest Release": "最新版本",
+  "View all release notes": "查看所有发布说明",
   "Q: Can my keyboard support DYA Studio?":
     "Q: 我的键盘可以使用 DYA Studio 吗？",
   "A: Yes, you can use the keymap feature without any modification with your ZMK keyboard.":
