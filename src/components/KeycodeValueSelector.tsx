@@ -64,6 +64,7 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
 interface KeycodeValueSelectorProps {
   toolbar?: ReactNode;
   compact?: boolean;
+  collapseModifiersOnMobile?: boolean;
   value: number;
   onChange: (value: number, shouldNotClose?: boolean) => void;
   showModifiers?: boolean;
@@ -73,6 +74,7 @@ interface KeycodeValueSelectorProps {
 export function KeycodeValueSelector({
   toolbar,
   compact = false,
+  collapseModifiersOnMobile = false,
   value,
   onChange,
   keyboardLayout,
@@ -92,6 +94,12 @@ export function KeycodeValueSelector({
   });
   const [modifiersExpanded, setModifiersExpanded] = useState(false);
   const modifiersVisible = !compact || modifiersExpanded;
+  const modifierToggleClassName =
+    collapseModifiersOnMobile && !compact ? "tablet:hidden" : undefined;
+  const modifierSectionClassName =
+    collapseModifiersOnMobile && !compact && !modifiersExpanded
+      ? "hidden tablet:flex"
+      : "flex";
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Persist view mode preference
@@ -175,15 +183,15 @@ export function KeycodeValueSelector({
   return (
     <div className="flex flex-col h-full">
       {/* Search + view mode toggle */}
-      <div className="mb-2 flex items-center gap-2 shrink-0">
+      <div className="h-7 mb-2 flex items-stretch gap-2 shrink-0">
         {toolbar}
-        {compact && showModifiers && (
+        {(compact || collapseModifiersOnMobile) && showModifiers && (
           <EditorTooltip content={t("Show or hide modifier keys")}>
             <button
               type="button"
               aria-expanded={modifiersExpanded}
               onClick={() => setModifiersExpanded(!modifiersExpanded)}
-              className={`px-2 py-1 text-xs rounded border whitespace-nowrap ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+              className={`h-7 inline-flex items-center px-2 text-xs rounded border whitespace-nowrap ${modifierToggleClassName ?? ""} ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
             >
               {t("Modifiers")}
               {selectedModifiers !== 0
@@ -196,14 +204,14 @@ export function KeycodeValueSelector({
             </button>
           </EditorTooltip>
         )}
-        <div className="ml-auto flex items-center gap-1 shrink-0">
+        <div className="ml-auto flex h-7 items-center gap-1 shrink-0">
           {compact && viewMode === "layout" && (
             <EditorTooltip content={t("Show or hide keycode search")}>
               <button
                 type="button"
                 aria-label={t("Search keycodes...")}
                 aria-expanded={layoutSearchExpanded}
-                className={`p-1 rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                className={`flex h-7 w-7 items-center justify-center rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
                 onClick={() => {
                   setLayoutSearchExpanded(!layoutSearchExpanded);
                   if (layoutSearchExpanded) setSearchQuery("");
@@ -232,7 +240,7 @@ export function KeycodeValueSelector({
                   ? t("Show keycodes by category")
                   : t("Show key layout")
               }
-              className={`flex-shrink-0 p-1 rounded border transition-colors ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors ${
                 viewMode === "layout"
                   ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
                   : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
@@ -250,9 +258,17 @@ export function KeycodeValueSelector({
 
       {/* Modifier Flags */}
       {showModifiers && modifiersVisible && (
-        <div className="mb-2 flex items-center gap-2 shrink-0">
+        <div
+          className={`mb-2 items-center gap-2 shrink-0 ${modifierSectionClassName}`}
+        >
           {(!compact || selectedModifiers !== 0) && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div
+              className={`items-center gap-2 shrink-0 ${
+                collapseModifiersOnMobile && !compact && selectedModifiers === 0
+                  ? "hidden tablet:flex"
+                  : "flex"
+              }`}
+            >
               {!compact && (
                 <span className="text-xs text-[var(--color-text-muted)]">
                   {t("Modifiers")}:

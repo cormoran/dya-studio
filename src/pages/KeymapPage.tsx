@@ -1334,7 +1334,7 @@ export function KeymapPage() {
             <EditorTooltip content={t("Switch to floating mode")}>
               <button
                 type="button"
-                className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--color-border)]"
+                className="p-1 rounded hover:bg-[var(--color-border)]"
                 aria-label={t("Floating mode")}
                 onClick={() => {
                   selectionRevision.current += 1;
@@ -1342,7 +1342,6 @@ export function KeymapPage() {
                 }}
               >
                 <IconWindow size={16} />
-                <span>{t("Floating mode")}</span>
               </button>
             </EditorTooltip>
           )
