@@ -1,32 +1,32 @@
 ---
 name: exploratory-ui-test
-description: DYA Studio の仕様に基づくブラウザ探索テストを AI subagent で行う。変更関連の回帰確認、全体探索の依頼、または大きな UI・共有処理変更で回帰リスクが高い場合に使う。依頼のない小変更や文書編集だけでは起動しない。
+description: Run specification-driven browser exploration of DYA Studio with AI subagents. Use for requested change-focused regression checks, whole-app exploration, or substantial UI/shared-logic changes with high regression risk. Do not launch for unrequested minor or documentation-only changes.
 ---
 
-# 探索的 UI テスト
+# Exploratory UI Testing
 
-これは coordinator 向けの実行判断とモデル選択の skill。操作・証拠・復帰・報告の手順は [探索ガイド](../../../docs/spec/EXPLORATORY_TESTING.md)、対象選定は [仕様 sitemap](../../../docs/spec/README.md) を読み、重複した手順を作らない。
+This skill guides the coordinator's scope and model decisions. Read the [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md) for operations, evidence, restoration, and reporting, and the [specification sitemap](../../../docs/spec/README.md) to select targets. Do not duplicate those procedures here.
 
-## 範囲を選ぶ
+## Choose the scope
 
-- **変更関連テスト**: 差分に対応するページと、変更した共有モジュールの consumer を選び、変更フロー・隣接機能・保存/取消などの回帰リスクに絞る。範囲指定のない変更検証はこちらを既定にする。
-- **全体探索**: ユーザーが全体/網羅的なテストを求めたら sitemap の全入口を担当表にし、各ページの代表フローと変形操作、共有機能を分担する。全状態の組合せを保証する意味ではない。到達不能・未実行の入口も一覧に残す。
-- 明示された範囲・予算・モデル指定を優先する。大きな UI 変更や保存/接続/共有 editor の変更で複数画面への回帰が心配なときは、自発的に subagent テストを開始してよい。理由と絞った対象を先に伝える。単なる行数の多さ、文書のみの変更、小さな修正ごとに起動しない。
+- **Change-focused testing:** Select pages affected by the diff and consumers of changed shared modules. Focus on changed flows, adjacent features, and regression risks such as saving and cancellation. Default to this mode when a change-validation request does not specify coverage.
+- **Whole-app exploration:** When the user requests broad or comprehensive testing, inventory every entry point in the sitemap and assign representative flows, variations, and shared features. This does not guarantee every combination of states. Track unreachable and untested entry points too.
+- Honor explicit scope, budget, and model choices. Proactively launch bounded subagent testing when substantial UI changes or changes to persistence, connections, or shared editors create cross-page regression risk. First explain the reason and limited targets. Do not launch merely because a diff is large, for documentation-only changes, or after every small edit.
 
-## モデルとコスト
+## Models and cost
 
-| 役割                                       | 既定                     | 使いどころ                                                                                      |
-| ------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| ブラウザ探索                               | `gpt-5.6-luna` / `low`   | 仕様とガイドを渡し、コードを読まず操作・期待/実測を報告させる                                   |
-| コード調査・仕様補完・難しい判定のレビュー | `gpt-5.6-terra` / `high` | coordinator だけで判断できない仕様不足や、複数 consumer の保存/失敗契約を追う必要があるときだけ |
+| Role                                                               | Default                  | When to use                                                                                                                          |
+| ------------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Browser exploration                                                | `gpt-5.6-luna` / `low`   | Provide specifications and the guide; have the worker report actions and expected/observed behavior without reading application code |
+| Source investigation, specification gaps, difficult verdict review | `gpt-5.6-terra` / `high` | Only when the coordinator cannot resolve a specification gap or needs help tracing persistence/error contracts across consumers      |
 
-モデル名はこの repository の運用上の既定であり、毎回両方を起動する指示ではない。利用可能性と実際に起動した model/effort を確認し、利用不能なら黙って別モデルへ置き換えず制約を伝える。luna が詰まったら、まず対象を狭めた follow-up にし、それでも推論不足なら effort を必要な分だけ上げる。環境障害に高い effort を費やさない。
+These are repository defaults, not instructions to launch both models every time. Verify availability and the model/effort actually launched. If unavailable, report the limitation rather than silently substituting another model. If luna struggles, first narrow the follow-up; increase effort only as needed if reasoning remains insufficient. Do not spend higher effort on environment failures.
 
-変更関連はまず luna 1担当、全体探索は独立した領域を少数担当（目安2–3、環境の上限以内）に分ける。編集ページは1担当あたり1–2ページずつの短い割当とし、同じ範囲の重複探索を避ける。必須観測と完了条件を先に決め、成功済みのケースを毎回やり直さない。再試行はまず不足分への1回に限定し、まだ未完なら原因・追加コストを見直して報告/相談する。worker 自身には再委任や無制限の再試行をさせない。
+Start change-focused testing with one luna worker. For whole-app exploration, split independent areas among a small number of workers (typically 2–3, within environment limits). Assign editing pages in short batches of 1–2 pages per worker and avoid overlapping exploration. Define mandatory observations and completion criteria up front; do not repeatedly rerun successful cases. Start with one follow-up limited to missing evidence. If still incomplete, reassess the cause and additional cost, then report or consult the user. Do not let workers redelegate or retry indefinitely.
 
-## 実行と判断
+## Execute and review
 
-- ガイドの依頼ひな形に、モード、担当ページ/仕様、起動済み URL、必須観測、一時 report の出力先を指定する。環境分離・版固定・後始末はガイドに従う。
-- ブラウザ/委任ツールはユーザー指定と環境に合わせて選ぶ。探索ガイドの環境別手順を coordinator と worker の双方が読み、ツール固有の実行権限・対象指定に従う。特定ツールの存在を前提にしない。
-- coordinator は報告をレビューし、実際の操作/再読込の証拠と仕様 ID を照合する。worker の「pass」だけで完了にしない。不具合候補・仕様不足・blocked・not-run を区別し、全体探索では担当表の漏れも確認する。
-- 実機・外部サービスへの書込みや不具合修正の権限は、テスト実行の判断から拡張しない。生ログは通常 commit せず、結果を PR/完了報告に要約し、恒久的な知見だけ仕様/ガイドへ反映する。
+- Fill the guide's worker brief with the mode, assigned pages/specifications, running URL, mandatory observations, and a temporary report path. Follow the guide for isolation, version stability, and cleanup.
+- Select browser/delegation tools according to the user's choices and available environment. Both coordinator and workers must read the guide's environment-specific instructions and follow tool-specific permissions and target selection. Do not assume a particular tool exists.
+- Review reports against specification IDs and evidence of actual actions/readback. A worker's “pass” alone is insufficient. Distinguish product candidates, specification gaps, blocked cases, and unexecuted cases; for whole-app exploration, also check the assignment inventory for omissions.
+- Permission to run tests does not expand authority to write to hardware/external services or fix defects. Normally keep raw logs out of commits, summarize results in the PR/completion report, and integrate only durable findings into specifications/guides.
