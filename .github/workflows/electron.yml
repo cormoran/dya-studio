@@ -99,6 +99,9 @@ jobs:
       - name: Attach installers to the existing release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job only downloads artifacts, so there is no checkout from
+          # which the GitHub CLI could infer the repository.
+          GH_REPO: ${{ github.repository }}
           # The release was already created (with --notes pointing at the in-app
           # release-notes page) by `.github/workflows/release.yml`; we only
           # upload the macOS .dmg and Windows .exe artifacts onto it.
