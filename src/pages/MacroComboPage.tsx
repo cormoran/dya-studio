@@ -18,7 +18,7 @@ import {
   IconSettings,
   IconWand,
 } from "@tabler/icons-react";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { StatusDot } from "../components/EditStatusIndicator";

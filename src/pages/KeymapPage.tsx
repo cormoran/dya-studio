@@ -31,7 +31,7 @@ import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
 import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";

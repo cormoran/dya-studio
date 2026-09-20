@@ -6,7 +6,7 @@ import {
   IconArrowUp,
 } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
-import type { ConnectionMethod } from "./DeviceConnection";
+import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 import { LanguageToggle } from "./LanguageToggle";

@@ -19,7 +19,7 @@ import { useConnectionVersionHistory } from "../hooks/versionHistory/useConnecti
 import { useOsDetection } from "../hooks/useOsDetection";
 import { useDefaultLayer } from "../hooks/useDefaultLayer";
 import { useLayerNames, layerLabel } from "../hooks/useLayerNames";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { OutputPriority } from "../proto/zmk/ble_management/ble_management";
 import { Os } from "../proto/cormoran/os_detection/os_detection";
 import { useLanguage } from "../hooks/useLanguage";
