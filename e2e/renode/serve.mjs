@@ -25,12 +25,17 @@ http
       let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
       let file = path.join(ROOT, rel);
       if (!file.startsWith(ROOT)) return res.writeHead(403).end();
-      if (rel === "/" || !existsSync(file)) file = path.join(ROOT, "index.html");
+      if (rel === "/" || !existsSync(file))
+        file = path.join(ROOT, "index.html");
       const body = await readFile(file);
-      res.writeHead(200, { "content-type": MIME[path.extname(file)] || "application/octet-stream" });
+      res.writeHead(200, {
+        "content-type": MIME[path.extname(file)] || "application/octet-stream",
+      });
       res.end(body);
     } catch (e) {
       res.writeHead(500).end(String(e));
     }
   })
-  .listen(PORT, () => console.error(`serve: dist on http://127.0.0.1:${PORT} (root ${ROOT})`));
+  .listen(PORT, () =>
+    console.error(`serve: dist on http://127.0.0.1:${PORT} (root ${ROOT})`),
+  );

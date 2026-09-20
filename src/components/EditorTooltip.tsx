@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 /** Shared help for editor controls, including unavailable navigation buttons. */
@@ -9,9 +9,24 @@ export function EditorTooltip({
   content: ReactNode;
   children: ReactElement<{ disabled?: boolean }>;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [canOpen, setCanOpen] = useState(false);
+
+  // A trigger can be created underneath a stationary pointer or receive dialog
+  // autofocus. Do not turn that incidental initial state into a visible tip.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setCanOpen(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <Tooltip.Provider delayDuration={300}>
-      <Tooltip.Root>
+      <Tooltip.Root
+        open={isOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen || canOpen) setIsOpen(nextOpen);
+        }}
+      >
         <Tooltip.Trigger asChild>
           {children.props.disabled ? (
             <span className="inline-flex shrink-0">{children}</span>
