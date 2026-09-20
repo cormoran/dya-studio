@@ -8,6 +8,27 @@
 - worker にも **orca command は sandbox 外（`exec_command` の `sandbox_permissions: require_escalated`）で実行**と明記する。sandbox 内では runtime に到達できない場合がある。昇格が許可されなければ制約を報告し、回避しない。
 - 並列 worker は専用タブを作り、返された `browserPageId` をすべての操作の `--page` に指定する。参照はそのタブの最新 snapshot から取り、画面変更後は再取得する。別タブだけでは storage は分離されないため、メインガイドの origin 分離も守る。
 
+### Codex worker の model / reasoning effort 指定
+
+探索 worker は新規 worktree を作らず、現在の worktree で起動する。`worktree create --agent codex` は Orca 設定の launcher を使うため、worker ごとの model / reasoning effort を渡せない。明示指定がある worker は `terminal create --worktree active --command` で Codex の argv を指定する。たとえば標準の luna / low worker は次のように起動する。
+
+```sh
+orca terminal create \\
+  --worktree active \\
+  --title "Codex" \\
+  --command 'codex --model gpt-5.6-luna -c model_reasoning_effort="low"' \\
+  --json
+```
+
+`terminal create` の結果の `terminal.handle` に対し、prompt を送る前に次を実行する。
+
+```sh
+orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
+orca terminal read --terminal <handle> --json
+```
+
+`wait.satisfied: true` と、起動画面の `model: gpt-5.6-luna low` の両方を確認してから prompt を送る。別の指定値では `gpt-5.6-luna` と `low` を依頼された model / effort に置き換え、表示された実値も記録する。待機が timeout の場合は一度だけ時間を延長して再試行し、なお未起動なら prompt を送らず blocked と報告する。
+
 ## viewport と device emulation
 
 Orca 組込みブラウザは viewport の変更と mobile device preset に対応している。レスポンシブ確認のためだけに Playwright へ切り替えず、対象タブの `browserPageId` を指定して次を使う。
