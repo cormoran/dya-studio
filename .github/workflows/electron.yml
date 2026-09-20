@@ -3,7 +3,9 @@ name: Build Desktop App
 # Desktop builds are sliced off the release that `release.yml` just published,
 # so the tag must already exist before this workflow can attach installers to
 # it. `release.yml` dispatches this workflow explicitly because GitHub does not
-# start another workflow for release events created with `GITHUB_TOKEN`.
+# start another workflow for release events created with `GITHUB_TOKEN`. The
+# workflow definition comes from the default branch, while checkout uses the
+# requested release tag so older releases can be rebuilt with the current CI.
 #
 # `workflow_dispatch` is kept so an installer-only build can be triggered
 # manually. When `release_tag` is omitted, the attach job is skipped and the
@@ -24,6 +26,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
@@ -59,6 +62,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
