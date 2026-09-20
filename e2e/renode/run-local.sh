@@ -30,13 +30,15 @@ pids=()
 cleanup() {
   for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done
   # kill only our own Renode instance (scoped to this ELF), never a broad pkill
-  pgrep -af '\.renode/1\.16\.1/renode' | grep -F "$ELF" | awk '{print $1}' | xargs -r kill -9 2>/dev/null || true
+  ps -axo pid=,command= | grep '[Rr]enode.*--disable-xwt' | grep -F "$ELF" | awk '{print $1}' |
+    while IFS= read -r pid; do kill -9 "$pid" 2>/dev/null || true; done || true
 }
 trap cleanup EXIT
 
 echo ">>> [1/3] booting Renode with $ELF (real image; Studio over USB CDC)"
 python3 renode_serve.py "$ELF" > renode_serve.out 2> renode_serve.err &
-pids+=($!)
+renode_pid=$!
+pids+=("$renode_pid")
 
 # Booting the real image, enumerating USB and wiring the CDC bridge is slower
 # than a bare UART boot -- and Renode's mono cold-start can take ~20s on a loaded
@@ -51,6 +53,11 @@ else
 fi
 RPC_PORT=""
 for _ in $(seq 1 "${RENODE_READY_TIMEOUT:-$default_ready_timeout}"); do
+  if ! kill -0 "$renode_pid" 2>/dev/null; then
+    echo "!! Renode service exited before it became ready" >&2
+    cat renode_serve.err >&2
+    exit 1
+  fi
   RPC_PORT="$(sed -n 's/^RPC_PORT=//p' renode_serve.out | head -1)"
   [ -n "$RPC_PORT" ] && grep -q RENODE_READY renode_serve.out && break
   sleep 1
