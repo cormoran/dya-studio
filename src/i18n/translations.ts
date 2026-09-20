@@ -433,6 +433,9 @@ const ja: Record<string, string> = {
   "Connect your keyboard to edit runtime macros and combos":
     "ランタイムマクロとコンボを編集するにはキーボードを接続してください",
   "Select a macro or combo": "マクロまたはコンボを選択",
+  "Select macro, combo, or settings": "マクロ、コンボ、設定を選択",
+  "Create macro": "マクロを新規作成",
+  "New combo": "コンボを新規作成",
   "Choose an item from the lists on the left.":
     "左のリストから項目を選択してください。",
   "Edit runtime macro slots": "ランタイムマクロスロットを編集",
@@ -1822,6 +1825,9 @@ const zh: Record<string, string> = {
   "Connect your keyboard to edit runtime macros and combos":
     "连接键盘以编辑运行时宏和组合键",
   "Select a macro or combo": "选择宏或组合键",
+  "Select macro, combo, or settings": "选择宏、组合键或设置",
+  "Create macro": "新建宏",
+  "New combo": "新建组合键",
   "Choose an item from the lists on the left.":
     "请从左侧的列表中选择一个项目。",
   "Edit runtime macro slots": "编辑运行时宏插槽",

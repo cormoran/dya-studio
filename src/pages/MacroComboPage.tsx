@@ -44,6 +44,7 @@ import {
 } from "../components/macroCombo/comboUtils";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
+import { MobileMacroComboMenu } from "../components/macroCombo/MobileMacroComboMenu";
 import { DocTip } from "../components/DocTip";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
@@ -360,6 +361,66 @@ export function MacroComboPage() {
     runtimeCombo.error ||
     keymap.error;
 
+  const mobileMacroItems = macroAvailable
+    ? runtimeMacro.macros.map((macro) => ({
+        id: `macro-${macro.slot}`,
+        label: macro.name || t("Macro {{slot}}", { slot: macro.slot }),
+        selected:
+          rightView === "macro" && macroEditor.selectedName === macro.name,
+        status: macro.hasUnsavedChanges ? ("unsaved" as const) : undefined,
+        onSelect: () => handleSelectMacro(macro),
+      }))
+    : undefined;
+  const mobileComboItems =
+    comboAvailable && keymap.keymap
+      ? runtimeCombo.combos.map((combo) => {
+          const status = comboEditStatus(
+            combo.source,
+            combo.index,
+            comboEditor.modifiedIndices,
+          );
+          return {
+            id: `combo-${combo.index}`,
+            label: combo.name || t("Combo {{index}}", { index: combo.index }),
+            selected:
+              rightView === "combo" &&
+              comboEditor.selectedIndex === combo.index,
+            status: status === "default" ? undefined : status,
+            onSelect: () => handleSelectCombo(combo),
+          };
+        })
+      : undefined;
+  const mobileSettingsItems = [
+    ...(macroAvailable
+      ? [
+          {
+            id: "macro-settings",
+            label: t("Macro Global Settings"),
+            selected: rightView === "macro-settings",
+            status:
+              macroEditor.globalModifiedFields.size > 0
+                ? ("unsaved" as const)
+                : undefined,
+            onSelect: openMacroSettings,
+          },
+        ]
+      : []),
+    ...(comboAvailable
+      ? [
+          {
+            id: "combo-settings",
+            label: t("Combo Global Settings"),
+            selected: rightView === "combo-settings",
+            status:
+              comboEditor.globalModifiedFields.size > 0
+                ? ("unsaved" as const)
+                : undefined,
+            onSelect: openComboSettings,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
@@ -379,7 +440,19 @@ export function MacroComboPage() {
           </div>
 
           {connection.isConnected && anyAvailable && (
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
+              <MobileMacroComboMenu
+                macros={mobileMacroItems}
+                combos={mobileComboItems}
+                settings={mobileSettingsItems}
+                onCreateMacro={macroAvailable ? handleCreateMacro : undefined}
+                onCreateCombo={
+                  comboAvailable && keymap.keymap ? handleNewCombo : undefined
+                }
+                createMacroDisabled={
+                  macroEditor.isCreating || runtimeMacro.isLoading
+                }
+              />
               <ResponsiveButton
                 label={t("Refresh")}
                 className="btn-ghost text-sm flex items-center gap-1.5"
@@ -401,9 +474,11 @@ export function MacroComboPage() {
               ) : (
                 <>
                   {hasPendingChanges && (
-                    <span className="flex items-center gap-1 text-xs text-[var(--color-neon)] mr-2">
+                    <span className="flex items-center gap-1 text-xs text-[var(--color-neon)] desktop:mr-2">
                       <StatusDot status="unsaved" />
-                      {t("Unsaved changes")}
+                      <span className="hidden desktop:inline">
+                        {t("Unsaved changes")}
+                      </span>
                     </span>
                   )}
                   {/* Reset, Discard and every captured version in one menu. */}
@@ -540,7 +615,7 @@ export function MacroComboPage() {
 
         {connection.isConnected && anyAvailable && (
           <div className="grid grid-cols-1 desktop:grid-cols-[300px_1fr] gap-4 min-w-0">
-            <div className="space-y-4">
+            <div className="hidden desktop:block space-y-4">
               {/* Macros list */}
               {macroAvailable && (
                 <section className="glass-card p-3">
