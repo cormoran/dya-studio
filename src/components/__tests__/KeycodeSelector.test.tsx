@@ -155,8 +155,9 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
     screen.getByRole("button", { name: "Modifiers", exact: true }),
   ).toHaveClass("tablet:hidden");
   expect(
-    screen.getByRole("button", { name: "LCtrl", exact: true }).parentElement
-      ?.parentElement,
+    screen
+      .getByRole("button", { name: "LCtrl", exact: true })
+      .closest("[class~='tablet:flex']"),
   ).toHaveClass("hidden", "tablet:flex");
   expect(
     screen.getByRole("button", { name: /param1:/ }).parentElement

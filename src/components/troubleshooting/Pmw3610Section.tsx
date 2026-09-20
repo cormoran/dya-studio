@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 import { useState } from "react";
 import { IconMouse, IconRefresh } from "@tabler/icons-react";
 import type { UsePmw3610Return } from "../../hooks/usePmw3610";
@@ -76,7 +77,8 @@ export function Pmw3610Section({ pmw3610 }: { pmw3610: UsePmw3610Return }) {
       }
       actions={
         isAvailable && (
-          <button
+          <ResponsiveButton
+            label={t("Refresh")}
             onClick={() => void refresh()}
             disabled={isLoading}
             className="btn-ghost flex items-center gap-2 text-sm"
@@ -86,8 +88,7 @@ export function Pmw3610Section({ pmw3610 }: { pmw3610: UsePmw3610Return }) {
               size={14}
               className={isLoading ? "animate-spin" : ""}
             />
-            {t("Refresh")}
-          </button>
+          </ResponsiveButton>
         )
       }
     >

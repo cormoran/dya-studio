@@ -32,6 +32,8 @@
 
 ## 現行の機能仕様
 
+狭幅でのSave/Discard/Reset表示と長押し説明は[共通画面 SHELL-010/011](app-shell.md)に従う。SettingsとTrackballの共通consumerに適用し、無効条件・確認・書込み範囲は維持する。
+
 | ID        | 前提 → 操作                                                 | 観測できる結果                                                                                                                                                         | 保存範囲・副作用                                                                                               | 根拠  |
 | --------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----- |
 | WRITE-001 | custom settings ready → `loadSettings`                      | list request に scope / `requireMeta` / `requireDefault` を付け、notification を最大 5 秒 request timeout と 750 ms quiet window で収集。identity 重複を除き sort する | 読込み。notification count / quiet timing で完全性を推定するため、firmware notification 欠損の完全検出はしない | S1    |

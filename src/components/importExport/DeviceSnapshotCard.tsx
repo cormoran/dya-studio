@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 /**
  * Reads the connected keyboard into KeyboardHub JSON and shows what was found.
  *
@@ -127,7 +128,8 @@ export function DeviceSnapshotCard({
           </div>
         </div>
         <div className="tablet:ml-auto flex-shrink-0">
-          <button
+          <ResponsiveButton
+            label={loaded ? t("Read again") : t("Read keyboard")}
             className="btn-electric flex items-center gap-2 text-sm"
             onClick={() => void read()}
             disabled={isReading}
@@ -137,8 +139,7 @@ export function DeviceSnapshotCard({
             ) : (
               <IconRefresh size={16} />
             )}
-            {loaded ? t("Read again") : t("Read keyboard")}
-          </button>
+          </ResponsiveButton>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
   useState,
   useContext,
@@ -28,8 +29,8 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import * as Dialog from "@radix-ui/react-dialog";
+import * as Popover from "@radix-ui/react-popover";
 import * as Switch from "@radix-ui/react-switch";
 import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
@@ -490,7 +491,7 @@ export function KeymapPage() {
   ]);
 
   return (
-    <div className="keymap-page p-4 sm:p-6 h-full overflow-auto">
+    <div className="keymap-page app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
@@ -515,24 +516,27 @@ export function KeymapPage() {
           {connection.isConnected && keymap.keymap && (
             <div className="keymap-actions flex flex-wrap items-center gap-2">
               {inputStream.isAvailable && (
-                <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-                  <span className="text-xs text-[var(--color-text-muted)]">
-                    {t("Stream")}
-                  </span>
-                  <Switch.Root
-                    checked={inputStream.isEnabled}
-                    onCheckedChange={() => void inputStream.toggleStream()}
-                    disabled={inputStream.isToggling || keymap.isLoading}
-                    aria-label={t("Toggle stream mode")}
-                    className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-                  </Switch.Root>
-                </div>
+                <EditorTooltip content={t("Toggle stream mode")}>
+                  <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                    <span className="hidden sm:inline text-xs text-[var(--color-text-muted)]">
+                      {t("Stream")}
+                    </span>
+                    <Switch.Root
+                      checked={inputStream.isEnabled}
+                      onCheckedChange={() => void inputStream.toggleStream()}
+                      disabled={inputStream.isToggling || keymap.isLoading}
+                      aria-label={t("Toggle stream mode")}
+                      className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
+                </EditorTooltip>
               )}
               {/* Reading is allowed while locked, so Reload sits outside the
                   lock branch below. */}
-              <button
+              <ResponsiveButton
+                label={t("Reload")}
                 className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
                 onClick={handleReload}
                 disabled={keymap.isLoading}
@@ -542,8 +546,7 @@ export function KeymapPage() {
                   size={16}
                   className={keymap.isLoading ? "animate-spin" : undefined}
                 />
-                {t("Reload")}
-              </button>
+              </ResponsiveButton>
               {/* When Studio is locked, editing is disabled — show a lock badge
                   (click to unlock) instead of the Save / Reset controls. */}
               {locked ? (
@@ -591,7 +594,8 @@ export function KeymapPage() {
                       }}
                     />
                   </div>
-                  <button
+                  <ResponsiveButton
+                    label={t("Save")}
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={
@@ -603,8 +607,7 @@ export function KeymapPage() {
                     ) : (
                       <IconDeviceFloppy size={16} />
                     )}
-                    {t("Save")}
-                  </button>
+                  </ResponsiveButton>
                 </>
               )}
             </div>
@@ -682,155 +685,119 @@ export function KeymapPage() {
               </div>
 
               {/* Layer Management Buttons */}
-              <Tooltip.Provider delayDuration={200}>
+              <>
                 <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2 ml-auto">
                   {/* Layer Sorting Label */}
-                  <span className="text-xs text-[var(--color-text-muted)] mr-1">
+                  <span className="hidden sm:inline text-xs text-[var(--color-text-muted)] mr-1">
                     {t("Sort")}:
                   </span>
 
                   {/* Move Up Button */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                        onClick={handleMoveLayerUp}
-                        disabled={selectedLayerIndex <= 0}
-                        aria-label={t("Move layer up (higher priority)")}
-                      >
-                        <IconChevronUp
-                          size={16}
-                          className="text-[var(--color-text-muted)]"
-                        />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                        sideOffset={5}
-                      >
-                        {t("Move layer up (higher priority)")}
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
+                  <EditorTooltip
+                    content={<>{t("Move layer up (higher priority)")}</>}
+                  >
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={handleMoveLayerUp}
+                      disabled={selectedLayerIndex <= 0}
+                      aria-label={t("Move layer up (higher priority)")}
+                    >
+                      <IconChevronUp
+                        size={16}
+                        className="text-[var(--color-text-muted)]"
+                      />
+                    </button>
+                  </EditorTooltip>
 
                   {/* Move Down Button */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                        onClick={handleMoveLayerDown}
-                        disabled={
-                          selectedLayerIndex >= keymap.keymap.layers.length - 1
-                        }
-                        aria-label={t("Move layer down (lower priority)")}
-                      >
-                        <IconChevronDown
-                          size={16}
-                          className="text-[var(--color-text-muted)]"
-                        />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                        sideOffset={5}
-                      >
-                        {t("Move layer down (lower priority)")}
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
+                  <EditorTooltip
+                    content={<>{t("Move layer down (lower priority)")}</>}
+                  >
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={handleMoveLayerDown}
+                      disabled={
+                        selectedLayerIndex >= keymap.keymap.layers.length - 1
+                      }
+                      aria-label={t("Move layer down (lower priority)")}
+                    >
+                      <IconChevronDown
+                        size={16}
+                        className="text-[var(--color-text-muted)]"
+                      />
+                    </button>
+                  </EditorTooltip>
                 </div>
 
                 {/* Layer Add/Delete/Restore Buttons */}
                 <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
                   {/* Rename Layer Button */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                        onClick={handleOpenRenameDialog}
-                        aria-label={t("Rename current layer")}
-                      >
-                        <IconPencil
-                          size={16}
-                          className="text-[var(--color-text-muted)]"
-                        />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                        sideOffset={5}
-                      >
-                        {t("Rename current layer")}
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
+                  <EditorTooltip content={<>{t("Rename current layer")}</>}>
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={handleOpenRenameDialog}
+                      aria-label={t("Rename current layer")}
+                    >
+                      <IconPencil
+                        size={16}
+                        className="text-[var(--color-text-muted)]"
+                      />
+                    </button>
+                  </EditorTooltip>
 
                   {/* Add Layer Button */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                        onClick={handleAddLayer}
-                        disabled={
-                          keymap.availableLayers <= keymap.keymap.layers.length
-                        }
-                        aria-label={t("Add new layer")}
-                      >
-                        <IconPlus
-                          size={16}
-                          className="text-[var(--color-neon)]"
-                        />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                        sideOffset={5}
-                      >
-                        {t("Add new layer")}
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
+                  <EditorTooltip content={<>{t("Add new layer")}</>}>
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={handleAddLayer}
+                      disabled={
+                        keymap.availableLayers <= keymap.keymap.layers.length
+                      }
+                      aria-label={t("Add new layer")}
+                    >
+                      <IconPlus
+                        size={16}
+                        className="text-[var(--color-neon)]"
+                      />
+                    </button>
+                  </EditorTooltip>
 
                   {/* Delete Layer Button */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                        onClick={handleDeleteLayer}
-                        disabled={keymap.keymap.layers.length <= 1}
-                        aria-label={t("Delete current layer")}
-                      >
-                        <IconTrash size={16} className="text-red-400" />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                        sideOffset={5}
-                      >
-                        {t("Delete current layer")}
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
+                  <EditorTooltip content={<>{t("Delete current layer")}</>}>
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={handleDeleteLayer}
+                      disabled={keymap.keymap.layers.length <= 1}
+                      aria-label={t("Delete current layer")}
+                    >
+                      <IconTrash size={16} className="text-red-400" />
+                    </button>
+                  </EditorTooltip>
 
                   {/* Restore Layer Button — opens a popup listing the device's
                       deleted (restorable) layers: a "restore all" action on top,
                       then one row per deleted layer. */}
-                  <div className="relative">
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
+                  <Popover.Root
+                    open={showRestoreMenu}
+                    onOpenChange={setShowRestoreMenu}
+                  >
+                    <EditorTooltip
+                      content={
+                        <>
+                          {keymap.removedLayerIds.length > 0
+                            ? t("Restore deleted layer ({{count}} available)", {
+                                count: keymap.removedLayerIds.length,
+                              })
+                            : t("No deleted layers to restore")}
+                        </>
+                      }
+                    >
+                      <Popover.Trigger
+                        asChild
+                        disabled={keymap.removedLayerIds.length === 0}
+                      >
                         <button
                           className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                          onClick={() => setShowRestoreMenu((open) => !open)}
                           disabled={keymap.removedLayerIds.length === 0}
                           aria-label={t("Restore deleted layer")}
                           aria-haspopup="menu"
@@ -841,36 +808,18 @@ export function KeymapPage() {
                             className="text-[var(--color-electric)]"
                           />
                         </button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Portal>
-                        <Tooltip.Content
-                          className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-                          sideOffset={5}
-                        >
-                          {keymap.removedLayerIds.length > 0
-                            ? t("Restore deleted layer ({{count}} available)", {
-                                count: keymap.removedLayerIds.length,
-                              })
-                            : t("No deleted layers to restore")}
-                          <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                        </Tooltip.Content>
-                      </Tooltip.Portal>
-                    </Tooltip.Root>
+                      </Popover.Trigger>
+                    </EditorTooltip>
 
                     {showRestoreMenu && keymap.removedLayerIds.length > 0 && (
-                      <>
-                        {/* Click-away backdrop */}
-                        <button
-                          type="button"
-                          aria-hidden="true"
-                          tabIndex={-1}
-                          className="fixed inset-0 z-40 cursor-default"
-                          onClick={() => setShowRestoreMenu(false)}
-                        />
-                        <div
+                      <Popover.Portal>
+                        <Popover.Content
                           role="menu"
                           aria-label={t("Restore deleted layer")}
-                          className="absolute right-0 top-full mt-1 z-50 min-w-[12rem] max-h-64 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
+                          align="end"
+                          sideOffset={4}
+                          collisionPadding={8}
+                          className="z-50 w-64 max-w-[calc(100vw-16px)] max-h-[min(16rem,var(--radix-popover-content-available-height))] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
                         >
                           <button
                             role="menuitem"
@@ -897,12 +846,12 @@ export function KeymapPage() {
                               {t("Layer {{id}}", { id: layerId })}
                             </button>
                           ))}
-                        </div>
-                      </>
+                        </Popover.Content>
+                      </Popover.Portal>
                     )}
-                  </div>
+                  </Popover.Root>
                 </div>
-              </Tooltip.Provider>
+              </>
             </div>
 
             <div className="keymap-layout-options relative flex items-center gap-x-6 gap-y-3 justify-between flex-wrap mb-4">
@@ -958,23 +907,11 @@ export function KeymapPage() {
                     </option>
                   ))}
                 </select>
-                <Tooltip.Provider delayDuration={200}>
+                <>
                   {/* Tips: */}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        type="button"
-                        className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                        aria-label={t("Choose OS's keyboard layout setting")}
-                      >
-                        <IconInfoCircle size={16} />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
-                        sideOffset={5}
-                      >
+                  <EditorTooltip
+                    content={
+                      <>
                         <div className="mb-1 font-semibold text-[var(--color-electric)]">
                           {t("Choose OS's keyboard layout setting")}
                         </div>
@@ -995,11 +932,18 @@ export function KeymapPage() {
                             )}
                           </li>
                         </ul>
-                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                </Tooltip.Provider>
+                      </>
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                      aria-label={t("Choose OS's keyboard layout setting")}
+                    >
+                      <IconInfoCircle size={16} />
+                    </button>
+                  </EditorTooltip>
+                </>
               </div>
 
               {inputStream.isEnabled && <BrowserKeyInputOverlay />}
@@ -1184,7 +1128,8 @@ export function KeymapPage() {
               >
                 {t("Cancel")}
               </button>
-              <button
+              <ResponsiveButton
+                label={t("Rename")}
                 className="flex-1 btn-electric flex items-center justify-center gap-2"
                 onClick={() => void handleRenameConfirm()}
                 disabled={isRenaming}
@@ -1192,8 +1137,7 @@ export function KeymapPage() {
                 {isRenaming && (
                   <IconLoader2 size={16} className="animate-spin" />
                 )}
-                {t("Rename")}
-              </button>
+              </ResponsiveButton>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -1229,7 +1173,8 @@ export function KeymapPage() {
               >
                 {t("Cancel")}
               </button>
-              <button
+              <ResponsiveButton
+                label={t("Reset to default")}
                 className="flex-1 btn-electric flex items-center justify-center gap-2"
                 onClick={() => void handleResetToDefault()}
                 disabled={isResetting}
@@ -1237,8 +1182,7 @@ export function KeymapPage() {
                 {isResetting && (
                   <IconLoader2 size={16} className="animate-spin" />
                 )}
-                {t("Reset to default")}
-              </button>
+              </ResponsiveButton>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

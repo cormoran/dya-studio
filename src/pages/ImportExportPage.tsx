@@ -41,7 +41,7 @@ export function ImportExportPage() {
     importer.keymaps.find((keymap) => keymap.keyboard?.slug)?.keyboard?.slug;
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">

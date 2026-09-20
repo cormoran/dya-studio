@@ -356,7 +356,7 @@ export function KeycodeValueSelector({
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Category Sidebar */}
           {!searchQuery && (
-            <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto pr-2">
+            <div className="w-24 tablet:w-28 shrink-0 border-r border-[var(--color-border)] overflow-y-auto pr-2">
               {KEYCODE_CATEGORY_ORDER.map((category) => (
                 <button
                   key={category}
@@ -374,10 +374,12 @@ export function KeycodeValueSelector({
           )}
 
           {/* Keycode Grid */}
-          <div className="flex-1 overflow-y-auto pl-2">
+          <div className="flex-1 min-w-0 overflow-y-auto pl-2">
             <div
               className={`grid gap-1 tablet:grid-cols-5 ${
-                searchQuery.trim() ? "grid-cols-4" : "grid-cols-2 "
+                searchQuery.trim()
+                  ? "grid-cols-2 sm:grid-cols-4"
+                  : "grid-cols-2 "
               }`}
             >
               {filteredKeycodes.map((keycode) => {

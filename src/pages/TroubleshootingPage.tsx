@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import { useContext, useEffect, useRef, useState } from "react";
 import {
   IconCheck,
@@ -119,7 +120,7 @@ export function TroubleshootingPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
@@ -140,15 +141,16 @@ export function TroubleshootingPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <ResponsiveButton
+              label={t("Refresh All")}
               onClick={refreshAll}
               className="btn-ghost flex items-center gap-2"
               aria-label={t("Refresh all sections")}
             >
               <IconRefresh size={16} />
-              {t("Refresh All")}
-            </button>
-            <button
+            </ResponsiveButton>
+            <ResponsiveButton
+              label={copied ? t("Copied!") : t("Copy Support Report")}
               onClick={() => void copySupportReport()}
               className="btn-electric flex items-center gap-2"
               aria-label={t("Copy Support Report")}
@@ -158,8 +160,7 @@ export function TroubleshootingPage() {
               ) : (
                 <IconClipboardCopy size={16} />
               )}
-              {copied ? t("Copied!") : t("Copy Support Report")}
-            </button>
+            </ResponsiveButton>
           </div>
         </div>
 

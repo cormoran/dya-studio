@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "./ResponsiveButton";
 import {
   useEffect,
   useLayoutEffect,
@@ -1208,7 +1209,8 @@ export function CustomSettingsSectionCard({
           ) : hasModifiedFromDefault ? (
             <StatusBadge status="modified" />
           ) : null}
-          <button
+          <ResponsiveButton
+            label={t("Save")}
             type="button"
             className="btn-electric flex items-center gap-2 px-3 py-2 text-sm"
             disabled={customSettings.isLoading || !hasUnsavedChanges}
@@ -1219,9 +1221,9 @@ export function CustomSettingsSectionCard({
             }
           >
             <IconDeviceFloppy size={16} />
-            {t("Save")}
-          </button>
-          <button
+          </ResponsiveButton>
+          <ResponsiveButton
+            label={t("Discard")}
             type="button"
             className="btn-ghost flex items-center gap-2 border border-[var(--color-border)] text-sm"
             disabled={customSettings.isLoading}
@@ -1232,9 +1234,9 @@ export function CustomSettingsSectionCard({
             }
           >
             <IconRefresh size={16} />
-            {t("Discard")}
-          </button>
-          <button
+          </ResponsiveButton>
+          <ResponsiveButton
+            label={t("Reset")}
             type="button"
             className="btn-ghost flex items-center gap-2 border border-red-500/30 text-sm text-red-400"
             disabled={customSettings.isLoading}
@@ -1253,8 +1255,7 @@ export function CustomSettingsSectionCard({
             }}
           >
             <IconRotateClockwise size={16} />
-            {t("Reset")}
-          </button>
+          </ResponsiveButton>
         </div>
       </div>
 
@@ -1580,7 +1581,8 @@ export function AdvancedSettingsSection() {
       {isExpanded && (
         <div className="space-y-4 border-t border-[var(--color-border)] p-6 pt-4">
           <div className="flex justify-end">
-            <button
+            <ResponsiveButton
+              label={t("Reload")}
               type="button"
               className="btn-ghost flex flex-shrink-0 items-center gap-2 border border-[var(--color-border)] text-sm"
               onClick={customSettings.loadSettings}
@@ -1591,8 +1593,7 @@ export function AdvancedSettingsSection() {
               ) : (
                 <IconRefresh size={16} />
               )}
-              {t("Reload")}
-            </button>
+            </ResponsiveButton>
           </div>
 
           <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">

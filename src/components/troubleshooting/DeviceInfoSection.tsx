@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 import { IconInfoCircle, IconRefresh } from "@tabler/icons-react";
 import type { UseDeviceInfoReturn } from "../../hooks/useDeviceInfo";
 import { useLanguage } from "../../hooks/useLanguage";
@@ -76,7 +77,8 @@ export function DeviceInfoSection({
       }
       actions={
         isAvailable && (
-          <button
+          <ResponsiveButton
+            label={t("Refresh")}
             onClick={() => void refresh()}
             disabled={isLoading}
             className="btn-ghost flex items-center gap-2 text-sm"
@@ -86,8 +88,7 @@ export function DeviceInfoSection({
               size={14}
               className={isLoading ? "animate-spin" : ""}
             />
-            {t("Refresh")}
-          </button>
+          </ResponsiveButton>
         )
       }
     >

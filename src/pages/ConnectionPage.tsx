@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import { useState, useContext, useMemo } from "react";
 import {
   IconPlugConnected,
@@ -184,7 +185,7 @@ export function ConnectionPage() {
       : t("Not set");
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
@@ -208,7 +209,8 @@ export function ConnectionPage() {
             {/* Refresh Button */}
             {connection.isConnected && (
               <>
-                <button
+                <ResponsiveButton
+                  label={t("Refresh")}
                   className="btn-ghost flex items-center gap-2"
                   onClick={() => void reload()}
                   disabled={isLoading}
@@ -218,8 +220,7 @@ export function ConnectionPage() {
                     size={16}
                     className={isLoading ? "animate-spin" : ""}
                   />
-                  {t("Refresh")}
-                </button>
+                </ResponsiveButton>
                 <ResetVersionMenu
                   label={t("Versions")}
                   versions={versionHistory.versions}
@@ -826,14 +827,18 @@ export function ConnectionPage() {
                 return (
                   <div
                     key={zmkOs}
-                    className={`flex items-center justify-between gap-4 p-2 rounded-lg border ${
+                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 tablet:flex tablet:justify-between tablet:gap-4 p-2 rounded-lg border ${
                       isCurrent
                         ? "bg-[var(--color-electric)]/10 border-[var(--color-electric)]/20"
                         : "border-transparent"
                     }`}
                   >
-                    <OsBadge os={protoOs} />
+                    <OsBadge
+                      os={protoOs}
+                      className="shrink-0 whitespace-nowrap"
+                    />
                     <LayerSelect
+                      className="min-w-0 min-h-11 tablet:min-h-0"
                       value={entry?.value ?? -1}
                       layerCount={defaultLayer.state?.layerCount ?? 0}
                       layerNames={layerNames}

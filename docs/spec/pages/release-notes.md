@@ -34,6 +34,8 @@ route は AppContent の connection gate より前で return され、`/release-
 
 ## 現行の機能仕様
 
+REL-007: モバイル幅でBackの文字を隠してもaccessible name `Back`（翻訳に追従）を保持し、戻る操作を識別できる（S1のheader）。
+
 | ID      | 前提 → 操作                         | 観測できる結果                                                                          | 保存範囲・副作用                           | 根拠     |
 | ------- | ----------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------ | -------- |
 | REL-001 | `/release-notes` を直接開く         | standalone page、brand、Back、LanguageToggle、全 release card                           | connection を開始せず、Back は `/` を push | S1/S3/S4 |

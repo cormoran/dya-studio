@@ -9,6 +9,8 @@
 | S1   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleOpenChange`, `handleBehaviorSelect`, `handleParam1Change`, `handleParam2Change`, `handleRevert` |
 | S2   | [KeycodeValueSelector](../../../src/components/KeycodeValueSelector.tsx): search, modifiers, viewMode                                                                  |
 | S3   | [selector tests](../../../src/components/__tests__/KeycodeSelector.test.tsx)                                                                                           |
+| S4   | [BehaviorDropdown](../../../src/components/BehaviorDropdown.tsx): behavior search, selected label, quick selects                                                       |
+| S5   | [behavior dropdown tests](../../../src/components/__tests__/BehaviorDropdown.test.tsx)                                                                                 |
 
 ## 機能要求
 
@@ -22,6 +24,10 @@
 caller が open、currentBinding、behaviors、layers と onSelect を渡す。parameter 型で keycode、layer、数値等の入力が変わる。候補は device の behavior metadata と fallback に依存する。未接続/unsupported は caller の表示条件で制御し、この component 単独の接続画面はない。busy 時 fieldset 無効、error prop があると editor 内に alert。保存は caller の責務。
 
 ## 現行の機能仕様
+
+BIND-011: floating editor は680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
+
+BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モバイルブラウザのfocus時自動拡大を避ける。modalの選択済みbehavior名と説明は1行を維持し、利用可能幅を超える部分をellipsisで省略する。完全な文言はaccessible nameに保持する。根拠はS4/S5。ユーザーのモバイル最適化要求（2026-09-20）による。
 
 | ID       | 前提 → 操作                                         | 観測できる結果                                                                          | 保存範囲・副作用                                                        | 根拠                       |
 | -------- | --------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------- |
