@@ -29,7 +29,7 @@ export function AppLayout({
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-col h-dvh bg-gradient-dark">
+    <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
       <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
         {BUILD_LABEL && (
@@ -117,7 +117,9 @@ export function AppLayout({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</main>
+      <main className="app-main min-h-0 min-w-0 flex-1 overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }

@@ -39,7 +39,7 @@ export function PageTransition({ children, isActive }: PageTransitionProps) {
       variants={pageVariants}
       initial="initial"
       animate={isActive ? "enter" : "exit"}
-      className="h-full"
+      className="app-page-transition h-full"
     >
       {children}
     </motion.div>

@@ -45,6 +45,22 @@ function renderTabs(tabs: TabItem[], initialTab = tabs[0].id) {
 }
 
 describe("TabNavigation", () => {
+  test("exposes the shell hooks used by low-height landscape scrolling", () => {
+    const { container } = renderTabs([
+      {
+        id: "first",
+        label: "First",
+        icon: null,
+        content: <div>first body</div>,
+      },
+    ]);
+
+    expect(container.querySelector(".app-tabs")).toBeInTheDocument();
+    expect(container.querySelector(".app-tab-panels")).toBeInTheDocument();
+    expect(container.querySelector(".app-tab-panel")).toBeInTheDocument();
+    expect(container.querySelector(".app-page-transition")).toBeInTheDocument();
+  });
+
   test("tabs keep an accessible name when their visible label is hidden", () => {
     renderTabs([
       {
