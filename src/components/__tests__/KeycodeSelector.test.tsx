@@ -134,7 +134,7 @@ it("waits for the second parameter before selecting a layer-tap binding", async 
   expect(onClose).not.toHaveBeenCalled();
 });
 
-it("keeps search and modifiers visible in the modal editor", () => {
+it("uses the keycode control row for parameters and collapses modal modifiers on mobile", () => {
   const keypress = BEHAVIORS.find(
     (behavior) => behavior.displayName === "Key Press",
   )!;
@@ -150,11 +150,16 @@ it("keeps search and modifiers visible in the modal editor", () => {
   );
   expect(screen.getByPlaceholderText("Search keycodes...")).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "LCtrl", exact: true }),
-  ).toBeInTheDocument();
-  expect(screen.getByText("Modifiers:")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Modifiers", exact: true }),
+  ).toHaveClass("tablet:hidden");
   expect(
-    screen.queryByRole("button", { name: "Modifiers", exact: true }),
-  ).not.toBeInTheDocument();
+    screen.getByRole("button", { name: "LCtrl", exact: true }).parentElement
+      ?.parentElement,
+  ).toHaveClass("hidden", "tablet:flex");
+  expect(
+    screen.getByRole("button", { name: /param1:/ }).parentElement
+      ?.parentElement,
+  ).toHaveClass("mb-2", "flex");
+  expect(screen.getByText("Modifiers:")).toBeInTheDocument();
   expect(screen.getByText("param1 - Select Key")).toBeInTheDocument();
 });

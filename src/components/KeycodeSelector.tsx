@@ -614,6 +614,7 @@ export function KeycodeSelector({
               <KeycodeValueSelector
                 key={floating ? "floating" : "modal"}
                 compact={floating}
+                collapseModifiersOnMobile={!floating}
                 toolbar={toolbar}
                 value={value}
                 onChange={onChange}
@@ -646,7 +647,6 @@ export function KeycodeSelector({
       ? selectedBehaviorInfo?.overrideMetadata?.param1Type
       : selectedBehaviorInfo?.overrideMetadata?.param2Type;
   const inlineParamToolbar =
-    floating &&
     !["macro", "mouse_keycode", "mouse_movement", "mouse_scroll"].includes(
       activeOverride ?? "",
     ) &&
