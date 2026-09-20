@@ -191,7 +191,6 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
           gh workflow run electron.yml \
-            --ref "v$VERSION" \
             --field release_tag="v$VERSION"
 
       - name: Delete release branch
