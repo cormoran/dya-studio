@@ -60,6 +60,16 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 639px) {
+  .keymap-actions .responsive-action {
+    min-height: 2.75rem;
+  }
+
+  .keymap-layer-toolbar > div {
+    margin-left: 0;
+  }
+}
+
 .keymap-page :is(button, select, input):focus-visible {
   outline: 2px solid var(--color-electric);
   outline-offset: 2px;

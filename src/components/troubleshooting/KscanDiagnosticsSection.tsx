@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 import { useMemo, useState } from "react";
 import {
   IconAlertTriangle,
@@ -143,7 +144,8 @@ export function KscanDiagnosticsSection({
       }
       actions={
         isAvailable && (
-          <button
+          <ResponsiveButton
+            label={t("Refresh")}
             onClick={() => void refresh()}
             disabled={isLoading}
             className="btn-ghost flex items-center gap-2 text-sm"
@@ -153,8 +155,7 @@ export function KscanDiagnosticsSection({
               size={14}
               className={isLoading ? "animate-spin" : ""}
             />
-            {t("Refresh")}
-          </button>
+          </ResponsiveButton>
         )
       }
     >

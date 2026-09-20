@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 /**
  * Merged "Macro&Combo" page: one tab that hosts both the runtime-macro and
  * runtime-combo editors. The left column shows the two lists (Macros on top,
@@ -360,7 +361,7 @@ export function MacroComboPage() {
     keymap.error;
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3">
@@ -379,14 +380,14 @@ export function MacroComboPage() {
 
           {connection.isConnected && anyAvailable && (
             <div className="flex items-center gap-2 flex-wrap">
-              <button
+              <ResponsiveButton
+                label={t("Refresh")}
                 className="btn-ghost text-sm flex items-center gap-1.5"
                 onClick={() => void handleRefresh()}
                 disabled={anyLoading}
               >
                 <IconRefresh size={16} />
-                {t("Refresh")}
-              </button>
+              </ResponsiveButton>
               {locked ? (
                 <button
                   type="button"
@@ -428,7 +429,8 @@ export function MacroComboPage() {
                       disabled: isDiscarding || !hasPendingChanges,
                     }}
                   />
-                  <button
+                  <ResponsiveButton
+                    label={t("Save")}
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={
@@ -443,8 +445,7 @@ export function MacroComboPage() {
                     ) : (
                       <IconDeviceFloppy size={16} />
                     )}
-                    {t("Save")}
-                  </button>
+                  </ResponsiveButton>
                 </>
               )}
             </div>

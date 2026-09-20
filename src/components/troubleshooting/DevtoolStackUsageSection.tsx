@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 import { IconActivity, IconRefresh } from "@tabler/icons-react";
 import type { StackInfo } from "../../proto/cormoran/devtool/devtool";
 import type { UseDevtoolStackUsageReturn } from "../../hooks/useDevtoolStackUsage";
@@ -121,7 +122,8 @@ export function DevtoolStackUsageSection({
       summary={isAvailable ? summaryBadge(stacks) : undefined}
       actions={
         isAvailable && (
-          <button
+          <ResponsiveButton
+            label={t("Refresh")}
             onClick={() => void refresh()}
             disabled={isLoading}
             className="btn-ghost flex items-center gap-2 text-sm"
@@ -131,8 +133,7 @@ export function DevtoolStackUsageSection({
               size={14}
               className={isLoading ? "animate-spin" : ""}
             />
-            {t("Refresh")}
-          </button>
+          </ResponsiveButton>
         )
       }
     >

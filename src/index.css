@@ -153,6 +153,14 @@
   cursor: pointer;
 }
 
+.app-page {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
 .btn-electric:not(:disabled):hover {
   background: color-mix(in srgb, var(--color-electric) 20%, transparent);
   border-color: var(--color-electric);
@@ -218,6 +226,15 @@
 .btn-ghost:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .responsive-action {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding-inline: 0.625rem;
+    justify-content: center;
+  }
 }
 
 :is(button, a, input, select, textarea, [role="switch"]):focus-visible {

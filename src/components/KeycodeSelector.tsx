@@ -718,7 +718,7 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
                 : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
             }
           >

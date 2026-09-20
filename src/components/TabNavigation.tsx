@@ -41,7 +41,7 @@ export function TabNavigation({
     <Tabs.Root
       value={activeTab}
       onValueChange={onTabChange}
-      className="flex flex-col h-full"
+      className="flex flex-col h-full min-w-0"
     >
       {/* Tab List */}
       <Tabs.List className="app-tab-list flex shrink-0 items-center gap-1 px-2 sm:px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50 backdrop-blur-sm overflow-x-auto scrollbar-none transition-colors duration-300">
@@ -60,7 +60,7 @@ export function TabNavigation({
       </Tabs.List>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
         {tabs
           .filter((tab) => visitedTabs.has(tab.id))
           .map((tab) => (

@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
   useState,
   useMemo,
@@ -472,7 +473,7 @@ export function SettingsPage() {
   useWebMCPTools(webMCPTools);
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
@@ -496,7 +497,8 @@ export function SettingsPage() {
               device is an explicit action. */}
           {isAvailable && (
             <div className="flex flex-wrap items-center gap-2">
-              <button
+              <ResponsiveButton
+                label={t("Reload")}
                 className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
                 onClick={() => void handleReload()}
                 disabled={isLoading}
@@ -506,8 +508,7 @@ export function SettingsPage() {
                   size={16}
                   className={isLoading ? "animate-spin" : undefined}
                 />
-                {t("Reload")}
-              </button>
+              </ResponsiveButton>
               <ResetVersionMenu
                 versions={versionHistory.versions}
                 onSelectVersion={versionHistory.selectVersion}

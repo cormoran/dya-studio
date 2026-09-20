@@ -30,7 +30,7 @@ export function HomePage() {
   const { language, t } = useLanguage();
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-6">

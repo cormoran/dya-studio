@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import { useContext, useState } from "react";
 import {
   IconPuzzle,
@@ -278,14 +279,14 @@ function DemoSubsystemToggles() {
         ))}
       </div>
 
-      <button
+      <ResponsiveButton
+        label={reconnecting ? t("Reconnecting...") : t("Reconnect to apply")}
         className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"
         onClick={reconnect}
         disabled={reconnecting}
       >
         <IconRefresh size={16} className={reconnecting ? "animate-spin" : ""} />
-        {reconnecting ? t("Reconnecting...") : t("Reconnect to apply")}
-      </button>
+      </ResponsiveButton>
     </div>
   );
 }
@@ -388,7 +389,7 @@ export function CustomSubsystemsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">

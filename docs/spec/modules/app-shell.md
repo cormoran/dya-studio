@@ -26,6 +26,16 @@
 
 ## 現行の機能仕様
 
+### モバイル表示の共通契約
+
+2026-09-20 のユーザー要求（メインコンテンツの横スクロール防止、アイコン中心の操作、タッチでの説明表示）に基づく。根拠: [共通CSS](../../../src/index.css) の `app-page` / `responsive-action`、[ResponsiveButton](../../../src/components/ResponsiveButton.tsx)、[EditorTooltip](../../../src/components/EditorTooltip.tsx)、[InfoTip](../../../src/components/InfoTip.tsx)、[DocTip](../../../src/components/DocTip.tsx)。
+
+- SHELL-009: 通常の全9タブはページ単位で縦スクロールし、メインコンテンツ全体は横スクロールしない。長い説明・識別子は折り返す。タブ列、キーボード、表、コード等の必要な内部要素は個別に横スクロールできる。320px 幅でも操作を単に画面外へ隠して解決したことにしない。
+- SHELL-010: `ResponsiveButton` の操作（Keymap / Macro&Combo / Settings / Connection / Troubleshooting の主操作、履歴、詳細設定の Save/Discard/Reset、Subsystems の再接続、Import/Export の読取り）は640px未満でラベルを隠し、アイコンと accessible name を維持する。対象ボタンは最小44pxのタッチ領域。640px以上では文字も表示。確認ダイアログの文字だけの操作や本文リンクは文字を維持する。表示変更による書込み・保存範囲の変更はない。
+- SHELL-011: 共通説明付き操作はマウスhover・キーボードfocusに加え、タッチの500ms長押しで説明を表示する。長押し終了時のclickでは操作を実行せず、次の通常タップは実行する。10px超の移動・pointercancelで長押しを取消し、外側タップ・ページscroll・Escapeで説明を閉じる。無効なボタンも説明を表示できるが実行はできない。InfoTip/DocTip の情報アイコンは通常クリック/タップでも説明を開く。説明表示だけでdevice/browserの設定を書き換えない。タブ列のnative titleや個別キーの説明はこの長押し契約の対象外。
+
+検証: 320/390pxとデスクトップで同じページを比較し、ページ幅・scrollWidth、個別横スクロール領域、icon-onlyのaccessible nameを確認する。通常タップ/長押し/指を動かす操作を区別し、長押しで保存や削除が実行されないことを確認する。実機touch検証と合成イベントの自動テストは別の証拠として記録する。
+
 | ID        | 前提 → 操作                                  | 観測できる結果                                                                                         | 保存範囲・副作用                                                                             | 根拠     |
 | --------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------- |
 | SHELL-001 | tab 選択                                     | 選択タブと pathname が対応。Home は `/`、他は `/<id>`。狭幅ではアイコン中心でも accessible name を持つ | history pushState。初回のみ page を mount                                                    | S1/S2/S3 |

@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 import { useRef, useState } from "react";
 import {
   IconAlertTriangle,
@@ -234,7 +235,8 @@ export function WatchdogSection({
       }
       actions={
         isAvailable && (
-          <button
+          <ResponsiveButton
+            label={t("Refresh")}
             onClick={() => void refresh()}
             disabled={isLoading}
             className="btn-ghost flex items-center gap-2 text-sm"
@@ -244,8 +246,7 @@ export function WatchdogSection({
               size={14}
               className={isLoading ? "animate-spin" : ""}
             />
-            {t("Refresh")}
-          </button>
+          </ResponsiveButton>
         )
       }
     >

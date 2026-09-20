@@ -23,6 +23,8 @@ caller が open、currentBinding、behaviors、layers と onSelect を渡す。p
 
 ## 現行の機能仕様
 
+BIND-011: floating editor は680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
+
 | ID       | 前提 → 操作                                         | 観測できる結果                                                                          | 保存範囲・副作用                                                        | 根拠                       |
 | -------- | --------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------- |
 | BIND-001 | editor を開く / selectionKey 変更                   | currentBinding の behavior/param1/param2 を初期値とし param1 を選択                     | draft を初期化                                                          | S1 handleOpenChange/effect |

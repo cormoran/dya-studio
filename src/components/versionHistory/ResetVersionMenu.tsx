@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../ResponsiveButton";
 /**
  * ResetVersionMenu
  *
@@ -12,7 +13,8 @@
  * Picking a version doesn't write anything on its own — the caller opens the
  * diff modal so the user confirms first.
  */
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
 import { IconChevronDown, IconHistory, IconRestore } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import {
@@ -60,25 +62,6 @@ export function ResetVersionMenu<T extends JsonValue = JsonValue>({
 }: ResetVersionMenuProps<T>) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen]);
 
   const run = (action: () => void) => {
     setIsOpen(false);
@@ -86,27 +69,32 @@ export function ResetVersionMenu<T extends JsonValue = JsonValue>({
   };
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        type="button"
-        className="btn-ghost text-sm flex items-center gap-1.5"
-        onClick={() => setIsOpen((open) => !open)}
-        disabled={disabled}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-      >
-        <IconRestore size={16} className={isBusy ? "animate-spin" : ""} />
-        {label ?? t("Reset")}
-        <IconChevronDown
-          size={14}
-          className={`transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div
+    <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <ResponsiveButton
+          label={label ?? t("Reset")}
+          type="button"
+          className="btn-ghost text-sm flex items-center gap-1.5"
+          disabled={disabled}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          trailingIcon={
+            <IconChevronDown
+              size={14}
+              className={`transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+            />
+          }
+        >
+          <IconRestore size={16} className={isBusy ? "animate-spin" : ""} />
+        </ResponsiveButton>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
           role="menu"
-          className="absolute right-0 top-full mt-1 z-50 w-72 max-h-96 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
+          align="end"
+          sideOffset={4}
+          collisionPadding={8}
+          className="z-50 w-72 max-w-[calc(100vw-16px)] max-h-[min(24rem,var(--radix-popover-content-available-height))] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
         >
           {resetToDefault && (
             <MenuAction
@@ -152,9 +140,9 @@ export function ResetVersionMenu<T extends JsonValue = JsonValue>({
               </button>
             ))
           )}
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

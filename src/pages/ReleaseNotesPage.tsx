@@ -212,6 +212,7 @@ export function ReleaseNotesPage({ onBack }: { onBack: () => void }) {
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
+              aria-label={t("Back")}
               className="btn-ghost border border-[var(--color-border)] flex items-center gap-2 text-sm"
             >
               <IconArrowLeft size={18} />

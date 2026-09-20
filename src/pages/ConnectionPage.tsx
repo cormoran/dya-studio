@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import { useState, useContext, useMemo } from "react";
 import {
   IconPlugConnected,
@@ -184,7 +185,7 @@ export function ConnectionPage() {
       : t("Not set");
 
   return (
-    <div className="p-4 sm:p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
@@ -208,7 +209,8 @@ export function ConnectionPage() {
             {/* Refresh Button */}
             {connection.isConnected && (
               <>
-                <button
+                <ResponsiveButton
+                  label={t("Refresh")}
                   className="btn-ghost flex items-center gap-2"
                   onClick={() => void reload()}
                   disabled={isLoading}
@@ -218,8 +220,7 @@ export function ConnectionPage() {
                     size={16}
                     className={isLoading ? "animate-spin" : ""}
                   />
-                  {t("Refresh")}
-                </button>
+                </ResponsiveButton>
                 <ResetVersionMenu
                   label={t("Versions")}
                   versions={versionHistory.versions}
