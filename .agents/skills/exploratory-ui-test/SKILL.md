@@ -27,6 +27,7 @@ Start change-focused testing with one luna worker. For whole-app exploration, sp
 ## Execute and review
 
 - Fill the guide's worker brief with the mode, assigned pages/specifications, running URL, mandatory observations, and a temporary report path. Follow the guide for isolation, version stability, and cleanup.
+- When a charter needs real firmware capability, RPC, or device-state readback that Demo cannot provide, also load the repository `renode-exploratory-test` skill and report its WebSerial-shim boundary. Do not use Renode merely for layout-only coverage.
 - Select browser/delegation tools according to the user's choices and available environment. Both coordinator and workers must read the guide's environment-specific instructions and follow tool-specific permissions and target selection. Do not assume a particular tool exists.
 - Review reports against specification IDs and evidence of actual actions/readback. A worker's “pass” alone is insufficient. Distinguish product candidates, specification gaps, blocked cases, and unexecuted cases; for whole-app exploration, also check the assignment inventory for omissions.
 - Permission to run tests does not expand authority to write to hardware/external services or fix defects. Normally keep raw logs out of commits, summarize results in the PR/completion report, and integrate only durable findings into specifications/guides.

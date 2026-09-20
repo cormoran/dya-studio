@@ -7,6 +7,7 @@
 - Orca 環境で組込みブラウザを使う場合は、開始前に [Orca 向けガイド](browser-tools/orca.md) を読む。
 - `playwright-cli` を使う場合は、開始前に [Playwright CLI 向けガイド](browser-tools/playwright-cli.md) を読む。
 - その他の環境では、提供されているブラウザ操作ツールとその skill/手順を使う。別ツールのコマンドや戻り値の形式を流用しない。必要な操作ができなければ制約を報告する。
+- Demo では再現できない firmware capability、RPC、保存・再読込を対象にする場合は repository の `renode-exploratory-test` skill を読み、shim を初回 navigation 前に注入できるブラウザツールを選ぶ。Renode を実機 WebSerial と同一視せず、ELF と emulator の条件を記録する。
 
 coordinator は worker にも利用するツールと環境別手順を渡し、同じ URL に到達できることを確認する。ブラウザが別ホストで動く場合、その localhost はアプリのホストと同じとは限らない。
 
@@ -14,11 +15,11 @@ coordinator は worker にも利用するツールと環境別手順を渡し、
 
 1. README の sitemap で対象ページを選び、ページ仕様と参照するモジュール仕様を読む。テスト中はまず仕様を判定の出発点にする。コードを読む必要が出た箇所は仕様の不足として記録する。
 2. `npm run dev -- --host 127.0.0.1 --port 5173` で起動する（既存サーバーがある場合は担当者から URL を受け取る）。表示された実際の URL を使用する。
-3. ブラウザで URL を開き `Try Demo Mode` から接続する。日本語環境では対応する翻訳ラベルを探す。実機の選択・外部サービスのログインは別途許可/環境があるときだけ行う。
-4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/実機、初期値を記録する。並列 worker は専用のタブ/ブラウザセッションを持ち、各操作の対象を明示する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
+3. 通常はブラウザで URL を開き `Try Demo Mode` から接続する。日本語環境では対応する翻訳ラベルを探す。Renode を割り当てられた場合は `renode-exploratory-test` skill が出力した URL と shim を使う。実機の選択・外部サービスのログインは別途許可/環境があるときだけ行う。
+4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/Renode/実機、初期値を記録する。Renode では DUT ELF の出典・commit、locking/topology、Renode version、shim 境界、boot/connection 回数も記録する。並列 worker は専用のタブ/ブラウザセッションを持ち、各操作の対象を明示する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
 5. 観測 → 操作 → 再観測を繰り返す。要素参照は snapshot 後に取得し、画面変化後は再取得する。UI 操作を DOM/React 状態への書き込みで代用しない。
 
-この作業で Demo 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。実機・外部アカウントは別条件。
+この作業で Demo または割当済み Renode DUT 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save や Renode の一時 NVS を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。Renode の再起動後は erased NVS から始まるため、物理的な電源断をまたぐ永続性の証拠にはしない。実機・外部アカウントは別条件。
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
 
@@ -76,7 +77,7 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 
 ```text
 対象 / charter:
-環境: 日時、app/spec commit、URL、Demo/実機、言語、viewport、model/effort
+環境: 日時、app/spec commit、URL、Demo/Renode/実機、言語、viewport、model/effort（Renode は DUT/ELF 出典、version、shim、boot/connection 回数も）
 初期状態:
 対象仕様 ID:
 操作と観測: 各操作直後の具体的な値/文言

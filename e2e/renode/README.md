@@ -55,6 +55,7 @@ socket (`RPC_PORT`) that the Node bridge speaks to, unchanged.
 | `tests/keymap.spec.ts`  | Playwright: opens the **Keymap** tab, asserts the keymap + per-key behaviors render, then does a real behavior edit round-trip (reassign a key via the behavior picker → save to device → re-read). Needs the **unlocked** DUT (see `firmware/README.md`).             |
 | `firmware/README.md`    | how each DUT firmware (e.g. the `official-unlocked` image the Keymap test needs) is built — the reproducible recipes behind the CI firmware matrix.                                                                                                                    |
 | `run-local.sh`          | orchestrates renode_serve → bridge → Playwright (extra args pass through to `playwright test`, so you can target one spec).                                                                                                                                            |
+| `run-exploratory.sh`    | keeps Renode → bridge → built app running for an interactive, firmware-backed browser exploration session.                                                                                                                                                             |
 
 ## Run locally
 
@@ -75,6 +76,42 @@ DEVICE_NAME=Renode \
   bash run-local.sh /path/to/build/ble/zephyr/zmk.elf
 E2E_DEBUG=1 ...   # verbose page/shim/bridge byte logging
 ```
+
+## Explore interactively against Renode
+
+Build the app once, then keep the Renode services running in one terminal. Use
+an unlocked DUT so the editing tabs are available:
+
+```bash
+npm run build
+ZMK_WC_RENODE_LIB=/path/to/zmk-west-commands/scripts/lib/renode \
+DEVICE_NAME=Renode \
+  bash e2e/renode/run-exploratory.sh /path/to/zmk.elf
+```
+
+On macOS, install the Apple Silicon Renode **1.16.1** release and set
+`RENODE_BIN` to its launcher (for an app install, typically
+`/Applications/Renode.app/Contents/MacOS/renode`). The harness auto-installer
+is Linux-only, and its custom USB model is not compatible with Renode 1.17.0.
+The script prints `APP_URL` and `SERIAL_SHIM_URL` when all three services are
+ready.
+
+The browser context must install the WebSerial shim before its first navigation
+to `APP_URL`. With `playwright-cli`, open a blank page, show its dashboard, then
+bootstrap that same page (replace the URLs if custom ports were used):
+
+```bash
+playwright-cli -s=renode-explore open about:blank
+playwright-cli -s=renode-explore show
+playwright-cli -s=renode-explore run-code 'async page => { const response = await page.request.get("http://127.0.0.1:4173/__renode__/serial-shim.js"); const shim = await response.text(); await page.addInitScript(shim); await page.goto("http://127.0.0.1:4173"); }'
+playwright-cli -s=renode-explore snapshot
+```
+
+Closing or reloading the page can create another Studio connection. Prefer one
+browser context and one connection per Renode boot; always restart the harness
+before a new dya2 connection. Stop `run-exploratory.sh` after closing that
+browser session. See the repository `renode-exploratory-test` skill for target
+selection, evidence, restoration, and reporting rules.
 
 CI wiring lives in `.github/workflows/renode-webserial-e2e.yml` (builds the real
 DUT from zmk-west-commands' fixtures, then runs this). To point at a real dya

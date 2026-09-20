@@ -4,6 +4,7 @@ import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { serialShimSource } from "./serial-shim.mjs";
 
 const ROOT = path.resolve(process.env.DIST_DIR || "dist");
 const PORT = Number(process.env.SERVE_PORT || 4173);
@@ -23,6 +24,16 @@ http
   .createServer(async (req, res) => {
     try {
       let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
+      if (rel === "/__renode__/serial-shim.js") {
+        const body = serialShimSource(
+          process.env.WS_URL || "ws://127.0.0.1:8788",
+        );
+        res.writeHead(200, {
+          "content-type": "text/javascript",
+          "cache-control": "no-store",
+        });
+        return res.end(body);
+      }
       let file = path.join(ROOT, rel);
       if (!file.startsWith(ROOT)) return res.writeHead(403).end();
       if (rel === "/" || !existsSync(file))
