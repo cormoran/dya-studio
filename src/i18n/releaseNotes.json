@@ -36,10 +36,10 @@
             "pr": [173, 175, 176]
           },
           {
-            "en": "Use DYA Studio more comfortably on phones with contained scrolling, touch-friendly actions, compact settings, and corrected portrait viewport behavior.",
-            "ja": "スクロール範囲の整理、タッチしやすい操作、コンパクトな表示設定、縦画面の表示修正により、スマートフォンでより快適に使えるようになりました。",
-            "zh": "通过限制滚动范围、触控友好的操作、紧凑的显示设置和修正竖屏视口行为，提升了手机上的使用体验。",
-            "pr": [180, 183]
+            "en": "Use DYA Studio more comfortably on phones with contained scrolling, touch-friendly actions, compact editing controls, and corrected portrait viewport behavior.",
+            "ja": "スクロール範囲の整理、タッチしやすい操作、コンパクトな編集コントロール、縦画面の表示修正により、スマートフォンでより快適に使えるようになりました。",
+            "zh": "通过限制滚动范围、触控友好的操作、紧凑的编辑控件和修正竖屏视口行为，提升了手机上的使用体验。",
+            "pr": [180, 183, 185, 186]
           }
         ],
         "minor": [
