@@ -88,7 +88,7 @@ it("commits a complete numeric value with Enter instead of advancing while typin
       layers={[]}
     />,
   );
-  expect(screen.queryByText("Select Behavior")).not.toBeInTheDocument();
+  expect(screen.queryByText("Select Keymap")).not.toBeInTheDocument();
   const input = screen.getByRole("spinbutton");
   await user.clear(input);
   await user.type(input, "123");
@@ -150,7 +150,7 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
     />,
   );
   expect(screen.getByPlaceholderText("Search keycodes...")).toBeInTheDocument();
-  expect(screen.getByText("Select Behavior")).toBeInTheDocument();
+  expect(screen.getByText("Select Keymap")).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Modifiers", exact: true }),
   ).toHaveClass("tablet:hidden");

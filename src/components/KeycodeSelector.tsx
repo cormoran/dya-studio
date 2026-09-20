@@ -748,7 +748,7 @@ export function KeycodeSelector({
                 </Dialog.Title>
                 {!floating && (
                   <span className="text-xs font-medium text-[var(--color-text-muted)]">
-                    {t("Select Behavior")}
+                    {t("Select Keymap")}
                   </span>
                 )}
                 <div className="ml-auto flex items-center gap-1">
