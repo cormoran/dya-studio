@@ -1,10 +1,14 @@
 import {
+  IconBook,
   IconBrandGithub,
-  IconShoppingCart,
+  IconExternalLink,
   IconFile,
   IconBrandX,
   IconInfoCircle,
+  IconNews,
+  IconShoppingCart,
 } from "@tabler/icons-react";
+import type { MouseEvent } from "react";
 
 import DyaDashImg from "../assets/dya-dash/dya-dash.jpeg";
 import DyaDashImg2 from "../assets/dya-dash/dya-dash2.jpeg";
@@ -16,6 +20,13 @@ const DyaDashImages = [DyaDashImg, DyaDashImg2, DyaDashImg3, DyaDashImg4];
 import DYA2Img from "../assets/dya2/dya2.jpeg";
 import { useLanguage } from "../hooks/useLanguage";
 import DYA2Img2 from "../assets/dya2/dya2-2.jpeg";
+import {
+  CHANGE_CATEGORIES,
+  getLatestRelease,
+  isEmptyRelease,
+  localizeChange,
+  localizeText,
+} from "../i18n/releaseNotes";
 
 const Dya2Images = [DYA2Img, DYA2Img2];
 
@@ -26,8 +37,25 @@ const xShareContents = {
 };
 const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareContents.title}&url=${xShareContents.link}&hashtags=${xShareContents.tags}`;
 
+function navigateWithinApp(event: MouseEvent<HTMLAnchorElement>, path: string) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 export function HomePage() {
   const { language, t } = useLanguage();
+  const latestRelease = getLatestRelease();
 
   return (
     <div className="app-page p-4 sm:p-6 h-full">
@@ -211,7 +239,7 @@ export function HomePage() {
               </div>
             </div>
 
-            {/* DY2 */}
+            {/* DYA2 */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] group flex-col sm:flex-row">
               <div className="flex flex-col flex-1 w-full">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
@@ -226,16 +254,32 @@ export function HomePage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 sm:ml-auto">
-                    <span className="text-xs font-medium uppercase text-[var(--color-cyber)]">
-                      {t("Coming Soon")}
-                    </span>
+                    <a
+                      href="https://github.com/cormoran/dya2-keyboard"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 underline text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors"
+                    >
+                      <IconBrandGithub size={16} />
+                      {t("Design")}
+                    </a>
                     <a
                       href="https://cormoran707.booth.pm/items/7627440"
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-1 underline text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors"
                     >
                       <IconShoppingCart size={16} />
-                      {t("Watch Booth")}
+                      {t("Buy")}
+                    </a>
+                    <a
+                      href="https://cormoran.github.io/dya2-keyboard/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 underline text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors"
+                    >
+                      <IconFile size={16} />
+                      {t("Docs")}
                     </a>
                   </div>
                 </div>
@@ -257,6 +301,139 @@ export function HomePage() {
           </div>
         </div>
 
+        {/* Developer resources */}
+        <div className="glass-card p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <IconBook
+              size={22}
+              className="text-[var(--color-electric)] flex-shrink-0 mt-0.5"
+            />
+            <div>
+              <h2 className="text-sm font-medium text-[var(--color-text-secondary)]">
+                {t("Bring your keyboard to DYA Studio")}
+              </h2>
+              <p className="text-sm text-[var(--color-text-muted)] mt-2">
+                {t(
+                  "Learn how to make your ZMK keyboard work with DYA Studio, from standard keymap support to custom features.",
+                )}
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+                <a
+                  href="/developer-guide"
+                  onClick={(event) =>
+                    navigateWithinApp(event, "/developer-guide")
+                  }
+                  className="inline-flex items-center gap-1 underline text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors"
+                >
+                  <IconBook size={16} />
+                  {t("Developer Guide")}
+                </a>
+                <a
+                  href="https://note.com/cormoran/n/n888c547fc99b"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors"
+                >
+                  <IconExternalLink size={16} />
+                  {t("Read the note article")}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Latest release */}
+        {latestRelease && (
+          <div className="glass-card p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <IconNews
+                size={22}
+                className="text-[var(--color-electric)] flex-shrink-0 mt-0.5"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h2 className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    {t("Latest Release")}
+                  </h2>
+                  <span className="text-sm font-medium text-[var(--color-text)]">
+                    {latestRelease.version}
+                  </span>
+                  {latestRelease.date && (
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {latestRelease.date}
+                    </span>
+                  )}
+                </div>
+
+                {latestRelease.summary?.lead && (
+                  <p className="text-sm text-[var(--color-text)] mt-3">
+                    {localizeText(latestRelease.summary.lead, language)}
+                  </p>
+                )}
+                {latestRelease.summary?.highlights &&
+                  latestRelease.summary.highlights.length > 0 && (
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-[var(--color-text-muted)]">
+                      {latestRelease.summary.highlights.map(
+                        (highlight, index) => (
+                          <li key={index}>
+                            {localizeText(highlight, language)}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  )}
+
+                {isEmptyRelease(latestRelease) ? (
+                  <p className="text-sm text-[var(--color-text-muted)] mt-3">
+                    {t("No changes recorded for this release.")}
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {CHANGE_CATEGORIES.map((category) => {
+                      const changes = latestRelease.changes[category] ?? [];
+                      if (changes.length === 0) return null;
+                      return (
+                        <div key={category}>
+                          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)] mb-1">
+                            {t(
+                              category === "major"
+                                ? "Major"
+                                : category === "minor"
+                                  ? "Minor"
+                                  : "Patch",
+                            )}
+                          </p>
+                          <ul className="list-disc pl-5 space-y-1 text-sm text-[var(--color-text-muted)]">
+                            {changes.map((change, index) => (
+                              <li key={index}>
+                                {localizeChange(change, language)}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <a
+                  href={`/release-notes#${encodeURIComponent(latestRelease.version)}`}
+                  onClick={(event) =>
+                    navigateWithinApp(
+                      event,
+                      `/release-notes#${encodeURIComponent(latestRelease.version)}`,
+                    )
+                  }
+                  className="inline-flex items-center gap-1 underline text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors mt-4"
+                >
+                  <IconNews size={16} />
+                  {t("View all release notes")}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="glass-card p-6">
           <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-4">
             Q&amp;A
@@ -266,7 +443,7 @@ export function HomePage() {
               <p className="font-medium text-[var(--color-text)] mb-1">
                 {t("Q: Can my keyboard support DYA Studio?")}
               </p>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <div className="text-sm text-[var(--color-text-muted)]">
                 {t(
                   "A: Yes, you can use the keymap feature without any modification with your ZMK keyboard.",
                 )}
@@ -307,7 +484,7 @@ export function HomePage() {
                     "Warning: cormoran's ZMK fork is very experimental, optimized for DYA keyboards and may contain unstable or breaking changes. Use at your own risk. In rare cases, it may cause malfunction or damage to your keyboard hardware.",
                   )}
                 </div>
-              </p>
+              </div>
             </div>
             <div>
               <p className="font-medium text-[var(--color-text)] mb-1">
