@@ -12,7 +12,7 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 
 1. 作成・更新: [仕様作成標準](AUTHORING.md) → [テンプレート](TEMPLATE.md)。
 2. UI テスト: [探索的テストガイド](EXPLORATORY_TESTING.md) → 対象ページ → 参照する共通モジュール。
-3. 運用の検証結果: [改善記録](validation/README.md)。
+3. 検証結果の扱い: [探索的テストガイドの記録運用](EXPLORATORY_TESTING.md#検証記録の置き場所と寿命)。生ログは仕様の一部として蓄積しない。
 
 ## Sitemap
 

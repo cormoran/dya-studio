@@ -74,4 +74,4 @@ runtime の data fetch・検索 API・明示 error state は存在しない。de
 
 hash scroll の layout/animation 後の位置、external link、全 locale と狭幅 UI は未実測。ユーザーが入力して絞り込む search/filter control は現行実装にないため、その要件は未定義である。
 
-不正 percent encoding の hash を初回表示 / browser Reload するとページ内容が消える候補は [coordinator の実測](../validation/release-hash-candidate.md) で再現した。同一 document の hash 変更のみでは再現しなかった。受け入れ根拠なし、未修正。通常 URL への遷移で復帰可能。
+不具合候補（REL-R02 / REL-004、受け入れ根拠なし・未修正）: 2026-09-20、app source `bcfa786`、ローカル Vite / Orca / JA で `/release-notes#%ZZ` を初回表示または browser Reload すると、body text が空になり console に `An error occurred in the <ReleaseNotesPage> component.` が出ることを2回確認した。同一 document の hash 変更のみでは再現しなかった。mount effect の未捕捉 `decodeURIComponent` がコード上の根拠。hash なし `/release-notes` への遷移で一覧に復帰できる。修正時は同条件の初回表示・Reload・hash変更を再検証する。
