@@ -27,6 +27,8 @@ import {
   IconPencil,
   IconLock,
   IconRefresh,
+  IconSettings,
+  IconX,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -130,6 +132,7 @@ export function KeymapPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   // Popup listing the device's deleted (restorable) layers, opened from the
@@ -442,6 +445,17 @@ export function KeymapPage() {
     }
   }, [keymap, selectedLayerIndex, renameValue]);
 
+  // The mobile settings sheet sits above the app-level Debug Tool. If an edit
+  // needs the shared unlock dialog, close the sheet first so that prompt stays
+  // visible. Ordinary unlocked edits keep the sheet open.
+  const handleMobileLayerAction = useCallback(
+    (action: () => void) => {
+      if (locked) setShowMobileSettings(false);
+      action();
+    },
+    [locked],
+  );
+
   useEffect(() => {
     if (
       inputStream.activeLayerIndex === null ||
@@ -517,7 +531,7 @@ export function KeymapPage() {
             <div className="keymap-actions flex flex-wrap items-center gap-2">
               {inputStream.isAvailable && (
                 <EditorTooltip content={t("Toggle stream mode")}>
-                  <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <div className="hidden sm:flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
                     <span className="hidden sm:inline text-xs text-[var(--color-text-muted)]">
                       {t("Stream")}
                     </span>
@@ -610,6 +624,286 @@ export function KeymapPage() {
                   </ResponsiveButton>
                 </>
               )}
+              <Dialog.Root
+                open={showMobileSettings}
+                onOpenChange={setShowMobileSettings}
+              >
+                <Dialog.Trigger asChild>
+                  <button
+                    type="button"
+                    className="keymap-mobile-settings-trigger flex sm:hidden"
+                    aria-label={t("Keymap settings")}
+                  >
+                    <IconSettings size={19} />
+                  </button>
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                  <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]" />
+                  <Dialog.Content
+                    aria-describedby={undefined}
+                    className="keymap-mobile-settings fixed inset-0 z-[9999] flex h-dvh w-screen flex-col overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)] sm:hidden"
+                  >
+                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                      <Dialog.Title className="text-lg font-medium">
+                        {t("Keymap settings")}
+                      </Dialog.Title>
+                      <Dialog.Close asChild>
+                        <button
+                          type="button"
+                          className="keymap-mobile-settings-close flex"
+                          aria-label={t("Close")}
+                        >
+                          <IconX size={21} />
+                        </button>
+                      </Dialog.Close>
+                    </header>
+
+                    <div className="flex-1 space-y-5 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                      <section
+                        className="keymap-settings-section"
+                        aria-labelledby="keymap-mobile-layer-settings"
+                      >
+                        <h2
+                          id="keymap-mobile-layer-settings"
+                          className="keymap-settings-section-title"
+                        >
+                          {t("Layer editing")}
+                        </h2>
+
+                        <label
+                          htmlFor="keymap-mobile-current-layer"
+                          className="keymap-settings-label"
+                        >
+                          {t("Current layer")}
+                        </label>
+                        <select
+                          id="keymap-mobile-current-layer"
+                          value={selectedLayerIndex}
+                          onChange={(event) =>
+                            setSelectedLayerIndex(Number(event.target.value))
+                          }
+                          className="select-field min-h-11 w-full min-w-0 text-base"
+                        >
+                          {keymap.keymap.layers.map((layer, index) => (
+                            <option key={layer.id} value={index}>
+                              {layer.name || t("Layer {{id}}", { id: index })}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div
+                          className="keymap-settings-action-grid"
+                          role="group"
+                          aria-label={t("Layer actions")}
+                        >
+                          <button
+                            type="button"
+                            className="keymap-settings-action"
+                            onClick={() =>
+                              handleMobileLayerAction(handleMoveLayerUp)
+                            }
+                            disabled={selectedLayerIndex <= 0}
+                          >
+                            <IconChevronUp size={18} />
+                            {t("Move up")}
+                          </button>
+                          <button
+                            type="button"
+                            className="keymap-settings-action"
+                            onClick={() =>
+                              handleMobileLayerAction(handleMoveLayerDown)
+                            }
+                            disabled={
+                              selectedLayerIndex >=
+                              keymap.keymap.layers.length - 1
+                            }
+                          >
+                            <IconChevronDown size={18} />
+                            {t("Move down")}
+                          </button>
+                          <button
+                            type="button"
+                            className="keymap-settings-action"
+                            onClick={() =>
+                              handleMobileLayerAction(handleOpenRenameDialog)
+                            }
+                          >
+                            <IconPencil size={18} />
+                            {t("Rename")}
+                          </button>
+                          <button
+                            type="button"
+                            className="keymap-settings-action"
+                            onClick={() =>
+                              handleMobileLayerAction(handleAddLayer)
+                            }
+                            disabled={
+                              keymap.availableLayers <=
+                              keymap.keymap.layers.length
+                            }
+                          >
+                            <IconPlus size={18} />
+                            {t("Add new layer")}
+                          </button>
+                          <button
+                            type="button"
+                            className="keymap-settings-action keymap-settings-action-danger"
+                            onClick={() =>
+                              handleMobileLayerAction(handleDeleteLayer)
+                            }
+                            disabled={keymap.keymap.layers.length <= 1}
+                          >
+                            <IconTrash size={18} />
+                            {t("Delete current layer")}
+                          </button>
+                        </div>
+
+                        <div className="keymap-settings-restore">
+                          <p className="keymap-settings-label">
+                            {t("Restore deleted layer")}
+                          </p>
+                          {keymap.removedLayerIds.length === 0 ? (
+                            <p className="text-sm text-[var(--color-text-muted)]">
+                              {t("No deleted layers to restore")}
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              <button
+                                type="button"
+                                className="keymap-settings-restore-action"
+                                onClick={() =>
+                                  handleMobileLayerAction(
+                                    handleRestoreAllLayers,
+                                  )
+                                }
+                              >
+                                <IconRestore size={17} />
+                                {t("Restore all deleted layers ({{count}})", {
+                                  count: keymap.removedLayerIds.length,
+                                })}
+                              </button>
+                              {keymap.removedLayerIds.map((layerId) => (
+                                <button
+                                  type="button"
+                                  className="keymap-settings-restore-action"
+                                  key={`mobile-restore-${layerId}`}
+                                  onClick={() =>
+                                    handleMobileLayerAction(() =>
+                                      handleRestoreLayer(layerId),
+                                    )
+                                  }
+                                >
+                                  <IconRestore size={17} />
+                                  {t("Layer {{id}}", { id: layerId })}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+
+                      <section
+                        className="keymap-settings-section"
+                        aria-labelledby="keymap-mobile-layout-settings"
+                      >
+                        <h2
+                          id="keymap-mobile-layout-settings"
+                          className="keymap-settings-section-title"
+                        >
+                          {t("Layout and display")}
+                        </h2>
+
+                        {keymap.physicalLayouts &&
+                          keymap.physicalLayouts.layouts.length > 1 && (
+                            <div>
+                              <label
+                                htmlFor="keymap-mobile-physical-layout"
+                                className="keymap-settings-label"
+                              >
+                                {t("Physical Layout")}
+                              </label>
+                              <select
+                                id="keymap-mobile-physical-layout"
+                                value={keymap.physicalLayouts.activeLayoutIndex}
+                                onChange={(event) =>
+                                  keymap.setActiveLayout(
+                                    Number(event.target.value),
+                                  )
+                                }
+                                className="select-field min-h-11 w-full min-w-0 text-base"
+                              >
+                                {keymap.physicalLayouts.layouts.map(
+                                  (layout, index) => (
+                                    <option key={index} value={index}>
+                                      {layout.name ||
+                                        t("Layout {{id}}", { id: index + 1 })}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </div>
+                          )}
+
+                        <div>
+                          <label
+                            htmlFor="keymap-mobile-os-layout"
+                            className="keymap-settings-label"
+                          >
+                            {t("OS Layout")}
+                          </label>
+                          <select
+                            id="keymap-mobile-os-layout"
+                            value={keyboardLayoutContext.layout}
+                            onChange={(event) =>
+                              keyboardLayoutContext.setLayout(
+                                event.target
+                                  .value as import("../lib/keyboardLayouts").KeyboardLayoutType,
+                              )
+                            }
+                            className="select-field min-h-11 w-full min-w-0 text-base"
+                          >
+                            {getAvailableLayouts().map((layoutType) => (
+                              <option key={layoutType} value={layoutType}>
+                                {getLayoutLabel(layoutType)}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                            {t(
+                              "This setting only affects the visual key labels in DYA Studio web UI.",
+                            )}
+                          </p>
+                        </div>
+
+                        {inputStream.isAvailable && (
+                          <div className="keymap-settings-switch-row">
+                            <label
+                              htmlFor="keymap-mobile-stream"
+                              className="text-sm font-medium"
+                            >
+                              {t("Stream mode")}
+                            </label>
+                            <Switch.Root
+                              id="keymap-mobile-stream"
+                              checked={inputStream.isEnabled}
+                              onCheckedChange={() =>
+                                void inputStream.toggleStream()
+                              }
+                              disabled={
+                                inputStream.isToggling || keymap.isLoading
+                              }
+                              aria-label={t("Toggle stream mode")}
+                              className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                            </Switch.Root>
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  </Dialog.Content>
+                </Dialog.Portal>
+              </Dialog.Root>
             </div>
           )}
         </div>
@@ -686,7 +980,7 @@ export function KeymapPage() {
 
               {/* Layer Management Buttons */}
               <>
-                <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2 ml-auto">
+                <div className="hidden sm:flex items-center gap-1 border-l border-[var(--color-border)] pl-2 ml-auto">
                   {/* Layer Sorting Label */}
                   <span className="hidden sm:inline text-xs text-[var(--color-text-muted)] mr-1">
                     {t("Sort")}:
@@ -730,7 +1024,7 @@ export function KeymapPage() {
                 </div>
 
                 {/* Layer Add/Delete/Restore Buttons */}
-                <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
+                <div className="hidden sm:flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
                   {/* Rename Layer Button */}
                   <EditorTooltip content={<>{t("Rename current layer")}</>}>
                     <button
@@ -854,7 +1148,7 @@ export function KeymapPage() {
               </>
             </div>
 
-            <div className="keymap-layout-options relative flex items-center gap-x-6 gap-y-3 justify-between flex-wrap mb-4">
+            <div className="keymap-layout-options relative hidden sm:flex items-center gap-x-6 gap-y-3 justify-between flex-wrap mb-4">
               {/* Physical Layout Selector (if multiple layouts) */}
               {keymap.physicalLayouts &&
                 keymap.physicalLayouts.layouts.length > 1 && (
@@ -1095,9 +1389,9 @@ export function KeymapPage() {
         onOpenChange={(open) => !open && setShowRenameDialog(false)}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000]" />
           <Dialog.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 p-6"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-[10000] p-6"
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               renameInputRef.current?.focus();

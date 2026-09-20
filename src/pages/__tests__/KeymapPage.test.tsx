@@ -484,6 +484,76 @@ describe("KeymapPage", () => {
       expect(screen.getByRole("status")).toHaveTextContent("Saved");
     });
 
+    it("opens mobile keymap settings from the rightmost action and keeps grouped controls usable", async () => {
+      const user = userEvent.setup();
+      const setActiveLayout = jest.fn().mockResolvedValue(true);
+      const physicalLayouts = {
+        activeLayoutIndex: 0,
+        layouts: [
+          mockPhysicalLayouts.layouts[0],
+          { ...mockPhysicalLayouts.layouts[0], name: "Alternate" },
+        ],
+      };
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts,
+          behaviors: mockBehaviors,
+          setActiveLayout,
+        },
+        createConnectedMockZMKApp({
+          subsystems: [INPUT_STREAM_IDENTIFIER],
+        }),
+      );
+
+      const trigger = screen.getByRole("button", { name: "Keymap settings" });
+      expect(trigger).toBe(
+        document.querySelector(".keymap-actions")?.lastElementChild,
+      );
+      await user.click(trigger);
+
+      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
+      expect(dialog).toHaveClass(
+        "fixed",
+        "inset-0",
+        "h-dvh",
+        "w-screen",
+        "z-[9999]",
+      );
+      expect(
+        within(dialog).getByRole("heading", { name: "Layer editing" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("heading", { name: "Layout and display" }),
+      ).toBeInTheDocument();
+
+      await user.selectOptions(
+        within(dialog).getByLabelText("Current layer"),
+        "1",
+      );
+      expect(within(dialog).getByLabelText("Current layer")).toHaveValue("1");
+      expect(
+        within(dialog).getByRole("button", { name: "Move down" }),
+      ).toBeDisabled();
+
+      await user.selectOptions(
+        within(dialog).getByLabelText("Physical Layout"),
+        "1",
+      );
+      expect(setActiveLayout).toHaveBeenCalledWith(1);
+      expect(within(dialog).getByLabelText("OS Layout")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Toggle stream mode"),
+      ).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      expect(
+        screen.queryByRole("dialog", { name: "Keymap settings" }),
+      ).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+
     it("should show unsaved changes indicator", () => {
       renderComponent(
         { isConnected: true },
@@ -668,6 +738,33 @@ describe("KeymapPage", () => {
         screen.queryByText("Keyboard Unlock Required"),
       ).not.toBeInTheDocument();
       await user.click(screen.getByText("Locked"));
+      expect(screen.getByText("Keyboard Unlock Required")).toBeInTheDocument();
+    });
+
+    it("closes mobile settings before showing the unlock prompt for a layer edit", async () => {
+      const user = userEvent.setup();
+      mockUseStudioLockState.mockReturnValue({
+        locked: true,
+        lockState: "locked",
+      });
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      const settings = screen.getByRole("dialog", { name: "Keymap settings" });
+      await user.click(
+        within(settings).getByRole("button", { name: "Rename" }),
+      );
+
+      expect(
+        screen.queryByRole("dialog", { name: "Keymap settings" }),
+      ).not.toBeInTheDocument();
       expect(screen.getByText("Keyboard Unlock Required")).toBeInTheDocument();
     });
 
