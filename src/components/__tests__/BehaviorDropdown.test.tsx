@@ -73,6 +73,7 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
 
   const search = screen.getByPlaceholderText("Search behaviors...");
   expect(search).toHaveFocus();
+  expect(search).toHaveClass("text-base", "tablet:text-sm");
   expect(screen.getByRole("button", { name: "Misc" })).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Others" }),
@@ -97,6 +98,27 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   await user.type(reopenedSearch, "automatically deactivates");
 
   expect(screen.getByText("Caps Word")).toBeInTheDocument();
+});
+
+it("keeps a selected behavior and its description on one truncated line", () => {
+  render(
+    <BehaviorDropdown
+      behaviors={behaviors}
+      selectedBehaviorId={11}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+    />,
+  );
+
+  const trigger = screen.getByRole("button", { name: /Grave\/Escape/ });
+  expect(trigger).toHaveClass("min-w-0");
+  expect(trigger.firstElementChild).toHaveClass(
+    "min-w-0",
+    "flex-1",
+    "truncate",
+    "text-left",
+  );
+  expect(trigger.querySelector("svg")).toHaveClass("shrink-0");
 });
 
 it("uses one ordered settings list with separate preset visibility and pin controls", async () => {

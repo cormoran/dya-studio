@@ -471,12 +471,12 @@ export function BehaviorDropdown({
         <button
           ref={behaviorTriggerRef}
           type="button"
-          className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "h-9 flex-1 px-3"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
+          className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "h-9 min-w-0 flex-1 px-3"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
           aria-expanded={isOpen}
           onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
         >
           <span
-            className={`${compact ? "text-xs truncate" : "text-sm"} text-[var(--color-text)]`}
+            className={`${compact ? "text-xs" : "text-sm"} min-w-0 flex-1 truncate text-left text-[var(--color-text)]`}
           >
             {selectedBehaviorMetadata?.displayNameVariants.at(0) ||
               t("Select behavior")}
@@ -488,7 +488,7 @@ export function BehaviorDropdown({
           </span>
           <IconChevronDown
             size={16}
-            className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`shrink-0 text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
         {!compact && (
@@ -578,7 +578,7 @@ export function BehaviorDropdown({
                   placeholder={t("Search behaviors...")}
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+                  className="w-full pl-8 pr-8 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] text-base tablet:text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
                 />
                 {searchQuery && (
                   <button
