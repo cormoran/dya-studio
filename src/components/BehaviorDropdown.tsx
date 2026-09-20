@@ -56,12 +56,15 @@ interface QuickSelectBehavior {
   displayName: string;
   isRecent: boolean;
   isPinned: boolean;
+  isHiddenPreset: boolean;
 }
 
 interface QuickSelectSettingItem extends QuickSelectBehavior {
   isPreset: boolean;
   presetName?: string;
   isVisible: boolean;
+  canPin: boolean;
+  canReorder: boolean;
 }
 
 interface BehaviorDropdownProps {
@@ -286,12 +289,7 @@ export function BehaviorDropdown({
     });
     const primaryIds = new Set(primary.map((behavior) => behavior.id));
     const recent = recentBehaviors
-      .filter(
-        (id) =>
-          !primaryIds.has(id) &&
-          behaviors.has(id) &&
-          !presetBehaviorNames.has(behaviors.get(id)!.displayName),
-      )
+      .filter((id) => !primaryIds.has(id) && behaviors.has(id))
       .map((id) => behaviors.get(id)!);
     return [...primary, ...recent].map((behavior) => {
       const metadata = getBehaviorMetadata(behavior.displayName);
@@ -306,6 +304,9 @@ export function BehaviorDropdown({
         isPinned: quickSelectConfig.pinnedBehaviorNames.includes(
           behavior.displayName,
         ),
+        isHiddenPreset:
+          presetBehaviorNames.has(behavior.displayName) &&
+          !presets.some((preset) => preset.id === behavior.id),
       };
     });
   }, [
@@ -401,17 +402,32 @@ export function BehaviorDropdown({
           metadata?.displayNameVariants.at(0) || preset.behavior.displayName,
         isRecent: false,
         isPinned: false,
+        isHiddenPreset: false,
         isPreset: true,
         presetName: preset.presetName,
         isVisible: !quickSelectConfig.hiddenPresets.includes(preset.presetName),
+        canPin: false,
+        canReorder: true,
       };
     });
     const presetNamesByBehavior = new Set(presetItems.map((item) => item.name));
     const customItems = quickSelectBehaviors
-      .filter((behavior) => !presetNamesByBehavior.has(behavior.name))
-      .map((behavior) => ({ ...behavior, isPreset: false, isVisible: true }));
+      .filter(
+        (behavior) =>
+          !presetNamesByBehavior.has(behavior.name) || behavior.isHiddenPreset,
+      )
+      .map((behavior) => ({
+        ...behavior,
+        isPreset: false,
+        isVisible: true,
+        canPin: !behavior.isHiddenPreset,
+        canReorder: behavior.isPinned,
+      }));
     const items = [...presetItems, ...customItems];
-    return items.sort((a, b) => {
+    const reorderableItems = items.filter((item) => item.canReorder);
+    const nonReorderableItems = items.filter((item) => !item.canReorder);
+    return [...reorderableItems, ...nonReorderableItems].sort((a, b) => {
+      if (a.canReorder !== b.canReorder) return a.canReorder ? -1 : 1;
       const aIndex = quickSelectConfig.order.indexOf(a.name);
       const bIndex = quickSelectConfig.order.indexOf(b.name);
       if (aIndex === -1) return bIndex === -1 ? 0 : 1;
@@ -420,7 +436,9 @@ export function BehaviorDropdown({
   }, [presetBehaviors, quickSelectBehaviors, quickSelectConfig]);
 
   const moveQuickSelect = (behaviorName: string, direction: -1 | 1) => {
-    const names = quickSelectSettingItems.map((behavior) => behavior.name);
+    const names = quickSelectSettingItems
+      .filter((behavior) => behavior.canReorder)
+      .map((behavior) => behavior.name);
     const index = names.indexOf(behaviorName);
     const target = index + direction;
     if (index < 0 || target < 0 || target >= names.length) return;
@@ -608,7 +626,7 @@ export function BehaviorDropdown({
                     <div className="space-y-1">
                       {quickSelectSettingItems.map((item, index) => (
                         <div
-                          key={item.name}
+                          key={`${item.name}:${item.isPreset ? "preset" : "quick-select"}`}
                           className="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:bg-[var(--color-border)]"
                         >
                           <span className="flex-1 min-w-0 truncate text-[var(--color-text)]">
@@ -617,6 +635,11 @@ export function BehaviorDropdown({
                           {item.isPreset && (
                             <span className="rounded border border-[var(--color-neon)]/40 bg-[var(--color-neon)]/10 px-1 py-0.5 text-[10px] font-medium text-[var(--color-neon)]">
                               {t("Preset")}
+                            </span>
+                          )}
+                          {item.isHiddenPreset && (
+                            <span className="text-[10px] text-[var(--color-text-muted)]">
+                              {t("Recently used")}
                             </span>
                           )}
                           {item.isPreset ? (
@@ -641,7 +664,7 @@ export function BehaviorDropdown({
                                 )}
                               </button>
                             </EditorTooltip>
-                          ) : (
+                          ) : item.canPin ? (
                             <EditorTooltip
                               content={
                                 item.isPinned
@@ -667,27 +690,35 @@ export function BehaviorDropdown({
                                 )}
                               </button>
                             </EditorTooltip>
+                          ) : null}
+                          {item.canReorder && (
+                            <>
+                              <button
+                                type="button"
+                                className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
+                                aria-label={t("Move up")}
+                                disabled={index === 0}
+                                onClick={() => moveQuickSelect(item.name, -1)}
+                              >
+                                <IconChevronUp size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
+                                aria-label={t("Move down")}
+                                disabled={
+                                  index ===
+                                  quickSelectSettingItems.filter(
+                                    (settingItem) => settingItem.canReorder,
+                                  ).length -
+                                    1
+                                }
+                                onClick={() => moveQuickSelect(item.name, 1)}
+                              >
+                                <IconChevronDown size={15} />
+                              </button>
+                            </>
                           )}
-                          <button
-                            type="button"
-                            className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
-                            aria-label={t("Move up")}
-                            disabled={index === 0}
-                            onClick={() => moveQuickSelect(item.name, -1)}
-                          >
-                            <IconChevronUp size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
-                            aria-label={t("Move down")}
-                            disabled={
-                              index === quickSelectSettingItems.length - 1
-                            }
-                            onClick={() => moveQuickSelect(item.name, 1)}
-                          >
-                            <IconChevronDown size={15} />
-                          </button>
                         </div>
                       ))}
                     </div>

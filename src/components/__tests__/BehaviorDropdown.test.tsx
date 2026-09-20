@@ -56,6 +56,7 @@ it("uses one ordered settings list with separate preset visibility and pin contr
   const user = userEvent.setup();
   renderDropdown();
 
+  await user.click(screen.getByRole("button", { name: "Key Press" }));
   await user.click(screen.getByRole("button", { name: "Select behavior" }));
   await user.type(screen.getByPlaceholderText("Search behaviors..."), "mouse");
   await user.click(screen.getByText("Mouse Key Press"));
@@ -82,6 +83,9 @@ it("uses one ordered settings list with separate preset visibility and pin contr
       ) || "{}",
     ).hiddenPresets,
   ).toContain("kp");
+  expect(
+    screen.getAllByRole("button", { name: "Pin this behavior" }),
+  ).toHaveLength(1);
 
   await user.click(screen.getByRole("button", { name: "Pin this behavior" }));
   expect(
