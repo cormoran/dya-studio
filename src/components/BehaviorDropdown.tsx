@@ -9,8 +9,8 @@ import {
   IconFilter,
   IconPin,
   IconPinFilled,
-  IconRefresh,
   IconSearch,
+  IconTrash,
   IconX,
 } from "@tabler/icons-react";
 import {
@@ -595,7 +595,7 @@ export function BehaviorDropdown({
                         className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
                         onClick={resetQuickSelectConfig}
                       >
-                        <IconRefresh size={15} />
+                        <IconTrash size={15} />
                       </button>
                     </EditorTooltip>
                   </div>
