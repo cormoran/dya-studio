@@ -94,6 +94,9 @@ jobs:
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: write
     environment:
       name: cloudflare-release
     steps:
@@ -181,6 +184,15 @@ jobs:
               --title "$VERSION" \
               --notes "Release notes: https://studio.dya.cormoran.works/release-notes#$VERSION"
           fi
+
+      - name: Trigger desktop installer build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          gh workflow run electron.yml \
+            --ref "v$VERSION" \
+            --field release_tag="v$VERSION"
 
       - name: Delete release branch
         env:
