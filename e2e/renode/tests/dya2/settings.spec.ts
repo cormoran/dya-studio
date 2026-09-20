@@ -18,13 +18,9 @@ import { connectDya2 } from "./dya2.helpers";
 // wipes keymap + all custom settings) nor the Sleep Timeout — only the Idle
 // Timeout is edited and restored.
 
-// The idle/sleep TimeDropdown buttons are the only `button.input-field` elements
-// inside the Power Management card; idle is first, sleep second.
+// Use the control's accessible name so styling changes cannot break this E2E.
 function idleDropdown(page: Page): Locator {
-  const powerCard = page
-    .locator(".glass-card")
-    .filter({ hasText: "Power Management" });
-  return powerCard.locator("button.input-field").first();
+  return page.getByRole("button", { name: "Idle Timeout", exact: true });
 }
 
 // The TimeDropdown renders its open menu into a body portal (`div.fixed.w-48`).
@@ -79,10 +75,6 @@ const PRESET_LABEL: Record<number, string> = {
   5: "5 minutes",
   10: "10 minutes",
 };
-
-test.fixme(
-  "non-split Renode does not deliver the zmk__settings response or notification",
-);
 
 test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (zmk__settings)", async ({
   page,
