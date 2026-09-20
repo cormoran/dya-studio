@@ -113,12 +113,33 @@ export function useSettings(): UseSettingsReturn {
       });
 
       try {
-        // Send request to get all activity settings
-        const resp = await call(Request.create({ getAllActivitySettings: {} }));
-        if (resp?.error) {
-          setError(resp.error.message);
+        // Read the central device directly as well as asking every device to
+        // report via notifications. The direct response is the reliable source
+        // for the central settings; custom notifications can be unavailable on
+        // a transport even when ordinary custom-RPC responses are delivered.
+        // Notifications remain necessary to collect settings from peripherals.
+        const centralResponse = await call(
+          Request.create({ getActivitySettings: {} }),
+        );
+        if (centralResponse?.error) {
+          setError(centralResponse.error.message);
+        } else if (centralResponse?.getActivitySettings?.settings) {
+          notificationHandler({
+            ...centralResponse.getActivitySettings.settings,
+            source: 0,
+          });
         }
-        // Note: The actual data comes via notifications, not the response
+
+        // Ask split peripherals to report their settings. A central device has
+        // already been populated from the response above, so the main Power
+        // Management controls remain available if notification delivery is
+        // unsupported by a particular transport.
+        const allResponse = await call(
+          Request.create({ getAllActivitySettings: {} }),
+        );
+        if (allResponse?.error) {
+          setError(allResponse.error.message);
+        }
       } finally {
         // Wait for all notifications to arrive from devices
         await new Promise((resolve) =>
