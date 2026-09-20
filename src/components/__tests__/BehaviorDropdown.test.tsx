@@ -50,6 +50,11 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   expect(
     screen.queryByRole("button", { name: "Misc" }),
   ).not.toBeInTheDocument();
+
+  await user.clear(search);
+  await user.type(search, "automatically deactivates");
+
+  expect(screen.getByText("Caps Word")).toBeInTheDocument();
 });
 
 it("uses one ordered settings list with separate preset visibility and pin controls", async () => {
