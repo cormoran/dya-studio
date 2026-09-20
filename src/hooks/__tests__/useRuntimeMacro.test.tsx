@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useRuntimeMacro } from "../useRuntimeMacro";
 
 // Mock the custom-subsystem transport so we can observe the RPCs the hook
@@ -39,19 +39,22 @@ beforeEach(() => {
 
 describe("useRuntimeMacro autoLoad", () => {
   it("loads the macro list on mount by default", async () => {
-    renderHook(() => useRuntimeMacro());
-    await waitFor(() => expect(listMacrosCalls().length).toBe(1));
+    const { result } = renderHook(() => useRuntimeMacro());
+    await waitFor(() =>
+      expect(result.current.globalSettings).toEqual({ tapMs: 0 }),
+    );
+    expect(listMacrosCalls()).toHaveLength(1);
   });
 
   it("does NOT load on mount when autoLoad is false", async () => {
     const { result } = renderHook(() => useRuntimeMacro({ autoLoad: false }));
 
-    // Give the mount effect's setTimeout(0) a chance to fire.
-    await new Promise((r) => setTimeout(r, 20));
     expect(listMacrosCalls().length).toBe(0);
 
     // The caller can still drive the load explicitly.
-    await result.current.loadMacros();
+    await act(async () => {
+      await result.current.loadMacros();
+    });
     expect(listMacrosCalls().length).toBe(1);
   });
 });

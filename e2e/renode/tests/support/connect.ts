@@ -8,7 +8,7 @@ export const WS_URL = process.env.WS_URL || "ws://127.0.0.1:8788";
 // name "Renode"); override for a real dya build.
 export const DEVICE_NAME = process.env.DEVICE_NAME || "Renode";
 
-// Reproduce the exact connect flow proven by tests/connect.spec.ts: install the
+// Shared connect flow used by the connection and official-firmware specs: install the
 // navigator.serial shim (backed by the WS bridge -> the DUT's emulated USB CDC
 // in Renode), pre-accept the notice + force English, reduce motion, click the
 // real "Connect via USB" button, and wait until the app reaches the

@@ -4,6 +4,13 @@
  * This test suite verifies the keymap editor UI,
  * including layer selection, key interaction, and save/discard operations.
  */
+import { useVersionHistory } from "../../hooks/useVersionHistory";
+import { createIdleVersionHistory } from "../testUtils/versionHistory";
+
+// Keep unasserted IndexedDB reads/captures out of these editing scenarios.
+// Storage/diff units have separate tests; page-to-history wiring is not covered here.
+jest.mock("../../hooks/useVersionHistory");
+
 import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
@@ -107,6 +114,7 @@ describe("KeymapPage", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useVersionHistory).mockReturnValue(createIdleVersionHistory());
     localStorage.clear();
 
     // Default to unlocked; locked-specific tests override this.

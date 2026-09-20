@@ -75,8 +75,8 @@ describe("abyssOAuth", () => {
 
   describe("return path", () => {
     it("round-trips a saved path and clears it", () => {
-      saveReturnPath("/import-export");
-      expect(takeReturnPath()).toBe("/import-export");
+      saveReturnPath("/keymap");
+      expect(takeReturnPath()).toBe("/keymap");
       // Consumed, so a later read falls back to the default.
       expect(takeReturnPath()).toBe(IMPORT_EXPORT_PATH);
     });
@@ -103,6 +103,7 @@ describe("abyssOAuth", () => {
       // The callback page must learn that the opener claimed it, so that it
       // closes instead of burning the single-use code a second time.
       await expect(relayed).resolves.toBe(true);
+      expect(handleRedirectCallback).toHaveBeenCalledTimes(1);
       expect(handleRedirectCallback).toHaveBeenCalledWith(
         callbackHref(lastState()),
       );
@@ -120,9 +121,8 @@ describe("abyssOAuth", () => {
 
       // Another tab's login finishing must not be claimed by this one: only
       // the initiating tab holds the matching PKCE verifier.
-      await expect(
-        relayAbyssCallback(callbackHref("someone-else")),
-      ).resolves.toBe(false);
+      const relayed = relayAbyssCallback(callbackHref("someone-else"));
+      await expect(relayed).resolves.toBe(false);
       expect(handleRedirectCallback).not.toHaveBeenCalled();
 
       popup.closed = true;
@@ -130,6 +130,7 @@ describe("abyssOAuth", () => {
     });
 
     it("reports cancelled when the user closes the popup", async () => {
+      jest.useFakeTimers();
       const popup = createFakePopup();
       openSpy.mockReturnValue(popup);
       const { client, handleRedirectCallback } = createFakeClient();
@@ -138,6 +139,7 @@ describe("abyssOAuth", () => {
       await Promise.resolve();
       await Promise.resolve();
       popup.closed = true;
+      await jest.advanceTimersByTimeAsync(500);
 
       await expect(login).resolves.toEqual({ status: "cancelled" });
       expect(handleRedirectCallback).not.toHaveBeenCalled();
@@ -159,9 +161,14 @@ describe("abyssOAuth", () => {
 
   describe("relayAbyssCallback", () => {
     it("reports unclaimed when no tab answers", async () => {
-      await expect(relayAbyssCallback(callbackHref("orphan"))).resolves.toBe(
-        false,
-      );
+      jest.useFakeTimers();
+      const settled = jest.fn();
+      const relayed = relayAbyssCallback(callbackHref("orphan"));
+      void relayed.then(settled);
+      await jest.advanceTimersByTimeAsync(1499);
+      expect(settled).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(1);
+      await expect(relayed).resolves.toBe(false);
     });
   });
 });

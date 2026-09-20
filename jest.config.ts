@@ -54,6 +54,11 @@ const config: Config = {
     "!src/**/*.d.ts",
     "!src/main.tsx",
     "!src/vite-env.d.ts",
+    // Measure application code, not generated protocol codecs or test scaffolding.
+    "!src/proto/**",
+    "!src/**/__mocks__/**",
+    "!src/**/testUtils/**",
+    "!src/setupTests.ts",
   ],
   // @keyboard-hub packages ship untranspiled ESM TypeScript sources, so they
   // have to go through the transform like the ZMK client packages do.

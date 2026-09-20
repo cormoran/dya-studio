@@ -85,6 +85,32 @@ const mockBehaviorDetails: Record<
   3: { id: 3, displayName: "mo", metadata: [] },
 };
 
+const loadRpc: typeof call_rpc = async (_conn, req) => {
+  if (req.keymap?.getPhysicalLayouts) {
+    return {
+      keymap: { getPhysicalLayouts: mockPhysicalLayouts },
+    } as never;
+  }
+  if (req.keymap?.getKeymap) {
+    return { keymap: { getKeymap: mockKeymap } } as never;
+  }
+  if (req.behaviors?.listAllBehaviors) {
+    return {
+      behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
+    } as never;
+  }
+  if (req.behaviors?.getBehaviorDetails) {
+    const id = req.behaviors.getBehaviorDetails.behaviorId;
+    return {
+      behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
+    } as never;
+  }
+  if (req.keymap?.checkUnsavedChanges) {
+    return { keymap: { checkUnsavedChanges: false } } as never;
+  }
+  return {} as never;
+};
+
 // Create a wrapper with ZMKAppContext
 function createWrapper(zmkAppValue: unknown) {
   // useKeymap now loads via useKeymapSource, which consults the device's
@@ -104,7 +130,7 @@ function createWrapper(zmkAppValue: unknown) {
 
 describe("useKeymap", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockCallRpc.mockReset();
   });
 
   describe("Initial State", () => {
@@ -137,31 +163,7 @@ describe("useKeymap", () => {
       };
 
       // Setup mock responses
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
-        if (req.keymap?.checkUnsavedChanges) {
-          return { keymap: { checkUnsavedChanges: false } } as never;
-        }
-        return {} as never;
-      });
+      mockCallRpc.mockImplementation(loadRpc);
 
       const { result } = renderHook(() => useKeymap(), {
         wrapper: createWrapper(zmkApp),
@@ -215,31 +217,11 @@ describe("useKeymap", () => {
         onNotification: jest.fn(() => jest.fn()),
       };
 
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
+      mockCallRpc.mockImplementation(async (connection, req) => {
         if (req.keymap?.checkUnsavedChanges) {
-          // Secured RPC while locked — real call_rpc throws on the meta error.
           throw new MetaError(1); // UNLOCK_REQUIRED
         }
-        return {} as never;
+        return loadRpc(connection, req);
       });
 
       const { result } = renderHook(() => useKeymap(), {
@@ -270,31 +252,7 @@ describe("useKeymap", () => {
         onNotification: jest.fn(() => jest.fn()),
       };
 
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
-        if (req.keymap?.checkUnsavedChanges) {
-          return { keymap: { checkUnsavedChanges: false } } as never;
-        }
-        return {} as never;
-      });
+      mockCallRpc.mockImplementation(loadRpc);
 
       const { result } = renderHook(() => useKeymap(), {
         wrapper: createWrapper(zmkApp),
@@ -319,31 +277,7 @@ describe("useKeymap", () => {
       };
 
       // Setup mock responses for successful loading
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
-        if (req.keymap?.checkUnsavedChanges) {
-          return { keymap: { checkUnsavedChanges: false } } as never;
-        }
-        return {} as never;
-      });
+      mockCallRpc.mockImplementation(loadRpc);
 
       const { result } = renderHook(() => useKeymap(), {
         wrapper: createWrapper(zmkApp),
@@ -365,31 +299,7 @@ describe("useKeymap", () => {
         onNotification: jest.fn(() => jest.fn()),
       };
 
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
-        if (req.keymap?.checkUnsavedChanges) {
-          return { keymap: { checkUnsavedChanges: false } } as never;
-        }
-        return {} as never;
-      });
+      mockCallRpc.mockImplementation(loadRpc);
 
       const { result } = renderHook(() => useKeymap(), {
         wrapper: createWrapper(zmkApp),
@@ -412,31 +322,7 @@ describe("useKeymap", () => {
         onNotification: jest.fn(() => jest.fn()),
       };
 
-      mockCallRpc.mockImplementation(async (_conn, req) => {
-        if (req.keymap?.getPhysicalLayouts) {
-          return {
-            keymap: { getPhysicalLayouts: mockPhysicalLayouts },
-          } as never;
-        }
-        if (req.keymap?.getKeymap) {
-          return { keymap: { getKeymap: mockKeymap } } as never;
-        }
-        if (req.behaviors?.listAllBehaviors) {
-          return {
-            behaviors: { listAllBehaviors: { behaviors: mockBehaviors } },
-          } as never;
-        }
-        if (req.behaviors?.getBehaviorDetails) {
-          const id = req.behaviors.getBehaviorDetails.behaviorId;
-          return {
-            behaviors: { getBehaviorDetails: mockBehaviorDetails[id] },
-          } as never;
-        }
-        if (req.keymap?.checkUnsavedChanges) {
-          return { keymap: { checkUnsavedChanges: false } } as never;
-        }
-        return {} as never;
-      });
+      mockCallRpc.mockImplementation(loadRpc);
 
       const { result } = renderHook(() => useKeymap(), {
         wrapper: createWrapper(zmkApp),

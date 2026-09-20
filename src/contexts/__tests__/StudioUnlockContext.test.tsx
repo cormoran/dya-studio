@@ -51,9 +51,6 @@ function setLockState(next: StudioLockState) {
   mockLockState = next;
 }
 
-const sleepMs = (ms: number) =>
-  act(() => new Promise<void>((r) => setTimeout(r, ms)));
-
 describe("StudioUnlockProvider", () => {
   beforeEach(() => {
     mockLockState = "locked";
@@ -220,7 +217,6 @@ describe("StudioUnlockProvider", () => {
         <Gate />
       </StudioUnlockProvider>,
     );
-    await sleepMs(20);
     expect(resumed).not.toHaveBeenCalled();
   });
 
@@ -370,8 +366,21 @@ describe("StudioUnlockProvider", () => {
   });
 
   describe("cancel cooldown", () => {
-    const sleep = (ms: number) =>
-      act(() => new Promise<void>((r) => setTimeout(r, ms)));
+    let user: ReturnType<typeof userEvent.setup>;
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const advanceTime = (ms: number) =>
+      act(async () => {
+        await jest.advanceTimersByTimeAsync(ms);
+      });
 
     it("auto-cancels a follow-up unlock request during the cooldown (no modal)", async () => {
       const onReject2 = jest.fn();
@@ -387,9 +396,9 @@ describe("StudioUnlockProvider", () => {
       );
 
       // First request opens the modal; the user cancels it.
-      await userEvent.click(screen.getByText("run1"));
+      await user.click(screen.getByText("run1"));
       await screen.findByText("Keyboard Unlock Required");
-      await userEvent.click(screen.getByRole("button", { name: /Cancel/i }));
+      await user.click(screen.getByRole("button", { name: /Cancel/i }));
       await waitFor(() =>
         expect(
           screen.queryByText("Keyboard Unlock Required"),
@@ -398,7 +407,7 @@ describe("StudioUnlockProvider", () => {
 
       // A follow-up unlock request during the cooldown is auto-cancelled: it
       // rejects with StudioUnlockCancelledError and the modal stays closed.
-      await userEvent.click(screen.getByText("run2"));
+      await user.click(screen.getByText("run2"));
       await waitFor(() =>
         expect(onReject2).toHaveBeenCalledWith(
           expect.any(StudioUnlockCancelledError),
@@ -420,19 +429,19 @@ describe("StudioUnlockProvider", () => {
         </StudioUnlockProvider>,
       );
 
-      await userEvent.click(screen.getByText("run1"));
+      await user.click(screen.getByText("run1"));
       await screen.findByText("Keyboard Unlock Required");
-      await userEvent.click(screen.getByRole("button", { name: /Cancel/i }));
+      await user.click(screen.getByRole("button", { name: /Cancel/i }));
       await waitFor(() =>
         expect(
           screen.queryByText("Keyboard Unlock Required"),
         ).not.toBeInTheDocument(),
       );
 
-      // No activity for longer than the quiet window ends the cooldown, so the
+      // No activity for the full quiet window ends the cooldown, so the
       // next unlock request opens the modal again.
-      await sleep(80);
-      await userEvent.click(screen.getByText("run2"));
+      await advanceTime(30);
+      await user.click(screen.getByText("run2"));
       await screen.findByText("Keyboard Unlock Required");
     });
 
@@ -454,20 +463,20 @@ describe("StudioUnlockProvider", () => {
       );
 
       // Start a long-running request, then open + cancel the modal.
-      await userEvent.click(screen.getByText("slow"));
-      await userEvent.click(screen.getByText("run1"));
+      await user.click(screen.getByText("slow"));
+      await user.click(screen.getByText("run1"));
       await screen.findByText("Keyboard Unlock Required");
-      await userEvent.click(screen.getByRole("button", { name: /Cancel/i }));
+      await user.click(screen.getByRole("button", { name: /Cancel/i }));
       await waitFor(() =>
         expect(
           screen.queryByText("Keyboard Unlock Required"),
         ).not.toBeInTheDocument(),
       );
 
-      // Wait well past the quiet window; because `slow` is still in flight the
+      // Advance beyond the quiet window; because `slow` is still in flight the
       // cooldown must not lapse, so run2 is still auto-cancelled.
-      await sleep(80);
-      await userEvent.click(screen.getByText("run2"));
+      await advanceTime(80);
+      await user.click(screen.getByText("run2"));
       await waitFor(() =>
         expect(onReject2).toHaveBeenCalledWith(
           expect.any(StudioUnlockCancelledError),
@@ -492,9 +501,9 @@ describe("StudioUnlockProvider", () => {
         <StudioUnlockProvider quietMs={10_000}>{tree}</StudioUnlockProvider>,
       );
 
-      await userEvent.click(screen.getByText("run1"));
+      await user.click(screen.getByText("run1"));
       await screen.findByText("Keyboard Unlock Required");
-      await userEvent.click(screen.getByRole("button", { name: /Cancel/i }));
+      await user.click(screen.getByRole("button", { name: /Cancel/i }));
       await waitFor(() =>
         expect(
           screen.queryByText("Keyboard Unlock Required"),
@@ -512,7 +521,7 @@ describe("StudioUnlockProvider", () => {
       );
 
       // The next unlock request opens the modal again (cooldown was cleared).
-      await userEvent.click(screen.getByText("run2"));
+      await user.click(screen.getByText("run2"));
       await screen.findByText("Keyboard Unlock Required");
     });
   });

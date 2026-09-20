@@ -194,6 +194,7 @@ describe("Pmw3610Handler", () => {
       );
       jest.advanceTimersByTime(250);
       const countBeforeDisconnect = received.length;
+      expect(countBeforeDisconnect).toBeGreaterThan(0);
 
       handler.disconnect();
       jest.advanceTimersByTime(1000);

@@ -51,6 +51,36 @@ mocks.mockFailedConnection("Error message");
 - Reset mocks in `beforeEach()`
 - Test behavior, not implementation
 
+## Keeping tests useful
+
+For an explicitly requested test-code review, use the repository
+[`test-code-review` skill](../.agents/skills/test-code-review/SKILL.md).
+It is not an automatic feature-work step and maintains reusable review knowledge
+after each requested run.
+
+- Keep distinct success, failure, cancellation, persistence, and boundary cases.
+  Remove a case only when another assertion covers the same contract; a lower
+  test count alone is not an improvement.
+- Prefer assertions on observable values and effects over existence checks,
+  copied implementation logic, or decorative CSS classes. Keep accessibility
+  and functional layout contracts explicit.
+- Share repeated setup within a suite; use `it.each` when only inputs and
+  expected outputs differ. Avoid helpers that hide the action being tested.
+- Wait for an observable completion signal. For debounce/timeout contracts,
+  advance fake timers within `act` rather than sleeping for wall-clock time.
+- Restore spies and global overrides after each test. Do not silence all console
+  errors to hide missing environment mocks or unfinished React updates.
+
+Coverage includes application code and excludes generated protobuf codecs,
+mock modules, setup, and test helpers. A coverage percentage is not evidence of
+assertion quality or browser/firmware behavior.
+
+Renode product tests use `e2e/renode/playwright.config.ts`. Developer-guide image
+generation is excluded from that suite and has a separate configuration. Run it
+only with `npm run screenshots:developer-guide` in `e2e/renode`; existing assets
+must be deliberately moved before recapturing. `playwright test --list` checks
+discovery only and does not verify a firmware-backed flow.
+
 ## Patterns
 
 **Context:**
