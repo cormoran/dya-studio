@@ -23,6 +23,8 @@
 
 route は AppContent の connection gate より前で return され、`/release-notes` の path は維持される。データは build に import された JSON で、network fetch/search/filter input はない。`#<version>` は render 後一度 `decodeURIComponent` して element ID を `scrollIntoView` する。
 
+接続不要とは表示の条件であり provider 非 mount を意味しない。ページ自体は connect を要求しないが、保存済み Demo/serial session の provider による再接続は別契約（[device session](../modules/device-session.md)）。
+
 | 状態               | 表示                                                    | 保存・副作用                                 |
 | ------------------ | ------------------------------------------------------- | -------------------------------------------- |
 | data present       | release cards newest first                              | JSON は build artifact。画面操作で変更しない |
@@ -71,3 +73,5 @@ runtime の data fetch・検索 API・明示 error state は存在しない。de
 ## 未解決・未検証
 
 hash scroll の layout/animation 後の位置、external link、全 locale と狭幅 UI は未実測。ユーザーが入力して絞り込む search/filter control は現行実装にないため、その要件は未定義である。
+
+不正 percent encoding の hash を初回表示 / browser Reload するとページ内容が消える候補は [coordinator の実測](../validation/release-hash-candidate.md) で再現した。同一 document の hash 変更のみでは再現しなかった。受け入れ根拠なし、未修正。通常 URL への遷移で復帰可能。

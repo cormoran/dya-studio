@@ -51,3 +51,28 @@ v1 は、round2 の基準編集、round3 の modal Escape、round4 の floating 
 - Trackball の待ち時間・数値範囲、Refresh All の非 await、Release Notes の存在しない hash と壊れた percent encoding の差を具体化。
 
 仕様生成 worker の完了報告はレビューの代用にならない。これらは製品コードの修正ではなく、実装事実・推定要求・未検証を正確に分けるための文書修正である。
+
+## 全ページ探索: luna-low 3 担当 + 限定再試行
+
+3担当とも起動 receipt の requested/effective が `gpt-5.6-luna` / `low`。別 origin 5181/5182/5183 を割り当て、コードを読まず仕様を使う条件で実施。follow-up は同じ確認済み terminal/process を再利用した。Orca は全担当に sandbox 外実行を明示した。
+
+| 担当と証拠                                                                                   | 採用する観測                                                                                                                                             | 未確認・訂正                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [core 初回](pages-luna-core.md) / [follow-up](pages-luna-core-followup.md)                   | Home 言語往復、Connection edit Cancel/default layer 復帰、Settings timeout とアプリ内 Reload、reset Cancel、Subsystem disable→Reconnect→unavailable→復帰 | 初回 Settings の Reload は not-run。follow-up で補完。初回 `CON-` は `CONN-` の誤記。全 source 復帰は follow-up の UI 表示値まで確認、8.33分から正確な ms は直接観測していない                   |
+| [editors 初回](pages-luna-editors.md) / [follow-up](pages-luna-editors-followup.md)          | Macro Tap ms Save→Refresh→復元、Reset 内の履歴、Trackball scaling/axis snap 待機→Reload→復元、診断展開・コピー成功表示                                   | 初回の snapshot は readback ではなく、単なる +/- 復帰は変形として不足。follow-up で補完。clipboard 内容自体は未確認。Debug Tool は Demo capability 不在、PMW custom setting は報告なしで blocked |
+| [standalone 初回](pages-luna-standalone.md) / [follow-up](pages-luna-standalone-followup.md) | Guide anchor/back/unknown-prefix、Release 一覧・hash・言語、OAuth 未設定 error/復帰、Demo 接続後 Import/Export signed-out gate と別タブ/browser Reload   | 初回 EN は初期JAへの復元ではなかった。follow-up でJAへ戻した。単なる未接続は blocked の根拠として不足でDemo接続後を追加。Guide全11route/mobile、認証成功・import/export実行は未確認              |
+
+初回 report は生の試用結果として残すが、過大な pass や後始末の記述はこのレビューと follow-up を優先する。低コスト向けに、編集ページの割当を1–2ページへ絞ること、操作単位の必須チェック、snapshot と実読込の差、初期言語の復帰、caller ごとの履歴入口、Demo未提供条件をガイド/仕様へ反映した。Follow-up では不足していた観測を具体値・ラベル・仕様 ID に結びつけ、到達不能な実機/認証経路を pass にしていない。
+
+この範囲で標準と探索ガイドの v1 gate を満たす。全仕様の全境界をテストした意味ではない。特に実機永続化、通信失敗、ロータリー編集、履歴復元、macro/combo容量境界、狭幅/全localeは未検証のまま。low agent の完了報告を無審査で信用せず、必須観測のレビューを運用に残す。
+
+別途 [不正 hash の候補](release-hash-candidate.md) は coordinator がコードレビューからブラウザ再現まで実施。製品不具合の修正や受け入れは本タスクでは行っていない。
+
+## 自動検証
+
+- `npm run spec:check`: ローカルリンク、必須節、299 IDs、Pageソース参照を確認。
+- `npm run lint`、`npm run build`: 成功（build の既存 large-chunk warning あり）。
+- `npm test -- --runInBand`: main 接続修正取込後、85 suites / 707 passed / 1 skipped。既存 console warning は残るが失敗なし。
+- ブラウザ観測中に app source / generate / build を変更していない。docs 更新に伴う Vite CSS HMR はあり、見た目全般や無瞬断の保証はしていない。
+
+後始末: 全 worker の報告を受領して専有 terminal を解放（同一 terminal の過去 dispatch は再利用履歴として残る）。今回作成した 5180–5183 の6ブラウザタブを閉じ、確認済みの4 Vite プロセスを終了した。報告に示す表示値/設定の復帰範囲は確認したが、テストで追加された localStorage override のキー有無・IndexedDB 履歴・clipboard の元内容まで完全復元したとは主張しない。
