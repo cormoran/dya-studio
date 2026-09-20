@@ -12,6 +12,8 @@
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
 
+Orca 1.4.205 の CLI には `orca dialog accept --page <id> --json` / `orca dialog dismiss --page <id> --json` がある（使用前に現在の `--help` を確認）。クリック後の dialog を処理し、成功応答と再 snapshot を記録する。保留 dialog がない等の失敗応答なら承認の証拠にはならない。
+
 保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
 
 ## 1 回のセッション
@@ -21,6 +23,8 @@ native confirm/alert は HTML dialog と別で、snapshot に現れない場合�
 Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `runtime_unavailable` や localhost 接続失敗が出る場合、アプリ停止と断定せず、許可された `require_escalated` 実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。制約で実行できなければ coordinator に具体的エラーを送り、環境修復を依頼する。worker は独自に runtime の serve/restart を繰り返さない。サーバーの実 URL が予定ポートと違うことも確認する。問題が解消するまで UI 結果は blocked とする。
 
 環境情報は UI を開けなくても記録する。モデル/effort は worker launch 情報、app/spec commit は `git rev-parse HEAD` と仕様の作業ツリー差分から取得する。viewport は UI 到達後に読み取り専用の `window.innerWidth/innerHeight` で取得してよい。
+
+低コスト実行では snapshot JSON 全体（refs と tree の重複）を何度も読み込まず、`result.snapshot` を抽出する。例: `orca snapshot --page <id> --json | jq -r '.result.snapshot'`（jq 利用可能時）。操作に使う ref はその最新 tree から取得する。screenshot の base64 を会話へ大量に出力する代わりに、ツールが提供する画像/ファイルを扱う。画像を取得しただけで保存していなければ、存在しないファイルへのリンクは報告しない。
 
 15–25 分または 3–5 charter を目安とし、完了を時間だけで判断しない。charter は「何を・どのリスクについて・何を証拠に」探索するかの短い宣言。
 
@@ -64,3 +68,18 @@ Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `ru
 低コスト agent がコードを読まず開始でき、3 つ以上の charter と変形操作を行い、仕様 ID と具体的観測を結びつけられること。blocked を pass にしないこと。仕様不足が実行を妨げた場合は修正し、同じモデルで再試行する。合格は対象フローの範囲に限り、アプリ全体の無欠陥を意味しない。
 
 各 charter を丸ごと pass にせず、実行した操作と未実行操作を分ける。親が dialog を閉じる仕様は「開いたまま tab/layer を切替」で検証し、先に自分で閉じてから切替してもその証拠にはならない。永続化は Save → ページ内 Reload の値まで確認する。キー pilot は Close/Escape の mode 差、auto advance OFF/末尾、Save/Reload を必須観測とする。
+
+## テスト agent への依頼ひな形
+
+```text
+対象: <仕様ファイルとroute>。URL: <起動済みの実URL>。Demo のみ。
+読むもの: AGENTS.md、spec README、探索ガイド、対象ページ/共有モジュール仕様。
+アプリコードを読まず、仕様を使って3つのcharter+変形操作を行う。
+Orcaコマンドはsandbox外（exec_command の require_escalated）で実行する。
+自分のtabを作り、browserPageIdをすべての操作に指定する。
+Demo内の編集・保存・復帰は許可範囲。実機/外部サービスは操作しない。
+出力: <専有するvalidation report>。操作単位で仕様ID、期待/実測、証拠、判定。
+承認していないconfirm後の動作、未実行、実機依存はpassにしない。
+UIの値とブラウザ設定を元へ戻し、未復帰なら残存値を報告する。
+仕様/手順の不足も報告する。コード修正や勝手な要件変更は行わない。
+```

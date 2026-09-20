@@ -12,7 +12,7 @@
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S1   | [KeymapPage](../../../src/pages/KeymapPage.tsx): `handleBindingSelect`, `closeSelector`, layer handlers, JSX                                                  |
 | S2   | [useKeymap](../../../src/hooks/useKeymap.ts): `setBinding`, `saveChanges`, `discardChanges`, `resetToDefault`, `loadKeymapData`                               |
-| S3   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleBehaviorSelect`, `handleParam1Change`, `handleApply`, presentation                     |
+| S3   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleBehaviorSelect`, `handleParam1Change`, `handleOpenChange`, presentation                |
 | S4   | [page tests](../../../src/pages/__tests__/KeymapPage.test.tsx): floating editing, reset menu, layers, lock tests                                              |
 | S5   | [PhysicalKey](../../../src/components/PhysicalKey.tsx), [KeyboardLayout](../../../src/components/KeyboardLayout.tsx): key tooltip/reset affordances           |
 | S6   | [history hook](../../../src/hooks/versionHistory/useKeymapVersionHistory.ts), [ResetVersionMenu](../../../src/components/versionHistory/ResetVersionMenu.tsx) |
