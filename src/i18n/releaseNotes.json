@@ -4,20 +4,66 @@
       "version": "upcoming",
       "date": null,
       "changes": {
-        "major": [],
-        "minor": [
+        "major": [
           {
-            "en": "Add Chinese (中文) UI translation alongside English and Japanese",
-            "ja": "英語と日本語に加えて中国語（中文）のUI翻訳を追加",
-            "zh": "在英语和日语之外新增中文（中文）界面翻译"
+            "en": "Use DYA Studio in Simplified Chinese, with automatic browser-language detection and a three-language switcher.",
+            "ja": "ブラウザ言語の自動判定と3言語の切り替えに対応し、DYA Studioを簡体字中国語で利用できるようになりました。",
+            "zh": "DYA Studio 现已支持简体中文、浏览器语言自动检测及三种语言切换。",
+            "pr": 167
           },
           {
-            "en": "Add Electron desktop app build support with macOS/Windows installers",
-            "ja": "macOS / Windows インストーラー対応のElectronデスクトップアプリビルドサポートを追加",
-            "zh": "新增 Electron 桌面应用构建支持，可生成 macOS/Windows 安装包"
+            "en": "Install DYA Studio as a desktop app for macOS or Windows from each GitHub release.",
+            "ja": "各GitHubリリースから、macOSまたはWindows向けのデスクトップアプリをインストールできるようになりました。",
+            "zh": "现在可从每个 GitHub Release 安装适用于 macOS 或 Windows 的 DYA Studio 桌面应用。",
+            "pr": [167, 170]
+          },
+          {
+            "en": "Discover and troubleshoot PMW3610 sensors connected to split-keyboard peripherals, not only the central side.",
+            "ja": "分割キーボードの中央側だけでなく、ペリフェラル側に接続されたPMW3610センサーも検出して診断できるようになりました。",
+            "zh": "现在不仅能检测中央侧，还能检测并诊断连接在分体键盘从机侧的 PMW3610 传感器。",
+            "pr": 168
+          },
+          {
+            "en": "Control power management and advanced keyboard settings from compatible WebMCP clients while the Settings page is open.",
+            "ja": "設定ページを開いている間、対応するWebMCPクライアントから電源管理やキーボードの詳細設定を操作できるようになりました。",
+            "zh": "打开设置页面时，现在可通过兼容的 WebMCP 客户端控制电源管理和键盘高级设置。",
+            "pr": 171
+          },
+          {
+            "en": "Edit key bindings faster with a draggable floating editor, automatic next-key selection, improved behavior search, and customizable quick selections.",
+            "ja": "ドラッグできるフローティングエディタ、自動的な次キー選択、改善されたbehavior検索、カスタマイズ可能なクイック選択により、キー割り当てをより素早く編集できるようになりました。",
+            "zh": "通过可拖动的浮动编辑器、自动选择下一个按键、改进的行为搜索和可自定义的快速选择，可更快地编辑按键绑定。",
+            "pr": [173, 175, 176]
+          },
+          {
+            "en": "Use DYA Studio more comfortably on phones with contained scrolling, touch-friendly actions, compact settings, and corrected portrait viewport behavior.",
+            "ja": "スクロール範囲の整理、タッチしやすい操作、コンパクトな表示設定、縦画面の表示修正により、スマートフォンでより快適に使えるようになりました。",
+            "zh": "通过限制滚动范围、触控友好的操作、紧凑的显示设置和修正竖屏视口行为，提升了手机上的使用体验。",
+            "pr": [180, 183]
           }
         ],
-        "patch": []
+        "minor": [
+          {
+            "en": "Refined keymap controls, keycap states, focus visibility, spacing, and responsive layouts across the app.",
+            "ja": "キーマップの操作部品やキー状態、フォーカス表示、余白、アプリ全体のレスポンシブレイアウトを調整しました。",
+            "zh": "优化了键位图控件、键帽状态、焦点可见性、间距以及应用全局的响应式布局。",
+            "pr": 172
+          },
+          {
+            "en": "Expanded Home with DYA2 product links, keyboard-development resources, and a card for the latest published release.",
+            "ja": "ホームにDYA2の製品リンク、キーボード開発者向け資料、最新の公開リリースカードを追加しました。",
+            "zh": "主页新增 DYA2 产品链接、键盘开发资源和最新已发布版本卡片。",
+            "pr": 181
+          }
+        ],
+        "patch": [
+          {
+            "en": "Demo sessions now recover after a page reload while keeping the selected workspace.",
+            "ja": "ページを再読み込みした後も、選択中のワークスペースを保ったままDemoセッションを復元するようになりました。",
+            "zh": "页面重新加载后，Demo 会话现在会在保留所选工作区的情况下恢复。",
+            "pr": 177
+          }
+        ]
       }
     },
     {
