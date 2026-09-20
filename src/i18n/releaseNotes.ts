@@ -83,6 +83,11 @@ export function getReleases(): Release[] {
   return releaseNotes.releases;
 }
 
+/** The newest published release, excluding the in-progress upcoming section. */
+export function getLatestRelease(): Release | null {
+  return releaseNotes.releases.find((release) => !isUpcoming(release)) ?? null;
+}
+
 /** True when a release is the in-progress `upcoming` section. */
 export function isUpcoming(release: Release): boolean {
   return release.version === UPCOMING;
@@ -108,7 +113,7 @@ export function isEmptyRelease(release: Release): boolean {
  * screen link.
  */
 export function getCurrentVersion(): string | null {
-  const released = releaseNotes.releases.find((r) => !isUpcoming(r));
+  const released = getLatestRelease();
   return released ? released.version : null;
 }
 
