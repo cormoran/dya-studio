@@ -80,6 +80,10 @@ const PRESET_LABEL: Record<number, string> = {
   10: "10 minutes",
 };
 
+test.fixme(
+  "non-split Renode does not deliver the zmk__settings response or notification",
+);
+
 test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (zmk__settings)", async ({
   page,
 }) => {
