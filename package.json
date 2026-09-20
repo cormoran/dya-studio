@@ -5,6 +5,7 @@
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
+    "spec:check": "node scripts/check-spec.mjs",
     "dev": "npm run generate && vite",
     "build": "npm run generate && tsc -b && vite build",
     "lint": "eslint .",

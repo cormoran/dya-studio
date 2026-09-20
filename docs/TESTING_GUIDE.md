@@ -1,5 +1,7 @@
 # Testing Guide for Coding Agents
 
+For browser-based exploratory testing, start with the [product specifications](spec/README.md) and [exploratory UI testing guide](spec/EXPLORATORY_TESTING.md). Unit tests below complement browser observations; neither should be reported as the other. Run `npm run spec:check` when editing specifications.
+
 ```bash
 npm test                  # Run tests
 npm run test:watch        # Watch mode

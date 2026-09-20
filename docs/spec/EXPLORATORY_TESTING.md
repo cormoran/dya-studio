@@ -8,7 +8,19 @@
 4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/実機、初期値を記録する。並列 worker は別タブを作成し page ID を全操作に指定する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
 5. 観測 → 操作 → 再観測を繰り返す。要素参照は snapshot 後に取得し、画面変化後は再取得する。UI 操作を DOM/React 状態への書き込みで代用しない。
 
+この作業で Demo 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。実機・外部アカウントは別条件。
+
+native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
+
+保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
+
 ## 1 回のセッション
+
+### 環境に到達できない場合
+
+Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `runtime_unavailable` や localhost 接続失敗が出る場合、アプリ停止と断定せず、許可された `require_escalated` 実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。制約で実行できなければ coordinator に具体的エラーを送り、環境修復を依頼する。worker は独自に runtime の serve/restart を繰り返さない。サーバーの実 URL が予定ポートと違うことも確認する。問題が解消するまで UI 結果は blocked とする。
+
+環境情報は UI を開けなくても記録する。モデル/effort は worker launch 情報、app/spec commit は `git rev-parse HEAD` と仕様の作業ツリー差分から取得する。viewport は UI 到達後に読み取り専用の `window.innerWidth/innerHeight` で取得してよい。
 
 15–25 分または 3–5 charter を目安とし、完了を時間だけで判断しない。charter は「何を・どのリスクについて・何を証拠に」探索するかの短い宣言。
 
@@ -50,3 +62,5 @@
 ## ガイド自体の合格条件
 
 低コスト agent がコードを読まず開始でき、3 つ以上の charter と変形操作を行い、仕様 ID と具体的観測を結びつけられること。blocked を pass にしないこと。仕様不足が実行を妨げた場合は修正し、同じモデルで再試行する。合格は対象フローの範囲に限り、アプリ全体の無欠陥を意味しない。
+
+各 charter を丸ごと pass にせず、実行した操作と未実行操作を分ける。親が dialog を閉じる仕様は「開いたまま tab/layer を切替」で検証し、先に自分で閉じてから切替してもその証拠にはならない。永続化は Save → ページ内 Reload の値まで確認する。キー pilot は Close/Escape の mode 差、auto advance OFF/末尾、Save/Reload を必須観測とする。

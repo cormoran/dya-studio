@@ -4,6 +4,10 @@
 
 入口: `/keymap` または `Keymap` タブ。接続前はアプリの接続画面を表示する。コード確認: 2026-09-20、`db09841`。以下はコード確認であり UI 実測は [検証記録](../validation/README.md) に分離する。
 
+共通契約: [binding editor](../modules/binding-editor.md)。モード固有の終了/適用条件、検索、modifier はこのモジュール仕様を参照する。
+
+子仕様: [rotary encoder](keymap-sensors.md)。キー編集と sensor 設定では適用・保存の経路が異なる。
+
 | 根拠 | ソースと symbol                                                                                                                                               |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S1   | [KeymapPage](../../../src/pages/KeymapPage.tsx): `handleBindingSelect`, `closeSelector`, layer handlers, JSX                                                  |
@@ -31,24 +35,24 @@
 
 ## 現行の機能仕様
 
-| ID     | 前提 → 操作                                                  | 観測できる結果                                                                                                                                   | 保存範囲・副作用                                                                                           | 根拠                      |
-| ------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
-| KM-001 | layer ボタンを選ぶ                                           | 押下状態と preview の layer が変わり、開いていた selector は閉じる                                                                               | 選択だけでは binding を書かない                                                                            | S1                        |
-| KM-002 | preview のキーをクリック、behavior と必要な parameter を選ぶ | modal が開く。初期は `Close on select` ON で最後の parameter 選択時に適用・閉じる                                                                | binding をデバイス RAM に書く。Save は別操作                                                               | S1/S2/S3                  |
-| KM-003 | modal の `Floating mode` / floating の `Dialog mode`         | 同じ編集対象で表示形式を切替。切替そのものでは binding を適用しない                                                                              | `keymapSelectorMode` を localStorage に保存                                                                | S1/S4                     |
-| KM-004 | floating で binding 適用、`Auto advance` ON                  | 成功したら物理位置の次キーへ。最後のキーでは閉じる。別 layer に巡回しない                                                                        | 初期 ON。設定は `keymapAutoAdvance` に保存                                                                 | S1/S4                     |
-| KM-005 | `Auto advance` OFF で適用、または Previous/Next key          | OFF なら成功後も同じキー。矢印は適用せず移動。先頭の Previous / 末尾の Next は無効                                                               | 選択移動のみでは書込みなし                                                                                 | S1/S4                     |
-| KM-006 | selector で Escape / Close、layer / tab / connection 切替    | selector が閉じる。未適用 draft は適用しない                                                                                                     | 既に適用した RAM の編集を破棄する操作ではない                                                              | S1/S3                     |
-| KM-007 | dirty → Save                                                 | 成功後 `Saved`、Save 無効、未保存 highlight が解消                                                                                               | デバイス flash へ保存。Demo は実 flash の検証ではない                                                      | S2 saveChanges            |
-| KM-008 | dirty → Reset → Discard                                      | native confirm。キャンセルは変更なし。承認で保存値を再取得                                                                                       | RAM の未保存編集を破棄                                                                                     | S1/S2                     |
-| KM-009 | Reload                                                       | device の現在値を再取得。RAM に残る未保存編集は破棄しない                                                                                        | 保存操作ではない                                                                                           | S1/S2                     |
-| KM-010 | Reset → Reset to initial state                               | fast-keymap 非対応では無効。対応時は `Reset to default keymap?` 確認、Cancel は変更なし                                                          | 承認で現在の active layers の取得済み default binding を順次適用して Save。全設定の factory reset ではない | S1/S2 resetToDefault      |
-| KM-011 | layer の up/down, Add, Delete, Restore                       | 先頭 up/末尾 down 無効。追加は新 layer 選択。最後の 1 layer は削除不可。削除に confirm。Restore は削除済み ID を選択して末尾復元、全復元は ID 順 | デバイス layer 操作。未保存/保存表示も観測する                                                             | S1/S2                     |
-| KM-012 | Rename layer → 入力 → Rename / Enter                         | 現在名で開く、max length は device 値。Escape/Cancel は閉じる                                                                                    | デバイス layer 名更新。失敗時も dialog を閉じる経路がある                                                  | S1 handleRenameConfirm/S2 |
-| KM-013 | OS Layout を変更                                             | preview/selector の表示ラベルが変わる                                                                                                            | ブラウザ設定。OS 設定/firmware mapping は変更しない                                                        | S1                        |
-| KM-014 | Physical Layout を変更（複数時）                             | active physical layout と keymap を更新、selector は閉じる                                                                                       | device RPC。geometry は必要時取得                                                                          | S1/S2 setActiveLayout     |
-| KM-015 | Stream を ON、別タブへ移動                                   | device 入力の highlight と active layer 追従。離れると stream OFF                                                                                | firmware 入力が必要。ブラウザ key overlay と device stream は別                                            | S1                        |
-| KM-016 | Reset の保存版を選ぶ                                         | diff を確認してから復元                                                                                                                          | IndexedDB の履歴。メニュー選択だけでは device を書き換えない                                               | S6                        |
+| ID     | 前提 → 操作                                                  | 観測できる結果                                                                                                                                                       | 保存範囲・副作用                                                                                           | 根拠                      |
+| ------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
+| KM-001 | layer ボタンを選ぶ                                           | 押下状態と preview の layer が変わり、開いていた selector は閉じる                                                                                                   | 選択だけでは binding を書かない                                                                            | S1                        |
+| KM-002 | preview のキーをクリック、behavior と必要な parameter を選ぶ | modal が開く。初期は `Close on select` ON で最後の parameter 選択時に適用・閉じる                                                                                    | binding をデバイス RAM に書く。Save は別操作                                                               | S1/S2/S3                  |
+| KM-003 | modal の `Floating mode` / floating の `Dialog mode`         | 同じ編集対象で表示形式を切替。切替そのものでは binding を適用しない                                                                                                  | `keymapSelectorMode` を localStorage に保存                                                                | S1/S4                     |
+| KM-004 | floating で binding 適用、`Auto advance` ON                  | 成功したら物理位置の次キーへ。最後のキーでは閉じる。別 layer に巡回しない                                                                                            | 初期 ON。設定は `keymapAutoAdvance` に保存                                                                 | S1/S4                     |
+| KM-005 | `Auto advance` OFF で適用、または Previous/Next key          | OFF なら成功後も同じキー。矢印は適用せず移動。先頭の Previous / 末尾の Next は無効                                                                                   | 選択移動のみでは書込みなし                                                                                 | S1/S4                     |
+| KM-006 | selector で Escape / Close、layer / tab / connection 切替    | floating の Close/Escape は未適用 draft を破棄。modal の Close/Escape/外側クリックは現在の値を適用して閉じる。親による layer/tab/connection 切替は selector を閉じる | modal の取消は Revert で開始値へ戻してから閉じる。既適用 RAM を破棄するには Discard                        | S1/S3 handleOpenChange    |
+| KM-007 | dirty → Save                                                 | 成功後 `Saved`、Save 無効、未保存 highlight が解消                                                                                                                   | デバイス flash へ保存。Demo は実 flash の検証ではない                                                      | S2 saveChanges            |
+| KM-008 | dirty → Reset → Discard                                      | native confirm。キャンセルは変更なし。承認で保存値を再取得                                                                                                           | RAM の未保存編集を破棄                                                                                     | S1/S2                     |
+| KM-009 | Reload                                                       | device の現在値を再取得。RAM に残る未保存編集は破棄しない                                                                                                            | 保存操作ではない                                                                                           | S1/S2                     |
+| KM-010 | Reset → Reset to initial state                               | fast-keymap 非対応では無効。対応時は `Reset to default keymap?` 確認、Cancel は変更なし                                                                              | 承認で現在の active layers の取得済み default binding を順次適用して Save。全設定の factory reset ではない | S1/S2 resetToDefault      |
+| KM-011 | layer の up/down, Add, Delete, Restore                       | 先頭 up/末尾 down 無効。追加は新 layer 選択。最後の 1 layer は削除不可。削除に confirm。Restore は削除済み ID を選択して末尾復元、全復元は ID 順                     | デバイス layer 操作。未保存/保存表示も観測する                                                             | S1/S2                     |
+| KM-012 | Rename layer → 入力 → Rename / Enter                         | 現在名で開く、max length は device 値。Escape/Cancel は閉じる                                                                                                        | デバイス layer 名更新。失敗時も dialog を閉じる経路がある                                                  | S1 handleRenameConfirm/S2 |
+| KM-013 | OS Layout を変更                                             | preview/selector の表示ラベルが変わる                                                                                                                                | ブラウザ設定。OS 設定/firmware mapping は変更しない                                                        | S1                        |
+| KM-014 | Physical Layout を変更（複数時）                             | active physical layout と keymap を更新、selector は閉じる                                                                                                           | device RPC。geometry は必要時取得                                                                          | S1/S2 setActiveLayout     |
+| KM-015 | Stream を ON、別タブへ移動                                   | device 入力の highlight と active layer 追従。離れると stream OFF                                                                                                    | firmware 入力が必要。ブラウザ key overlay と device stream は別                                            | S1                        |
+| KM-016 | Reset の保存版を選ぶ                                         | diff を確認してから復元                                                                                                                                              | IndexedDB の履歴。メニュー選択だけでは device を書き換えない                                               | S6                        |
 
 ## 代表ユーザーフロー
 
@@ -66,7 +70,7 @@
 2. Auto advance の押下状態を確認し ON にする。異なる binding を選ぶ → N+1、selector は開いたまま。
 3. OFF にして別 binding を選ぶ → N が変わらない。Next → N+1（binding は適用しない）。
 4. preview の最後のキーを選び、Next 無効を確認。ON で適用 → selector が閉じ、layer は変わらない。
-5. 再度開いて mode を往復、Escape → 未適用値が書かれていないことを確認。編集は Reset → Discard で破棄し、元の mode/auto advance を復帰。
+5. 再度開いて mode を往復し、floating の状態で Escape → 未適用値が書かれていないことを確認。modal の Close/Escape は適用して閉じるため取消として使わない。編集は Reset → Discard で破棄し、元の mode/auto advance を復帰。
 
 ### F3: layer と取消（KM-001/008/010/011/012）
 
@@ -79,7 +83,7 @@
 
 - KM-I01: 別の layer/position に binding を誤適用しない。前後 2 キーと別 layer を比較（KM-R01、S1）。
 - KM-I02: floating の失敗時は選択を進めない。先行 RPC 完了で後から選んだキーを移動させない。二重適用を抑止する（S1 applyingBindingRef/selectionRevision、S4）。通常 Demo の即時応答だけでは検証できない。
-- KM-I03: mode 切替・矢印・Escape だけで draft を書き込まない（S4）。
+- KM-I03: mode 切替・矢印・floating の Escape だけで draft を書き込まない（S4）。modal は Close/Escape で適用する現行仕様であり、floating と同一視しない（S3 handleOpenChange）。
 - KM-I04: OS Layout の変更だけで device binding を変更しない（S1 の説明、表示用 context）。
 
 ## エラーと復帰

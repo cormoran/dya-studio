@@ -9,3 +9,11 @@
 ## Round 1: キーマップへの適用による draft 修正
 
 `db09841` の page → hook → selector と page tests を照合した。modal は適用 callback の直後に閉じる経路があり、floating と失敗時挙動が異なる。また default reset は binding を順に変更してから保存するため原子的ではない。これを踏まえ、同じ UI の見た目でも presentation ごとの結果、部分失敗、RAM/flash/ブラウザの保存範囲を分ける粒度にした。layer rename の失敗時 dialog 閉鎖も「正常」として要求に昇格せず未解決として残した。
+
+追加レビューで `KeycodeSelector.handleOpenChange` の modal 終了時自動適用を発見した。初稿の KM-006/I03 は floating の性質を modal に広げており誤りだったため修正。標準に Close/Escape/外側クリック/親画面切替を別々に追う規則を追加した。pilot worker に更新を通知し、この区別も UI 確認対象にした。
+
+## Round 2: luna-low によるガイドの試用
+
+[初回](keymap-luna-round1.md) は sandbox 内の Orca/localhost 接続失敗で UI 未実行。coordinator が sandbox 外の HTTP 200 と live runtime を確認し、ガイドに昇格実行での切り分けを追記。[再試行](keymap-luna-round2.md) は実 UI で modal 適用、floating Next/auto advance、layer 分離を観測。
+
+レビューでは再試行 report に次の過大判定を発見したため、この report は最終判定ではない。Discard は native confirm の承認証拠がなく、KM-008 の承認後の挙動は **blocked**（不具合確定ではない）。Save enabled の観測だけでは KM-007 の保存は **not-run**。既に閉じた selector で layer を切替しても「layer 切替で閉じる」の検証にはならない。mode 切替は localStorage の変更なので「設定変更なし」も不正確。ガイドにこの区別、Demo Save の実行許可、設定の後始末を明記し、終了操作・境界・Save/Reload を次 round の必須にした。
