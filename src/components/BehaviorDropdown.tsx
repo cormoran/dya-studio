@@ -468,7 +468,7 @@ export function BehaviorDropdown({
       <div className="flex items-stretch gap-1">
         <button
           type="button"
-          className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "flex-1 px-3 py-1.5"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
+          className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "h-9 flex-1 px-3"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
           aria-expanded={isOpen}
           onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
         >
@@ -489,13 +489,13 @@ export function BehaviorDropdown({
           />
         </button>
         {!compact && (
-          <div ref={quickSelectSettingsTriggerRef} className="h-full">
+          <div ref={quickSelectSettingsTriggerRef}>
             <EditorTooltip content={t("Configure Quick Select")}>
               <button
                 type="button"
                 aria-label={t("Configure Quick Select")}
                 aria-expanded={isQuickSelectSettingsOpen}
-                className={`h-full shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                className={`h-9 w-9 shrink-0 rounded border ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
                 onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
               >
                 <IconAdjustments size={16} />

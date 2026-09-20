@@ -53,6 +53,10 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   const settingsButton = screen.getByRole("button", {
     name: "Configure Quick Select",
   });
+  expect(screen.getByRole("button", { name: "Select behavior" })).toHaveClass(
+    "h-9",
+  );
+  expect(settingsButton).toHaveClass("h-9", "w-9");
   await user.click(settingsButton);
   expect(screen.getByText("Quick Select settings")).toBeInTheDocument();
   await user.click(settingsButton);
