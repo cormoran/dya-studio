@@ -614,7 +614,6 @@ export function KeycodeSelector({
               <KeycodeValueSelector
                 key={floating ? "floating" : "modal"}
                 compact={floating}
-                compactModifiers
                 toolbar={toolbar}
                 value={value}
                 onChange={onChange}
@@ -841,22 +840,21 @@ export function KeycodeSelector({
                   <div
                     className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
                   >
-                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-                      {t("Parameters")}
-                    </label>
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs font-medium text-[var(--color-text-muted)]">
+                        {t("Parameters")}
+                      </label>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {t(activeParam === 1 ? "param1" : "param2")} -{" "}
+                        {getParamTypeDescription(
+                          selectedBehaviorInfo,
+                          activeParam,
+                          t,
+                        )}
+                      </span>
+                    </div>
                   </div>
                   {!inlineParamToolbar && parameterTabs}
-
-                  {/* Parameter Description */}
-                  <div
-                    className={`px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] ${floating ? "hidden" : "hidden tablet:block"}`}
-                  >
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {activeParam === 1
-                        ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
-                        : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
-                    </p>
-                  </div>
 
                   {/* Parameter Value Selector */}
                   <div

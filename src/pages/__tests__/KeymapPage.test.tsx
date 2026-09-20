@@ -417,7 +417,7 @@ describe("KeymapPage", () => {
           screen.getByRole("button", { name: "Close on select" }),
         ).toHaveAttribute("aria-pressed", "true");
         expect(
-          screen.getByRole("button", { name: "Modifiers", exact: true }),
+          screen.getByRole("button", { name: "LCtrl", exact: true }),
         ).toBeInTheDocument();
         await user.click(screen.getByRole("button", { name: "Floating mode" }));
         expect(screen.getByRole("dialog")).toBeInTheDocument();
