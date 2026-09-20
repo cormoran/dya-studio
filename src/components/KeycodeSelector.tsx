@@ -747,13 +747,11 @@ export function KeycodeSelector({
                   {t("Select Key Binding")}
                 </Dialog.Title>
                 {!floating && (
-                  <span className="ml-auto text-xs font-medium text-[var(--color-text-muted)]">
+                  <span className="text-xs font-medium text-[var(--color-text-muted)]">
                     {t("Select Behavior")}
                   </span>
                 )}
-                <div
-                  className={`${floating ? "ml-auto " : ""}flex items-center gap-1`}
-                >
+                <div className="ml-auto flex items-center gap-1">
                   {!floating && toolbar}
                   {!floating && (
                     <EditorTooltip
