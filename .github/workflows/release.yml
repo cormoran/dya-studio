@@ -3,23 +3,26 @@ name: Release DYA Studio
 on:
   workflow_dispatch:
 
-# Needed to commit the version bump back to main, push the tag, and create the
-# GitHub Release. If `main` is a protected branch, the pushing identity must be
-# allowed to bypass protection (or swap `token` below for a suitable PAT).
 permissions:
+  actions: write
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     environment:
       name: cloudflare-release
     steps:
       - uses: actions/checkout@v5
         with:
           # Full history + tags so scripts/release.ts can resolve the next
-          # increment, and so we can push the version-bump commit to main.
+          # increment and a rerun can recover the release commit.
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
@@ -27,23 +30,100 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Resolve version and update release notes
-        id: version
-        # Promotes the `upcoming` section to a dated YYYY.MM.DD.N version and
-        # prepends a fresh empty `upcoming`. Exposes `version` as an output.
-        run: node scripts/release.ts
-
-      - name: Commit, tag, and push version bump
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
+      - name: Prepare release pull request branch
+        id: release
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/i18n/releaseNotes.json
-          git commit -m "chore(release): $VERSION"
-          git tag "v$VERSION"
-          git push origin HEAD:main
-          git push origin "v$VERSION"
+          RELEASE_BRANCH="release/run-${GITHUB_RUN_ID}"
+
+          # Keep the branch until the release finishes so rerunning this run
+          # resumes the same version instead of creating a second release.
+          if git ls-remote --exit-code --heads origin "refs/heads/$RELEASE_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$RELEASE_BRANCH"
+            git checkout --detach FETCH_HEAD
+            VERSION=$(git log -1 --format=%s | sed -n 's/^chore(release): //p')
+            if [ -z "$VERSION" ]; then
+              echo "Could not recover the version from $RELEASE_BRANCH" >&2
+              exit 1
+            fi
+          else
+            # Promote `upcoming` to a dated version and prepend a new empty
+            # `upcoming` section. The version is also printed to stdout.
+            VERSION=$(GITHUB_OUTPUT= node scripts/release.ts)
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/i18n/releaseNotes.json
+            git commit -m "chore(release): $VERSION"
+            git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
+          fi
+
+          echo "branch=$RELEASE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create, validate, and merge release pull request
+        id: merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ steps.release.outputs.branch }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          PR_NUMBER=$(gh pr list \
+            --state all \
+            --head "$RELEASE_BRANCH" \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -z "$PR_NUMBER" ]; then
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$RELEASE_BRANCH" \
+              --title "chore(release): $VERSION" \
+              --body "Automated release notes promotion for $VERSION.")
+            PR_NUMBER=${PR_URL##*/}
+          fi
+
+          PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq .state)
+          if [ "$PR_STATE" = "OPEN" ]; then
+            RELEASE_SHA=$(git rev-parse HEAD)
+            gh workflow run test.yml --ref "$RELEASE_BRANCH"
+
+            CI_RUN_ID=""
+            for _ in {1..30}; do
+              CI_RUN_ID=$(gh run list \
+                --workflow test.yml \
+                --branch "$RELEASE_BRANCH" \
+                --event workflow_dispatch \
+                --commit "$RELEASE_SHA" \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId // empty')
+              if [ -n "$CI_RUN_ID" ]; then
+                break
+              fi
+              sleep 2
+            done
+
+            if [ -z "$CI_RUN_ID" ]; then
+              echo "Could not find the validation run for $RELEASE_SHA" >&2
+              exit 1
+            fi
+
+            gh run watch "$CI_RUN_ID" --exit-status
+            gh pr merge "$PR_NUMBER" --squash --match-head-commit "$RELEASE_SHA"
+          elif [ "$PR_STATE" != "MERGED" ]; then
+            echo "Release pull request #$PR_NUMBER is $PR_STATE" >&2
+            exit 1
+          fi
+
+          MERGE_SHA=$(gh pr view "$PR_NUMBER" --json mergeCommit --jq '.mergeCommit.oid // empty')
+          if [ -z "$MERGE_SHA" ]; then
+            echo "Could not resolve the merge commit for #$PR_NUMBER" >&2
+            exit 1
+          fi
+
+          git fetch origin main --tags
+          git checkout --detach "$MERGE_SHA"
+          echo "sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: npm run build
@@ -66,13 +146,36 @@ jobs:
           environment: release
           wranglerVersion: "4.58.0"
 
+      - name: Tag released commit
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          MERGE_SHA: ${{ steps.merge.outputs.sha }}
+        run: |
+          if git rev-parse --verify "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            TAG_SHA=$(git rev-list -n 1 "v$VERSION")
+            if [ "$TAG_SHA" != "$MERGE_SHA" ]; then
+              echo "v$VERSION already points to $TAG_SHA, expected $MERGE_SHA" >&2
+              exit 1
+            fi
+          else
+            git tag "v$VERSION" "$MERGE_SHA"
+            git push origin "v$VERSION"
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.release.outputs.version }}
         # The release body just deep-links to the matching section of the
         # release notes page deployed above.
         run: |
-          gh release create "v$VERSION" \
-            --title "$VERSION" \
-            --notes "Release notes: https://studio.dya.cormoran.works/release-notes#$VERSION"
+          if ! gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release create "v$VERSION" \
+              --title "$VERSION" \
+              --notes "Release notes: https://studio.dya.cormoran.works/release-notes#$VERSION"
+          fi
+
+      - name: Delete release branch
+        env:
+          RELEASE_BRANCH: ${{ steps.release.outputs.branch }}
+        run: git push origin --delete "$RELEASE_BRANCH"

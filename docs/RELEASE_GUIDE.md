@@ -20,10 +20,20 @@ manually (`workflow_dispatch`). It:
    today's date and existing git tags, then rewrites
    `src/i18n/releaseNotes.json`: the `upcoming` section becomes that version
    (dated today) and a fresh empty `upcoming` is prepended.
-2. Commits that change to `main`, tags it `vYYYY.MM.DD.N`, and pushes.
-3. Builds and deploys to Cloudflare Pages.
-4. Creates a GitHub Release whose body links to the matching section of the
+2. Pushes the change to a temporary `release/run-<workflow run id>` branch and
+   opens a pull request to `main`.
+3. Dispatches the normal `Test and Build Web UI` workflow for that exact
+   commit, waits for the required `build` check, and squash-merges the pull
+   request. This keeps the release process subject to the same branch rules as
+   every other change to `main`.
+4. Builds and deploys the merged commit to Cloudflare Pages, then tags it
+   `vYYYY.MM.DD.N`.
+5. Creates a GitHub Release whose body links to the matching section of the
    release notes page (`/release-notes#YYYY.MM.DD.N`).
+
+The temporary branch is retained until all release steps succeed. If a step
+fails after the branch is pushed, rerun the failed workflow run instead of
+starting a new dispatch; the rerun resumes the same version and pull request.
 
 The version-resolution and JSON-rewrite logic lives in
 `src/lib/releaseVersioning.ts` and is unit-tested
