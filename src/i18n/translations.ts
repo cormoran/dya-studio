@@ -205,6 +205,7 @@ const ja: Record<string, string> = {
   Sort: "並び替え",
   "Move layer up (higher priority)": "レイヤーを上へ移動（優先度を上げる）",
   "Move layer down (lower priority)": "レイヤーを下へ移動（優先度を下げる）",
+  "Rename current layer": "現在のレイヤー名を変更",
   "Add new layer": "新しいレイヤーを追加",
   "Delete current layer": "現在のレイヤーを削除",
   "Restore deleted layer": "削除したレイヤーを復元",
@@ -212,6 +213,8 @@ const ja: Record<string, string> = {
     "削除したレイヤーを復元（{{count}} 件利用可能）",
   "Restore all deleted layers ({{count}})":
     "削除したレイヤーをすべて復元（{{count}} 件）",
+  "Other deleted layers": "その他の削除済みレイヤー",
+  "Other deleted layers ({{count}})": "その他（{{count}} 件）",
   "No deleted layers to restore": "復元できる削除済みレイヤーはありません",
   "Physical Layout": "物理レイアウト",
   "Layout {{id}}": "レイアウト {{id}}",
@@ -1612,6 +1615,7 @@ const zh: Record<string, string> = {
   Sort: "排序",
   "Move layer up (higher priority)": "将层上移（更高优先级）",
   "Move layer down (lower priority)": "将层下移（更低优先级）",
+  "Rename current layer": "重命名当前层",
   "Add new layer": "添加新层",
   "Delete current layer": "删除当前层",
   "Restore deleted layer": "恢复已删除的层",
@@ -1619,6 +1623,8 @@ const zh: Record<string, string> = {
     "恢复已删除的层（可用 {{count}} 个）",
   "Restore all deleted layers ({{count}})":
     "恢复所有已删除的层（{{count}} 个）",
+  "Other deleted layers": "其他已删除的层",
+  "Other deleted layers ({{count}})": "其他（{{count}} 个）",
   "No deleted layers to restore": "没有可恢复的已删除层",
   "Physical Layout": "物理布局",
   "Layout {{id}}": "布局 {{id}}",

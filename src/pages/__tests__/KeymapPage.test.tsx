@@ -528,14 +528,25 @@ describe("KeymapPage", () => {
         within(dialog).getByRole("heading", { name: "Layout and display" }),
       ).toBeInTheDocument();
 
-      await user.selectOptions(
-        within(dialog).getByLabelText("Current layer"),
-        "1",
+      const layerButtons = within(dialog).getByRole("group", {
+        name: "Current layer",
+      });
+      await user.click(
+        within(layerButtons).getByRole("button", { name: "Lower" }),
       );
-      expect(within(dialog).getByLabelText("Current layer")).toHaveValue("1");
       expect(
-        within(dialog).getByRole("button", { name: "Move down" }),
+        within(layerButtons).getByRole("button", { name: "Lower" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Move layer down (lower priority)",
+        }),
       ).toBeDisabled();
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Move layer up (higher priority)",
+        }),
+      ).toHaveTextContent("");
 
       await user.selectOptions(
         within(dialog).getByLabelText("Physical Layout"),
@@ -552,6 +563,54 @@ describe("KeymapPage", () => {
         screen.queryByRole("dialog", { name: "Keymap settings" }),
       ).not.toBeInTheDocument();
       expect(trigger).toHaveFocus();
+    });
+
+    it("keeps mobile deleted-layer restore choices to three buttons plus an overflow menu", async () => {
+      const user = userEvent.setup();
+      const restoreLayer = jest
+        .fn()
+        .mockResolvedValue({ id: 0, name: "Restored", bindings: [] });
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          removedLayerIds: [2, 3, 4, 5, 6],
+          restoreLayer,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
+
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 2" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 3" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 4" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).queryByRole("button", { name: "Layer 5" }),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        within(dialog).getByRole("button", {
+          name: "Other deleted layers (2)",
+        }),
+      );
+      const menu = screen.getByRole("menu", {
+        name: "Other deleted layers",
+      });
+      await user.click(within(menu).getByRole("menuitem", { name: "Layer 6" }));
+
+      expect(restoreLayer).toHaveBeenCalledWith(6, 2);
+      expect(
+        screen.queryByRole("menu", { name: "Other deleted layers" }),
+      ).not.toBeInTheDocument();
     });
 
     it("should show unsaved changes indicator", () => {
@@ -759,7 +818,7 @@ describe("KeymapPage", () => {
       await user.click(screen.getByRole("button", { name: "Keymap settings" }));
       const settings = screen.getByRole("dialog", { name: "Keymap settings" });
       await user.click(
-        within(settings).getByRole("button", { name: "Rename" }),
+        within(settings).getByRole("button", { name: "Rename current layer" }),
       );
 
       expect(

@@ -118,7 +118,7 @@ export function EditorTooltip({
             side="bottom"
             sideOffset={6}
             collisionPadding={8}
-            className="z-[100] max-w-[min(20rem,calc(100vw-16px))] max-h-[var(--radix-tooltip-content-available-height)] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-xs text-[var(--color-text)] shadow-lg"
+            className="z-[10001] max-w-[min(20rem,calc(100vw-16px))] max-h-[var(--radix-tooltip-content-available-height)] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-2 text-xs text-[var(--color-text)] shadow-lg"
           >
             {content}
             <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />

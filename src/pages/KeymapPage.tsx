@@ -138,6 +138,7 @@ export function KeymapPage() {
   // Popup listing the device's deleted (restorable) layers, opened from the
   // restore button in the layer toolbar.
   const [showRestoreMenu, setShowRestoreMenu] = useState(false);
+  const [showMobileRestoreMenu, setShowMobileRestoreMenu] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -504,6 +505,9 @@ export function KeymapPage() {
     loadRuntimeMacros,
   ]);
 
+  const mobileVisibleRemovedLayerIds = keymap.removedLayerIds.slice(0, 3);
+  const mobileOverflowRemovedLayerIds = keymap.removedLayerIds.slice(3);
+
   return (
     <div className="keymap-page app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
@@ -670,119 +674,148 @@ export function KeymapPage() {
                           {t("Layer editing")}
                         </h2>
 
-                        <label
-                          htmlFor="keymap-mobile-current-layer"
+                        <p
+                          id="keymap-mobile-current-layer-label"
                           className="keymap-settings-label"
                         >
                           {t("Current layer")}
-                        </label>
-                        <select
-                          id="keymap-mobile-current-layer"
-                          value={selectedLayerIndex}
-                          onChange={(event) =>
-                            setSelectedLayerIndex(Number(event.target.value))
-                          }
-                          className="select-field min-h-11 w-full min-w-0 text-base"
+                        </p>
+                        <div
+                          className="keymap-settings-layer-list"
+                          role="group"
+                          aria-labelledby="keymap-mobile-current-layer-label"
                         >
                           {keymap.keymap.layers.map((layer, index) => (
-                            <option key={layer.id} value={index}>
+                            <button
+                              type="button"
+                              key={layer.id}
+                              className="keymap-settings-layer-button"
+                              aria-pressed={selectedLayerIndex === index}
+                              onClick={() => setSelectedLayerIndex(index)}
+                            >
                               {layer.name || t("Layer {{id}}", { id: index })}
-                            </option>
+                            </button>
                           ))}
-                        </select>
+                        </div>
 
                         <div
-                          className="keymap-settings-action-grid"
+                          className="keymap-settings-action-row"
                           role="group"
                           aria-label={t("Layer actions")}
                         >
-                          <button
-                            type="button"
-                            className="keymap-settings-action"
-                            onClick={() =>
-                              handleMobileLayerAction(handleMoveLayerUp)
-                            }
-                            disabled={selectedLayerIndex <= 0}
+                          <EditorTooltip
+                            content={t("Move layer up (higher priority)")}
                           >
-                            <IconChevronUp size={18} />
-                            {t("Move up")}
-                          </button>
-                          <button
-                            type="button"
-                            className="keymap-settings-action"
-                            onClick={() =>
-                              handleMobileLayerAction(handleMoveLayerDown)
-                            }
-                            disabled={
-                              selectedLayerIndex >=
-                              keymap.keymap.layers.length - 1
-                            }
+                            <button
+                              type="button"
+                              className="keymap-settings-action"
+                              aria-label={t("Move layer up (higher priority)")}
+                              onClick={() =>
+                                handleMobileLayerAction(handleMoveLayerUp)
+                              }
+                              disabled={selectedLayerIndex <= 0}
+                            >
+                              <IconChevronUp size={19} />
+                            </button>
+                          </EditorTooltip>
+                          <EditorTooltip
+                            content={t("Move layer down (lower priority)")}
                           >
-                            <IconChevronDown size={18} />
-                            {t("Move down")}
-                          </button>
-                          <button
-                            type="button"
-                            className="keymap-settings-action"
-                            onClick={() =>
-                              handleMobileLayerAction(handleOpenRenameDialog)
-                            }
-                          >
-                            <IconPencil size={18} />
-                            {t("Rename")}
-                          </button>
-                          <button
-                            type="button"
-                            className="keymap-settings-action"
-                            onClick={() =>
-                              handleMobileLayerAction(handleAddLayer)
-                            }
-                            disabled={
-                              keymap.availableLayers <=
-                              keymap.keymap.layers.length
-                            }
-                          >
-                            <IconPlus size={18} />
-                            {t("Add new layer")}
-                          </button>
-                          <button
-                            type="button"
-                            className="keymap-settings-action keymap-settings-action-danger"
-                            onClick={() =>
-                              handleMobileLayerAction(handleDeleteLayer)
-                            }
-                            disabled={keymap.keymap.layers.length <= 1}
-                          >
-                            <IconTrash size={18} />
-                            {t("Delete current layer")}
-                          </button>
+                            <button
+                              type="button"
+                              className="keymap-settings-action"
+                              aria-label={t("Move layer down (lower priority)")}
+                              onClick={() =>
+                                handleMobileLayerAction(handleMoveLayerDown)
+                              }
+                              disabled={
+                                selectedLayerIndex >=
+                                keymap.keymap.layers.length - 1
+                              }
+                            >
+                              <IconChevronDown size={19} />
+                            </button>
+                          </EditorTooltip>
+                          <EditorTooltip content={t("Rename current layer")}>
+                            <button
+                              type="button"
+                              className="keymap-settings-action"
+                              aria-label={t("Rename current layer")}
+                              onClick={() =>
+                                handleMobileLayerAction(handleOpenRenameDialog)
+                              }
+                            >
+                              <IconPencil size={19} />
+                            </button>
+                          </EditorTooltip>
+                          <EditorTooltip content={t("Add new layer")}>
+                            <button
+                              type="button"
+                              className="keymap-settings-action"
+                              aria-label={t("Add new layer")}
+                              onClick={() =>
+                                handleMobileLayerAction(handleAddLayer)
+                              }
+                              disabled={
+                                keymap.availableLayers <=
+                                keymap.keymap.layers.length
+                              }
+                            >
+                              <IconPlus size={19} />
+                            </button>
+                          </EditorTooltip>
+                          <EditorTooltip content={t("Delete current layer")}>
+                            <button
+                              type="button"
+                              className="keymap-settings-action keymap-settings-action-danger"
+                              aria-label={t("Delete current layer")}
+                              onClick={() =>
+                                handleMobileLayerAction(handleDeleteLayer)
+                              }
+                              disabled={keymap.keymap.layers.length <= 1}
+                            >
+                              <IconTrash size={19} />
+                            </button>
+                          </EditorTooltip>
                         </div>
 
                         <div className="keymap-settings-restore">
-                          <p className="keymap-settings-label">
-                            {t("Restore deleted layer")}
-                          </p>
+                          <div className="keymap-settings-restore-heading">
+                            <p className="keymap-settings-label">
+                              {t("Restore deleted layer")}
+                            </p>
+                            {keymap.removedLayerIds.length > 0 && (
+                              <EditorTooltip
+                                content={t(
+                                  "Restore all deleted layers ({{count}})",
+                                  { count: keymap.removedLayerIds.length },
+                                )}
+                              >
+                                <button
+                                  type="button"
+                                  className="keymap-settings-restore-all"
+                                  aria-label={t(
+                                    "Restore all deleted layers ({{count}})",
+                                    { count: keymap.removedLayerIds.length },
+                                  )}
+                                  onClick={() =>
+                                    handleMobileLayerAction(
+                                      handleRestoreAllLayers,
+                                    )
+                                  }
+                                >
+                                  <IconRestore size={17} />
+                                </button>
+                              </EditorTooltip>
+                            )}
+                          </div>
                           {keymap.removedLayerIds.length === 0 ? (
                             <p className="text-sm text-[var(--color-text-muted)]">
                               {t("No deleted layers to restore")}
                             </p>
                           ) : (
-                            <div className="space-y-2">
-                              <button
-                                type="button"
-                                className="keymap-settings-restore-action"
-                                onClick={() =>
-                                  handleMobileLayerAction(
-                                    handleRestoreAllLayers,
-                                  )
-                                }
-                              >
-                                <IconRestore size={17} />
-                                {t("Restore all deleted layers ({{count}})", {
-                                  count: keymap.removedLayerIds.length,
-                                })}
-                              </button>
-                              {keymap.removedLayerIds.map((layerId) => (
+                            <div className="keymap-settings-restore-grid">
+                              {mobileVisibleRemovedLayerIds.map((layerId) => (
                                 <button
                                   type="button"
                                   className="keymap-settings-restore-action"
@@ -797,6 +830,52 @@ export function KeymapPage() {
                                   {t("Layer {{id}}", { id: layerId })}
                                 </button>
                               ))}
+                              {mobileOverflowRemovedLayerIds.length > 0 && (
+                                <Popover.Root
+                                  open={showMobileRestoreMenu}
+                                  onOpenChange={setShowMobileRestoreMenu}
+                                >
+                                  <Popover.Trigger asChild>
+                                    <button
+                                      type="button"
+                                      className="keymap-settings-restore-action"
+                                    >
+                                      <IconChevronDown size={17} />
+                                      {t("Other deleted layers ({{count}})", {
+                                        count:
+                                          mobileOverflowRemovedLayerIds.length,
+                                      })}
+                                    </button>
+                                  </Popover.Trigger>
+                                  <Popover.Content
+                                    className="z-[10001] max-h-48 w-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1 shadow-xl"
+                                    sideOffset={6}
+                                    collisionPadding={12}
+                                    role="menu"
+                                    aria-label={t("Other deleted layers")}
+                                  >
+                                    {mobileOverflowRemovedLayerIds.map(
+                                      (layerId) => (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
+                                          key={`mobile-restore-more-${layerId}`}
+                                          onClick={() => {
+                                            setShowMobileRestoreMenu(false);
+                                            handleMobileLayerAction(() =>
+                                              handleRestoreLayer(layerId),
+                                            );
+                                          }}
+                                        >
+                                          <IconRestore size={16} />
+                                          {t("Layer {{id}}", { id: layerId })}
+                                        </button>
+                                      ),
+                                    )}
+                                  </Popover.Content>
+                                </Popover.Root>
+                              )}
                             </div>
                           )}
                         </div>
