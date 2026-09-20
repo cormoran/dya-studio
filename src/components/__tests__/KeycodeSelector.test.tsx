@@ -134,7 +134,8 @@ it("waits for the second parameter before selecting a layer-tap binding", async 
   expect(onClose).not.toHaveBeenCalled();
 });
 
-it("always shows search and modifiers without toggles in the modal editor", () => {
+it("keeps search visible while using compact modifier controls in the modal editor", async () => {
+  const user = userEvent.setup();
   const keypress = BEHAVIORS.find(
     (behavior) => behavior.displayName === "Key Press",
   )!;
@@ -148,15 +149,16 @@ it("always shows search and modifiers without toggles in the modal editor", () =
       layers={[]}
     />,
   );
+  expect(screen.getByPlaceholderText("Search keycodes...")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "LCtrl", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Modifiers", exact: true }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Modifiers:")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Modifiers" }));
   expect(
     screen.getByRole("button", { name: "LCtrl", exact: true }),
   ).toBeInTheDocument();
-  expect(screen.getByPlaceholderText("Search keycodes...")).toBeInTheDocument();
-  expect(screen.getByText("Modifiers:")).toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Modifiers", exact: true }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Search keycodes..." }),
-  ).not.toBeInTheDocument();
 });

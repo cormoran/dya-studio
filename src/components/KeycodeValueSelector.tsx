@@ -64,6 +64,8 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
 interface KeycodeValueSelectorProps {
   toolbar?: ReactNode;
   compact?: boolean;
+  /** Use the compact, collapsible modifier controls without changing search/layout controls. */
+  compactModifiers?: boolean;
   value: number;
   onChange: (value: number, shouldNotClose?: boolean) => void;
   showModifiers?: boolean;
@@ -73,6 +75,7 @@ interface KeycodeValueSelectorProps {
 export function KeycodeValueSelector({
   toolbar,
   compact = false,
+  compactModifiers = compact,
   value,
   onChange,
   keyboardLayout,
@@ -91,7 +94,7 @@ export function KeycodeValueSelector({
     return saved === "category" ? "category" : "layout";
   });
   const [modifiersExpanded, setModifiersExpanded] = useState(false);
-  const modifiersVisible = !compact || modifiersExpanded;
+  const modifiersVisible = !compactModifiers || modifiersExpanded;
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Persist view mode preference
@@ -177,7 +180,7 @@ export function KeycodeValueSelector({
       {/* Search + view mode toggle */}
       <div className="mb-2 flex items-center gap-2 shrink-0">
         {toolbar}
-        {compact && showModifiers && (
+        {compactModifiers && showModifiers && (
           <EditorTooltip content={t("Show or hide modifier keys")}>
             <button
               type="button"
@@ -251,9 +254,9 @@ export function KeycodeValueSelector({
       {/* Modifier Flags */}
       {showModifiers && modifiersVisible && (
         <div className="mb-2 flex items-center gap-2 shrink-0">
-          {(!compact || selectedModifiers !== 0) && (
+          {(!compactModifiers || selectedModifiers !== 0) && (
             <div className="flex items-center gap-2 shrink-0">
-              {!compact && (
+              {!compactModifiers && (
                 <span className="text-xs text-[var(--color-text-muted)]">
                   {t("Modifiers")}:
                 </span>

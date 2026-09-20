@@ -19,7 +19,12 @@ import {
   type RefObject,
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconRestore, IconX, IconGripVertical } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconRestore,
+  IconX,
+  IconGripVertical,
+} from "@tabler/icons-react";
 import { MOUSE_KEYCODES } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
@@ -78,49 +83,6 @@ interface KeycodeSelectorProps {
 // =============================================================================
 // Helper Functions
 // =============================================================================
-
-/**
- * Get human-readable label for a parameter type
- */
-function getParamTypeLabel(
-  behaviorInfo: SelectedBehaviorInfo,
-  paramNumber: 1 | 2,
-  t: (key: string) => string,
-): string {
-  const overrideMeta = behaviorInfo.overrideMetadata;
-  const overrideType =
-    paramNumber === 1 ? overrideMeta?.param1Type : overrideMeta?.param2Type;
-  // From DYA Studio override metadata
-  if (overrideType) {
-    switch (overrideType) {
-      case "macro":
-        return "Macro";
-      case "mouse_keycode":
-        return t("Mouse Button");
-      case "mouse_movement":
-      case "mouse_scroll":
-        return t("Pointer movement");
-    }
-  }
-  // From firmware metadata
-  const descriptions =
-    paramNumber === 1
-      ? behaviorInfo.param1Descriptions
-      : behaviorInfo.param2Descriptions;
-  // NOTE: assuming all descriptions have the same type
-  if (descriptions.length > 0) {
-    if (descriptions[0].constant !== undefined) {
-      return t("Constant");
-    } else if (descriptions[0].range !== undefined) {
-      return t("Range");
-    } else if (descriptions[0].hidUsage !== undefined) {
-      return t("Keycode");
-    } else if (descriptions[0].layerId !== undefined) {
-      return t("Layer");
-    }
-  }
-  return t("Unknown Type");
-}
 
 /**
  * Get description for a parameter type
@@ -652,6 +614,7 @@ export function KeycodeSelector({
               <KeycodeValueSelector
                 key={floating ? "floating" : "modal"}
                 compact={floating}
+                compactModifiers
                 toolbar={toolbar}
                 value={value}
                 onChange={onChange}
@@ -693,11 +656,7 @@ export function KeycodeSelector({
     );
   const parameterTabs = selectedBehaviorInfo && (
     <div
-      className={
-        floating
-          ? `flex h-7 min-w-0 shrink-0 overflow-x-auto ${inlineParamToolbar ? "flex-1" : "mx-2 mt-2"}`
-          : "flex border-b border-[var(--color-border)] mx-4 mb-2"
-      }
+      className={`flex h-7 min-w-0 shrink-0 overflow-x-auto ${inlineParamToolbar ? "flex-1" : "mx-2 mt-2"}`}
     >
       {([1, 2] as const)
         .filter((number) => (number === 1 ? needsParam1 : needsParam2))
@@ -706,19 +665,12 @@ export function KeycodeSelector({
             key={number}
             type="button"
             onClick={() => setActiveParam(number)}
-            className={`min-w-0 border-b-2 transition-colors ${floating ? "flex items-center gap-1 px-2 py-1 text-xs" : "flex-1 p-2 text-center"} ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
+            className={`flex min-w-0 items-center gap-1 border-b-2 px-2 py-1 text-xs transition-colors ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
           >
             <span className="text-xs whitespace-nowrap">
               {t(number === 1 ? "param1" : "param2")}:
-              {!floating && (
-                <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                  {getParamTypeLabel(selectedBehaviorInfo, number, t)}
-                </span>
-              )}
             </span>
-            <span
-              className={`${floating ? "truncate text-xs" : "block mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
-            >
+            <span className="truncate text-xs font-mono text-[var(--color-neon)]">
               {formatParamValue(
                 selectedBehaviorInfo,
                 param1,
@@ -791,26 +743,27 @@ export function KeycodeSelector({
                     className="shrink-0 text-[var(--color-text-muted)]"
                   />
                 )}
-                {toolbar}
+                {floating && toolbar}
                 <Dialog.Title className="sr-only">
                   {t("Select Key Binding")}
                 </Dialog.Title>
                 <div className="ml-auto flex items-center gap-1">
+                  {!floating && toolbar}
                   {!floating && (
                     <EditorTooltip
                       content={t(
                         "Apply the binding after selecting its final parameter",
                       )}
                     >
-                      <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={closeOnSelect}
-                          onChange={(e) => setCloseOnSelect(e.target.checked)}
-                          className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
-                        />
-                        <span>{t("Close on select")}</span>
-                      </label>
+                      <button
+                        type="button"
+                        aria-label={t("Close on select")}
+                        aria-pressed={closeOnSelect}
+                        onClick={() => setCloseOnSelect((enabled) => !enabled)}
+                        className={`p-1 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                      >
+                        <IconCheck size={16} />
+                      </button>
                     </EditorTooltip>
                   )}
                   {hasChanges && (

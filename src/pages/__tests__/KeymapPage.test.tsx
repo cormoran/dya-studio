@@ -414,15 +414,15 @@ describe("KeymapPage", () => {
         await user.click(screen.getByRole("button", { name: "Dialog mode" }));
         expect(screen.getByRole("dialog")).toBeInTheDocument();
         expect(
-          screen.getByRole("checkbox", { name: "Close on select" }),
-        ).toBeInTheDocument();
+          screen.getByRole("button", { name: "Close on select" }),
+        ).toHaveAttribute("aria-pressed", "true");
         expect(
-          screen.getByRole("button", { name: "LCtrl", exact: true }),
+          screen.getByRole("button", { name: "Modifiers", exact: true }),
         ).toBeInTheDocument();
         await user.click(screen.getByRole("button", { name: "Floating mode" }));
         expect(screen.getByRole("dialog")).toBeInTheDocument();
         expect(
-          screen.queryByRole("checkbox", { name: "Close on select" }),
+          screen.queryByRole("button", { name: "Close on select" }),
         ).not.toBeInTheDocument();
         expect(
           screen.queryByRole("button", { name: "LCtrl", exact: true }),
