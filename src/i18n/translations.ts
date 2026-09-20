@@ -242,6 +242,11 @@ const ja: Record<string, string> = {
   "No pmw3610 driver settings were reported by the keyboard.":
     "キーボードから pmw3610 ドライバーの設定が報告されませんでした。",
   "Select Processor": "プロセッサーを選択",
+  Processor: "プロセッサー",
+  "PMW3610 Driver": "PMW3610 ドライバー",
+  "Select processor or PMW3610 driver":
+    "プロセッサーまたは PMW3610 ドライバーを選択",
+  "Reload PMW3610 drivers": "PMW3610 ドライバーを再読み込み",
   "{{count}} processors detected": "{{count}} 個のプロセッサーを検出",
   Processors: "プロセッサー",
   "Processor {{id}}": "プロセッサー {{id}}",
@@ -1646,6 +1651,10 @@ const zh: Record<string, string> = {
   "No pmw3610 driver settings were reported by the keyboard.":
     "键盘未报告任何 pmw3610 驱动设置。",
   "Select Processor": "选择处理器",
+  Processor: "处理器",
+  "PMW3610 Driver": "PMW3610 驱动",
+  "Select processor or PMW3610 driver": "选择处理器或 PMW3610 驱动",
+  "Reload PMW3610 drivers": "重新加载 PMW3610 驱动",
   "{{count}} processors detected": "检测到 {{count}} 个处理器",
   Processors: "处理器",
   "Processor {{id}}": "处理器 {{id}}",

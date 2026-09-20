@@ -14,15 +14,17 @@
 
 ## 機能要求
 
-| ID        | できるべきこと                                                                      | 出典・確度     |
-| --------- | ----------------------------------------------------------------------------------- | -------------- |
-| TRACK-R01 | 対象 processor を選び、sensitivity、rotation、layer、axis と座標変換を調整できる    | S1/S2 から推定 |
-| TRACK-R02 | PMW3610 driver が custom settings を報告する時だけ、その section を選択・編集できる | S1/S4 から推定 |
+| ID        | できるべきこと                                                                                 | 出典・確度     |
+| --------- | ---------------------------------------------------------------------------------------------- | -------------- |
+| TRACK-R01 | 対象 processor を選び、sensitivity、rotation、layer、axis と座標変換を調整できる               | S1/S2 から推定 |
+| TRACK-R02 | PMW3610 driver が custom settings を報告する時だけ、その section を選択・編集できる            | S1/S4 から推定 |
+| TRACK-R03 | mobile では processor と PMW3610 driver を共通 dropdown から選択し、直下の detail を編集できる | 明示要求       |
 
 ## 前提・状態
 
 - `cormoran_rip` subsystem がない時は `Runtime input processor subsystem is not available...`、0 processors は `No processors found`。processor と keymap layer は非同期に読込む。
 - 左 pane は Processors と PMW3610 Drivers。right pane は選択 processor または driver settings。一つを選ぶと他方の detail は表示しない。
+- mobile では左 pane を表示せず、ヘッダー操作列の dropdown に Processors / PMW3610 Drivers をまとめる。trigger は選択種別と項目名の二段表示で、選択対象に対応する Reload と Versions を同じ行に置く。
 - field は `useDebouncedSave` で pending 表示を先に変え、`MEMORY_WRITE_DEBOUNCE_MS`（1,500 ms）の quiet 後に processor RPC を送る。コードは request の RAM/flash を区別しないため、`Versions` は firmware 保存ではなく captured version history とする。
 
 UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary layer activation 0–1000 ms / deactivation 0–2000 ms、axis snap threshold 0–1000 / timeout 0–600 ms。HTML input の min/max は firmware 検証の保証ではない。直接入力と slider/step 操作の差は探索対象とする。
@@ -31,17 +33,18 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 
 モバイル幅のページ表示・共通操作・説明は[共通画面 SHELL-009/010/011](../modules/app-shell.md)に従う。下記の可用性・保存・エラー契約は画面幅で変わらない。
 
-| ID        | 前提 → 操作                                                     | 観測できる結果                                              | 保存範囲・副作用                                                                                                         | 根拠  |
-| --------- | --------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----- |
-| TRACK-001 | `Reload processors` / mount                                     | Processors list、layer grid（active/temp ring）を再読込     | read RPC。tab 往復だけでは明示 reload しない                                                                             | S1/S2 |
-| TRACK-002 | scaling slider、`-`/`+`、数値 input                             | 0.01–10.00 の対数 slider、表示値は fraction へ変換          | debounce 後に processor ID の multiplier/divisor RPC。fraction は約分                                                    | S1/S2 |
-| TRACK-003 | Rotation switch、`-`/`+`、degree input                          | OFF は 0°、ON は -180–180° の input                         | debounce write。OFF 前の非0 rotation を復元する state はない                                                             | S1    |
-| TRACK-004 | Active on Layers を All / Specific にし layer checkbox を変える | bitmask 0 は All、各 layer の active cell が変化            | debounce write。layer ID bit 演算は 32-bit 範囲に依存                                                                    | S1/S2 |
-| TRACK-005 | Temporary Layer、activation/deactivation delay を変更           | enable、target layer、ms controls                           | debounce write。入力値の firmware validation は UI だけでは保証しない                                                    | S1/S2 |
-| TRACK-006 | Axis snap の switch/mode/threshold/timeout を変更               | enable 時既定 Y、mode X/Y、数値 controls                    | debounce write。OFF は NONE                                                                                              | S1/S2 |
-| TRACK-007 | X invert、Y invert、XY to scroll、XY swap を toggle             | switch の checked state が変わる                            | debounce write。複数 toggle の原子性はない                                                                               | S1/S2 |
-| TRACK-008 | PMW3610 driver row を選ぶ                                       | `CustomSettingsSectionCard` の当該 custom subsystem section | custom-settings subsystem が無い/section 0 の場合は編集不能。個別 field の保存契約は S4                                  | S1/S4 |
-| TRACK-009 | `Versions` から snapshot を選ぶ                                 | diff modal を経て restore の入口                            | IndexedDB 等の履歴契約は [version history](../modules/version-history.md)。processor firmware default reset は提供しない | S1    |
+| ID        | 前提 → 操作                                                     | 観測できる結果                                                                                                          | 保存範囲・副作用                                                                                                         | 根拠  |
+| --------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----- |
+| TRACK-001 | `Reload processors` / mount                                     | Processors list、layer grid（active/temp ring）を再読込                                                                 | read RPC。tab 往復だけでは明示 reload しない                                                                             | S1/S2 |
+| TRACK-002 | scaling slider、`-`/`+`、数値 input                             | 0.01–10.00 の対数 slider、表示値は fraction へ変換                                                                      | debounce 後に processor ID の multiplier/divisor RPC。fraction は約分                                                    | S1/S2 |
+| TRACK-003 | Rotation switch、`-`/`+`、degree input                          | OFF は 0°、ON は -180–180° の input                                                                                     | debounce write。OFF 前の非0 rotation を復元する state はない                                                             | S1    |
+| TRACK-004 | Active on Layers を All / Specific にし layer checkbox を変える | bitmask 0 は All、各 layer の active cell が変化                                                                        | debounce write。layer ID bit 演算は 32-bit 範囲に依存                                                                    | S1/S2 |
+| TRACK-005 | Temporary Layer、activation/deactivation delay を変更           | enable、target layer、ms controls                                                                                       | debounce write。入力値の firmware validation は UI だけでは保証しない                                                    | S1/S2 |
+| TRACK-006 | Axis snap の switch/mode/threshold/timeout を変更               | enable 時既定 Y、mode X/Y、数値 controls                                                                                | debounce write。OFF は NONE                                                                                              | S1/S2 |
+| TRACK-007 | X invert、Y invert、XY to scroll、XY swap を toggle             | switch の checked state が変わる                                                                                        | debounce write。複数 toggle の原子性はない                                                                               | S1/S2 |
+| TRACK-008 | PMW3610 driver row を選ぶ                                       | `CustomSettingsSectionCard` の当該 custom subsystem section                                                             | custom-settings subsystem が無い/section 0 の場合は編集不能。個別 field の保存契約は S4                                  | S1/S4 |
+| TRACK-009 | `Versions` から snapshot を選ぶ                                 | diff modal を経て restore の入口                                                                                        | IndexedDB 等の履歴契約は [version history](../modules/version-history.md)。processor firmware default reset は提供しない | S1    |
+| TRACK-010 | mobile dropdown で processor / PMW3610 driver を選ぶ            | menu が閉じ、選択種別と項目名を二段表示して直下の detail を切り替える。driver の未保存 dot は trigger / item に表示する | 選択だけでは書込まない。隣接 Reload は選択中の subsystem だけを再読込する                                                | S1/S4 |
 
 ## 代表ユーザーフロー
 
@@ -82,6 +85,7 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 2. scaling 0.01/10、rotation -180/180、All/Specific、32 layer 境界。
 3. 全座標 switch の組合せと axis snap を同時に変更した時の表示/RPC 順序。
 4. processor 0 件、複数 processor、custom setting 0/複数 section、狭い表示。
+5. mobile dropdown が Reload / Versions と同じ高さ・同じ行に収まり、processor / driver 切替後に直下の detail と二段 trigger 表示が一致するか。driver の未保存 dot が menu と trigger に残るか。
 
 ## 既知の受け入れ済み不具合
 
