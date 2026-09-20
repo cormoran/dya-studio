@@ -1,18 +1,25 @@
 # 仕様を使った探索的 UI テスト
 
+## ブラウザツールを選ぶ
+
+ユーザーの指定と実行環境で利用できるブラウザツール/skill を確認し、対象 UI に到達できるものを使う。このガイドはツール非依存の判定基準を扱う。コマンド、権限、タブ識別、dialog 操作は選んだツールのドキュメントに従う。
+
+- Orca 環境で組込みブラウザを使う場合は、開始前に [Orca 向けガイド](browser-tools/orca.md) を読む。
+- その他の環境では、提供されているブラウザ操作ツールとその skill/手順を使う。別ツールのコマンドや戻り値の形式を流用しない。必要な操作ができなければ制約を報告する。
+
+coordinator は worker にも利用するツールと環境別手順を渡し、同じ URL に到達できることを確認する。ブラウザが別ホストで動く場合、その localhost はアプリのホストと同じとは限らない。
+
 ## 開始
 
 1. README の sitemap で対象ページを選び、ページ仕様と参照するモジュール仕様を読む。テスト中はまず仕様を判定の出発点にする。コードを読む必要が出た箇所は仕様の不足として記録する。
 2. `npm run dev -- --host 127.0.0.1 --port 5173` で起動する（既存サーバーがある場合は担当者から URL を受け取る）。表示された実際の URL を使用する。
 3. ブラウザで URL を開き `Try Demo Mode` から接続する。日本語環境では対応する翻訳ラベルを探す。実機の選択・外部サービスのログインは別途許可/環境があるときだけ行う。
-4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/実機、初期値を記録する。並列 worker は別タブを作成し page ID を全操作に指定する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
+4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/実機、初期値を記録する。並列 worker は専用のタブ/ブラウザセッションを持ち、各操作の対象を明示する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
 5. 観測 → 操作 → 再観測を繰り返す。要素参照は snapshot 後に取得し、画面変化後は再取得する。UI 操作を DOM/React 状態への書き込みで代用しない。
 
 この作業で Demo 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。実機・外部アカウントは別条件。
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
-
-Orca 1.4.205 の CLI には `orca dialog accept --page <id> --json` / `orca dialog dismiss --page <id> --json` がある（使用前に現在の `--help` を確認）。クリック後の dialog を処理し、成功応答と再 snapshot を記録する。保留 dialog がない等の失敗応答なら承認の証拠にはならない。
 
 保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
 
@@ -26,13 +33,13 @@ Orca 1.4.205 の CLI には `orca dialog accept --page <id> --json` / `orca dial
 
 ### 環境に到達できない場合
 
-Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `runtime_unavailable` や localhost 接続失敗が出る場合、アプリ停止と断定せず、許可された `require_escalated` 実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。制約で実行できなければ coordinator に具体的エラーを送り、環境修復を依頼する。worker は独自に runtime の serve/restart を繰り返さない。サーバーの実 URL が予定ポートと違うことも確認する。問題が解消するまで UI 結果は blocked とする。
+ブラウザツールの接続失敗をアプリ停止と断定しない。ツールの稼働状態、実行権限、ブラウザ側から指定 URL への到達性、サーバーの実ポートを環境別手順で確認する。制約で実行できなければ coordinator に具体的エラーを送り、環境修復を依頼する。worker は独自に runtime/server の再起動を繰り返さず、権限制約を回避しない。問題が解消するまで UI 結果は blocked とする。
 
 環境情報は UI を開けなくても記録する。モデル/effort は worker launch 情報、app/spec commit は `git rev-parse HEAD` と仕様の作業ツリー差分から取得する。viewport は UI 到達後に読み取り専用の `window.innerWidth/innerHeight` で取得してよい。
 
-低コスト実行では snapshot JSON 全体（refs と tree の重複）を何度も読み込まず、`result.snapshot` を抽出する。例: `orca snapshot --page <id> --json | jq -r '.result.snapshot'`（jq 利用可能時）。操作に使う ref はその最新 tree から取得する。screenshot の base64 を会話へ大量に出力する代わりに、ツールが提供する画像/ファイルを扱う。画像を取得しただけで保存していなければ、存在しないファイルへのリンクは報告しない。
+低コスト実行ではツール応答の重複や巨大な出力を避け、操作に必要な最新の画面情報を読む。screenshot の base64 を会話へ大量に出力する代わりに、ツールが提供する画像/ファイルを扱う。画像を取得しただけで保存していなければ、存在しないファイルへのリンクは報告しない。
 
-抽出前に JSON の `ok` を確認する。さらに `rg` 等で期待語だけを抽出した結果が空でも、ブラウザや snapshot が壊れたと断定しない。絞り込みなしの `result.snapshot` と URL を再取得し、接続画面・別画面への遷移、stale ref、ツールエラーを切り分ける。画面変更後に以前の ref で Save/Reload を押さない。
+出力を絞る前にツールの成功/失敗を確認する。期待語だけを抽出した結果が空でも、ブラウザや snapshot が壊れたと断定しない。絞り込みなしの画面情報と URL を再取得し、接続画面・別画面への遷移、古い要素参照、ツールエラーを切り分ける。画面変更後に以前の参照で Save/Reload を押さない。
 
 15–25 分または 3–5 charter を目安とし、完了を時間だけで判断しない。charter は「何を・どのリスクについて・何を証拠に」探索するかの短い宣言。
 
@@ -96,9 +103,9 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 ```text
 対象: <仕様ファイルとroute>。URL: <起動済みの実URL>。Demo のみ。
 読むもの: AGENTS.md、spec README、探索ガイド、対象ページ/共有モジュール仕様。
+ブラウザツール: <この環境で利用するツールと環境別手順>。開始前に手順を読む。
 アプリコードを読まず、仕様を使って3つのcharter+変形操作を行う。
-Orcaコマンドはsandbox外（exec_command の require_escalated）で実行する。
-自分のtabを作り、browserPageIdをすべての操作に指定する。
+専用tab/セッションを使い、すべての操作の対象を明示する。
 Demo内の編集・保存・復帰は許可範囲。実機/外部サービスは操作しない。
 出力: <一時ディレクトリ内の専有report>（通常commitしない）。
 操作単位で仕様ID、期待/実測、証拠、判定。完了報告/PRには要約を残す。
