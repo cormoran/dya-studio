@@ -6,11 +6,9 @@ import {
   act,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {
-  DeviceConnectionProvider,
-  ConnectionContext,
-} from "../DeviceConnection";
-import { useContext } from "react";
+import { DeviceConnectionProvider } from "../DeviceConnection";
+import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
+import { StrictMode, useContext } from "react";
 import {
   useZMKApp,
   CONNECT_TIMEOUT_ERROR,
@@ -30,6 +28,10 @@ jest.mock("@zmkfirmware/zmk-studio-ts-client/transport/serial", () => ({
 
 // Mock the app-level USB transport selector
 jest.mock("../../lib/transport/usb", () => ({
+  connect: jest.fn(),
+}));
+
+jest.mock("../../lib/transport/demo", () => ({
   connect: jest.fn(),
 }));
 
@@ -123,6 +125,10 @@ describe("DeviceConnection", () => {
     // individual tests override these to simulate failures.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("../../lib/transport/usb").connect.mockResolvedValue(
+      mocks.mockTransport,
+    );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../../lib/transport/demo").connect.mockResolvedValue(
       mocks.mockTransport,
     );
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -484,6 +490,44 @@ describe("DeviceConnection", () => {
   });
 
   describe("Auto-reconnect on mount", () => {
+    test("reconnects demo mode after a page reload", async () => {
+      mocks.mockSuccessfulConnection({ deviceName: "Demo Keyboard" });
+      window.sessionStorage.setItem("dya-studio:connection-method", "demo");
+
+      render(
+        <DeviceConnectionProvider reconnectMinDisplayMs={0}>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("connection-status")).toHaveTextContent(
+          "Connected",
+        );
+      });
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      expect(require("../../lib/transport/demo").connect).toHaveBeenCalled();
+    });
+
+    test("reconnects a paired serial device under StrictMode", async () => {
+      mocks.mockSuccessfulConnection({ deviceName: "Strict Keyboard" });
+      setPairedSerialPorts([createMockSerialPort()]);
+
+      render(
+        <StrictMode>
+          <DeviceConnectionProvider reconnectMinDisplayMs={0}>
+            <TestComponent />
+          </DeviceConnectionProvider>
+        </StrictMode>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("connection-status")).toHaveTextContent(
+          "Connected",
+        );
+      });
+    });
+
     test("renders children in the disconnected state when there is no paired serial port", async () => {
       // jsdom has no navigator.serial by default, so the app-driven
       // auto-reconnect attempt resolves to "nothing to reconnect to" and the

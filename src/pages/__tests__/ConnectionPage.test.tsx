@@ -15,7 +15,7 @@ import {
   within,
 } from "@testing-library/react";
 import { ConnectionPage } from "../ConnectionPage";
-import { ConnectionContext } from "../../components/DeviceConnection";
+import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import {
   ZMKAppProvider,
   createMockZMKApp,

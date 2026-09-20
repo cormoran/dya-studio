@@ -7,7 +7,7 @@
 import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
-import { ConnectionContext } from "../../components/DeviceConnection";
+import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import {
   ZMKAppProvider,
   createConnectedMockZMKApp,
