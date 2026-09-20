@@ -15,10 +15,8 @@ import {
 import { SplashScreen } from "./components/SplashScreen";
 import { ReleaseNotesPage, RELEASE_NOTES_PATH } from "./pages/ReleaseNotesPage";
 import { ReconnectingOverlay } from "./components/ReconnectingOverlay";
-import {
-  DeviceConnectionProvider,
-  ConnectionContext,
-} from "./components/DeviceConnection";
+import { DeviceConnectionProvider } from "./components/DeviceConnection";
+import { ConnectionContext } from "./contexts/DeviceConnectionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { KeyboardLayoutProvider } from "./contexts/KeyboardLayoutProvider";

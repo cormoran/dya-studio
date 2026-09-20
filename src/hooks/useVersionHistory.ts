@@ -17,7 +17,7 @@
  * falls back to memory, and any error leaves the tab working without history.
  */
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { loadVersions, recordVersion } from "../lib/versionHistory";
 import type { JsonValue, StoredSnapshot } from "../lib/versionHistory";
 

@@ -1,12 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
 import {
   useZMKApp,
@@ -27,8 +20,18 @@ import {
   trackConnectFailed,
   classifyConnectError,
 } from "../lib/analytics";
+import {
+  clearSavedConnectionMethod,
+  saveConnectionMethod,
+  savedConnectionMethod,
+} from "../lib/connectionSession";
+import {
+  ConnectionContext,
+  type ConnectionContextValue,
+  type ConnectionMethod,
+} from "../contexts/DeviceConnectionContext";
 
-export type ConnectionMethod = "serial" | "ble" | "demo";
+export type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 
 /**
  * Minimum time (ms) the "reconnecting" indicator stays visible once shown,
@@ -41,31 +44,6 @@ export const AUTO_RECONNECT_MIN_DISPLAY_MS = 600;
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-// Simple connection context for UI components
-interface ConnectionContextValue {
-  isConnected: boolean;
-  deviceName: string | undefined;
-  onConnect: (method: ConnectionMethod) => void;
-  onDisconnect: () => void;
-  isLoading: boolean;
-  error: string | null;
-  /** True while the page-load auto-reconnect attempt is in flight. */
-  isReconnecting: boolean;
-  /** Cancels an in-flight page-load auto-reconnect attempt. */
-  onCancelReconnect: () => void;
-}
-
-const ConnectionContext = createContext<ConnectionContextValue>({
-  isConnected: false,
-  deviceName: undefined,
-  onConnect: () => {},
-  onDisconnect: () => {},
-  isLoading: false,
-  error: null,
-  isReconnecting: false,
-  onCancelReconnect: () => {},
-});
 
 interface DeviceConnectionProviderProps {
   children: ReactNode;
@@ -111,9 +89,6 @@ export function DeviceConnectionProvider({
     [zmkApp],
   );
 
-  // Guards against React StrictMode's double-invoke of effects triggering
-  // the auto-reconnect attempt twice.
-  const autoReconnectAttemptedRef = useRef(false);
   // Bridges the cancel button (outside the effect) to the in-flight attempt.
   const cancelReconnectRef = useRef<() => void>(() => {});
 
@@ -157,9 +132,6 @@ export function DeviceConnectionProvider({
   }, [zmkApp.state.error, reportConnectFailed]);
 
   useEffect(() => {
-    if (autoReconnectAttemptedRef.current) return;
-    autoReconnectAttemptedRef.current = true;
-
     // Plain mutable flag (not a ref hook) local to this one-shot attempt,
     // mirroring the library's own ZMKConnection auto-reconnect pattern.
     // Set on unmount (cleanup below) or when the user clicks "Cancel".
@@ -169,52 +141,66 @@ export function DeviceConnectionProvider({
       setIsReconnecting(false);
     };
 
-    (async () => {
+    const reconnect = async () => {
+      const method = savedConnectionMethod();
+      if (method === "demo") return connectDemo();
+
       const ports = await getPairedSerialPorts();
-      if (ports.length === 0 || cancelledState.current) {
-        // Nothing paired (or already cancelled): stay disconnected, show
-        // the normal connect screen immediately.
-        return;
-      }
+      if (ports.length === 0) return null;
+      return connectToPairedSerial();
+    };
 
-      setIsReconnecting(true);
-      let transport: RpcTransport | null = null;
-      try {
-        // Run the reconnect attempt and the minimum-display timer in
-        // parallel so the indicator never flashes shorter than intended,
-        // but also never waits longer than necessary once both settle.
-        [transport] = await Promise.all([
-          connectToPairedSerial(),
-          sleep(reconnectMinDisplayMs),
-        ]);
+    // React StrictMode intentionally runs an effect's setup, cleanup, then
+    // setup again in development. Deferring the attempt lets the first
+    // cleanup cancel its scheduled work and leaves the second setup to start
+    // the one real attempt. Starting immediately would make the cleanup abort
+    // the only attempt while a ref guard suppresses the second one.
+    const startTimer = window.setTimeout(() => {
+      void (async () => {
+        if (cancelledState.current) return;
 
-        if (cancelledState.current) {
-          // User cancelled or component unmounted while we were
-          // reconnecting: release the transport instead of using it.
-          transport?.abortController.abort();
-          return;
-        }
+        setIsReconnecting(true);
+        let transport: RpcTransport | null = null;
+        try {
+          // Run the reconnect attempt and the minimum-display timer in
+          // parallel so the indicator never flashes shorter than intended,
+          // but also never waits longer than necessary once both settle.
+          [transport] = await Promise.all([
+            reconnect(),
+            sleep(reconnectMinDisplayMs),
+          ]);
 
-        if (!transport) {
-          // No paired port after all (race with getPairedSerialPorts
-          // above) -- fall back to the normal connect screen.
-          return;
-        }
+          if (cancelledState.current) {
+            // User cancelled or component unmounted while we were
+            // reconnecting: release the transport instead of using it.
+            transport?.abortController.abort();
+            return;
+          }
 
-        await zmkApp.connect(() => Promise.resolve(transport as RpcTransport));
-      } catch (error) {
-        if (!cancelledState.current) {
-          console.warn("Auto-reconnect to paired serial port failed:", error);
+          if (!transport) {
+            // No paired port after all (race with getPairedSerialPorts
+            // above) -- fall back to the normal connect screen.
+            return;
+          }
+
+          await zmkApp.connect(() =>
+            Promise.resolve(transport as RpcTransport),
+          );
+        } catch (error) {
+          if (!cancelledState.current) {
+            console.warn("Auto-reconnect to paired serial port failed:", error);
+          }
+        } finally {
+          if (!cancelledState.current) {
+            setIsReconnecting(false);
+          }
         }
-      } finally {
-        if (!cancelledState.current) {
-          setIsReconnecting(false);
-        }
-      }
-    })();
+      })();
+    }, 0);
 
     return () => {
       cancelledState.current = true;
+      window.clearTimeout(startTimer);
     };
     // One-shot on mount by design; reconnectMinDisplayMs/zmkApp are read
     // from the closure captured at mount time.
@@ -234,6 +220,7 @@ export function DeviceConnectionProvider({
       attemptedMethodRef.current = method;
       try {
         await zmkApp.connect(connectFn);
+        saveConnectionMethod(method);
       } catch (error) {
         // Covers errors thrown before the library commits them to `state.error`
         // (e.g. the user dismissing the browser device picker). `reportConnectFailed`
@@ -246,6 +233,7 @@ export function DeviceConnectionProvider({
   );
 
   const handleDisconnect = useCallback(() => {
+    clearSavedConnectionMethod();
     zmkApp.disconnect();
   }, [zmkApp]);
 
@@ -278,5 +266,3 @@ export function DeviceConnectionProvider({
     </ZMKAppContext.Provider>
   );
 }
-
-export { ConnectionContext };
