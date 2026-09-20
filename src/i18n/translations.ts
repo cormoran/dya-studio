@@ -16,6 +16,7 @@ const ja: Record<string, string> = {
   "Keep selected category": "選択カテゴリを維持",
   "Configure Quick Select": "クイック選択を設定",
   "Quick Select settings": "クイック選択の設定",
+  "Reset Quick Select settings": "クイック選択をリセット",
   "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
     "クイック選択の項目を設定します。プリセットは表示／非表示、その他は固定／固定解除できます。",
   Preset: "プリセット",
@@ -1435,6 +1436,7 @@ const zh: Record<string, string> = {
   "Keep selected category": "保留所选类别",
   "Configure Quick Select": "配置快速选择",
   "Quick Select settings": "快速选择设置",
+  "Reset Quick Select settings": "重置快速选择",
   "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
     "设置每个快速选择项目。预设行为可显示或隐藏，其他项目可固定。",
   Preset: "预设",

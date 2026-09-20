@@ -9,6 +9,7 @@ import {
   IconFilter,
   IconPin,
   IconPinFilled,
+  IconRefresh,
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
@@ -382,6 +383,14 @@ export function BehaviorDropdown({
     }));
   };
 
+  const resetQuickSelectConfig = () => {
+    setQuickSelectConfig({
+      hiddenPresets: [],
+      pinnedBehaviorNames: [],
+      order: [],
+    });
+  };
+
   const quickSelectSettingItems = useMemo((): QuickSelectSettingItem[] => {
     const presetItems = presetBehaviors.map((preset) => {
       const metadata = getBehaviorMetadata(preset.behavior.displayName);
@@ -575,9 +584,21 @@ export function BehaviorDropdown({
             <div className="relative ml-auto">
               {isQuickSelectSettingsOpen && (
                 <div className="absolute right-0 top-full mt-1 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-xl">
-                  <p className="text-sm font-medium text-[var(--color-text)]">
-                    {t("Quick Select settings")}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-[var(--color-text)]">
+                      {t("Quick Select settings")}
+                    </p>
+                    <EditorTooltip content={t("Reset Quick Select settings")}>
+                      <button
+                        type="button"
+                        aria-label={t("Reset Quick Select settings")}
+                        className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
+                        onClick={resetQuickSelectConfig}
+                      >
+                        <IconRefresh size={15} />
+                      </button>
+                    </EditorTooltip>
+                  </div>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                     {t(
                       "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.",

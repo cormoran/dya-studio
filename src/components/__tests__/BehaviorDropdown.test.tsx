@@ -88,4 +88,15 @@ it("uses one ordered settings list with separate preset visibility and pin contr
     screen.getByRole("button", { name: "Unpin this behavior" }),
   ).toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "Move up" })).toHaveLength(6);
+
+  await user.click(
+    screen.getByRole("button", { name: "Reset Quick Select settings" }),
+  );
+  expect(
+    JSON.parse(
+      localStorage.getItem(
+        "behaviorDropdownQuickSelects:kp|lt|mt|none|transparent",
+      ) || "{}",
+    ),
+  ).toEqual({ hiddenPresets: [], pinnedBehaviorNames: [], order: [] });
 });
