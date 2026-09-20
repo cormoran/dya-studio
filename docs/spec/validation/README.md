@@ -17,3 +17,7 @@
 [初回](keymap-luna-round1.md) は sandbox 内の Orca/localhost 接続失敗で UI 未実行。coordinator が sandbox 外の HTTP 200 と live runtime を確認し、ガイドに昇格実行での切り分けを追記。[再試行](keymap-luna-round2.md) は実 UI で modal 適用、floating Next/auto advance、layer 分離を観測。
 
 レビューでは再試行 report に次の過大判定を発見したため、この report は最終判定ではない。Discard は native confirm の承認証拠がなく、KM-008 の承認後の挙動は **blocked**（不具合確定ではない）。Save enabled の観測だけでは KM-007 の保存は **not-run**。既に閉じた selector で layer を切替しても「layer 切替で閉じる」の検証にはならない。mode 切替は localStorage の変更なので「設定変更なし」も不正確。ガイドにこの区別、Demo Save の実行許可、設定の後始末を明記し、終了操作・境界・Save/Reload を次 round の必須にした。
+
+## Round 3: 未実行を正しく残すだけでは合格にしない
+
+[round3](keymap-luna-round3.md) では modal の draft → Escape 適用を観測し、Discard を blocked へ訂正できた。しかし floating 境界と設定復帰を省略しており gate 未達。Save 後の「再読み込み」はアプリ内操作か browser reload かの区別・想定外遷移の証拠が不足し、この部分は再確認が必要。新規の短いセッションで未完の 3 charter のみに絞る。標準を際限なく長くせず、テストガイドに必須ケースの未実行を未完了とする基準と Reload の操作識別を追加した。

@@ -16,6 +16,8 @@ Orca 1.4.205 の CLI には `orca dialog accept --page <id> --json` / `orca dial
 
 保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
 
+並列でブラウザ設定を変えるときは、可能なら worker ごとに別 origin（例: 別 port のローカル Vite）を割り当てる。別タブだけでは localStorage/IndexedDB の分離にならない。サーバーの起動・停止は coordinator が担当し、worker は割り当てられた URL だけを使う。
+
 ## 1 回のセッション
 
 ### 環境に到達できない場合
@@ -68,6 +70,8 @@ Orca では `orca-cli` skill の実行環境に従う。sandbox 内だけで `ru
 低コスト agent がコードを読まず開始でき、3 つ以上の charter と変形操作を行い、仕様 ID と具体的観測を結びつけられること。blocked を pass にしないこと。仕様不足が実行を妨げた場合は修正し、同じモデルで再試行する。合格は対象フローの範囲に限り、アプリ全体の無欠陥を意味しない。
 
 各 charter を丸ごと pass にせず、実行した操作と未実行操作を分ける。親が dialog を閉じる仕様は「開いたまま tab/layer を切替」で検証し、先に自分で閉じてから切替してもその証拠にはならない。永続化は Save → ページ内 Reload の値まで確認する。キー pilot は Close/Escape の mode 差、auto advance OFF/末尾、Save/Reload を必須観測とする。
+
+必須ケースを時間都合で not-run にした report は、正直な途中報告ではあるが合格ではない。次セッションの対象をその未実行ケースだけに絞り、済んだ baseline を繰り返さない。曖昧な「再読み込み」は避け、アプリの Reload ボタンか browser reload コマンドかと操作後の URL/接続状態を必ず記録する。想定外の画面遷移が起きたら実際に押した ref/ラベルを再確認し、ガイドに存在しない復帰手順を存在したように記述しない。
 
 ## テスト agent への依頼ひな形
 

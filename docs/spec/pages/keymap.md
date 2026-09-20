@@ -28,6 +28,7 @@
 ## 前提・状態
 
 - Demo はトップの `Try Demo Mode` → `Keymap`。表示される layer 名、キー数、初期 binding を観測して記録する。初期値を固定して探さない。
+- 位置の表記を混同しない。preview の accessible name の key position は 0 始まり、floating の `Key N / count` は 1 始まり。同じ先頭キーは position 0 と Key 1。キーボード上の文字が同じでも position で区別する。
 - loading: 進行ラベルを表示。キーが先に見えても背景の behavior/layer 読込が終わるまで待つ。Reload は読込中無効。
 - ready: layer ボタン群と keyboard preview。dirty: `Unsaved changes`、Save 有効。保存済みは `Saved`（初期値から変更された保存済み binding は別の色/tooltip）。
 - locked: Save/Reset に代えて `Locked`。閲覧/Reload は可能。編集は共有 unlock prompt を経由する。Demo で任意の lock/RPC failure を起こす UI は未確認。
