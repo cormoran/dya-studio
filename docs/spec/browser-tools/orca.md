@@ -8,6 +8,22 @@
 - worker にも **orca command は sandbox 外（`exec_command` の `sandbox_permissions: require_escalated`）で実行**と明記する。sandbox 内では runtime に到達できない場合がある。昇格が許可されなければ制約を報告し、回避しない。
 - 並列 worker は専用タブを作り、返された `browserPageId` をすべての操作の `--page` に指定する。参照はそのタブの最新 snapshot から取り、画面変更後は再取得する。別タブだけでは storage は分離されないため、メインガイドの origin 分離も守る。
 
+## viewport と device emulation
+
+Orca 組込みブラウザは viewport の変更と mobile device preset に対応している。レスポンシブ確認のためだけに Playwright へ切り替えず、対象タブの `browserPageId` を指定して次を使う。
+
+```sh
+# device preset（例: 390 x 844、deviceScaleFactor 3）
+orca exec --page <id> --command 'set device "iPhone 12"' --json
+
+# 任意の desktop viewport へ戻す／変更する
+orca exec --page <id> --command "set viewport 1280 800" --json
+```
+
+`set device` / `set viewport` は agent-browser command であり、`orca set device ...` のような top-level command ではない。top-level で実行すると `Unknown command` になる。`orca exec --command ...` の成功応答に含まれる `width`、`height`、`mobile`、`deviceScaleFactor` を確認し、layout と要素参照が変わり得るため直後に snapshot を取り直す。
+
+実表示の寸法は必要に応じて `orca eval` で `window.innerWidth` / `window.innerHeight`、対象要素の `getBoundingClientRect()`、`document.body.scrollWidth` を読む。レスポンシブ実装では desktop/mobile 両方の control が DOM に存在して片方だけ CSS で hidden になる場合があるため、`querySelectorAll` の件数だけで表示を判定しない。`getBoundingClientRect().height > 0` など実寸で可視要素を絞る。
+
 ## 観測と native dialog
 
 CLI の JSON 応答は最初に `ok` を確認する。低コスト実行では refs と tree が重複する JSON 全体を毎回読む代わりに、画面情報を抽出する。jq が利用可能なら次の例を使える。
@@ -17,6 +33,8 @@ orca snapshot --page <id> --json | jq -r 'if .ok then .result.snapshot else .err
 ```
 
 さらに期待語だけに絞って空になった場合は、絞り込みなしの `result.snapshot` と URL を確認する。接続画面への遷移や stale ref をブラウザ停止と誤認しない。
+
+`wait --text` は画面に描画された text を待つ用途に使う。目的の文言が `aria-label` にしかない場合は一致しないことがあるため、最新 snapshot の accessible name、`wait --selector`、または対象を絞った `eval` で確認する。長いページの snapshot が出力上限で途中までになる場合も、後半の要素が存在しないと判断せず、snapshot の出力を絞るか `eval` で対象だけを読む。
 
 native confirm/alert は HTML dialog と別である。CLI 1.4.205 で利用した操作は次の通りだが、使用前に現在の `--help` を確認する。
 
@@ -29,4 +47,4 @@ orca dialog dismiss --page <id> --json
 
 ## 到達できない場合
 
-`runtime_unavailable` や localhost 接続失敗では、許可された sandbox 外実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。ブラウザの実行ホスト、サーバーの実 URL/ポートも確認する。worker は独自に runtime の serve/restart を繰り返さず、具体的エラーを coordinator へ送る。復帰できるまでアプリの不具合や pass と判定しない。
+`runtime_unavailable` や localhost 接続失敗では、許可された sandbox 外実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。ブラウザの実行ホスト、サーバーの実 URL/ポートも確認する。sandbox 内で起動した local dev server に paired desktop browser から到達できない場合は、許可を得て server も sandbox 外で明示的な host/port（例: `--host 127.0.0.1 --port 5174`）に起動し直す。ブラウザツールを切り替えて制約を隠さない。worker は独自に runtime の serve/restart を繰り返さず、具体的エラーを coordinator へ送る。復帰できるまでアプリの不具合や pass と判定しない。

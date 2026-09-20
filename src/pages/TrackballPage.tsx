@@ -28,6 +28,8 @@ import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useTrackballVersionHistory } from "../hooks/versionHistory/useTrackballVersionHistory";
+import { ResponsiveButton } from "../components/ResponsiveButton";
+import { MobileTrackballMenu } from "../components/trackball/MobileTrackballMenu";
 
 // Which detail is shown in the right pane: the selected runtime input
 // processor, or one PMW3610 driver section (keyed by its subsystem index).
@@ -517,6 +519,37 @@ export function TrackballPage() {
         )
       : undefined;
 
+  const mobileProcessorItems = processors.map((item, index) => ({
+    id: `processor-${item.id}-${index}`,
+    label: item.name || t("Processor {{id}}", { id: item.id }),
+    selected:
+      rightView.kind === "processor" && selectedProcessorIndex === index,
+    onSelect: () => handleSelectProcessor(index),
+  }));
+  const mobileDriverItems = pmw3610Sections.map((section) => ({
+    id: `pmw3610-${section.customSubsystemIndex}`,
+    label: `${section.identifier}${
+      pmw3610Sections.length > 1 ? ` #${section.customSubsystemIndex}` : ""
+    }`,
+    selected:
+      rightView.kind === "pmw3610" &&
+      rightView.index === section.customSubsystemIndex,
+    status: section.settings.some((setting) => setting.hasUnsavedValue)
+      ? ("unsaved" as const)
+      : undefined,
+    onSelect: () => handleSelectDriver(section.customSubsystemIndex),
+  }));
+  const reloadSelected =
+    rightView.kind === "pmw3610"
+      ? customSettings.loadSettings
+      : () => void loadProcessors();
+  const reloadSelectedLabel =
+    rightView.kind === "pmw3610"
+      ? t("Reload PMW3610 drivers")
+      : t("Reload processors");
+  const reloadSelectedDisabled =
+    rightView.kind === "pmw3610" ? customSettings.isLoading : isLoading;
+
   return (
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
@@ -537,8 +570,24 @@ export function TrackballPage() {
               </p>
             </div>
           </div>
-          {isAvailable && (
-            <div>
+          <div className="w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
+            <MobileTrackballMenu
+              processors={mobileProcessorItems}
+              drivers={mobileDriverItems}
+            />
+            <ResponsiveButton
+              label={reloadSelectedLabel}
+              className="desktop:hidden btn-ghost text-sm flex items-center gap-1.5"
+              onClick={reloadSelected}
+              disabled={reloadSelectedDisabled}
+            >
+              {reloadSelectedDisabled ? (
+                <IconLoader2 size={16} className="animate-spin" />
+              ) : (
+                <IconRefresh size={16} />
+              )}
+            </ResponsiveButton>
+            {isAvailable && (
               <ResetVersionMenu
                 label={t("Versions")}
                 versions={versionHistory.versions}
@@ -546,13 +595,13 @@ export function TrackballPage() {
                 disabled={isLoading}
                 isBusy={versionHistory.isBusy}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 desktop:grid-cols-[300px_1fr] gap-4 min-w-0">
           {/* Left: selectable lists */}
-          <div className="space-y-4">
+          <div className="hidden desktop:block space-y-4">
             {/* Processors */}
             <section className="glass-card p-3">
               <div className="flex items-center justify-between mb-3">

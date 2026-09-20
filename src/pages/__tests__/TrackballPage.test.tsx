@@ -126,6 +126,32 @@ describe("TrackballPage", () => {
     expect(screen.getByText("Scaling")).toBeInTheDocument();
   });
 
+  it("switches processors from the mobile selector", async () => {
+    const user = userEvent.setup();
+    mockUseRuntimeInputProcessor.mockReturnValue(
+      createMockHookReturn({
+        processors: [
+          createMockProcessor({ id: 0, name: "trackpad" }),
+          createMockProcessor({ id: 1, name: "trackball" }),
+        ],
+      }),
+    );
+
+    render(<TrackballPage />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Select processor or PMW3610 driver",
+    });
+    expect(trigger).toHaveTextContent("trackpad");
+
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: "trackball" }));
+
+    expect(trigger).toHaveTextContent("Processor");
+    expect(trigger).toHaveTextContent("trackball");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("should display current speed settings", () => {
     mockUseRuntimeInputProcessor.mockReturnValue(
       createMockHookReturn({
