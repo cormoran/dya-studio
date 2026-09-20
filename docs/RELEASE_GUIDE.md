@@ -13,7 +13,7 @@ never set it by hand.
 
 ## How a release happens
 
-The **Release DYA Studio** workflow (`.github/workflows/release.yml`) is run
+Start the **Release DYA Studio** workflow (`.github/workflows/release.yml`)
 manually (`workflow_dispatch`). It:
 
 1. Runs `node scripts/release.ts`, which resolves the next `YYYY.MM.DD.N` from
@@ -21,19 +21,23 @@ manually (`workflow_dispatch`). It:
    `src/i18n/releaseNotes.json`: the `upcoming` section becomes that version
    (dated today) and a fresh empty `upcoming` is prepended.
 2. Pushes the change to a temporary `release/run-<workflow run id>` branch and
-   opens a pull request to `main`.
-3. Dispatches the normal `Test and Build Web UI` workflow for that exact
-   commit, waits for the required `build` check, and squash-merges the pull
-   request. This keeps the release process subject to the same branch rules as
-   every other change to `main`.
-4. Builds and deploys the merged commit to Cloudflare Pages, then tags it
+   opens a draft pull request to `main`. Repository Actions settings must allow
+   GitHub Actions to create pull requests.
+3. A maintainer marks the pull request ready for review. This human action
+   starts the normal pull-request `Test and Build Web UI` workflow; wait for the
+   required `build` check, review the promoted notes, and merge the pull
+   request. This keeps the release subject to the same branch rules as every
+   other change to `main`.
+4. The merged release pull request starts the publish job, which builds and
+   deploys the merged commit to Cloudflare Pages, then tags it
    `vYYYY.MM.DD.N`.
 5. Creates a GitHub Release whose body links to the matching section of the
    release notes page (`/release-notes#YYYY.MM.DD.N`).
 
-The temporary branch is retained until all release steps succeed. If a step
-fails after the branch is pushed, rerun the failed workflow run instead of
-starting a new dispatch; the rerun resumes the same version and pull request.
+The temporary branch is retained until publishing succeeds. Before the pull
+request is merged, rerun the original preparation run rather than starting a
+new dispatch to resume the same version and pull request. If publishing fails,
+rerun its failed job from the merged pull request's workflow run.
 
 The version-resolution and JSON-rewrite logic lives in
 `src/lib/releaseVersioning.ts` and is unit-tested
