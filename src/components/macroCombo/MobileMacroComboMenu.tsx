@@ -36,6 +36,13 @@ export function MobileMacroComboMenu({
     ...(combos ?? []),
     ...(settings ?? []),
   ].find((item) => item.selected);
+  const selectedSection = macros?.some((item) => item.selected)
+    ? t("Macro")
+    : combos?.some((item) => item.selected)
+      ? t("Combo")
+      : settings?.some((item) => item.selected)
+        ? t("Settings")
+        : null;
 
   const run = (action: () => void) => {
     setIsOpen(false);
@@ -47,14 +54,21 @@ export function MobileMacroComboMenu({
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="desktop:hidden min-w-0 flex-1 h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-electric)]/40 flex items-center gap-2 text-left transition-colors"
+          className="desktop:hidden min-w-0 flex-1 h-11 sm:h-9 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-electric)]/40 flex items-center gap-2 text-left transition-colors"
           aria-label={t("Select macro, combo, or settings")}
           aria-haspopup="menu"
           aria-expanded={isOpen}
         >
           {selected?.status && <StatusDot status={selected.status} />}
-          <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-text)]">
-            {selected?.label ?? t("Select a macro or combo")}
+          <span className="min-w-0 flex-1 flex flex-col justify-center">
+            {selectedSection && (
+              <span className="truncate text-[9px] leading-none font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
+                {selectedSection}
+              </span>
+            )}
+            <span className="truncate text-xs leading-tight text-[var(--color-text)]">
+              {selected?.label ?? t("Select a macro or combo")}
+            </span>
           </span>
           <IconChevronDown
             size={15}

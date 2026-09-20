@@ -52,6 +52,7 @@ describe("MobileMacroComboMenu", () => {
     const trigger = screen.getByRole("button", {
       name: "Select macro, combo, or settings",
     });
+    expect(trigger).toHaveTextContent("Macro");
     expect(trigger).toHaveTextContent("Copy line");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
@@ -74,6 +75,30 @@ describe("MobileMacroComboMenu", () => {
     );
     expect(selectMacro).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["Combo", "combos"],
+    ["Settings", "settings"],
+  ] as const)("labels a selected %s item above its name", (section, prop) => {
+    const item = {
+      id: section.toLowerCase(),
+      label: `${section} item`,
+      selected: true,
+      onSelect: jest.fn(),
+    };
+
+    render(
+      <LanguageProvider>
+        <MobileMacroComboMenu {...{ [prop]: [item] }} />
+      </LanguageProvider>,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Select macro, combo, or settings",
+    });
+    expect(trigger).toHaveTextContent(section);
+    expect(trigger).toHaveTextContent(`${section} item`);
   });
 
   it("disables macro creation while a macro is being created", async () => {
