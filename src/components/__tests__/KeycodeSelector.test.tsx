@@ -159,7 +159,7 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
   expect(
     screen.getByRole("button", { name: /param1:/ }).parentElement
       ?.parentElement,
-  ).toHaveClass("mb-2", "flex");
+  ).toHaveClass("h-7", "mb-2", "flex");
   expect(screen.getByText("Modifiers:")).toBeInTheDocument();
   expect(screen.getByText("param1 - Select Key")).toBeInTheDocument();
 });

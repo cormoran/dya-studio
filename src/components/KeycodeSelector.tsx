@@ -858,7 +858,13 @@ export function KeycodeSelector({
 
                   {/* Parameter Value Selector */}
                   <div
-                    className={`flex-1 ${floating ? "p-2 overflow-y-auto" : "p-4 overflow-hidden"} flex flex-col`}
+                    className={`flex-1 ${
+                      floating
+                        ? "p-2 overflow-y-auto"
+                        : inlineParamToolbar
+                          ? "px-4 pt-2 pb-4 overflow-hidden"
+                          : "p-4 overflow-hidden"
+                    } flex flex-col`}
                     onFocusCapture={(event) => {
                       editingNumber.current =
                         event.target instanceof HTMLInputElement &&

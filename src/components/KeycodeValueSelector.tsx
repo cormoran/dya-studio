@@ -183,7 +183,7 @@ export function KeycodeValueSelector({
   return (
     <div className="flex flex-col h-full">
       {/* Search + view mode toggle */}
-      <div className="mb-2 flex items-center gap-2 shrink-0">
+      <div className="h-7 mb-2 flex items-stretch gap-2 shrink-0">
         {toolbar}
         {(compact || collapseModifiersOnMobile) && showModifiers && (
           <EditorTooltip content={t("Show or hide modifier keys")}>
@@ -191,7 +191,7 @@ export function KeycodeValueSelector({
               type="button"
               aria-expanded={modifiersExpanded}
               onClick={() => setModifiersExpanded(!modifiersExpanded)}
-              className={`px-2 py-1 text-xs rounded border whitespace-nowrap ${modifierToggleClassName ?? ""} ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+              className={`h-7 inline-flex items-center px-2 text-xs rounded border whitespace-nowrap ${modifierToggleClassName ?? ""} ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
             >
               {t("Modifiers")}
               {selectedModifiers !== 0
@@ -204,14 +204,14 @@ export function KeycodeValueSelector({
             </button>
           </EditorTooltip>
         )}
-        <div className="ml-auto flex items-center gap-1 shrink-0">
+        <div className="ml-auto flex h-7 items-center gap-1 shrink-0">
           {compact && viewMode === "layout" && (
             <EditorTooltip content={t("Show or hide keycode search")}>
               <button
                 type="button"
                 aria-label={t("Search keycodes...")}
                 aria-expanded={layoutSearchExpanded}
-                className={`p-1 rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                className={`flex h-7 w-7 items-center justify-center rounded border ${layoutSearchExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
                 onClick={() => {
                   setLayoutSearchExpanded(!layoutSearchExpanded);
                   if (layoutSearchExpanded) setSearchQuery("");
@@ -240,7 +240,7 @@ export function KeycodeValueSelector({
                   ? t("Show keycodes by category")
                   : t("Show key layout")
               }
-              className={`flex-shrink-0 p-1 rounded border transition-colors ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors ${
                 viewMode === "layout"
                   ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
                   : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
