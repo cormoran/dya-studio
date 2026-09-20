@@ -2,9 +2,10 @@ name: Release DYA Studio
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [closed]
 
 permissions:
-  actions: write
   contents: write
   pull-requests: write
 
@@ -13,11 +14,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  prepare-release:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment:
-      name: cloudflare-release
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
@@ -35,7 +35,7 @@ jobs:
         run: |
           RELEASE_BRANCH="release/run-${GITHUB_RUN_ID}"
 
-          # Keep the branch until the release finishes so rerunning this run
+          # Keep the branch until publishing finishes so rerunning this run
           # resumes the same version instead of creating a second release.
           if git ls-remote --exit-code --heads origin "refs/heads/$RELEASE_BRANCH" >/dev/null 2>&1; then
             git fetch origin "$RELEASE_BRANCH"
@@ -60,70 +60,77 @@ jobs:
           echo "branch=$RELEASE_BRANCH" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Create, validate, and merge release pull request
-        id: merge
+      - name: Create draft release pull request
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ steps.release.outputs.branch }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          PR_NUMBER=$(gh pr list \
+          PR_URL=$(gh pr list \
             --state all \
             --head "$RELEASE_BRANCH" \
-            --json number \
-            --jq '.[0].number // empty')
+            --json url \
+            --jq '.[0].url // empty')
 
-          if [ -z "$PR_NUMBER" ]; then
+          if [ -z "$PR_URL" ]; then
             PR_URL=$(gh pr create \
+              --draft \
               --base main \
               --head "$RELEASE_BRANCH" \
               --title "chore(release): $VERSION" \
-              --body "Automated release notes promotion for $VERSION.")
-            PR_NUMBER=${PR_URL##*/}
+              --body "Automated release notes promotion for $VERSION. Mark this pull request ready for review, wait for the required build, review it, and merge it to publish the release.")
           fi
 
-          PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq .state)
-          if [ "$PR_STATE" = "OPEN" ]; then
-            RELEASE_SHA=$(git rev-parse HEAD)
-            gh workflow run test.yml --ref "$RELEASE_BRANCH"
+          echo "Release pull request: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mark it ready for review to start the required pull-request CI." >> "$GITHUB_STEP_SUMMARY"
 
-            CI_RUN_ID=""
-            for _ in {1..30}; do
-              CI_RUN_ID=$(gh run list \
-                --workflow test.yml \
-                --branch "$RELEASE_BRANCH" \
-                --event workflow_dispatch \
-                --commit "$RELEASE_SHA" \
-                --limit 1 \
-                --json databaseId \
-                --jq '.[0].databaseId // empty')
-              if [ -n "$CI_RUN_ID" ]; then
-                break
-              fi
-              sleep 2
-            done
+  publish-release:
+    if: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        startsWith(github.event.pull_request.head.ref, 'release/run-')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: cloudflare-release
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
 
-            if [ -z "$CI_RUN_ID" ]; then
-              echo "Could not find the validation run for $RELEASE_SHA" >&2
-              exit 1
-            fi
-
-            gh run watch "$CI_RUN_ID" --exit-status
-            gh pr merge "$PR_NUMBER" --squash --match-head-commit "$RELEASE_SHA"
-          elif [ "$PR_STATE" != "MERGED" ]; then
-            echo "Release pull request #$PR_NUMBER is $PR_STATE" >&2
+      - name: Validate release metadata
+        id: release
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          VERSION=${PR_TITLE#chore(release): }
+          if [[ ! "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]; then
+            echo "Invalid release pull request title: $PR_TITLE" >&2
             exit 1
           fi
 
-          MERGE_SHA=$(gh pr view "$PR_NUMBER" --json mergeCommit --jq '.mergeCommit.oid // empty')
-          if [ -z "$MERGE_SHA" ]; then
-            echo "Could not resolve the merge commit for #$PR_NUMBER" >&2
+          NOTES_VERSION=$(node -e 'const fs = require("node:fs"); const data = JSON.parse(fs.readFileSync("src/i18n/releaseNotes.json", "utf8")); process.stdout.write(data.releases.find((release) => release.version !== "upcoming")?.version ?? "")')
+          if [ "$NOTES_VERSION" != "$VERSION" ]; then
+            echo "Release notes version $NOTES_VERSION does not match $VERSION" >&2
             exit 1
           fi
 
-          git fetch origin main --tags
-          git checkout --detach "$MERGE_SHA"
-          echo "sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
+          if [ "$(git rev-parse HEAD)" != "$MERGE_SHA" ]; then
+            echo "Checked out commit does not match merged release commit $MERGE_SHA" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: npm run build
@@ -149,7 +156,7 @@ jobs:
       - name: Tag released commit
         env:
           VERSION: ${{ steps.release.outputs.version }}
-          MERGE_SHA: ${{ steps.merge.outputs.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           if git rev-parse --verify "refs/tags/v$VERSION" >/dev/null 2>&1; then
             TAG_SHA=$(git rev-list -n 1 "v$VERSION")
@@ -177,5 +184,8 @@ jobs:
 
       - name: Delete release branch
         env:
-          RELEASE_BRANCH: ${{ steps.release.outputs.branch }}
-        run: git push origin --delete "$RELEASE_BRANCH"
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git ls-remote --exit-code --heads origin "refs/heads/$RELEASE_BRANCH" >/dev/null 2>&1; then
+            git push origin --delete "$RELEASE_BRANCH"
+          fi
