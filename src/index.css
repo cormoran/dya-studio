@@ -77,6 +77,7 @@
     background: var(--color-bg);
     color: var(--color-text);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     transition:
       background-color 0.3s ease,
@@ -85,6 +86,7 @@
 
   #root {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
   }
@@ -159,6 +161,31 @@
   overflow-x: hidden;
   overflow-y: auto;
   overflow-wrap: anywhere;
+}
+
+/* iOS zooms the visual viewport when a text-entry control smaller than 16px
+   receives focus. Keep compact desktop controls unchanged, but make every
+   text-entry surface large enough on phone and tablet viewports. */
+@media (max-width: 1023px) {
+  :where(
+    input:not([type]),
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    input[type="month"],
+    input[type="week"],
+    select,
+    textarea
+  ) {
+    font-size: 16px;
+  }
 }
 
 /* A phone in landscape can leave too little height between the app header and
