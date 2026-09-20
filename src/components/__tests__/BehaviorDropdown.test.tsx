@@ -27,6 +27,8 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   const user = userEvent.setup();
   renderDropdown();
 
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
   await user.click(screen.getByRole("button", { name: "Select behavior" }));
 
   const search = screen.getByPlaceholderText("Search behaviors...");
