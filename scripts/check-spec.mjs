@@ -29,6 +29,23 @@ function markdownFiles(dir) {
 const errors = [];
 const ids = new Map();
 const files = [join(root, "AGENTS.md"), ...markdownFiles(specRoot)];
+const specificationSources = files
+  .filter((file) => /\/spec\/(pages|modules)\//.test(file))
+  .map((file) => readFileSync(file, "utf8"))
+  .join("\n");
+// App.tsx route/gating review is still required: this catches forgotten Page
+// files, not runtime route registration or the semantics of their contracts.
+const pageSources = [
+  ...readdirSync(join(root, "src/pages"))
+    .filter((file) => file.endsWith("Page.tsx"))
+    .map((file) => `src/pages/${file}`),
+  "src/components/developerGuide/DeveloperGuidePage.tsx",
+];
+for (const page of pageSources) {
+  if (!specificationSources.includes(page)) {
+    errors.push(`${page}: no page/module specification source reference`);
+  }
+}
 for (const file of files) {
   const content = readFileSync(file, "utf8");
   const relative = file.slice(root.length + 1);

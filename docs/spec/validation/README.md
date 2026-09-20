@@ -35,3 +35,5 @@ Save/Reload は未完。coordinator が同じ page ID で未加工 snapshot を�
 [round5](keymap-luna-round5.md) は新規 origin `5180`、`a8eeb6e` 上で A→B、Save、アプリ内 Reload 後の B/Saved、A へ復元保存を実観測。ページ ID typo はエラーとして再観測してから判定した。起動 receipt は luna-low。コードを読まず仕様 ID と UI 証拠を結びつけた。
 
 v1 は、round2 の基準編集、round3 の modal Escape、round4 の floating 境界・layer 切替、round5 の Save/Reload を合わせて、低コスト agent の探索を支援し、誤判定・未実行もレビューで識別できる標準として全ページへ展開する。これは各版/条件の限定的な実測で、全アプリ・全状態の pass ではない。floating modifier 後の Escape、native confirm、実機/RPC failure は未解決/未検証として残す。全ページ展開後は新しい並列探索で別の領域も評価する。
+
+[coordinator の再観測](coordinator-review.md) では modifier draft 後の Escape は正常に閉じ、binding を適用しなかった。round4 の候補はこの条件で再現せず、原因を断定しない。最終 mode/auto/close の復帰も観測した。

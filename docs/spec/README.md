@@ -16,11 +16,35 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 
 ## Sitemap
 
-| 入口 / 機能          | 仕様                          | 接続条件        |
-| -------------------- | ----------------------------- | --------------- |
-| `/keymap` キーマップ | [キーマップ](pages/keymap.md) | 接続または Demo |
+| 入口 / 機能                        | 仕様                                                                      | 接続条件                                           |
+| ---------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| `/` 接続前                         | [接続・unlock](modules/device-session.md)                                 | 不要                                               |
+| `/` Home                           | [ホーム](pages/home.md)                                                   | 接続または Demo                                    |
+| `/keymap`                          | [キーマップ](pages/keymap.md) / [rotary encoder](pages/keymap-sensors.md) | 接続または Demo、機能別 capability                 |
+| `/macro-combo`                     | [Macro & Combo](pages/macro-combo.md)                                     | 接続 + runtime macro/combo                         |
+| `/trackball`                       | [Trackball](pages/trackball.md)                                           | 接続 + 対応入力機能                                |
+| `/connection`                      | [接続先設定](pages/connection.md)                                         | 接続 + 機能別 capability                           |
+| `/settings`                        | [設定](pages/settings.md)                                                 | 接続 + 機能別 capability                           |
+| `/troubleshooting`                 | [診断](pages/troubleshooting.md)                                          | 接続 + 診断 capability                             |
+| `/subsystems`                      | [Subsystems](pages/subsystems.md)                                         | 接続                                               |
+| `/import-export`                   | [Import/Export](pages/import-export.md)                                   | 接続、local DEV または OAuth client 設定でタブ登録 |
+| `/oauth/callback`                  | [OAuth callback](pages/oauth-callback.md)                                 | keyboard 接続不要、認証フローの状態は別途必要      |
+| `/release-notes`                   | [リリースノート](pages/release-notes.md)                                  | 不要                                               |
+| `/developer-guide` と配下 10 route | [開発者ガイド・全 route 一覧](pages/developer-guide.md)                   | 不要                                               |
+| 接続中の Debug Tool ボタン         | [Debug Tool](pages/debug-tool.md)                                         | devtool capability                                 |
 
-他のページは全ページ展開の段階で追加する。入口の母集団は `src/App.tsx` の `getTabs` と `AppRouter` / `AppContent` の独立ルート。ページに現れる共有機能にも仕様へのリンクを設ける。
+入口の母集団は [App.tsx](../../src/App.tsx) の `getTabs` と `AppRouter` / `AppContent` の独立ルート、開発者ガイドは [route 定義](../../src/content/developerGuide.ts)。新しい入口を追加したらこの表とページ仕様を同時に更新する。
+
+## 共有モジュール
+
+| 契約                            | 仕様                                            | 主な consumer                                        |
+| ------------------------------- | ----------------------------------------------- | ---------------------------------------------------- |
+| route、tab 保持、言語・theme    | [app shell](modules/app-shell.md)               | 全画面                                               |
+| transport、再接続、unlock、Demo | [device session](modules/device-session.md)     | 接続画面・全編集ページ                               |
+| binding の選択/終了/適用        | [binding editor](modules/binding-editor.md)     | Keymap、sensor、macro/combo、入力処理                |
+| 共通設定値・debounce・保存表示  | [settings write](modules/settings-write.md)     | Settings、Connection、Trackball 等                   |
+| ポインティング入力変換          | [input processing](modules/input-processing.md) | Trackball                                            |
+| capture・diff・復元             | [version history](modules/version-history.md)   | Keymap、Macro&Combo、Trackball、Connection、Settings |
 
 ## 判定の原則
 
