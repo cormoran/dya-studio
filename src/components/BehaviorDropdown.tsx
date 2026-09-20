@@ -495,7 +495,7 @@ export function BehaviorDropdown({
                 type="button"
                 aria-label={t("Configure Quick Select")}
                 aria-expanded={isQuickSelectSettingsOpen}
-                className={`h-9 w-9 shrink-0 rounded border ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
                 onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
               >
                 <IconAdjustments size={16} />
