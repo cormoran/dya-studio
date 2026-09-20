@@ -146,7 +146,8 @@ export function BehaviorDropdown({
       return [];
     }
   });
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const behaviorMenuRef = useRef<HTMLDivElement>(null);
+  const behaviorTriggerRef = useRef<HTMLButtonElement>(null);
   const quickSelectSettingsRef = useRef<HTMLDivElement>(null);
   const quickSelectSettingsTriggerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -171,9 +172,13 @@ export function BehaviorDropdown({
   }, [isOpen]);
 
   useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
+    const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+      if (
+        isOpen &&
+        !behaviorMenuRef.current?.contains(target) &&
+        !behaviorTriggerRef.current?.contains(target)
+      ) {
         setIsOpen(false);
       }
       if (
@@ -185,9 +190,9 @@ export function BehaviorDropdown({
       }
     };
     if (isOpen || isQuickSelectSettingsOpen)
-      document.addEventListener("pointerdown", handlePointerDown, true);
+      document.addEventListener("mousedown", handleMouseDown, true);
     return () =>
-      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("mousedown", handleMouseDown, true);
   }, [isOpen, isQuickSelectSettingsOpen]);
 
   const behaviorOptions = useMemo((): BehaviorOption[] => {
@@ -461,12 +466,10 @@ export function BehaviorDropdown({
   const isSearching = searchQuery.trim().length > 0;
 
   return (
-    <div
-      className={`relative ${compact ? "flex items-center gap-1" : ""}`}
-      ref={dropdownRef}
-    >
+    <div className={`relative ${compact ? "flex items-center gap-1" : ""}`}>
       <div className={compact ? "contents" : "flex items-stretch gap-1"}>
         <button
+          ref={behaviorTriggerRef}
           type="button"
           className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "h-9 flex-1 px-3"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
           aria-expanded={isOpen}
@@ -549,6 +552,7 @@ export function BehaviorDropdown({
 
       {(isOpen || isQuickSelectSettingsOpen) && (
         <div
+          ref={behaviorMenuRef}
           className={
             isOpen
               ? "absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 flex flex-col"

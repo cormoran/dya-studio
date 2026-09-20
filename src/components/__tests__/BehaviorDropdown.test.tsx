@@ -78,20 +78,23 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
     screen.queryByRole("button", { name: "Others" }),
   ).not.toBeInTheDocument();
 
-  await user.click(settingsButton);
-  expect(screen.getByText("Quick Select settings")).toBeInTheDocument();
-  await user.click(search);
-  expect(screen.queryByText("Quick Select settings")).not.toBeInTheDocument();
+  await user.click(screen.getAllByRole("button", { name: "Layer-Tap" })[0]);
+  expect(
+    screen.queryByPlaceholderText("Search behaviors..."),
+  ).not.toBeInTheDocument();
 
-  await user.type(search, "mouse");
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+
+  const reopenedSearch = screen.getByPlaceholderText("Search behaviors...");
+  await user.type(reopenedSearch, "mouse");
 
   expect(screen.getByText("Mouse Key Press")).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Misc" }),
   ).not.toBeInTheDocument();
 
-  await user.clear(search);
-  await user.type(search, "automatically deactivates");
+  await user.clear(reopenedSearch);
+  await user.type(reopenedSearch, "automatically deactivates");
 
   expect(screen.getByText("Caps Word")).toBeInTheDocument();
 });
