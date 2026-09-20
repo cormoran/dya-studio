@@ -57,6 +57,12 @@ interface QuickSelectBehavior {
   isPinned: boolean;
 }
 
+interface QuickSelectSettingItem extends QuickSelectBehavior {
+  isPreset: boolean;
+  presetName?: string;
+  isVisible: boolean;
+}
+
 interface BehaviorDropdownProps {
   compact?: boolean;
   behaviors: Map<number, BehaviorDefinition>;
@@ -168,9 +174,10 @@ export function BehaviorDropdown({
         setIsQuickSelectSettingsOpen(false);
       }
     };
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    if (isOpen || isQuickSelectSettingsOpen)
+      document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, isQuickSelectSettingsOpen]);
 
   const behaviorOptions = useMemo((): BehaviorOption[] => {
     const options: BehaviorOption[] = [];
@@ -225,6 +232,27 @@ export function BehaviorDropdown({
     [behaviors],
   );
 
+  const presetBehaviors = useMemo(() => {
+    const presets = presetNames
+      .map((presetName) => {
+        const behavior = findBehavior(presetName);
+        return behavior ? { behavior, presetName } : null;
+      })
+      .filter(
+        (
+          preset,
+        ): preset is { behavior: BehaviorDefinition; presetName: string } =>
+          Boolean(preset),
+      );
+    return presets.filter(
+      (preset, index) =>
+        presets.findIndex(
+          (candidate) =>
+            candidate.behavior.displayName === preset.behavior.displayName,
+        ) === index,
+    );
+  }, [findBehavior, presetNames]);
+
   const quickSelectBehaviors = useMemo((): QuickSelectBehavior[] => {
     const unique = (items: BehaviorDefinition[]) =>
       items.filter(
@@ -233,13 +261,22 @@ export function BehaviorDropdown({
             (item) => item.displayName === behavior.displayName,
           ) === index,
       );
-    const presets = presetNames
-      .filter((name) => !quickSelectConfig.hiddenPresets.includes(name))
-      .map(findBehavior)
-      .filter((behavior): behavior is BehaviorDefinition => Boolean(behavior));
+    const presetBehaviorNames = new Set(
+      presetBehaviors.map((preset) => preset.behavior.displayName),
+    );
+    const presets = presetBehaviors
+      .filter(
+        (preset) =>
+          !quickSelectConfig.hiddenPresets.includes(preset.presetName),
+      )
+      .map((preset) => preset.behavior);
     const pinned = quickSelectConfig.pinnedBehaviorNames
       .map(findBehavior)
-      .filter((behavior): behavior is BehaviorDefinition => Boolean(behavior));
+      .filter(
+        (behavior): behavior is BehaviorDefinition =>
+          behavior !== undefined &&
+          !presetBehaviorNames.has(behavior.displayName),
+      );
     const primary = unique([...presets, ...pinned]).sort((a, b) => {
       const aIndex = quickSelectConfig.order.indexOf(a.displayName);
       const bIndex = quickSelectConfig.order.indexOf(b.displayName);
@@ -248,7 +285,12 @@ export function BehaviorDropdown({
     });
     const primaryIds = new Set(primary.map((behavior) => behavior.id));
     const recent = recentBehaviors
-      .filter((id) => !primaryIds.has(id) && behaviors.has(id))
+      .filter(
+        (id) =>
+          !primaryIds.has(id) &&
+          behaviors.has(id) &&
+          !presetBehaviorNames.has(behaviors.get(id)!.displayName),
+      )
       .map((id) => behaviors.get(id)!);
     return [...primary, ...recent].map((behavior) => {
       const metadata = getBehaviorMetadata(behavior.displayName);
@@ -268,7 +310,7 @@ export function BehaviorDropdown({
   }, [
     behaviors,
     findBehavior,
-    presetNames,
+    presetBehaviors,
     quickSelectConfig,
     recentBehaviors,
   ]);
@@ -340,11 +382,36 @@ export function BehaviorDropdown({
     }));
   };
 
-  const orderedQuickSelects = quickSelectBehaviors.filter(
-    (behavior) => !behavior.isRecent || behavior.isPinned,
-  );
+  const quickSelectSettingItems = useMemo((): QuickSelectSettingItem[] => {
+    const presetItems = presetBehaviors.map((preset) => {
+      const metadata = getBehaviorMetadata(preset.behavior.displayName);
+      return {
+        id: preset.behavior.id,
+        name: preset.behavior.displayName,
+        displayName:
+          metadata?.displayNameVariants.at(0) || preset.behavior.displayName,
+        isRecent: false,
+        isPinned: false,
+        isPreset: true,
+        presetName: preset.presetName,
+        isVisible: !quickSelectConfig.hiddenPresets.includes(preset.presetName),
+      };
+    });
+    const presetNamesByBehavior = new Set(presetItems.map((item) => item.name));
+    const customItems = quickSelectBehaviors
+      .filter((behavior) => !presetNamesByBehavior.has(behavior.name))
+      .map((behavior) => ({ ...behavior, isPreset: false, isVisible: true }));
+    const items = [...presetItems, ...customItems];
+    return items.sort((a, b) => {
+      const aIndex = quickSelectConfig.order.indexOf(a.name);
+      const bIndex = quickSelectConfig.order.indexOf(b.name);
+      if (aIndex === -1) return bIndex === -1 ? 0 : 1;
+      return bIndex === -1 ? -1 : aIndex - bIndex;
+    });
+  }, [presetBehaviors, quickSelectBehaviors, quickSelectConfig]);
+
   const moveQuickSelect = (behaviorName: string, direction: -1 | 1) => {
-    const names = orderedQuickSelects.map((behavior) => behavior.name);
+    const names = quickSelectSettingItems.map((behavior) => behavior.name);
     const index = names.indexOf(behaviorName);
     const target = index + direction;
     if (index < 0 || target < 0 || target >= names.length) return;
@@ -364,28 +431,41 @@ export function BehaviorDropdown({
       className={`relative ${compact ? "flex items-center gap-1" : ""}`}
       ref={dropdownRef}
     >
-      <button
-        type="button"
-        className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "w-full px-3 py-1.5"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
-        aria-expanded={isOpen}
-        onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
-      >
-        <span
-          className={`${compact ? "text-xs truncate" : "text-sm"} text-[var(--color-text)]`}
+      <div className="flex items-stretch gap-1">
+        <button
+          type="button"
+          className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "flex-1 px-3 py-1.5"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
+          aria-expanded={isOpen}
+          onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
         >
-          {selectedBehaviorMetadata?.displayNameVariants.at(0) ||
-            t("Select behavior")}
-          {!compact && selectedBehaviorMetadata?.description && (
-            <span className="mx-1 text-xs text-[var(--color-text-muted)]">
-              - {t(selectedBehaviorMetadata.description)}
-            </span>
-          )}
-        </span>
-        <IconChevronDown
-          size={16}
-          className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
+          <span
+            className={`${compact ? "text-xs truncate" : "text-sm"} text-[var(--color-text)]`}
+          >
+            {selectedBehaviorMetadata?.displayNameVariants.at(0) ||
+              t("Select behavior")}
+            {!compact && selectedBehaviorMetadata?.description && (
+              <span className="mx-1 text-xs text-[var(--color-text-muted)]">
+                - {t(selectedBehaviorMetadata.description)}
+              </span>
+            )}
+          </span>
+          <IconChevronDown
+            size={16}
+            className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        <EditorTooltip content={t("Configure Quick Select")}>
+          <button
+            type="button"
+            aria-label={t("Configure Quick Select")}
+            aria-expanded={isQuickSelectSettingsOpen}
+            className={`shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+            onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
+          >
+            <IconAdjustments size={16} />
+          </button>
+        </EditorTooltip>
+      </div>
 
       <div
         className={`items-center gap-1 overflow-x-auto flex ${compact ? "min-w-0" : "mt-2 pl-2"}`}
@@ -429,65 +509,70 @@ export function BehaviorDropdown({
         ))}
       </div>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 flex flex-col">
-          <div className="p-2 border-b border-[var(--color-border)] flex items-center gap-1 shrink-0">
-            <div className="relative flex-1">
-              <IconSearch
-                size={16}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
-              />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={t("Search behaviors...")}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full pl-8 pr-8 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                  aria-label={t("Clear search")}
-                  onClick={() => {
-                    setSearchQuery("");
-                    searchInputRef.current?.focus();
-                  }}
-                >
-                  <IconX size={16} />
-                </button>
-              )}
-            </div>
-            <EditorTooltip
-              content={
-                keepCategory
-                  ? t("Keep the selected behavior category")
-                  : t("Reset the behavior category when reopening")
-              }
-            >
-              <button
-                type="button"
-                aria-label={t("Keep selected category")}
-                aria-pressed={keepCategory}
-                className={`p-1.5 rounded border ${keepCategory ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
-                onClick={toggleKeepCategory}
+      {(isOpen || isQuickSelectSettingsOpen) && (
+        <div
+          className={
+            isOpen
+              ? "absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 flex flex-col"
+              : "absolute right-0 top-full z-10"
+          }
+        >
+          <div
+            className={
+              isOpen
+                ? "p-2 border-b border-[var(--color-border)] flex items-center gap-1 shrink-0"
+                : "relative"
+            }
+          >
+            {isOpen && (
+              <div className="relative flex-1">
+                <IconSearch
+                  size={16}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder={t("Search behaviors...")}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  className="w-full pl-8 pr-8 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                    aria-label={t("Clear search")}
+                    onClick={() => {
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                  >
+                    <IconX size={16} />
+                  </button>
+                )}
+              </div>
+            )}
+            {isOpen && (
+              <EditorTooltip
+                content={
+                  keepCategory
+                    ? t("Keep the selected behavior category")
+                    : t("Reset the behavior category when reopening")
+                }
               >
-                <IconFilter size={16} />
-              </button>
-            </EditorTooltip>
-            <div className="relative">
-              <EditorTooltip content={t("Configure Quick Select")}>
                 <button
                   type="button"
-                  aria-label={t("Configure Quick Select")}
-                  aria-expanded={isQuickSelectSettingsOpen}
-                  className={`p-1.5 rounded border ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
-                  onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
+                  aria-label={t("Keep selected category")}
+                  aria-pressed={keepCategory}
+                  className={`p-1.5 rounded border ${keepCategory ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                  onClick={toggleKeepCategory}
                 >
-                  <IconAdjustments size={16} />
+                  <IconFilter size={16} />
                 </button>
               </EditorTooltip>
+            )}
+            <div className="relative ml-auto">
               {isQuickSelectSettingsOpen && (
                 <div className="absolute right-0 top-full mt-1 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-xl">
                   <p className="text-sm font-medium text-[var(--color-text)]">
@@ -495,110 +580,79 @@ export function BehaviorDropdown({
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                     {t(
-                      "Choose preset behaviors, pin visible items, and arrange the quick-select row.",
+                      "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.",
                     )}
                   </p>
-                  <div className="mt-3">
-                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
-                      {t("Preset behaviors")}
-                    </p>
+                  <div className="mt-3 border-t border-[var(--color-border)] pt-2">
                     <div className="space-y-1">
-                      {presetNames.map((presetName) => {
-                        const behavior = findBehavior(presetName);
-                        if (!behavior) return null;
-                        const metadata = getBehaviorMetadata(
-                          behavior.displayName,
-                        );
-                        const visible =
-                          !quickSelectConfig.hiddenPresets.includes(presetName);
-                        return (
-                          <button
-                            key={presetName}
-                            type="button"
-                            className="w-full flex items-center gap-2 rounded px-1.5 py-1 text-left text-xs hover:bg-[var(--color-border)]"
-                            aria-pressed={visible}
-                            onClick={() => togglePreset(presetName)}
-                          >
-                            {visible ? (
-                              <IconEye size={15} />
-                            ) : (
-                              <IconEyeOff size={15} />
-                            )}
-                            <span className="flex-1 text-[var(--color-text)]">
-                              {metadata?.displayNameVariants.at(0) ||
-                                behavior.displayName}
-                            </span>
-                            <span className="text-[var(--color-text-muted)]">
-                              {visible ? t("Shown") : t("Hidden")}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
-                      {t("Visible quick selects")}
-                    </p>
-                    <div className="space-y-1">
-                      {quickSelectBehaviors.map((quickBehavior) => (
+                      {quickSelectSettingItems.map((item, index) => (
                         <div
-                          key={quickBehavior.id}
+                          key={item.name}
                           className="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:bg-[var(--color-border)]"
                         >
-                          <span className="flex-1 truncate text-[var(--color-text)]">
-                            {quickBehavior.displayName}
+                          <span className="flex-1 min-w-0 truncate text-[var(--color-text)]">
+                            {item.displayName}
                           </span>
-                          <EditorTooltip
-                            content={
-                              quickBehavior.isPinned
-                                ? t("Unpin this behavior")
-                                : t("Pin this behavior")
-                            }
-                          >
-                            <button
-                              type="button"
-                              aria-label={
-                                quickBehavior.isPinned
+                          {item.isPreset && (
+                            <span className="rounded border border-[var(--color-neon)]/40 bg-[var(--color-neon)]/10 px-1 py-0.5 text-[10px] font-medium text-[var(--color-neon)]">
+                              {t("Preset")}
+                            </span>
+                          )}
+                          {item.isPreset ? (
+                            <EditorTooltip
+                              content={
+                                item.isVisible
+                                  ? t("Hide this preset behavior")
+                                  : t("Show this preset behavior")
+                              }
+                            >
+                              <button
+                                type="button"
+                                aria-label={`${item.isVisible ? t("Hide this preset behavior") : t("Show this preset behavior")}: ${item.displayName}`}
+                                aria-pressed={item.isVisible}
+                                className="rounded p-1 text-[var(--color-text-muted)]"
+                                onClick={() => togglePreset(item.presetName!)}
+                              >
+                                {item.isVisible ? (
+                                  <IconEye size={15} />
+                                ) : (
+                                  <IconEyeOff size={15} />
+                                )}
+                              </button>
+                            </EditorTooltip>
+                          ) : (
+                            <EditorTooltip
+                              content={
+                                item.isPinned
                                   ? t("Unpin this behavior")
                                   : t("Pin this behavior")
                               }
-                              aria-pressed={quickBehavior.isPinned}
-                              className={`rounded p-1 ${quickBehavior.isPinned ? "text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
-                              onClick={() => togglePinned(quickBehavior.name)}
                             >
-                              {quickBehavior.isPinned ? (
-                                <IconPinFilled size={15} />
-                              ) : (
-                                <IconPin size={15} />
-                              )}
-                            </button>
-                          </EditorTooltip>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
-                      {t("Quick Select order")}
-                    </p>
-                    <div className="space-y-1">
-                      {orderedQuickSelects.map((quickBehavior, index) => (
-                        <div
-                          key={quickBehavior.id}
-                          className="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:bg-[var(--color-border)]"
-                        >
-                          <span className="flex-1 truncate text-[var(--color-text)]">
-                            {quickBehavior.displayName}
-                          </span>
+                              <button
+                                type="button"
+                                aria-label={
+                                  item.isPinned
+                                    ? t("Unpin this behavior")
+                                    : t("Pin this behavior")
+                                }
+                                aria-pressed={item.isPinned}
+                                className={`rounded p-1 ${item.isPinned ? "text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
+                                onClick={() => togglePinned(item.name)}
+                              >
+                                {item.isPinned ? (
+                                  <IconPinFilled size={15} />
+                                ) : (
+                                  <IconPin size={15} />
+                                )}
+                              </button>
+                            </EditorTooltip>
+                          )}
                           <button
                             type="button"
                             className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
                             aria-label={t("Move up")}
                             disabled={index === 0}
-                            onClick={() =>
-                              moveQuickSelect(quickBehavior.name, -1)
-                            }
+                            onClick={() => moveQuickSelect(item.name, -1)}
                           >
                             <IconChevronUp size={15} />
                           </button>
@@ -606,10 +660,10 @@ export function BehaviorDropdown({
                             type="button"
                             className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
                             aria-label={t("Move down")}
-                            disabled={index === orderedQuickSelects.length - 1}
-                            onClick={() =>
-                              moveQuickSelect(quickBehavior.name, 1)
+                            disabled={
+                              index === quickSelectSettingItems.length - 1
                             }
+                            onClick={() => moveQuickSelect(item.name, 1)}
                           >
                             <IconChevronDown size={15} />
                           </button>
@@ -621,58 +675,60 @@ export function BehaviorDropdown({
               )}
             </div>
           </div>
-          <div className="flex flex-1 min-h-0 overflow-hidden">
-            {!isSearching && (
-              <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto py-1 shrink-0">
-                <button
-                  type="button"
-                  className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === "all" ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
-                  onClick={() => updateCategory("all")}
-                >
-                  {t("All")}
-                </button>
-                {BEHAVIOR_CATEGORIES.map((category) => (
+          {isOpen && (
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              {!isSearching && (
+                <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto py-1 shrink-0">
                   <button
-                    key={category.id}
                     type="button"
-                    className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === category.id ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
-                    onClick={() => updateCategory(category.id)}
+                    className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === "all" ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
+                    onClick={() => updateCategory("all")}
                   >
-                    {t(category.name)}
+                    {t("All")}
                   </button>
-                ))}
-              </div>
-            )}
-            <div className="flex-1 overflow-y-auto py-1">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`w-full px-3 py-2 text-left transition-colors ${selectedBehaviorId === option.id ? "bg-[var(--color-electric)]/10" : "hover:bg-[var(--color-border)]"}`}
-                    onClick={() => {
-                      updateRecentBehaviors(option.id);
-                      onSelect(option.id);
-                      closeDropdown();
-                    }}
-                  >
-                    <span className="block text-sm font-medium text-[var(--color-text)]">
-                      {option.displayName}
-                    </span>
-                    {option.description && (
-                      <span className="block text-xs text-[var(--color-text-muted)]">
-                        {t(option.description)}
-                      </span>
-                    )}
-                  </button>
-                ))
-              ) : (
-                <p className="px-3 py-4 text-center text-xs text-[var(--color-text-muted)]">
-                  {t("No behaviors found")}
-                </p>
+                  {BEHAVIOR_CATEGORIES.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === category.id ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
+                      onClick={() => updateCategory(category.id)}
+                    >
+                      {t(category.name)}
+                    </button>
+                  ))}
+                </div>
               )}
+              <div className="flex-1 overflow-y-auto py-1">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`w-full px-3 py-2 text-left transition-colors ${selectedBehaviorId === option.id ? "bg-[var(--color-electric)]/10" : "hover:bg-[var(--color-border)]"}`}
+                      onClick={() => {
+                        updateRecentBehaviors(option.id);
+                        onSelect(option.id);
+                        closeDropdown();
+                      }}
+                    >
+                      <span className="block text-sm font-medium text-[var(--color-text)]">
+                        {option.displayName}
+                      </span>
+                      {option.description && (
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {t(option.description)}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-3 py-4 text-center text-xs text-[var(--color-text-muted)]">
+                    {t("No behaviors found")}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

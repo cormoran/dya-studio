@@ -28,6 +28,12 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   renderDropdown();
 
   expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  const settingsButton = screen.getByRole("button", {
+    name: "Configure Quick Select",
+  });
+  await user.click(settingsButton);
+  expect(screen.getByText("Quick Select settings")).toBeInTheDocument();
+  await user.click(settingsButton);
 
   await user.click(screen.getByRole("button", { name: "Select behavior" }));
 
@@ -46,17 +52,29 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
   ).not.toBeInTheDocument();
 });
 
-it("persists quick-select visibility and allows a visible item to be pinned", async () => {
+it("uses one ordered settings list with separate preset visibility and pin controls", async () => {
   const user = userEvent.setup();
   renderDropdown();
 
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.type(screen.getByPlaceholderText("Search behaviors..."), "mouse");
+  await user.click(screen.getByText("Mouse Key Press"));
   await user.click(screen.getByRole("button", { name: "Select behavior" }));
   await user.click(
     screen.getByRole("button", { name: "Configure Quick Select" }),
   );
 
   expect(screen.getByText("Quick Select settings")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Key Press Shown" }));
+  expect(screen.getAllByText("Preset")).toHaveLength(5);
+  expect(screen.queryByText("Preset behaviors")).not.toBeInTheDocument();
+  expect(screen.queryByText("Visible quick selects")).not.toBeInTheDocument();
+  expect(screen.queryByText("Quick Select order")).not.toBeInTheDocument();
+
+  await user.click(
+    screen.getByRole("button", {
+      name: "Hide this preset behavior: Key Press",
+    }),
+  );
   expect(
     JSON.parse(
       localStorage.getItem(
@@ -65,10 +83,9 @@ it("persists quick-select visibility and allows a visible item to be pinned", as
     ).hiddenPresets,
   ).toContain("kp");
 
-  await user.click(
-    screen.getAllByRole("button", { name: "Pin this behavior" })[0],
-  );
+  await user.click(screen.getByRole("button", { name: "Pin this behavior" }));
   expect(
     screen.getByRole("button", { name: "Unpin this behavior" }),
   ).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Move up" })).toHaveLength(6);
 });

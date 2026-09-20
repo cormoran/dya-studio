@@ -16,6 +16,11 @@ const ja: Record<string, string> = {
   "Keep selected category": "選択カテゴリを維持",
   "Configure Quick Select": "クイック選択を設定",
   "Quick Select settings": "クイック選択の設定",
+  "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
+    "クイック選択の項目を設定します。プリセットは表示／非表示、その他は固定／固定解除できます。",
+  Preset: "プリセット",
+  "Show this preset behavior": "このプリセットのビヘイビアを表示",
+  "Hide this preset behavior": "このプリセットのビヘイビアを非表示",
   "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
     "プリセットの表示、表示中の項目の固定、クイック選択の並び順を設定します。",
   "Preset behaviors": "プリセットのビヘイビア",
@@ -1430,6 +1435,11 @@ const zh: Record<string, string> = {
   "Keep selected category": "保留所选类别",
   "Configure Quick Select": "配置快速选择",
   "Quick Select settings": "快速选择设置",
+  "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
+    "设置每个快速选择项目。预设行为可显示或隐藏，其他项目可固定。",
+  Preset: "预设",
+  "Show this preset behavior": "显示此预设行为",
+  "Hide this preset behavior": "隐藏此预设行为",
   "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
     "选择预设行为、固定显示项目并排列快速选择栏。",
   "Preset behaviors": "预设行为",
