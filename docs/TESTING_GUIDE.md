@@ -53,6 +53,11 @@ mocks.mockFailedConnection("Error message");
 
 ## Keeping tests useful
 
+For an explicitly requested test-code review, use the repository
+[`test-code-review` skill](../.agents/skills/test-code-review/SKILL.md).
+It is not an automatic feature-work step and maintains reusable review knowledge
+after each requested run.
+
 - Keep distinct success, failure, cancellation, persistence, and boundary cases.
   Remove a case only when another assertion covers the same contract; a lower
   test count alone is not an improvement.
