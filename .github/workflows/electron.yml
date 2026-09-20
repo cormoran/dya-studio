@@ -3,16 +3,12 @@ name: Build Desktop App
 # Desktop builds are sliced off the release that `release.yml` just published,
 # so the tag must already exist before this workflow can attach installers to
 # it. `release.yml` dispatches this workflow explicitly because GitHub does not
-# start another workflow for release events created with `GITHUB_TOKEN`. The
-# `release: published` trigger remains for releases published by a user or an
-# external token.
+# start another workflow for release events created with `GITHUB_TOKEN`.
 #
 # `workflow_dispatch` is kept so an installer-only build can be triggered
 # manually. When `release_tag` is omitted, the attach job is skipped and the
 # artifacts are still available for download.
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -86,7 +82,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || inputs.release_tag != ''
+    if: inputs.release_tag != ''
     permissions:
       contents: write
     steps:
@@ -102,7 +98,7 @@ jobs:
           # The release was already created (with --notes pointing at the in-app
           # release-notes page) by `.github/workflows/release.yml`; we only
           # upload the macOS .dmg and Windows .exe artifacts onto it.
-          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           gh release upload "$RELEASE_TAG" \
             release/*.dmg \
