@@ -9,6 +9,25 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Search behaviors...": "ビヘイビアを検索...",
+  "Keep the selected behavior category": "選択したビヘイビアカテゴリを維持",
+  "Reset the behavior category when reopening":
+    "開き直すとビヘイビアカテゴリをリセット",
+  "Keep selected category": "選択カテゴリを維持",
+  "Configure Quick Select": "クイック選択を設定",
+  "Quick Select settings": "クイック選択の設定",
+  "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
+    "プリセットの表示、表示中の項目の固定、クイック選択の並び順を設定します。",
+  "Preset behaviors": "プリセットのビヘイビア",
+  Shown: "表示",
+  Hidden: "非表示",
+  "Visible quick selects": "表示中のクイック選択",
+  "Pin this behavior": "このビヘイビアを固定",
+  "Unpin this behavior": "このビヘイビアの固定を解除",
+  "Quick Select order": "クイック選択の並び順",
+  "Move up": "上へ移動",
+  "Move down": "下へ移動",
+  "No behaviors found": "一致するビヘイビアがありません",
   "Edit the previous key": "前のキーを編集",
   "Edit the next key": "次のキーを編集",
   "Switch to dialog mode": "モーダルダイアログで編集",
@@ -1405,6 +1424,24 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Search behaviors...": "搜索行为...",
+  "Keep the selected behavior category": "保留所选行为类别",
+  "Reset the behavior category when reopening": "重新打开时重置行为类别",
+  "Keep selected category": "保留所选类别",
+  "Configure Quick Select": "配置快速选择",
+  "Quick Select settings": "快速选择设置",
+  "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
+    "选择预设行为、固定显示项目并排列快速选择栏。",
+  "Preset behaviors": "预设行为",
+  Shown: "显示",
+  Hidden: "隐藏",
+  "Visible quick selects": "显示的快速选择",
+  "Pin this behavior": "固定此行为",
+  "Unpin this behavior": "取消固定此行为",
+  "Quick Select order": "快速选择顺序",
+  "Move up": "上移",
+  "Move down": "下移",
+  "No behaviors found": "未找到行为",
   "DYA Studio for DYA & ZMK Keyboards": "面向 DYA 和 ZMK 键盘的 DYA Studio",
   "The operation failed because the device is locked in ZMK Studio. Unlock the keyboard and try again.":
     "操作失败，因为设备在 ZMK Studio 中处于锁定状态。请解锁键盘后重试。",

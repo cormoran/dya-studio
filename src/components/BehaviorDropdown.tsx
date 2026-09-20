@@ -1,10 +1,17 @@
-/**
- * BehaviorDropdown Component
- *
- * Custom dropdown with quick-select buttons for common behaviors.
- */
-import { useState, useMemo, useRef, useEffect } from "react";
-import { IconChevronDown } from "@tabler/icons-react";
+/** Custom dropdown with searchable behaviors and configurable quick selects. */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  IconAdjustments,
+  IconChevronDown,
+  IconChevronUp,
+  IconEye,
+  IconEyeOff,
+  IconFilter,
+  IconPin,
+  IconPinFilled,
+  IconSearch,
+  IconX,
+} from "@tabler/icons-react";
 import {
   getBehaviorMetadata,
   type BehaviorCategory,
@@ -13,7 +20,7 @@ import type { BehaviorDefinition } from "../hooks/useKeymap";
 import { EditorTooltip } from "./EditorTooltip";
 import { useLanguage } from "../hooks/useLanguage";
 
-// Predefined behavior categories
+// Unknown behavior metadata is folded into Misc, avoiding two Japanese "その他" categories.
 const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "keypress", name: "Key Press" },
   { id: "layer", name: "Layers" },
@@ -22,11 +29,11 @@ const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "transport", name: "Transport" },
   { id: "system", name: "System" },
   { id: "miscellaneous", name: "Misc" },
-  { id: "others", name: "Others" },
 ];
 
-// Quick-select behaviors for faster access
 const QUICK_SELECT_BEHAVIORS = ["kp", "lt", "mt", "none", "transparent"];
+const CATEGORY_PREFERENCE_STORAGE_KEY = "behaviorDropdownKeepCategory";
+const LAST_CATEGORY_STORAGE_KEY = "behaviorDropdownLastCategory";
 
 interface BehaviorOption {
   id: number;
@@ -34,6 +41,20 @@ interface BehaviorOption {
   displayName: string;
   category: BehaviorCategory;
   description?: string;
+}
+
+interface QuickSelectConfig {
+  hiddenPresets: string[];
+  pinnedBehaviorNames: string[];
+  order: string[];
+}
+
+interface QuickSelectBehavior {
+  id: number;
+  name: string;
+  displayName: string;
+  isRecent: boolean;
+  isPinned: boolean;
 }
 
 interface BehaviorDropdownProps {
@@ -45,6 +66,30 @@ interface BehaviorDropdownProps {
   quickSelects?: string[];
 }
 
+function readQuickSelectConfig(storageKey: string): QuickSelectConfig {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (!saved)
+      return { hiddenPresets: [], pinnedBehaviorNames: [], order: [] };
+    const parsed = JSON.parse(saved) as Partial<QuickSelectConfig>;
+    const strings = (value: unknown) =>
+      Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === "string")
+        : [];
+    return {
+      hiddenPresets: strings(parsed.hiddenPresets),
+      pinnedBehaviorNames: strings(parsed.pinnedBehaviorNames),
+      order: strings(parsed.order),
+    };
+  } catch {
+    return { hiddenPresets: [], pinnedBehaviorNames: [], order: [] };
+  }
+}
+
+function isTouchDevice() {
+  return window.matchMedia?.("(hover: none) and (pointer: coarse)").matches;
+}
+
 export function BehaviorDropdown({
   compact = false,
   behaviors,
@@ -54,13 +99,35 @@ export function BehaviorDropdown({
   quickSelects,
 }: BehaviorDropdownProps) {
   const { t } = useLanguage();
+  const presetNames = quickSelects || QUICK_SELECT_BEHAVIORS;
+  const quickSelectStorageKey = `behaviorDropdownQuickSelects:${presetNames.join("|")}`;
   const [isOpen, setIsOpen] = useState(false);
+  const [isQuickSelectSettingsOpen, setIsQuickSelectSettingsOpen] =
+    useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [keepCategory, setKeepCategory] = useState(() => {
+    try {
+      return localStorage.getItem(CATEGORY_PREFERENCE_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const [filterCategory, setFilterCategory] = useState<
     BehaviorCategory | "all"
-  >("all");
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Recently selected behaviors (persisted in sessionStorage)
+  >(() => {
+    try {
+      const saved = localStorage.getItem(LAST_CATEGORY_STORAGE_KEY);
+      return keepCategory &&
+        BEHAVIOR_CATEGORIES.some((category) => category.id === saved)
+        ? (saved as BehaviorCategory)
+        : "all";
+    } catch {
+      return "all";
+    }
+  });
+  const [quickSelectConfig, setQuickSelectConfig] = useState<QuickSelectConfig>(
+    () => readQuickSelectConfig(quickSelectStorageKey),
+  );
   const [recentBehaviors, setRecentBehaviors] = useState<number[]>(() => {
     try {
       const saved = sessionStorage.getItem("recentBehaviors");
@@ -69,8 +136,28 @@ export function BehaviorDropdown({
       return [];
     }
   });
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown when clicking outside
+  useEffect(() => {
+    setQuickSelectConfig(readQuickSelectConfig(quickSelectStorageKey));
+  }, [quickSelectStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        quickSelectStorageKey,
+        JSON.stringify(quickSelectConfig),
+      );
+    } catch {
+      // Storage is an optional enhancement.
+    }
+  }, [quickSelectConfig, quickSelectStorageKey]);
+
+  useEffect(() => {
+    if (isOpen && !isTouchDevice()) searchInputRef.current?.focus();
+  }, [isOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -78,129 +165,219 @@ export function BehaviorDropdown({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        setIsQuickSelectSettingsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Build behavior options
   const behaviorOptions = useMemo((): BehaviorOption[] => {
-    const allOptions: BehaviorOption[] = [];
+    const options: BehaviorOption[] = [];
     behaviors.forEach((behavior, id) => {
       const metadata = getBehaviorMetadata(behavior.displayName);
-      const category = metadata?.category || "others";
-      allOptions.push({
+      const category =
+        metadata?.category === "others"
+          ? "miscellaneous"
+          : (metadata?.category ?? "miscellaneous");
+      options.push({
         id,
         name: behavior.displayName,
         displayName:
-          metadata?.displayNameVariants?.at(0) || behavior.displayName,
+          metadata?.displayNameVariants.at(0) || behavior.displayName,
         category,
         description: metadata?.description,
       });
     });
-    return allOptions.sort((a, b) => {
-      const catA = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === a.category);
-      const catB = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === b.category);
-      if (catA !== catB) return catA - catB;
-      return a.displayName.localeCompare(b.displayName);
+    return options.sort((a, b) => {
+      const categoryDifference =
+        BEHAVIOR_CATEGORIES.findIndex(
+          (category) => category.id === a.category,
+        ) -
+        BEHAVIOR_CATEGORIES.findIndex((category) => category.id === b.category);
+      return categoryDifference || a.displayName.localeCompare(b.displayName);
     });
   }, [behaviors]);
 
-  // Filtered options
   const filteredOptions = useMemo(() => {
-    if (filterCategory === "all") return behaviorOptions;
-    return behaviorOptions.filter((opt) => opt.category === filterCategory);
-  }, [behaviorOptions, filterCategory]);
+    const query = searchQuery.trim().toLocaleLowerCase();
+    if (query) {
+      return behaviorOptions.filter((option) =>
+        [option.displayName, option.name, option.description]
+          .filter((value): value is string => Boolean(value))
+          .some((value) => value.toLocaleLowerCase().includes(query)),
+      );
+    }
+    return filterCategory === "all"
+      ? behaviorOptions
+      : behaviorOptions.filter((option) => option.category === filterCategory);
+  }, [behaviorOptions, filterCategory, searchQuery]);
 
-  // Update recent behaviors when selection changes
+  const findBehavior = useCallback(
+    (name: string) => {
+      const metadata = getBehaviorMetadata(name);
+      return Array.from(behaviors.values()).find(
+        (behavior) =>
+          behavior.displayName === name ||
+          metadata?.displayNameVariants.includes(behavior.displayName),
+      );
+    },
+    [behaviors],
+  );
+
+  const quickSelectBehaviors = useMemo((): QuickSelectBehavior[] => {
+    const unique = (items: BehaviorDefinition[]) =>
+      items.filter(
+        (behavior, index) =>
+          items.findIndex(
+            (item) => item.displayName === behavior.displayName,
+          ) === index,
+      );
+    const presets = presetNames
+      .filter((name) => !quickSelectConfig.hiddenPresets.includes(name))
+      .map(findBehavior)
+      .filter((behavior): behavior is BehaviorDefinition => Boolean(behavior));
+    const pinned = quickSelectConfig.pinnedBehaviorNames
+      .map(findBehavior)
+      .filter((behavior): behavior is BehaviorDefinition => Boolean(behavior));
+    const primary = unique([...presets, ...pinned]).sort((a, b) => {
+      const aIndex = quickSelectConfig.order.indexOf(a.displayName);
+      const bIndex = quickSelectConfig.order.indexOf(b.displayName);
+      if (aIndex === -1) return bIndex === -1 ? 0 : 1;
+      return bIndex === -1 ? -1 : aIndex - bIndex;
+    });
+    const primaryIds = new Set(primary.map((behavior) => behavior.id));
+    const recent = recentBehaviors
+      .filter((id) => !primaryIds.has(id) && behaviors.has(id))
+      .map((id) => behaviors.get(id)!);
+    return [...primary, ...recent].map((behavior) => {
+      const metadata = getBehaviorMetadata(behavior.displayName);
+      return {
+        id: behavior.id,
+        name: behavior.displayName,
+        displayName:
+          metadata?.displayNameVariants.at(0) || behavior.displayName,
+        isRecent: recent.some(
+          (recentBehavior) => recentBehavior.id === behavior.id,
+        ),
+        isPinned: quickSelectConfig.pinnedBehaviorNames.includes(
+          behavior.displayName,
+        ),
+      };
+    });
+  }, [
+    behaviors,
+    findBehavior,
+    presetNames,
+    quickSelectConfig,
+    recentBehaviors,
+  ]);
+
   const updateRecentBehaviors = (behaviorId: number) => {
-    setRecentBehaviors((prev) => {
-      // Remove if already exists, then add to front
-      const filtered = prev.filter((id) => id !== behaviorId);
-      const updated = [behaviorId, ...filtered].slice(0, 2); // Keep only 2 most recent
+    setRecentBehaviors((previous) => {
+      const updated = [
+        behaviorId,
+        ...previous.filter((id) => id !== behaviorId),
+      ].slice(0, 2);
       try {
         sessionStorage.setItem("recentBehaviors", JSON.stringify(updated));
       } catch {
-        // Ignore storage errors
+        // Storage is an optional enhancement.
       }
       return updated;
     });
   };
 
-  // Quick select behaviors (predefined + recent)
-  const quickSelectBehaviors = useMemo(() => {
-    const predefined = (quickSelects || QUICK_SELECT_BEHAVIORS)
-      .map((name) => {
-        const metadata = getBehaviorMetadata(name);
-        if (!metadata) return null;
-        const behavior = Array.from(behaviors.values()).find((b) =>
-          metadata.displayNameVariants.includes(b.displayName),
-        );
-        return behavior
-          ? {
-              id: behavior.id,
-              name,
-              displayName:
-                metadata.displayNameVariants.at(0) || behavior.displayName,
-              isRecent: false,
-            }
-          : null;
-      })
-      .filter(Boolean) as {
-      id: number;
-      name: string;
-      displayName: string;
-      isRecent: boolean;
-    }[];
+  const updateCategory = (category: BehaviorCategory | "all") => {
+    setFilterCategory(category);
+    if (keepCategory) {
+      try {
+        localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, category);
+      } catch {
+        // Storage is an optional enhancement.
+      }
+    }
+  };
 
-    // Add recent behaviors that aren't already in predefined
-    const predefinedIds = new Set(predefined.map((b) => b.id));
-    const recent = recentBehaviors
-      .filter((id) => !predefinedIds.has(id) && behaviors.has(id))
-      .map((id) => {
-        const behavior = behaviors.get(id)!;
-        const metadata = getBehaviorMetadata(behavior.displayName);
-        return {
-          id,
-          name: behavior.displayName,
-          displayName:
-            metadata?.displayNameVariants?.at(0) || behavior.displayName,
-          isRecent: true,
-        };
-      });
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setIsQuickSelectSettingsOpen(false);
+    setSearchQuery("");
+    if (!keepCategory) setFilterCategory("all");
+  };
 
-    return [...predefined, ...recent];
-  }, [behaviors, recentBehaviors, quickSelects]);
+  const toggleKeepCategory = () => {
+    setKeepCategory((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem(CATEGORY_PREFERENCE_STORAGE_KEY, String(next));
+        if (next)
+          localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, filterCategory);
+        else localStorage.removeItem(LAST_CATEGORY_STORAGE_KEY);
+      } catch {
+        // Storage is an optional enhancement.
+      }
+      if (!next) setFilterCategory("all");
+      return next;
+    });
+  };
 
-  // Current selection display
+  const togglePreset = (presetName: string) => {
+    setQuickSelectConfig((previous) => ({
+      ...previous,
+      hiddenPresets: previous.hiddenPresets.includes(presetName)
+        ? previous.hiddenPresets.filter((name) => name !== presetName)
+        : [...previous.hiddenPresets, presetName],
+    }));
+  };
+
+  const togglePinned = (behaviorName: string) => {
+    setQuickSelectConfig((previous) => ({
+      ...previous,
+      pinnedBehaviorNames: previous.pinnedBehaviorNames.includes(behaviorName)
+        ? previous.pinnedBehaviorNames.filter((name) => name !== behaviorName)
+        : [...previous.pinnedBehaviorNames, behaviorName],
+    }));
+  };
+
+  const orderedQuickSelects = quickSelectBehaviors.filter(
+    (behavior) => !behavior.isRecent || behavior.isPinned,
+  );
+  const moveQuickSelect = (behaviorName: string, direction: -1 | 1) => {
+    const names = orderedQuickSelects.map((behavior) => behavior.name);
+    const index = names.indexOf(behaviorName);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= names.length) return;
+    [names[index], names[target]] = [names[target], names[index]];
+    setQuickSelectConfig((previous) => ({ ...previous, order: names }));
+  };
+
   const selectedBehavior =
     selectedBehaviorId !== null ? behaviors.get(selectedBehaviorId) : null;
-  const selectedBehaviorOverrideMeta = selectedBehavior
+  const selectedBehaviorMetadata = selectedBehavior
     ? getBehaviorMetadata(selectedBehavior.displayName)
     : null;
+  const isSearching = searchQuery.trim().length > 0;
 
   return (
     <div
       className={`relative ${compact ? "flex items-center gap-1" : ""}`}
       ref={dropdownRef}
     >
-      {/* Main Row: Dropdown + Quick Select */}
-      {/* Dropdown Trigger */}
       <button
+        type="button"
         className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "w-full px-3 py-1.5"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
-        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
       >
         <span
           className={`${compact ? "text-xs truncate" : "text-sm"} text-[var(--color-text)]`}
         >
-          {selectedBehaviorOverrideMeta?.displayNameVariants?.at(0) ||
+          {selectedBehaviorMetadata?.displayNameVariants.at(0) ||
             t("Select behavior")}
-          {!compact && selectedBehaviorOverrideMeta?.description && (
+          {!compact && selectedBehaviorMetadata?.description && (
             <span className="mx-1 text-xs text-[var(--color-text-muted)]">
-              - {t(selectedBehaviorOverrideMeta.description)}
+              - {t(selectedBehaviorMetadata.description)}
             </span>
           )}
         </span>
@@ -210,7 +387,6 @@ export function BehaviorDropdown({
         />
       </button>
 
-      {/* Quick Select Buttons with label (moved to bottom) */}
       <div
         className={`items-center gap-1 overflow-x-auto flex ${compact ? "min-w-0" : "mt-2 pl-2"}`}
       >
@@ -219,19 +395,19 @@ export function BehaviorDropdown({
         >
           {t("Quick Select")}:
         </span>
-        {quickSelectBehaviors.map((qb) => (
+        {quickSelectBehaviors.map((quickBehavior) => (
           <EditorTooltip
-            key={qb.id}
+            key={quickBehavior.id}
             content={
               <>
-                <div className="font-medium">{qb.displayName}</div>
+                <div className="font-medium">{quickBehavior.displayName}</div>
                 <div>
                   {t(
-                    getBehaviorMetadata(qb.name)?.description ??
+                    getBehaviorMetadata(quickBehavior.name)?.description ??
                       "Select this behavior",
                   )}
                 </div>
-                {qb.isRecent && (
+                {quickBehavior.isRecent && (
                   <div className="mt-1 text-[var(--color-text-muted)]">
                     {t("Recently used")}
                   </div>
@@ -240,80 +416,262 @@ export function BehaviorDropdown({
             }
           >
             <button
-              className={`${compact ? "px-2 py-1 rounded" : "px-3 py-1.5 rounded-lg"} text-xs font-medium transition-colors flex-shrink-0 ${
-                selectedBehaviorId === qb.id
-                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
-                  : qb.isRecent
-                    ? "bg-[var(--color-neon)]/10 text-[var(--color-neon)] border border-[var(--color-neon)]/30 hover:border-[var(--color-neon)]"
-                    : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
-              }`}
+              type="button"
+              className={`${compact ? "px-2 py-1 rounded" : "px-3 py-1.5 rounded-lg"} text-xs font-medium transition-colors flex-shrink-0 ${selectedBehaviorId === quickBehavior.id ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]" : quickBehavior.isRecent ? "bg-[var(--color-neon)]/10 text-[var(--color-neon)] border border-[var(--color-neon)]/30 hover:border-[var(--color-neon)]" : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"}`}
               onClick={() => {
-                updateRecentBehaviors(qb.id);
-                onQuickSelect(qb.id);
+                updateRecentBehaviors(quickBehavior.id);
+                onQuickSelect(quickBehavior.id);
               }}
             >
-              {qb.displayName}
+              {quickBehavior.displayName}
             </button>
           </EditorTooltip>
         ))}
       </div>
 
-      {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 overflow-hidden flex">
-          {/* Category Filter */}
-          <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto py-1">
-            <button
-              className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${
-                filterCategory === "all"
-                  ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-              }`}
-              onClick={() => setFilterCategory("all")}
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 flex flex-col">
+          <div className="p-2 border-b border-[var(--color-border)] flex items-center gap-1 shrink-0">
+            <div className="relative flex-1">
+              <IconSearch
+                size={16}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+              />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={t("Search behaviors...")}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="w-full pl-8 pr-8 py-1.5 rounded bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                  aria-label={t("Clear search")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                >
+                  <IconX size={16} />
+                </button>
+              )}
+            </div>
+            <EditorTooltip
+              content={
+                keepCategory
+                  ? t("Keep the selected behavior category")
+                  : t("Reset the behavior category when reopening")
+              }
             >
-              {t("All")}
-            </button>
-            {BEHAVIOR_CATEGORIES.map((cat) => (
               <button
-                key={cat.id}
-                className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${
-                  filterCategory === cat.id
-                    ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-                }`}
-                onClick={() => setFilterCategory(cat.id)}
+                type="button"
+                aria-label={t("Keep selected category")}
+                aria-pressed={keepCategory}
+                className={`p-1.5 rounded border ${keepCategory ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                onClick={toggleKeepCategory}
               >
-                {t(cat.name)}
+                <IconFilter size={16} />
               </button>
-            ))}
+            </EditorTooltip>
+            <div className="relative">
+              <EditorTooltip content={t("Configure Quick Select")}>
+                <button
+                  type="button"
+                  aria-label={t("Configure Quick Select")}
+                  aria-expanded={isQuickSelectSettingsOpen}
+                  className={`p-1.5 rounded border ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+                  onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
+                >
+                  <IconAdjustments size={16} />
+                </button>
+              </EditorTooltip>
+              {isQuickSelectSettingsOpen && (
+                <div className="absolute right-0 top-full mt-1 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-xl">
+                  <p className="text-sm font-medium text-[var(--color-text)]">
+                    {t("Quick Select settings")}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    {t(
+                      "Choose preset behaviors, pin visible items, and arrange the quick-select row.",
+                    )}
+                  </p>
+                  <div className="mt-3">
+                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Preset behaviors")}
+                    </p>
+                    <div className="space-y-1">
+                      {presetNames.map((presetName) => {
+                        const behavior = findBehavior(presetName);
+                        if (!behavior) return null;
+                        const metadata = getBehaviorMetadata(
+                          behavior.displayName,
+                        );
+                        const visible =
+                          !quickSelectConfig.hiddenPresets.includes(presetName);
+                        return (
+                          <button
+                            key={presetName}
+                            type="button"
+                            className="w-full flex items-center gap-2 rounded px-1.5 py-1 text-left text-xs hover:bg-[var(--color-border)]"
+                            aria-pressed={visible}
+                            onClick={() => togglePreset(presetName)}
+                          >
+                            {visible ? (
+                              <IconEye size={15} />
+                            ) : (
+                              <IconEyeOff size={15} />
+                            )}
+                            <span className="flex-1 text-[var(--color-text)]">
+                              {metadata?.displayNameVariants.at(0) ||
+                                behavior.displayName}
+                            </span>
+                            <span className="text-[var(--color-text-muted)]">
+                              {visible ? t("Shown") : t("Hidden")}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t border-[var(--color-border)] pt-3">
+                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Visible quick selects")}
+                    </p>
+                    <div className="space-y-1">
+                      {quickSelectBehaviors.map((quickBehavior) => (
+                        <div
+                          key={quickBehavior.id}
+                          className="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:bg-[var(--color-border)]"
+                        >
+                          <span className="flex-1 truncate text-[var(--color-text)]">
+                            {quickBehavior.displayName}
+                          </span>
+                          <EditorTooltip
+                            content={
+                              quickBehavior.isPinned
+                                ? t("Unpin this behavior")
+                                : t("Pin this behavior")
+                            }
+                          >
+                            <button
+                              type="button"
+                              aria-label={
+                                quickBehavior.isPinned
+                                  ? t("Unpin this behavior")
+                                  : t("Pin this behavior")
+                              }
+                              aria-pressed={quickBehavior.isPinned}
+                              className={`rounded p-1 ${quickBehavior.isPinned ? "text-[var(--color-electric)]" : "text-[var(--color-text-muted)]"}`}
+                              onClick={() => togglePinned(quickBehavior.name)}
+                            >
+                              {quickBehavior.isPinned ? (
+                                <IconPinFilled size={15} />
+                              ) : (
+                                <IconPin size={15} />
+                              )}
+                            </button>
+                          </EditorTooltip>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t border-[var(--color-border)] pt-3">
+                    <p className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Quick Select order")}
+                    </p>
+                    <div className="space-y-1">
+                      {orderedQuickSelects.map((quickBehavior, index) => (
+                        <div
+                          key={quickBehavior.id}
+                          className="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:bg-[var(--color-border)]"
+                        >
+                          <span className="flex-1 truncate text-[var(--color-text)]">
+                            {quickBehavior.displayName}
+                          </span>
+                          <button
+                            type="button"
+                            className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
+                            aria-label={t("Move up")}
+                            disabled={index === 0}
+                            onClick={() =>
+                              moveQuickSelect(quickBehavior.name, -1)
+                            }
+                          >
+                            <IconChevronUp size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded p-1 text-[var(--color-text-muted)] disabled:opacity-30"
+                            aria-label={t("Move down")}
+                            disabled={index === orderedQuickSelects.length - 1}
+                            onClick={() =>
+                              moveQuickSelect(quickBehavior.name, 1)
+                            }
+                          >
+                            <IconChevronDown size={15} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Behavior List */}
-          <div className="flex-1 overflow-y-auto py-1">
-            {filteredOptions.map((option) => (
-              <button
-                key={option.id}
-                className={`w-full px-3 py-2 text-left transition-colors ${
-                  selectedBehaviorId === option.id
-                    ? "bg-[var(--color-electric)]/10"
-                    : "hover:bg-[var(--color-border)]"
-                }`}
-                onClick={() => {
-                  updateRecentBehaviors(option.id);
-                  onSelect(option.id);
-                  setIsOpen(false);
-                }}
-              >
-                <span className="block text-sm font-medium text-[var(--color-text)]">
-                  {option.displayName}
-                </span>
-                {option.description && (
-                  <span className="block text-xs text-[var(--color-text-muted)]">
-                    {t(option.description)}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {!isSearching && (
+              <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto py-1 shrink-0">
+                <button
+                  type="button"
+                  className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === "all" ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
+                  onClick={() => updateCategory("all")}
+                >
+                  {t("All")}
+                </button>
+                {BEHAVIOR_CATEGORIES.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${filterCategory === category.id ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"}`}
+                    onClick={() => updateCategory(category.id)}
+                  >
+                    {t(category.name)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto py-1">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`w-full px-3 py-2 text-left transition-colors ${selectedBehaviorId === option.id ? "bg-[var(--color-electric)]/10" : "hover:bg-[var(--color-border)]"}`}
+                    onClick={() => {
+                      updateRecentBehaviors(option.id);
+                      onSelect(option.id);
+                      closeDropdown();
+                    }}
+                  >
+                    <span className="block text-sm font-medium text-[var(--color-text)]">
+                      {option.displayName}
+                    </span>
+                    {option.description && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {t(option.description)}
+                      </span>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <p className="px-3 py-4 text-center text-xs text-[var(--color-text-muted)]">
+                  {t("No behaviors found")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
