@@ -40,6 +40,9 @@ it("keeps Quick Select settings inside the dropdown in floating mode", async () 
   ).not.toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(screen.getByRole("button", { name: "Select behavior" })).toHaveClass(
+    "max-w-[40%]",
+  );
   expect(
     screen.getByRole("button", { name: "Configure Quick Select" }),
   ).toBeInTheDocument();

@@ -465,7 +465,7 @@ export function BehaviorDropdown({
       className={`relative ${compact ? "flex items-center gap-1" : ""}`}
       ref={dropdownRef}
     >
-      <div className="flex items-stretch gap-1">
+      <div className={compact ? "contents" : "flex items-stretch gap-1"}>
         <button
           type="button"
           className={`${compact ? "shrink-0 max-w-[40%] px-2 py-1" : "h-9 flex-1 px-3"} flex items-center justify-between gap-1 rounded bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors`}
