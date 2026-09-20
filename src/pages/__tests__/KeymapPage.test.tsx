@@ -613,6 +613,32 @@ describe("KeymapPage", () => {
       ).not.toBeInTheDocument();
     });
 
+    it("keeps the rename confirmation label visible after opening it from mobile settings", async () => {
+      const user = userEvent.setup();
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      await user.click(
+        within(
+          screen.getByRole("dialog", { name: "Keymap settings" }),
+        ).getByRole("button", { name: "Rename current layer" }),
+      );
+
+      const renameDialog = screen.getByRole("dialog", { name: "Rename Layer" });
+      const confirmButton = within(renameDialog).getByRole("button", {
+        name: "Rename",
+      });
+      expect(confirmButton).toHaveTextContent("Rename");
+      expect(confirmButton.querySelector(".hidden")).not.toBeInTheDocument();
+    });
+
     it("should show unsaved changes indicator", () => {
       renderComponent(
         { isConnected: true },

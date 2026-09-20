@@ -1501,8 +1501,8 @@ export function KeymapPage() {
               >
                 {t("Cancel")}
               </button>
-              <ResponsiveButton
-                label={t("Rename")}
+              <button
+                type="button"
                 className="flex-1 btn-electric flex items-center justify-center gap-2"
                 onClick={() => void handleRenameConfirm()}
                 disabled={isRenaming}
@@ -1510,7 +1510,8 @@ export function KeymapPage() {
                 {isRenaming && (
                   <IconLoader2 size={16} className="animate-spin" />
                 )}
-              </ResponsiveButton>
+                {t("Rename")}
+              </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
