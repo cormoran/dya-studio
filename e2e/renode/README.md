@@ -114,9 +114,13 @@ browser session. See the repository `renode-exploratory-test` skill for target
 selection, evidence, restoration, and reporting rules.
 
 CI wiring lives in `.github/workflows/renode-webserial-e2e.yml` (builds the real
-DUT from zmk-west-commands' fixtures, then runs this). It runs on relevant PRs,
-manual dispatch, and every day at 18:00 JST; a failure creates or updates one
-open `renode-webserial-e2e` Issue with links to the failed job logs. To point at
+DUT from zmk-west-commands' fixtures, then runs this). It runs on all Dependabot
+PRs, other PRs that change Renode files or the workflow (excluding demo-only
+developer-guide captures), manual dispatch, and every day at 18:00 JST. PR scope
+is checked before building firmware; the PR author determines Dependabot status,
+including when another user reruns the workflow. A failure creates or updates one
+open `renode-webserial-e2e` Issue with links to the failed job logs, except for
+fork and Dependabot PRs whose tokens cannot write issues. To point at
 a real dya keyboard, build its own `studio-rpc-usb-uart` firmware and set
 `DEVICE_NAME` to its keyboard name.
 

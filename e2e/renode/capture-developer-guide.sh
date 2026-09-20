@@ -21,4 +21,4 @@ done
 npm --prefix "$repo_root" run build
 cd "$script_dir"
 export DIST_DIR="$repo_root/dist"
-npx playwright test tests/developer-guide-screenshots.spec.ts
+npx playwright test --config playwright.screenshots.config.ts

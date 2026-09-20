@@ -7,6 +7,13 @@
  * OS-detection and default-layer integration and graceful degradation
  * when either subsystem is unavailable.
  */
+import { useVersionHistory } from "../../hooks/useVersionHistory";
+import { createIdleVersionHistory } from "../testUtils/versionHistory";
+
+// Keep unasserted IndexedDB reads/captures out of these editing scenarios.
+// Storage/diff units have separate tests; page-to-history wiring is not covered here.
+jest.mock("../../hooks/useVersionHistory");
+
 import {
   render,
   screen,
@@ -121,6 +128,7 @@ describe("ConnectionPage", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useVersionHistory).mockReturnValue(createIdleVersionHistory());
     mockUseBLEProfiles.mockReturnValue({ ...defaultBLEReturn });
     mockUseOsDetection.mockReturnValue({ ...unavailableOsDetection });
     mockUseDefaultLayer.mockReturnValue({ ...unavailableDefaultLayer });

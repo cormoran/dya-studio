@@ -15,7 +15,7 @@
 #   tests/dya2    - the dya2 per-tab specs (dya2 DUT only; the fan-out target)
 # Adding a new DUT is a one-entry edit to that list.
 #
-# Path-scoped for PRs so it never burdens ordinary changes (each firmware build
+# Run for all Dependabot PRs and path-scoped ordinary PRs (each firmware build
 # is a full Zephyr build, ~15-20 min cold). A daily scheduled run also catches
 # regressions in the external firmware and emulator dependencies.
 name: renode-webserial-e2e
@@ -26,14 +26,6 @@ on:
   schedule:
     - cron: "0 9 * * *"
   pull_request:
-    paths:
-      - "e2e/renode/**"
-      - ".github/workflows/renode-webserial-e2e.yml"
-      # The developer-guide captures run against the built-in demo keyboard and
-      # do not exercise Renode or firmware. Do not schedule the 15–20 minute
-      # firmware matrix when a PR changes only this documentation workflow.
-      - "!e2e/renode/tests/developer-guide-screenshots.spec.ts"
-      - "!e2e/renode/capture-developer-guide.sh"
 
 env:
   # cormoran/zmk-west-commands provides the Renode harness (run side). The DUT
@@ -48,6 +40,36 @@ permissions:
   issues: write
 
 jobs:
+  changes:
+    name: Check Renode E2E scope
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      run: ${{ steps.scope.outputs.result }}
+    steps:
+      - uses: actions/github-script@v7
+        id: scope
+        with:
+          script: |
+            if (context.eventName !== 'pull_request' ||
+                context.payload.pull_request.user.login === 'dependabot[bot]') {
+              return true;
+            }
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            });
+            // Demo-only developer-guide captures do not exercise Renode.
+            const excluded = new Set([
+              'e2e/renode/tests/developer-guide-screenshots.spec.ts',
+              'e2e/renode/capture-developer-guide.sh',
+            ]);
+            return files.some(({ filename }) =>
+              filename === '.github/workflows/renode-webserial-e2e.yml' ||
+              (filename.startsWith('e2e/renode/') && !excluded.has(filename)));
+
   # Single source of truth for the DUT firmware matrix, consumed by both
   # build-dut and e2e via fromJSON. Each entry:
   #   id       - stable slug (artifact name + matrix label)
@@ -106,6 +128,8 @@ jobs:
   #     stock runners. See e2e/renode/firmware/dya2_nonsplit.{overlay,conf}.
   matrix:
     name: Compute DUT matrix
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     outputs:
       # duts: every DUT (build-dut fans out over this -- all firmware builds on
@@ -401,15 +425,16 @@ jobs:
 
   report-failure:
     name: Report failure to GitHub Issue
-    needs: [matrix, build-dut, e2e]
+    needs: [changes, matrix, build-dut, e2e]
     # Run after every failed workflow, including a failure before either matrix
-    # job can start. Fork PR tokens cannot write issues, so omit them rather
+    # job can start. Fork and Dependabot PR tokens cannot write issues, so omit them rather
     # than turning a reporting permission restriction into another CI failure.
     if: >-
       ${{
         always() &&
-        (needs.matrix.result == 'failure' || needs.build-dut.result == 'failure' || needs.e2e.result == 'failure') &&
-        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        (needs.changes.result == 'failure' || needs.matrix.result == 'failure' || needs.build-dut.result == 'failure' || needs.e2e.result == 'failure') &&
+        (github.event_name != 'pull_request' ||
+          (github.event.pull_request.head.repo.fork == false && github.event.pull_request.user.login != 'dependabot[bot]'))
       }}
     runs-on: ubuntu-latest
     steps:

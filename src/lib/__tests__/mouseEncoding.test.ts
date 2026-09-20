@@ -11,81 +11,30 @@ import {
 } from "../keycodes";
 
 describe("Mouse Movement Encoding/Decoding", () => {
-  describe("encode and decodeMouseMove", () => {
-    test("decodes positive X and Y", () => {
-      const encoded = encodeMouseMove(600, 10);
-      const result = decodeMouseMove(encoded);
-      expect(result.x).toBe(600);
-      expect(result.y).toBe(10);
-    });
-
-    test("decodes negative X and positive Y", () => {
-      const encoded = encodeMouseMove(-600, 10);
-      const result = decodeMouseMove(encoded);
-      expect(result.x).toBe(-600);
-      expect(result.y).toBe(10);
-    });
-
-    test("decodes positive X and negative Y", () => {
-      const encoded = encodeMouseMove(600, -10);
-      const result = decodeMouseMove(encoded);
-      expect(result.x).toBe(600);
-      expect(result.y).toBe(-10);
-    });
-
-    test("decodes negative X and Y", () => {
-      const encoded = encodeMouseMove(-600, -10);
-      const result = decodeMouseMove(encoded);
-      expect(result.x).toBe(-600);
-      expect(result.y).toBe(-10);
-    });
-
-    test("decodes zero X and Y", () => {
-      const result = decodeMouseMove(0);
-      expect(result.x).toBe(0);
-      expect(result.y).toBe(0);
-    });
-  });
-
-  describe("Round-trip encoding/decoding", () => {
-    test("round-trip with default movement value", () => {
-      const encoded = encodeMouseMove(
-        ZMK_POINTING_DEFAULT_MOVE_VAL,
-        -ZMK_POINTING_DEFAULT_MOVE_VAL,
-      );
-      const decoded = decodeMouseMove(encoded);
-      expect(decoded.x).toBe(ZMK_POINTING_DEFAULT_MOVE_VAL);
-      expect(decoded.y).toBe(-ZMK_POINTING_DEFAULT_MOVE_VAL);
-    });
-
-    test("round-trip with default scroll value", () => {
-      const encoded = encodeMouseMove(
-        -ZMK_POINTING_DEFAULT_SCRL_VAL,
-        ZMK_POINTING_DEFAULT_SCRL_VAL,
-      );
-      const decoded = decodeMouseMove(encoded);
-      expect(decoded.x).toBe(-ZMK_POINTING_DEFAULT_SCRL_VAL);
-      expect(decoded.y).toBe(ZMK_POINTING_DEFAULT_SCRL_VAL);
-    });
-
-    test("round-trip with various values", () => {
-      const testCases = [
-        { x: 0, y: 0 },
-        { x: 1, y: 1 },
-        { x: -1, y: -1 },
-        { x: 1000, y: -1000 },
-        { x: -5000, y: 5000 },
-        { x: 32767, y: -32768 },
-      ];
-
-      testCases.forEach(({ x, y }) => {
-        const encoded = encodeMouseMove(x, y);
-        const decoded = decodeMouseMove(encoded);
-        expect(decoded.x).toBe(x);
-        expect(decoded.y).toBe(y);
-      });
-    });
-  });
+  // ZMK pointing.h: X occupies bits 16..31 and Y bits 0..15, each
+  // signed int16. Literal vectors prevent matching encoder/decoder errors
+  // (such as swapped axes) from passing a round-trip-only assertion.
+  test.each([
+    [600, 10, 0x0258000a],
+    [-600, 10, 0xfda8000a],
+    [600, -10, 0x0258fff6],
+    [-600, -10, 0xfda8fff6],
+    [0, 0, 0x00000000],
+    [1, 1, 0x00010001],
+    [-1, -1, 0xffffffff],
+    [1000, -1000, 0x03e8fc18],
+    [-5000, 5000, 0xec781388],
+    [32767, -32768, 0x7fff8000],
+    [-32768, 32767, 0x80007fff],
+    [600, -600, 0x0258fda8],
+    [-100, 100, 0xff9c0064],
+  ])(
+    "encodes (%i, %i) as protocol word %i and decodes independently",
+    (x, y, packed) => {
+      expect(encodeMouseMove(x, y)).toBe(packed);
+      expect(decodeMouseMove(packed)).toEqual({ x, y });
+    },
+  );
 
   describe("MOUSE_MOVEMENTS presets", () => {
     test("Move Up has correct encoding", () => {

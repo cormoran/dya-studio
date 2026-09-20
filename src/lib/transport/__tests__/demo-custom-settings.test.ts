@@ -10,6 +10,11 @@ import {
 } from "../../../proto/cormoran/zmk/custom_settings/custom_settings";
 
 describe("demo-custom-settings CustomSettingsHandler", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
   it("creates a new entry in the macro/ keyspace", () => {
     const handler = new CustomSettingsHandler(3);
     const response = handler.process(
@@ -206,7 +211,7 @@ describe("demo-custom-settings CustomSettingsHandler", () => {
     expect(response.error).toBeDefined();
   });
 
-  it("lists the built-in mock settings including the behavior-typed value", (done) => {
+  it("lists the built-in mock settings including the behavior-typed value", () => {
     const handler = new CustomSettingsHandler(3);
     const notifications: Uint8Array[] = [];
     handler.notify((payload) => notifications.push(payload));
@@ -216,13 +221,24 @@ describe("demo-custom-settings CustomSettingsHandler", () => {
     );
     expect(response.status?.affectedCount).toBeGreaterThan(0);
 
-    setTimeout(() => {
-      expect(notifications.length).toBe(response.status?.affectedCount);
-      done();
-    }, 250);
+    jest.runAllTimers();
+    expect(notifications).toHaveLength(response.status!.affectedCount);
+    const settings = notifications.map(
+      (payload) => Notification.decode(payload).setting?.setting,
+    );
+    expect(settings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "tap_behavior_binding",
+          value: expect.objectContaining({
+            behaviorValue: { behaviorId: 10, param1: 0, param2: 0 },
+          }),
+        }),
+      ]),
+    );
   });
 
-  it("reports defaultValue only for settings changed from their default when requireDefault is set", (done) => {
+  it("reports defaultValue only for settings changed from their default when requireDefault is set", () => {
     const handler = new CustomSettingsHandler(3);
     const listed: Setting[] = [];
     handler.notify((payload) => {
@@ -238,19 +254,20 @@ describe("demo-custom-settings CustomSettingsHandler", () => {
       }),
     );
 
-    setTimeout(() => {
-      const byKey = new Map(listed.map((setting) => [setting.key, setting]));
-      // default_layer starts at 1 but its compile-time default is 0.
-      expect(byKey.get("default_layer")?.defaultValue?.int32Value).toBe(0);
-      // feature_enabled starts false but its compile-time default is true.
-      expect(byKey.get("feature_enabled")?.defaultValue?.boolValue).toBe(true);
-      // profile_name is unchanged from its default, so no defaultValue.
-      expect(byKey.get("profile_name")?.defaultValue).toBeUndefined();
-      done();
-    }, 400);
+    jest.runAllTimers();
+    const byKey = new Map(listed.map((setting) => [setting.key, setting]));
+    // default_layer starts at 1 but its compile-time default is 0.
+    expect(byKey.get("default_layer")?.defaultValue?.int32Value).toBe(0);
+    // feature_enabled starts false but its compile-time default is true.
+    expect(byKey.get("feature_enabled")?.defaultValue?.boolValue).toBe(true);
+    expect(byKey.get("profile_name")).toMatchObject({
+      value: { stringValue: "normal" },
+    });
+    // profile_name is unchanged from its default, so no defaultValue.
+    expect(byKey.get("profile_name")?.defaultValue).toBeUndefined();
   });
 
-  it("omits defaultValue when requireDefault is not set", (done) => {
+  it("omits defaultValue when requireDefault is not set", () => {
     const handler = new CustomSettingsHandler(3);
     const listed: Setting[] = [];
     handler.notify((payload) => {
@@ -264,11 +281,10 @@ describe("demo-custom-settings CustomSettingsHandler", () => {
       Request.create({ listSettings: { scope: { source: 0xffffffff } } }),
     );
 
-    setTimeout(() => {
-      expect(
-        listed.every((setting) => setting.defaultValue === undefined),
-      ).toBe(true);
-      done();
-    }, 400);
+    jest.runAllTimers();
+    expect(listed.length).toBeGreaterThan(0);
+    expect(listed.every((setting) => setting.defaultValue === undefined)).toBe(
+      true,
+    );
   });
 });

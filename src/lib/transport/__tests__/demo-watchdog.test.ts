@@ -46,24 +46,14 @@ describe("WatchdogHandler", () => {
       expect(response.incidentPage?.startIndex).toBe(0);
     });
 
-    it("paginates across multiple pages once more incidents exist than fit on one page", () => {
-      // Force more incidents onto the store by deleting nothing and instead
-      // exercising listIncidents at an offset beyond total: should come back
-      // empty. Then verify the natural (2-incident) pagination loop
-      // terminates correctly by simulating a client loop.
-      const collected = [];
-      let startIndex = 0;
-      for (let i = 0; i < 10; i++) {
-        const resp = handler.process(
-          Request.create({ listIncidents: { startIndex, source: 0 } }),
-        );
-        const page = resp.incidentPage!;
-        collected.push(...page.incidents);
-        startIndex += page.incidents.length;
-        if (page.incidents.length === 0 || startIndex >= page.total) break;
-      }
-      expect(collected).toHaveLength(2);
-      expect(collected.map((i) => i.id)).toEqual([1, 2]);
+    it("honors a nonzero startIndex without repeating earlier incidents", () => {
+      const response = handler.process(
+        Request.create({ listIncidents: { startIndex: 1, source: 0 } }),
+      );
+      expect(response.incidentPage).toMatchObject({ total: 2, startIndex: 1 });
+      expect(
+        response.incidentPage?.incidents.map((incident) => incident.id),
+      ).toEqual([2]);
     });
 
     it("returns an empty page past the end", () => {

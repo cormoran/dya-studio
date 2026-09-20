@@ -7,6 +7,8 @@ const SERVE_PORT = Number(process.env.SERVE_PORT || 4173);
 // the static server for the built dya-studio dist.
 export default defineConfig({
   testDir: "./tests",
+  // Asset generation is opt-in and must go through the overwrite guard.
+  testIgnore: "**/developer-guide-screenshots.spec.ts",
   timeout: 120_000,
   expect: { timeout: 30_000 },
   fullyParallel: false,
