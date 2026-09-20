@@ -19,6 +19,8 @@ jobs:
         run: npm ci
       - name: Run lint
         run: npm run lint
+      - name: Check product specifications
+        run: npm run spec:check
       - name: Run tests
         run: npm test
       - name: Build for Cloudflare Workers
