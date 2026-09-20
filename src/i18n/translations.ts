@@ -701,6 +701,7 @@ const ja: Record<string, string> = {
   Retry: "再試行",
 
   "Select Key Binding": "キー割り当てを選択",
+  "Select Behavior": "ビヘイビアを選択",
   "Close on select": "選択時に閉じる",
   Revert: "元に戻す",
   Behavior: "ビヘイビア",
@@ -2033,6 +2034,7 @@ const zh: Record<string, string> = {
   Retry: "重试",
 
   "Select Key Binding": "选择按键绑定",
+  "Select Behavior": "选择行为",
   "Close on select": "选择后关闭",
   Revert: "还原",
   Behavior: "行为",
