@@ -12,7 +12,13 @@ describe("RuntimeInputProcessorHandler", () => {
   let handler: RuntimeInputProcessorHandler;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     handler = new RuntimeInputProcessorHandler();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   describe("listProcessors request", () => {
@@ -27,7 +33,7 @@ describe("RuntimeInputProcessorHandler", () => {
       expect(response.error).toBeUndefined();
     });
 
-    it("should send processor notifications via callback", (done) => {
+    it("should send processor notifications via callback", () => {
       const notifications: Notification[] = [];
 
       handler.notify((payload: Uint8Array) => {
@@ -41,31 +47,15 @@ describe("RuntimeInputProcessorHandler", () => {
 
       handler.process(request);
 
-      // Wait for notifications to be sent
-      setTimeout(() => {
-        // Should have at least one processor notification
-        expect(notifications.length).toBeGreaterThan(0);
-
-        // Verify notification structure
-        const firstNotification = notifications[0];
-        expect(firstNotification.processorChanged).toBeDefined();
-        expect(firstNotification.processorChanged?.processor).toBeDefined();
-        expect(firstNotification.processorChanged?.processor?.id).toBeDefined();
-        expect(
-          firstNotification.processorChanged?.processor?.name,
-        ).toBeDefined();
-        expect(
-          firstNotification.processorChanged?.processor?.scaleMultiplier,
-        ).toBeDefined();
-        expect(
-          firstNotification.processorChanged?.processor?.scaleDivisor,
-        ).toBeDefined();
-        expect(
-          firstNotification.processorChanged?.processor?.rotationDegrees,
-        ).toBeDefined();
-
-        done();
-      }, 300);
+      jest.runAllTimers();
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0].processorChanged?.processor).toMatchObject({
+        id: 0,
+        name: "trackpad",
+        scaleMultiplier: 1,
+        scaleDivisor: 1,
+        rotationDegrees: 0,
+      });
     });
   });
 
@@ -115,7 +105,7 @@ describe("RuntimeInputProcessorHandler", () => {
       expect(response.error).toBeUndefined();
     });
 
-    it("should update processor multiplier and send notification", (done) => {
+    it("should update processor multiplier and send notification", () => {
       const notifications: Notification[] = [];
 
       handler.notify((payload: Uint8Array) => {
@@ -132,17 +122,16 @@ describe("RuntimeInputProcessorHandler", () => {
 
       handler.process(request);
 
-      // Wait for notification to be sent
-      setTimeout(() => {
-        expect(notifications.length).toBeGreaterThan(0);
-
-        const notification = notifications[0];
-        expect(notification.processorChanged?.processor?.scaleMultiplier).toBe(
-          2,
-        );
-
-        done();
-      }, 200);
+      jest.runAllTimers();
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0].processorChanged?.processor).toMatchObject({
+        id: 0,
+        scaleMultiplier: 2,
+      });
+      expect(
+        handler.process(Request.create({ getProcessor: { id: 0 } }))
+          .getProcessor?.processor,
+      ).toMatchObject({ id: 0, scaleMultiplier: 2 });
     });
 
     it("should return error for invalid processor id", () => {
@@ -175,7 +164,7 @@ describe("RuntimeInputProcessorHandler", () => {
       expect(response.error).toBeUndefined();
     });
 
-    it("should update processor rotation and send notification", (done) => {
+    it("should update processor rotation and send notification", () => {
       const notifications: Notification[] = [];
 
       handler.notify((payload: Uint8Array) => {
@@ -192,17 +181,16 @@ describe("RuntimeInputProcessorHandler", () => {
 
       handler.process(request);
 
-      // Wait for notification to be sent
-      setTimeout(() => {
-        expect(notifications.length).toBeGreaterThan(0);
-
-        const notification = notifications[0];
-        expect(notification.processorChanged?.processor?.rotationDegrees).toBe(
-          90,
-        );
-
-        done();
-      }, 200);
+      jest.runAllTimers();
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0].processorChanged?.processor).toMatchObject({
+        id: 0,
+        rotationDegrees: 90,
+      });
+      expect(
+        handler.process(Request.create({ getProcessor: { id: 0 } }))
+          .getProcessor?.processor,
+      ).toMatchObject({ id: 0, rotationDegrees: 90 });
     });
 
     it("should return error for invalid processor id", () => {
@@ -228,28 +216,6 @@ describe("RuntimeInputProcessorHandler", () => {
 
       expect(response.error).toBeDefined();
       expect(response.error?.message).toBe("Not implemented");
-    });
-  });
-
-  describe("notify callback", () => {
-    it("should register notify callback", (done) => {
-      let callbackCalled = false;
-
-      handler.notify(() => {
-        callbackCalled = true;
-      });
-
-      const request = Request.create({
-        listProcessors: {},
-      });
-
-      handler.process(request);
-
-      // Wait for notifications
-      setTimeout(() => {
-        expect(callbackCalled).toBe(true);
-        done();
-      }, 200);
     });
   });
 });

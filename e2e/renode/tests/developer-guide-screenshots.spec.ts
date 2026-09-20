@@ -1,4 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
+import { access } from "node:fs/promises";
+import { join } from "node:path";
 
 // This is an asset-generation test, not a product assertion suite. It uses the
 // built-in Demo keyboard so every screen is reproducible without a physical
@@ -7,8 +9,7 @@ import { test, expect, type Page } from "@playwright/test";
 // settings and diagnostics) with deterministic seed data.
 //
 // Run it only through `npm run screenshots:developer-guide` from this folder.
-// The test deliberately writes only the new guide asset names, and refuses to
-// replace an existing image (Playwright's `path` would otherwise overwrite it).
+// Both the wrapper and this spec refuse to replace existing guide images.
 
 const outputDir = "../../public/images/developer-guide/light-mode";
 
@@ -33,8 +34,17 @@ async function connectDemo(page: Page): Promise<void> {
 }
 
 async function capture(page: Page, name: string): Promise<void> {
+  const path = join(outputDir, `${name}.png`);
+  await access(path).then(
+    () => {
+      throw new Error(`Refusing to overwrite existing asset: ${path}`);
+    },
+    (error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") throw error;
+    },
+  );
   await page.screenshot({
-    path: `${outputDir}/${name}.png`,
+    path,
     fullPage: false,
     animations: "disabled",
   });

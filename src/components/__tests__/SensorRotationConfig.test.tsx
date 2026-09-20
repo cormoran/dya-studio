@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SensorRotationConfig } from "../SensorRotationConfig";
 import {
@@ -52,274 +52,165 @@ describe("SensorRotationConfig", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  describe("Tap Time Debouncing", () => {
-    test("debounces tap time changes", async () => {
-      const user = userEvent.setup({ delay: null }); // Disable delay for test
-      const mockSetLayerCwBindings = jest.fn().mockResolvedValue(true);
-      const mockSetLayerCcwBindings = jest.fn().mockResolvedValue(true);
-      const mockGetAllLayerBindings = jest.fn().mockResolvedValue([
-        {
-          layer: 0,
-          cwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-          ccwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-        },
-      ]);
+  async function setupSensors(sensorCount = 1) {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    // Different directional bindings catch accidental copying of CW into CCW.
+    const cwBinding = { behaviorId: 1, param1: 4, param2: 0, tapMs: 5 };
+    const ccwBinding = { behaviorId: 1, param1: 5, param2: 0, tapMs: 5 };
+    const setLayerCwBindings = jest.fn().mockResolvedValue(true);
+    const setLayerCcwBindings = jest.fn().mockResolvedValue(true);
+    const getAllLayerBindings = jest
+      .fn()
+      .mockResolvedValue([{ layer: 0, cwBinding, ccwBinding }]);
+    mockUseRuntimeSensorRotate.mockReturnValue(
+      createMockReturn({
+        isAvailable: true,
+        sensors: Array.from({ length: sensorCount }, (_, index) => ({
+          index,
+          name: `Encoder ${index + 1}`,
+        })),
+        getAllLayerBindings,
+        setLayerCwBindings,
+        setLayerCcwBindings,
+      }),
+    );
+    render(
+      <SensorRotationConfig
+        selectedLayerId={0}
+        behaviors={mockBehaviors}
+        layers={mockLayers}
+      />,
+    );
+    // Wait for rendered data, not merely for the read RPC to start.
+    const inputs = await screen.findAllByDisplayValue("5");
+    expect(inputs).toHaveLength(sensorCount);
+    return {
+      user,
+      inputs,
+      cwBinding,
+      ccwBinding,
+      setLayerCwBindings,
+      setLayerCcwBindings,
+    };
+  }
 
-      mockUseRuntimeSensorRotate.mockReturnValue(
-        createMockReturn({
-          isAvailable: true,
-          sensors: [{ index: 0, name: "Encoder 1" }],
-          getAllLayerBindings: mockGetAllLayerBindings,
-          setLayerCwBindings: mockSetLayerCwBindings,
-          setLayerCcwBindings: mockSetLayerCcwBindings,
-        }),
-      );
-
-      render(
-        <SensorRotationConfig
-          selectedLayerId={0}
-          behaviors={mockBehaviors}
-          layers={mockLayers}
-        />,
-      );
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(mockGetAllLayerBindings).toHaveBeenCalled();
-      });
-
-      // Find the tap time input
-      const tapTimeInput = screen.getByDisplayValue("5");
-
-      // Change the value multiple times quickly
-      await user.clear(tapTimeInput);
-      await user.type(tapTimeInput, "10");
-
-      // API should not be called immediately
-      expect(mockSetLayerCwBindings).not.toHaveBeenCalled();
-      expect(mockSetLayerCcwBindings).not.toHaveBeenCalled();
-
-      // Wait for debounce (3 seconds)
-      jest.advanceTimersByTime(1500);
-
-      // Now API should be called
-      await waitFor(() => {
-        expect(mockSetLayerCwBindings).toHaveBeenCalledWith(0, 0, {
-          behaviorId: 1,
-          param1: 0,
-          param2: 0,
-          tapMs: 10,
-        });
-        expect(mockSetLayerCcwBindings).toHaveBeenCalledWith(0, 0, {
-          behaviorId: 1,
-          param1: 0,
-          param2: 0,
-          tapMs: 10,
-        });
-      });
+  async function advanceTime(ms: number) {
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(ms);
     });
+  }
 
-    test("shows pending indicator during debounce", async () => {
-      const user = userEvent.setup({ delay: null });
-      const mockSetLayerCwBindings = jest.fn().mockResolvedValue(true);
-      const mockSetLayerCcwBindings = jest.fn().mockResolvedValue(true);
-      const mockGetAllLayerBindings = jest.fn().mockResolvedValue([
-        {
-          layer: 0,
-          cwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-          ccwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-        },
-      ]);
-
-      mockUseRuntimeSensorRotate.mockReturnValue(
-        createMockReturn({
-          isAvailable: true,
-          sensors: [{ index: 0, name: "Encoder 1" }],
-          getAllLayerBindings: mockGetAllLayerBindings,
-          setLayerCwBindings: mockSetLayerCwBindings,
-          setLayerCcwBindings: mockSetLayerCcwBindings,
-        }),
-      );
-
-      render(
-        <SensorRotationConfig
-          selectedLayerId={0}
-          behaviors={mockBehaviors}
-          layers={mockLayers}
-        />,
-      );
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(mockGetAllLayerBindings).toHaveBeenCalled();
-      });
-
-      const tapTimeInput = screen.getByDisplayValue("5");
-
-      // Change the value
-      await user.clear(tapTimeInput);
-      await user.type(tapTimeInput, "50");
-
-      // Should show pending indicator
+  describe("Tap Time Debouncing", () => {
+    test("keeps changes pending until 1500ms, then updates both directional bindings once", async () => {
+      const {
+        user,
+        inputs,
+        cwBinding,
+        ccwBinding,
+        setLayerCwBindings,
+        setLayerCcwBindings,
+      } = await setupSensors();
+      await user.clear(inputs[0]);
+      await user.type(inputs[0], "10");
+      expect(inputs[0]).toHaveValue(10);
       expect(screen.getByText(/pending/i)).toBeInTheDocument();
 
-      // Advance timers to complete debounce
-      jest.advanceTimersByTime(1500);
+      await advanceTime(1499);
+      expect(setLayerCwBindings).not.toHaveBeenCalled();
+      expect(setLayerCcwBindings).not.toHaveBeenCalled();
+      expect(screen.getByText(/pending/i)).toBeInTheDocument();
 
-      // Wait for the update to complete
-      await waitFor(() => {
-        expect(mockSetLayerCwBindings).toHaveBeenCalled();
+      await advanceTime(1);
+      expect(setLayerCwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCwBindings).toHaveBeenCalledWith(0, 0, {
+        ...cwBinding,
+        tapMs: 10,
       });
+      expect(setLayerCcwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCcwBindings).toHaveBeenCalledWith(0, 0, {
+        ...ccwBinding,
+        tapMs: 10,
+      });
+      expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
+      expect(inputs[0]).toHaveValue(10);
+    });
 
-      // Pending indicator should be gone
-      await waitFor(() => {
-        expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
+    test("cancels the previous debounce on a new change", async () => {
+      const {
+        user,
+        inputs,
+        cwBinding,
+        ccwBinding,
+        setLayerCwBindings,
+        setLayerCcwBindings,
+      } = await setupSensors();
+      await user.clear(inputs[0]);
+      await user.type(inputs[0], "10");
+      await advanceTime(750);
+      await user.clear(inputs[0]);
+      await user.type(inputs[0], "20");
+
+      // The original deadline has passed, but the replacement is still pending.
+      await advanceTime(1499);
+      expect(setLayerCwBindings).not.toHaveBeenCalled();
+      expect(setLayerCcwBindings).not.toHaveBeenCalled();
+      await advanceTime(1);
+      expect(setLayerCwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCwBindings).toHaveBeenCalledWith(0, 0, {
+        ...cwBinding,
+        tapMs: 20,
+      });
+      expect(setLayerCcwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCcwBindings).toHaveBeenCalledWith(0, 0, {
+        ...ccwBinding,
+        tapMs: 20,
       });
     });
 
-    test("cancels previous debounce on new change", async () => {
-      const user = userEvent.setup({ delay: null });
-      const mockSetLayerCwBindings = jest.fn().mockResolvedValue(true);
-      const mockSetLayerCcwBindings = jest.fn().mockResolvedValue(true);
-      const mockGetAllLayerBindings = jest.fn().mockResolvedValue([
-        {
-          layer: 0,
-          cwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-          ccwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-        },
-      ]);
+    test("handles multiple sensor deadlines independently", async () => {
+      const {
+        user,
+        inputs,
+        cwBinding,
+        ccwBinding,
+        setLayerCwBindings,
+        setLayerCcwBindings,
+      } = await setupSensors(2);
+      await user.clear(inputs[0]);
+      await user.type(inputs[0], "10");
+      await advanceTime(750);
+      await user.clear(inputs[1]);
+      await user.type(inputs[1], "20");
 
-      mockUseRuntimeSensorRotate.mockReturnValue(
-        createMockReturn({
-          isAvailable: true,
-          sensors: [{ index: 0, name: "Encoder 1" }],
-          getAllLayerBindings: mockGetAllLayerBindings,
-          setLayerCwBindings: mockSetLayerCwBindings,
-          setLayerCcwBindings: mockSetLayerCcwBindings,
-        }),
-      );
-
-      render(
-        <SensorRotationConfig
-          selectedLayerId={0}
-          behaviors={mockBehaviors}
-          layers={mockLayers}
-        />,
-      );
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(mockGetAllLayerBindings).toHaveBeenCalled();
+      await advanceTime(750);
+      expect(setLayerCwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCwBindings).toHaveBeenLastCalledWith(0, 0, {
+        ...cwBinding,
+        tapMs: 10,
       });
-
-      const tapTimeInput = screen.getByDisplayValue("5");
-
-      // First change
-      await user.clear(tapTimeInput);
-      await user.type(tapTimeInput, "10");
-
-      // Advance timer partially (less than the 1500ms debounce)
-      jest.advanceTimersByTime(750);
-
-      // Second change before debounce completes
-      await user.clear(tapTimeInput);
-      await user.type(tapTimeInput, "20");
-
-      // Advance another 750ms (only 750ms from the second change)
-      jest.advanceTimersByTime(750);
-
-      // API should not be called yet
-      expect(mockSetLayerCwBindings).not.toHaveBeenCalled();
-
-      // Advance another 750ms to complete the second debounce (1500ms total)
-      jest.advanceTimersByTime(750);
-
-      // Now API should be called only once with the final value
-      await waitFor(() => {
-        expect(mockSetLayerCwBindings).toHaveBeenCalledTimes(1);
-        expect(mockSetLayerCwBindings).toHaveBeenCalledWith(0, 0, {
-          behaviorId: 1,
-          param1: 0,
-          param2: 0,
-          tapMs: 20,
-        });
+      expect(setLayerCcwBindings).toHaveBeenCalledTimes(1);
+      expect(setLayerCcwBindings).toHaveBeenLastCalledWith(0, 0, {
+        ...ccwBinding,
+        tapMs: 10,
       });
-    });
+      expect(screen.getAllByText(/pending/i)).toHaveLength(1);
 
-    test("handles multiple sensors independently", async () => {
-      const user = userEvent.setup({ delay: null });
-      const mockSetLayerCwBindings = jest.fn().mockResolvedValue(true);
-      const mockSetLayerCcwBindings = jest.fn().mockResolvedValue(true);
-      const mockGetAllLayerBindings = jest.fn(() =>
-        Promise.resolve([
-          {
-            layer: 0,
-            cwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-            ccwBinding: { behaviorId: 1, param1: 0, param2: 0, tapMs: 5 },
-          },
-        ]),
-      );
-
-      mockUseRuntimeSensorRotate.mockReturnValue(
-        createMockReturn({
-          isAvailable: true,
-          sensors: [
-            { index: 0, name: "Encoder 1" },
-            { index: 1, name: "Encoder 2" },
-          ],
-          getAllLayerBindings: mockGetAllLayerBindings,
-          setLayerCwBindings: mockSetLayerCwBindings,
-          setLayerCcwBindings: mockSetLayerCcwBindings,
-        }),
-      );
-
-      render(
-        <SensorRotationConfig
-          selectedLayerId={0}
-          behaviors={mockBehaviors}
-          layers={mockLayers}
-        />,
-      );
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(mockGetAllLayerBindings).toHaveBeenCalledTimes(2);
+      await advanceTime(750);
+      expect(setLayerCwBindings).toHaveBeenCalledTimes(2);
+      expect(setLayerCwBindings).toHaveBeenLastCalledWith(1, 0, {
+        ...cwBinding,
+        tapMs: 20,
       });
-
-      // Get all tap time inputs (should be 2)
-      const tapTimeInputs = screen.getAllByDisplayValue("5");
-      expect(tapTimeInputs).toHaveLength(2);
-
-      // Change first sensor
-      await user.clear(tapTimeInputs[0]);
-      await user.type(tapTimeInputs[0], "10");
-
-      // Change second sensor
-      await user.clear(tapTimeInputs[1]);
-      await user.type(tapTimeInputs[1], "20");
-
-      // Advance timers
-      jest.advanceTimersByTime(1500);
-
-      // Both should be called with their respective values
-      await waitFor(() => {
-        expect(mockSetLayerCwBindings).toHaveBeenCalledWith(0, 0, {
-          behaviorId: 1,
-          param1: 0,
-          param2: 0,
-          tapMs: 10,
-        });
-        expect(mockSetLayerCwBindings).toHaveBeenCalledWith(1, 0, {
-          behaviorId: 1,
-          param1: 0,
-          param2: 0,
-          tapMs: 20,
-        });
+      expect(setLayerCcwBindings).toHaveBeenCalledTimes(2);
+      expect(setLayerCcwBindings).toHaveBeenLastCalledWith(1, 0, {
+        ...ccwBinding,
+        tapMs: 20,
       });
+      expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
     });
   });
 

@@ -88,14 +88,14 @@ describe("listCandidateKeymaps", () => {
 
     expect(listMyKeymaps).toHaveBeenCalledTimes(2);
     expect(listMyKeymaps.mock.calls[1][0].page).toBe(2);
-    expect(result.items).toHaveLength(21);
+    expect(result.items).toEqual([...first, { id: "k20" }]);
   });
 
   it("returns the page items", async () => {
     const { client } = fakeClient(onePage([{ id: "k1" }, { id: "k2" }]));
     const result = await listCandidateKeymaps(client, {});
 
-    expect(result.items).toHaveLength(2);
+    expect(result.items).toEqual([{ id: "k1" }, { id: "k2" }]);
     expect(result.widened).toBe(false);
   });
 
@@ -112,7 +112,7 @@ describe("listCandidateKeymaps", () => {
 
     expect(listMyKeymaps).toHaveBeenCalledTimes(2);
     expect(listMyKeymaps.mock.calls[1][0]).not.toHaveProperty("layoutId");
-    expect(result.items).toHaveLength(1);
+    expect(result.items).toEqual([{ id: "k1" }]);
     expect(result.widened).toBe(true);
   });
 

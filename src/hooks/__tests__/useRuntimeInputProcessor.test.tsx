@@ -10,6 +10,7 @@ import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import type { ReactNode } from "react";
 import {
   Response,
+  Request,
   Notification,
 } from "../../proto/zmk/runtime_input_processor/runtime_input_processor";
 
@@ -57,7 +58,14 @@ function createWrapper(zmkAppValue: {
 describe("useRuntimeInputProcessor", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCallRPC.mockReset();
+    mockOnNotification.mockReset();
+    jest.useFakeTimers();
     mockOnNotification.mockReturnValue(() => {});
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe("Initial State", () => {
@@ -162,7 +170,7 @@ describe("useRuntimeInputProcessor", () => {
 
       // Wait for useEffect to trigger loadProcessors
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await jest.advanceTimersByTimeAsync(0);
       });
 
       // Simulate notification arrival
@@ -187,7 +195,7 @@ describe("useRuntimeInputProcessor", () => {
           notificationCallback({
             payload: Notification.encode(notification).finish(),
           });
-          await new Promise((resolve) => setTimeout(resolve, 600)); // Wait for notification collection timeout
+          await jest.advanceTimersByTimeAsync(500); // Wait for notification collection timeout
         });
       }
 
@@ -212,34 +220,24 @@ describe("useRuntimeInputProcessor", () => {
         xySwapEnabled: false,
       });
       expect(result.current.error).toBe(null);
-    });
 
-    it("should expose loadProcessors function", async () => {
-      const response = Response.create({ listProcessors: { processors: [] } });
-      mockCallRPC.mockResolvedValue(Response.encode(response).finish());
-
-      const wrapper = createWrapper({
-        state: {
-          connection: null, // Start with no connection to avoid auto-load
-          customSubsystems: [],
-        },
-        findSubsystem: (id: string) =>
-          id === "cormoran_rip"
-            ? { index: 0, identifier: "cormoran_rip" }
-            : null,
-        onNotification: mockOnNotification,
+      // A later notification for the same ID replaces the existing row.
+      act(() => {
+        notificationCallback!({
+          payload: Notification.encode(
+            Notification.create({
+              processorChanged: {
+                processor: {
+                  ...result.current.processors[0],
+                  rotationDegrees: 45,
+                },
+              },
+            }),
+          ).finish(),
+        });
       });
-
-      const { result } = renderHook(() => useRuntimeInputProcessor(), {
-        wrapper,
-      });
-
-      // Verify the functions exist
-      expect(typeof result.current.loadProcessors).toBe("function");
-      expect(typeof result.current.setScaling).toBe("function");
-      expect(typeof result.current.setRotation).toBe("function");
-      expect(result.current.processors).toEqual([]);
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.processors).toHaveLength(1);
+      expect(result.current.processors[0].rotationDegrees).toBe(45);
     });
   });
 
@@ -257,27 +255,17 @@ describe("useRuntimeInputProcessor", () => {
         },
       );
 
-      // Mock successful initial load
-      const initialLoadResponse = Response.create({ listProcessors: {} });
-
-      // Mock successful set scale multiplier response
-      const setMultiplierResponse = Response.create({
-        setScaleMultiplier: {},
+      mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
+        const request = Request.decode(payload);
+        return Response.encode(
+          Response.create({
+            listProcessors: request.listProcessors ? {} : undefined,
+            listLayers: request.listLayers ? {} : undefined,
+            setScaleMultiplier: request.setScaleMultiplier ? {} : undefined,
+            setScaleDivisor: request.setScaleDivisor ? {} : undefined,
+          }),
+        ).finish();
       });
-
-      // Mock successful set scale divisor response
-      const setDivisorResponse = Response.create({
-        setScaleDivisor: {},
-      });
-
-      // Mock reload after setting
-      const reloadResponse = Response.create({ listProcessors: {} });
-
-      mockCallRPC
-        .mockResolvedValueOnce(Response.encode(initialLoadResponse).finish())
-        .mockResolvedValueOnce(Response.encode(setMultiplierResponse).finish())
-        .mockResolvedValueOnce(Response.encode(setDivisorResponse).finish())
-        .mockResolvedValueOnce(Response.encode(reloadResponse).finish());
 
       const wrapper = createWrapper({
         state: {
@@ -297,7 +285,7 @@ describe("useRuntimeInputProcessor", () => {
 
       // Wait for initial load and send initial notification
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await jest.advanceTimersByTimeAsync(0);
         if (notificationCallback) {
           const initialNotification = Notification.create({
             processorChanged: {
@@ -319,38 +307,24 @@ describe("useRuntimeInputProcessor", () => {
             payload: Notification.encode(initialNotification).finish(),
           });
         }
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await jest.advanceTimersByTimeAsync(500);
       });
 
       // Now call setScaling with a value that can be simplified (200/100 => 2/1)
       await act(async () => {
         await result.current.setScaling(0, 200, 100);
-        // Send notification for updated processor
-        if (notificationCallback) {
-          const updatedNotification = Notification.create({
-            processorChanged: {
-              processor: {
-                id: 0,
-                name: "trackpad",
-                scaleMultiplier: 2, // Simplified from 200/100
-                scaleDivisor: 1,
-                rotationDegrees: 0,
-                tempLayerEnabled: false,
-                tempLayerLayer: 0,
-                tempLayerActivationDelayMs: 100,
-                tempLayerDeactivationDelayMs: 500,
-                activeLayers: 0,
-              },
-            },
-          });
-          notificationCallback({
-            payload: Notification.encode(updatedNotification).finish(),
-          });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 600));
       });
 
       expect(result.current.error).toBe(null);
+      const writes = mockCallRPC.mock.calls
+        .map(([payload]) => Request.decode(payload))
+        .filter(
+          (request) => request.setScaleMultiplier || request.setScaleDivisor,
+        );
+      expect(writes).toEqual([
+        Request.create({ setScaleMultiplier: { id: 0, value: 2 } }),
+        Request.create({ setScaleDivisor: { id: 0, value: 1 } }),
+      ]);
       expect(result.current.processors[0]?.scaleMultiplier).toBe(2);
       expect(result.current.processors[0]?.scaleDivisor).toBe(1);
     });
@@ -370,21 +344,16 @@ describe("useRuntimeInputProcessor", () => {
         },
       );
 
-      // Mock successful initial load
-      const initialLoadResponse = Response.create({ listProcessors: {} });
-
-      // Mock successful set rotation response
-      const setRotationResponse = Response.create({
-        setRotation: {},
+      mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
+        const request = Request.decode(payload);
+        return Response.encode(
+          Response.create({
+            listProcessors: request.listProcessors ? {} : undefined,
+            listLayers: request.listLayers ? {} : undefined,
+            setRotation: request.setRotation ? {} : undefined,
+          }),
+        ).finish();
       });
-
-      // Mock reload after setting
-      const reloadResponse = Response.create({ listProcessors: {} });
-
-      mockCallRPC
-        .mockResolvedValueOnce(Response.encode(initialLoadResponse).finish())
-        .mockResolvedValueOnce(Response.encode(setRotationResponse).finish())
-        .mockResolvedValueOnce(Response.encode(reloadResponse).finish());
 
       const wrapper = createWrapper({
         state: {
@@ -404,7 +373,7 @@ describe("useRuntimeInputProcessor", () => {
 
       // Wait for initial load and send initial notification
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await jest.advanceTimersByTimeAsync(0);
         if (notificationCallback) {
           const initialNotification = Notification.create({
             processorChanged: {
@@ -426,38 +395,21 @@ describe("useRuntimeInputProcessor", () => {
             payload: Notification.encode(initialNotification).finish(),
           });
         }
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await jest.advanceTimersByTimeAsync(500);
       });
 
       // Now call setRotation
       await act(async () => {
         await result.current.setRotation(0, 90);
-        // Send notification for updated processor
-        if (notificationCallback) {
-          const updatedNotification = Notification.create({
-            processorChanged: {
-              processor: {
-                id: 0,
-                name: "trackpad",
-                scaleMultiplier: 1,
-                scaleDivisor: 1,
-                rotationDegrees: 90,
-                tempLayerEnabled: false,
-                tempLayerLayer: 0,
-                tempLayerActivationDelayMs: 100,
-                tempLayerDeactivationDelayMs: 500,
-                activeLayers: 0,
-              },
-            },
-          });
-          notificationCallback({
-            payload: Notification.encode(updatedNotification).finish(),
-          });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 600));
       });
 
       expect(result.current.error).toBe(null);
+      const writes = mockCallRPC.mock.calls
+        .map(([payload]) => Request.decode(payload))
+        .filter((request) => request.setRotation);
+      expect(writes).toEqual([
+        Request.create({ setRotation: { id: 0, value: 90 } }),
+      ]);
       expect(result.current.processors[0]?.rotationDegrees).toBe(90);
     });
   });
@@ -517,7 +469,9 @@ describe("useRuntimeInputProcessor", () => {
       });
 
       await act(async () => {
-        await result.current.loadProcessors();
+        const loading = result.current.loadProcessors();
+        await jest.advanceTimersByTimeAsync(500);
+        await loading;
       });
 
       expect(result.current.error).toBe("Test error");

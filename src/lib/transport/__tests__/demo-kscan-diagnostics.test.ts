@@ -207,51 +207,40 @@ describe("KscanDiagnosticsHandler", () => {
   });
 
   describe("queryPeripheral", () => {
-    it("returns ok and delivers a PeripheralEvent notification", async () => {
-      const notifications: Uint8Array[] = [];
-      handler.notify((data) => notifications.push(data));
-
-      const innerRequest = Request.create({ getInfo: {} });
-      const response = handler.process(
-        Request.create({
-          queryPeripheral: {
-            reqId: 42,
-            payload: Request.encode(innerRequest).finish(),
-          },
-        }),
-      );
-
-      expect(response.ok).toBeDefined();
-
-      // Wait for the async notification (50ms delay in the handler).
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(notifications).toHaveLength(1);
-
-      const event = PeripheralEvent.decode(notifications[0]);
-      expect(event.source).toBe(1);
-      expect(event.reqId).toBe(42);
-
-      const innerResponse = Response.decode(event.payload);
-      expect(innerResponse.info).toBeDefined();
-      expect(innerResponse.info?.deviceCount).toBe(1);
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
+    it.each([7, 42])(
+      "delivers the response with request ID %i and peripheral source",
+      (reqId) => {
+        const notifications: Uint8Array[] = [];
+        handler.notify((data) => notifications.push(data));
 
-    it("echoes req_id in the PeripheralEvent", async () => {
-      const notifications: Uint8Array[] = [];
-      handler.notify((data) => notifications.push(data));
+        const innerRequest = Request.create({ getInfo: {} });
+        const response = handler.process(
+          Request.create({
+            queryPeripheral: {
+              reqId,
+              payload: Request.encode(innerRequest).finish(),
+            },
+          }),
+        );
 
-      handler.process(
-        Request.create({
-          queryPeripheral: {
-            reqId: 7,
-            payload: Request.encode(Request.create({ getInfo: {} })).finish(),
-          },
-        }),
-      );
+        expect(response.ok).toBeDefined();
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      const event = PeripheralEvent.decode(notifications[0]);
-      expect(event.reqId).toBe(7);
-    });
+        jest.runAllTimers();
+        expect(notifications).toHaveLength(1);
+
+        const event = PeripheralEvent.decode(notifications[0]);
+        expect(event.source).toBe(1);
+        expect(event.reqId).toBe(reqId);
+
+        const innerResponse = Response.decode(event.payload);
+        expect(innerResponse.info).toBeDefined();
+        expect(innerResponse.info?.deviceCount).toBe(1);
+      },
+    );
   });
 });

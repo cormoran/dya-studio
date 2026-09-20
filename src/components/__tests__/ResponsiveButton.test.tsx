@@ -11,9 +11,14 @@ function touch(target: Element, type: string, clientX = 10) {
 
 describe("ResponsiveButton touch help", () => {
   beforeEach(() => jest.useFakeTimers());
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+  afterEach(async () => {
+    try {
+      await act(async () => {
+        await jest.runOnlyPendingTimersAsync();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("keeps an accessible name and executes a short tap once", () => {
