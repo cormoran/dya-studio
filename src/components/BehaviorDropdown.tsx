@@ -147,6 +147,8 @@ export function BehaviorDropdown({
     }
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const quickSelectSettingsRef = useRef<HTMLDivElement>(null);
+  const quickSelectSettingsTriggerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -169,18 +171,23 @@ export function BehaviorDropdown({
   }, [isOpen]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsOpen(false);
+      }
+      if (
+        isQuickSelectSettingsOpen &&
+        !quickSelectSettingsRef.current?.contains(target) &&
+        !quickSelectSettingsTriggerRef.current?.contains(target)
+      ) {
         setIsQuickSelectSettingsOpen(false);
       }
     };
     if (isOpen || isQuickSelectSettingsOpen)
-      document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [isOpen, isQuickSelectSettingsOpen]);
 
   const behaviorOptions = useMemo((): BehaviorOption[] => {
@@ -481,17 +488,19 @@ export function BehaviorDropdown({
             className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
-        <EditorTooltip content={t("Configure Quick Select")}>
-          <button
-            type="button"
-            aria-label={t("Configure Quick Select")}
-            aria-expanded={isQuickSelectSettingsOpen}
-            className={`shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
-            onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
-          >
-            <IconAdjustments size={16} />
-          </button>
-        </EditorTooltip>
+        <div ref={quickSelectSettingsTriggerRef}>
+          <EditorTooltip content={t("Configure Quick Select")}>
+            <button
+              type="button"
+              aria-label={t("Configure Quick Select")}
+              aria-expanded={isQuickSelectSettingsOpen}
+              className={`shrink-0 rounded border p-1.5 ${isQuickSelectSettingsOpen ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-muted)]"}`}
+              onClick={() => setIsQuickSelectSettingsOpen((open) => !open)}
+            >
+              <IconAdjustments size={16} />
+            </button>
+          </EditorTooltip>
+        </div>
       </div>
 
       <div
@@ -601,7 +610,10 @@ export function BehaviorDropdown({
             )}
             <div className="relative ml-auto">
               {isQuickSelectSettingsOpen && (
-                <div className="absolute right-0 top-full mt-1 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-xl">
+                <div
+                  ref={quickSelectSettingsRef}
+                  className="absolute right-0 top-full mt-1 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-xl"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-[var(--color-text)]">
                       {t("Quick Select settings")}

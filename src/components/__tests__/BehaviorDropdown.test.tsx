@@ -44,6 +44,11 @@ it("uses one Misc category, focuses search on desktop, and searches across categ
     screen.queryByRole("button", { name: "Others" }),
   ).not.toBeInTheDocument();
 
+  await user.click(settingsButton);
+  expect(screen.getByText("Quick Select settings")).toBeInTheDocument();
+  await user.click(search);
+  expect(screen.queryByText("Quick Select settings")).not.toBeInTheDocument();
+
   await user.type(search, "mouse");
 
   expect(screen.getByText("Mouse Key Press")).toBeInTheDocument();
