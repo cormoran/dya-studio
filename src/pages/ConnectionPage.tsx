@@ -827,14 +827,18 @@ export function ConnectionPage() {
                 return (
                   <div
                     key={zmkOs}
-                    className={`flex items-center justify-between gap-4 p-2 rounded-lg border ${
+                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 tablet:flex tablet:justify-between tablet:gap-4 p-2 rounded-lg border ${
                       isCurrent
                         ? "bg-[var(--color-electric)]/10 border-[var(--color-electric)]/20"
                         : "border-transparent"
                     }`}
                   >
-                    <OsBadge os={protoOs} />
+                    <OsBadge
+                      os={protoOs}
+                      className="shrink-0 whitespace-nowrap"
+                    />
                     <LayerSelect
+                      className="min-w-0 min-h-11 tablet:min-h-0"
                       value={entry?.value ?? -1}
                       layerCount={defaultLayer.state?.layerCount ?? 0}
                       layerNames={layerNames}
