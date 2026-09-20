@@ -4,7 +4,7 @@
  * This test suite verifies the keymap editor UI,
  * including layer selection, key interaction, and save/discard operations.
  */
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
 import { ConnectionContext } from "../../components/DeviceConnection";
@@ -107,6 +107,7 @@ describe("KeymapPage", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
 
     // Default to unlocked; locked-specific tests override this.
     mockUseStudioLockState.mockReturnValue({
@@ -256,6 +257,186 @@ describe("KeymapPage", () => {
         },
       );
       expect(screen.getByText("Failed to load keymap")).toBeInTheDocument();
+    });
+  });
+
+  describe("Floating binding editor", () => {
+    const setup = async (setBinding = jest.fn().mockResolvedValue(true)) => {
+      const user = userEvent.setup();
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: new Map([
+            [
+              1,
+              {
+                id: 1,
+                displayName: "Key Press",
+                metadata: [
+                  {
+                    param1: [
+                      {
+                        name: "Key",
+                        hidUsage: { keyboardMax: 255, consumerMax: 4095 },
+                      },
+                    ],
+                    param2: [],
+                  },
+                ],
+              },
+            ],
+            [2, { id: 2, displayName: "Transparent", metadata: [] }],
+          ]),
+          setBinding,
+        },
+      );
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      return { user, setBinding };
+    };
+
+    it("applies once, advances through every key, and closes at the end", async () => {
+      const { user, setBinding } = await setup();
+      for (let position = 0; position < 3; position++) {
+        expect(
+          screen.getByText(`Base · Key ${position + 1} / 3`),
+        ).toBeInTheDocument();
+        expect(
+          screen.getAllByRole("button", { name: /Key position \d+:/ })[
+            position
+          ],
+        ).toHaveAttribute("aria-current", "true");
+        await user.click(
+          screen.getByRole("button", { name: "A", exact: true }),
+        );
+        await waitFor(() =>
+          expect(setBinding).toHaveBeenCalledTimes(position + 1),
+        );
+        expect(setBinding).toHaveBeenLastCalledWith(0, position, {
+          behaviorId: 1,
+          param1: 0x70004,
+          param2: 0,
+        });
+      }
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("advances on keycode and parameterless behavior selection without closing", async () => {
+      const { user, setBinding } = await setup();
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      await user.click(
+        screen.getByRole("button", { name: "Trans", exact: true }),
+      );
+      expect(setBinding).toHaveBeenCalledTimes(2);
+      expect(setBinding).toHaveBeenLastCalledWith(0, 1, {
+        behaviorId: 2,
+        param1: 0,
+        param2: 0,
+      });
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+    });
+
+    it("stays on the selected key when auto advance is off and remembers the setting", async () => {
+      const { user, setBinding } = await setup();
+      const toggle = screen.getByRole("button", { name: "Auto advance" });
+      expect(toggle).toHaveAttribute("aria-pressed", "true");
+      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      expect(localStorage.getItem("keymapAutoAdvance")).toBe("false");
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Auto advance" }));
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+    });
+
+    it("keeps the current key on failure and allows retry", async () => {
+      const { user, setBinding } = await setup(
+        jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
+      );
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(2);
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+    });
+
+    it("does not move a newly clicked key when an earlier request completes", async () => {
+      let resolve!: (success: boolean) => void;
+      const { user, setBinding } = await setup(
+        jest.fn(
+          () =>
+            new Promise<boolean>((done) => {
+              resolve = done;
+            }),
+        ),
+      );
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(
+        screen.getByRole("button", { name: "A", exact: true }),
+      ).toBeDisabled();
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[2],
+      );
+      await act(async () => resolve(true));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+    });
+
+    it("navigates without applying and closes on Escape without writing", async () => {
+      const { user, setBinding } = await setup();
+      expect(
+        screen.getByRole("button", { name: "Previous key" }),
+      ).toBeDisabled();
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Previous key" }));
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(setBinding).not.toHaveBeenCalled();
+    });
+
+    it("switches repeatedly between modes without closing or applying a binding", async () => {
+      const { user, setBinding } = await setup();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await user.click(screen.getByRole("button", { name: "Dialog mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(
+          screen.getByRole("checkbox", { name: "Close on select" }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: "LCtrl", exact: true }),
+        ).toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: "Floating mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(
+          screen.queryByRole("checkbox", { name: "Close on select" }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: "LCtrl", exact: true }),
+        ).not.toBeInTheDocument();
+      }
+      expect(setBinding).not.toHaveBeenCalled();
+      expect(localStorage.getItem("keymapSelectorMode")).toBe("floating");
+    });
+
+    it("closes when switching layers without applying a draft", async () => {
+      const { user, setBinding } = await setup();
+      await user.click(screen.getByRole("button", { name: "Lower" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(setBinding).not.toHaveBeenCalled();
     });
   });
 

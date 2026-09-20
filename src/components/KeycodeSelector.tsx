@@ -9,9 +9,17 @@
  * - Close on select: Automatically close the dialog after selecting the last parameter
  *   (setting is persisted in localStorage)
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconRestore, IconX } from "@tabler/icons-react";
+import { IconRestore, IconX, IconGripVertical } from "@tabler/icons-react";
 import { MOUSE_KEYCODES } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
@@ -20,6 +28,7 @@ import {
   type BehaviorMetadata,
 } from "../lib/behaviorMetadata";
 import type { BehaviorBinding, BehaviorDefinition } from "../hooks/useKeymap";
+import { EditorTooltip } from "./EditorTooltip";
 import { BehaviorDropdown } from "./BehaviorDropdown";
 import { ButtonListSelector } from "./ButtonListSelector";
 import { KeycodeValueSelector } from "./KeycodeValueSelector";
@@ -27,6 +36,7 @@ import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import { useFloatingWindow } from "../hooks/useFloatingWindow";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -48,6 +58,12 @@ interface SelectedBehaviorInfo {
 }
 
 interface KeycodeSelectorProps {
+  presentation?: "modal" | "floating";
+  selectionKey?: string;
+  toolbar?: ReactNode;
+  floatingAnchorRef?: RefObject<HTMLElement | null>;
+  busy?: boolean;
+  error?: string | null;
   open: boolean;
   onClose: () => void;
   onSelect: (binding: BehaviorBinding) => void;
@@ -237,6 +253,12 @@ function hasParam(
 // =============================================================================
 
 export function KeycodeSelector({
+  presentation = "modal",
+  selectionKey,
+  toolbar,
+  floatingAnchorRef,
+  busy = false,
+  error,
   open,
   onClose,
   onSelect,
@@ -248,15 +270,23 @@ export function KeycodeSelector({
   runtimeMacros = [],
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
+  const floating = presentation === "floating";
+  const activePresentation = useRef(presentation);
+  useEffect(() => {
+    activePresentation.current = presentation;
+  }, [presentation]);
+  const floatingWindow = useFloatingWindow(floating, open, floatingAnchorRef);
+  const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
   const [param1, setParam1] = useState<number>(0);
   const [param2, setParam2] = useState<number>(0);
   const [activeParam, setActiveParam] = useState<1 | 2>(1);
-  const [closeOnSelect, setCloseOnSelect] = useState<boolean>(() => {
+  const [savedCloseOnSelect, setCloseOnSelect] = useState<boolean>(() => {
     const saved = localStorage.getItem("keycodeSelectorCloseOnSelect");
     return saved !== null ? saved === "true" : true;
   });
+  const closeOnSelect = floating || savedCloseOnSelect;
   const [wasOpened, setWasOpened] = useState<boolean>(false);
 
   // Initial values to detect changes
@@ -268,8 +298,11 @@ export function KeycodeSelector({
 
   // Save closeOnSelect setting to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("keycodeSelectorCloseOnSelect", String(closeOnSelect));
-  }, [closeOnSelect]);
+    localStorage.setItem(
+      "keycodeSelectorCloseOnSelect",
+      String(savedCloseOnSelect),
+    );
+  }, [savedCloseOnSelect]);
 
   // Check if values have changed
   const hasChanges = useMemo(() => {
@@ -320,15 +353,16 @@ export function KeycodeSelector({
           param1: 0,
           param2: 0,
         });
-        onClose();
+        if (!floating) onClose();
       }
     },
-    [behaviors, closeOnSelect, onSelect, onClose],
+    [behaviors, closeOnSelect, onSelect, onClose, floating],
   );
 
   const handleParam1Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam1(value);
+      if (floating && editingNumber.current) return;
       const nextSelectedBehaviorInfo = buildSelectedBehaviorInfo(
         behaviors,
         selectedBehavior,
@@ -349,19 +383,28 @@ export function KeycodeSelector({
             param1: value,
             param2: 0,
           });
-          onClose();
+          if (!floating) onClose();
         }
         if (param2 !== 0) {
           setParam2(0);
         }
       }
     },
-    [behaviors, closeOnSelect, onClose, onSelect, param2, selectedBehavior],
+    [
+      behaviors,
+      closeOnSelect,
+      onClose,
+      onSelect,
+      param2,
+      selectedBehavior,
+      floating,
+    ],
   );
 
   const handleParam2Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam2(value);
+      if (floating && editingNumber.current) return;
       // If param2 is set and closeOnSelect is enabled, apply and close
       if (
         shouldNotClose !== true &&
@@ -373,10 +416,10 @@ export function KeycodeSelector({
           param1,
           param2: value,
         });
-        onClose();
+        if (!floating) onClose();
       }
     },
-    [closeOnSelect, selectedBehavior, param1, onSelect, onClose],
+    [closeOnSelect, selectedBehavior, param1, onSelect, onClose, floating],
   );
 
   // Handle revert button click
@@ -424,7 +467,7 @@ export function KeycodeSelector({
         setWasOpened(true);
       } else {
         // Always apply changes when closing
-        if (selectedBehavior !== null && wasOpened) {
+        if (!floating && selectedBehavior !== null && wasOpened) {
           setWasOpened(false);
           onSelect({
             behaviorId: selectedBehavior,
@@ -449,6 +492,7 @@ export function KeycodeSelector({
       param2,
       onSelect,
       wasOpened,
+      floating,
     ],
   );
 
@@ -458,7 +502,7 @@ export function KeycodeSelector({
       handleOpenChange(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, selectionKey]);
 
   // Render parameter value selector based on type
   const renderParamValueSelector = useCallback(
@@ -467,6 +511,7 @@ export function KeycodeSelector({
       param2: number,
       onChange: (v: number, shouldNotClose?: boolean) => void,
       paramNumber: 1 | 2,
+      toolbar?: ReactNode,
     ) => {
       const value = paramNumber === 1 ? param1 : param2;
 
@@ -605,6 +650,9 @@ export function KeycodeSelector({
             {/* hidUsages */}
             {groupByType.hidUsages.length > 0 && (
               <KeycodeValueSelector
+                key={floating ? "floating" : "modal"}
+                compact={floating}
+                toolbar={toolbar}
                 value={value}
                 onChange={onChange}
                 showModifiers={true}
@@ -624,196 +672,307 @@ export function KeycodeSelector({
       }
       return null;
     },
-    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros],
+    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros, floating],
+  );
+
+  const activeDescriptions =
+    activeParam === 1
+      ? selectedBehaviorInfo?.param1Descriptions
+      : selectedBehaviorInfo?.param2Descriptions;
+  const activeOverride =
+    activeParam === 1
+      ? selectedBehaviorInfo?.overrideMetadata?.param1Type
+      : selectedBehaviorInfo?.overrideMetadata?.param2Type;
+  const inlineParamToolbar =
+    floating &&
+    !["macro", "mouse_keycode", "mouse_movement", "mouse_scroll"].includes(
+      activeOverride ?? "",
+    ) &&
+    activeDescriptions?.some(
+      (description) => description.hidUsage !== undefined,
+    );
+  const parameterTabs = selectedBehaviorInfo && (
+    <div
+      className={
+        floating
+          ? `flex h-7 min-w-0 shrink-0 overflow-x-auto ${inlineParamToolbar ? "flex-1" : "mx-2 mt-2"}`
+          : "flex border-b border-[var(--color-border)] mx-4 mb-2"
+      }
+    >
+      {([1, 2] as const)
+        .filter((number) => (number === 1 ? needsParam1 : needsParam2))
+        .map((number) => (
+          <button
+            key={number}
+            type="button"
+            onClick={() => setActiveParam(number)}
+            className={`min-w-0 border-b-2 transition-colors ${floating ? "flex items-center gap-1 px-2 py-1 text-xs" : "flex-1 p-2 text-center"} ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
+          >
+            <span className="text-xs whitespace-nowrap">
+              {t(number === 1 ? "param1" : "param2")}:
+              {!floating && (
+                <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                  {getParamTypeLabel(selectedBehaviorInfo, number, t)}
+                </span>
+              )}
+            </span>
+            <span
+              className={`${floating ? "truncate text-xs" : "block mt-0.5 text-sm"} font-mono text-[var(--color-neon)]`}
+            >
+              {formatParamValue(
+                selectedBehaviorInfo,
+                param1,
+                param2,
+                number,
+                layers,
+                keyboardLayout,
+                runtimeMacros,
+              )}
+            </span>
+          </button>
+        ))}
+    </div>
   );
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+    <Dialog.Root
+      key={presentation}
+      open={open}
+      modal={!floating}
+      onOpenChange={handleOpenChange}
+    >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden">
-          {/* Header with Cancel Button */}
-          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-            <Dialog.Title className="text-lg font-medium text-[var(--color-text)] flex items-center gap-2">
-              {t("Select Key Binding")}
-            </Dialog.Title>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                <input
-                  type="checkbox"
-                  checked={closeOnSelect}
-                  onChange={(e) => setCloseOnSelect(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
-                />
-                <span>{t("Close on select")}</span>
-              </label>
-              {hasChanges && (
-                <button
-                  className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                  onClick={handleRevert}
-                >
-                  <IconRestore size={16} className="animate-pulse" />
-                  <span className="hidden tablet:inline">{t("Revert")}</span>
-                </button>
-              )}
-              <Dialog.Close asChild>
-                <button
-                  className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
-                  aria-label={t("Close")}
-                >
-                  <IconX size={20} className="text-[var(--color-text-muted)]" />
-                </button>
-              </Dialog.Close>
-            </div>
-          </div>
-
-          {/* Behavior Selection */}
-          <div className="p-4 border-b border-[var(--color-border)]">
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-              {t("Behavior")}
-            </label>
-            {behaviors.size === 0 ? (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
-                ⚠️ {t("Behaviors not loaded from keyboard.")}
-              </div>
-            ) : (
-              <BehaviorDropdown
-                behaviors={behaviors}
-                selectedBehaviorId={selectedBehavior}
-                onSelect={handleBehaviorSelect}
-                onQuickSelect={handleBehaviorSelect}
-                quickSelects={behaviorQuickSelects}
-              />
+        {!floating && (
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        )}
+        <div
+          className={
+            floating
+              ? "fixed inset-0 z-50 overflow-hidden pointer-events-none [contain:paint]"
+              : "contents"
+          }
+        >
+          <Dialog.Content
+            ref={floatingWindow.ref}
+            style={floatingWindow.style}
+            aria-describedby={undefined}
+            onCloseAutoFocus={(event) => {
+              // A mode switch replaces the Radix focus scope. Its delayed
+              // cleanup must not move focus out of the newly opened dialog.
+              if (activePresentation.current !== presentation)
+                event.preventDefault();
+            }}
+            onInteractOutside={
+              floating ? (event) => event.preventDefault() : undefined
+            }
+            className={
+              floating
+                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+            }
+          >
+            {error && (
+              <p role="alert" className="px-4 text-sm text-red-500">
+                {error}
+              </p>
             )}
-          </div>
-
-          {/* Parameter Selection - Horizontal Layout */}
-          {selectedBehaviorInfo && needsAnyParam && (
-            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-              {/* Parameters Label */}
-              <div className="px-4 pt-4 pb-1 hidden tablet:block">
-                <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
-                  {t("Parameters")}
-                </label>
-              </div>
-              {/* Parameter Tabs (Horizontal) */}
-              <div className="flex border-b border-[var(--color-border)] mx-4 mb-2">
-                {needsParam1 && (
-                  <button
-                    className={`flex-1 p-2 text-center transition-colors border-b-2 ${
-                      activeParam === 1
-                        ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                    }`}
-                    onClick={() => setActiveParam(1)}
-                  >
-                    <div className="font-medium text-xs">
-                      {t("param1")}:
-                      <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo, 1, t)}
-                      </span>
-                    </div>
-                    <div
-                      className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                        activeParam === 1 ? "font-bold text-base" : ""
-                      }`}
-                    >
-                      {formatParamValue(
-                        selectedBehaviorInfo,
-                        param1,
-                        param2,
-                        1,
-                        layers,
-                        keyboardLayout,
-                        runtimeMacros,
-                      )}
-                    </div>
-                  </button>
+            <fieldset
+              disabled={busy}
+              className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
+            >
+              {/* Header with Cancel Button */}
+              <div
+                {...floatingWindow.handleProps}
+                className={`flex items-center border-b border-[var(--color-border)] shrink-0 ${floating ? "gap-1 px-2 py-1 cursor-move touch-none select-none" : "gap-3 p-4"}`}
+              >
+                {floating && (
+                  <IconGripVertical
+                    size={14}
+                    className="shrink-0 text-[var(--color-text-muted)]"
+                  />
                 )}
-                {needsParam2 && (
-                  <button
-                    className={`flex-1 p-2 text-center transition-colors border-b-2 ${
-                      activeParam === 2
-                        ? "border-[var(--color-electric)] text-[var(--color-electric)]"
-                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]/50"
-                    }`}
-                    onClick={() => setActiveParam(2)}
-                  >
-                    <div className="font-medium text-xs">
-                      {t("param2")}:
-                      <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo, 2, t)}
-                      </span>
-                    </div>
-                    <div
-                      className={`mt-0.5 font-mono text-sm text-[var(--color-neon)] ${
-                        activeParam === 2 ? "font-bold text-base" : ""
-                      }`}
-                    >
-                      {formatParamValue(
-                        selectedBehaviorInfo,
-                        param1,
-                        param2,
-                        2,
-                        layers,
-                        keyboardLayout,
-                        runtimeMacros,
+                {toolbar}
+                <Dialog.Title className="sr-only">
+                  {t("Select Key Binding")}
+                </Dialog.Title>
+                <div className="ml-auto flex items-center gap-1">
+                  {!floating && (
+                    <EditorTooltip
+                      content={t(
+                        "Apply the binding after selecting its final parameter",
                       )}
-                    </div>
-                  </button>
-                )}
-              </div>
-
-              {/* Parameter Description */}
-              <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] hidden tablet:block">
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  {activeParam === 1
-                    ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
-                    : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
-                </p>
-              </div>
-
-              {/* Parameter Value Selector */}
-              <div className="flex-1 p-4 overflow-hidden flex flex-col">
-                {activeParam === 1 && needsParam1
-                  ? renderParamValueSelector(
-                      param1,
-                      param2,
-                      handleParam1Change,
-                      1,
-                    )
-                  : activeParam === 2 && needsParam2
-                    ? renderParamValueSelector(
-                        param1,
-                        param2,
-                        handleParam2Change,
-                        2,
-                      )
-                    : null}
-              </div>
-            </div>
-          )}
-
-          {/* No Parameters Message */}
-          {selectedBehaviorInfo && !needsAnyParam && (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">
-                  {selectedBehaviorInfo.behavior.displayName === "none" ||
-                  selectedBehaviorInfo.behavior.displayName === "trans"
-                    ? "✓"
-                    : "⚡"}
+                    >
+                      <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={closeOnSelect}
+                          onChange={(e) => setCloseOnSelect(e.target.checked)}
+                          className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
+                        />
+                        <span>{t("Close on select")}</span>
+                      </label>
+                    </EditorTooltip>
+                  )}
+                  {hasChanges && (
+                    <EditorTooltip
+                      content={t(
+                        "Restore the binding shown when this editor opened",
+                      )}
+                    >
+                      <button
+                        className="p-1 rounded text-red-600 hover:bg-red-50"
+                        aria-label={t("Revert")}
+                        onClick={handleRevert}
+                      >
+                        <IconRestore size={16} className="animate-pulse" />
+                      </button>
+                    </EditorTooltip>
+                  )}
+                  <EditorTooltip
+                    content={
+                      floating
+                        ? t("Close without applying unfinished edits")
+                        : t("Apply changes and close")
+                    }
+                  >
+                    <Dialog.Close asChild>
+                      <button
+                        className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
+                        aria-label={t("Close")}
+                      >
+                        <IconX
+                          size={20}
+                          className="text-[var(--color-text-muted)]"
+                        />
+                      </button>
+                    </Dialog.Close>
+                  </EditorTooltip>
                 </div>
-                <p className="text-[var(--color-text-secondary)]">
-                  {selectedBehaviorInfo.behavior.displayName}
-                </p>
-                <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                  No parameters needed
-                </p>
               </div>
-            </div>
-          )}
-        </Dialog.Content>
+
+              {/* Behavior Selection */}
+              <div
+                className={`${floating ? "px-2 py-1" : "p-4"} border-b border-[var(--color-border)] shrink-0`}
+              >
+                <label
+                  className={
+                    floating
+                      ? "sr-only"
+                      : "block text-xs font-medium text-[var(--color-text-muted)] mb-1"
+                  }
+                >
+                  {t("Behavior")}
+                </label>
+                {behaviors.size === 0 ? (
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
+                    ⚠️ {t("Behaviors not loaded from keyboard.")}
+                  </div>
+                ) : (
+                  <BehaviorDropdown
+                    compact={floating}
+                    behaviors={behaviors}
+                    selectedBehaviorId={selectedBehavior}
+                    onSelect={handleBehaviorSelect}
+                    onQuickSelect={handleBehaviorSelect}
+                    quickSelects={behaviorQuickSelects}
+                  />
+                )}
+              </div>
+
+              {/* Parameter Selection - Horizontal Layout */}
+              {selectedBehaviorInfo && needsAnyParam && (
+                <div
+                  className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[240px]" : "min-h-0"}`}
+                >
+                  {/* Parameters Label */}
+                  <div
+                    className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
+                  >
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                      {t("Parameters")}
+                    </label>
+                  </div>
+                  {!inlineParamToolbar && parameterTabs}
+
+                  {/* Parameter Description */}
+                  <div
+                    className={`px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] ${floating ? "hidden" : "hidden tablet:block"}`}
+                  >
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {activeParam === 1
+                        ? getParamTypeDescription(selectedBehaviorInfo, 1, t)
+                        : getParamTypeDescription(selectedBehaviorInfo, 2, t)}
+                    </p>
+                  </div>
+
+                  {/* Parameter Value Selector */}
+                  <div
+                    className={`flex-1 ${floating ? "p-2 overflow-y-auto" : "p-4 overflow-hidden"} flex flex-col`}
+                    onFocusCapture={(event) => {
+                      editingNumber.current =
+                        event.target instanceof HTMLInputElement &&
+                        event.target.type === "number";
+                    }}
+                    onBlurCapture={() => {
+                      editingNumber.current = false;
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        floating &&
+                        event.key === "Enter" &&
+                        event.target instanceof HTMLInputElement &&
+                        event.target.type === "number"
+                      ) {
+                        event.preventDefault();
+                        editingNumber.current = false;
+                        if (activeParam === 1) handleParam1Change(param1);
+                        else handleParam2Change(param2);
+                      }
+                    }}
+                  >
+                    {activeParam === 1 && needsParam1
+                      ? renderParamValueSelector(
+                          param1,
+                          param2,
+                          handleParam1Change,
+                          1,
+                          inlineParamToolbar ? parameterTabs : undefined,
+                        )
+                      : activeParam === 2 && needsParam2
+                        ? renderParamValueSelector(
+                            param1,
+                            param2,
+                            handleParam2Change,
+                            2,
+                            inlineParamToolbar ? parameterTabs : undefined,
+                          )
+                        : null}
+                  </div>
+                </div>
+              )}
+
+              {/* No Parameters Message */}
+              {selectedBehaviorInfo && !needsAnyParam && (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">
+                      {selectedBehaviorInfo.behavior.displayName === "none" ||
+                      selectedBehaviorInfo.behavior.displayName === "trans"
+                        ? "✓"
+                        : "⚡"}
+                    </div>
+                    <p className="text-[var(--color-text-secondary)]">
+                      {selectedBehaviorInfo.behavior.displayName}
+                    </p>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                      No parameters needed
+                    </p>
+                  </div>
+                </div>
+              )}
+            </fieldset>
+          </Dialog.Content>
+        </div>
       </Dialog.Portal>
     </Dialog.Root>
   );

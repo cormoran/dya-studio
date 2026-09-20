@@ -8,6 +8,11 @@ import {
 } from "react";
 import {
   IconKeyboard,
+  IconChevronLeft,
+  IconChevronRight,
+  IconArrowsMaximize,
+  IconWindow,
+  IconPlayerTrackNext,
   IconDeviceFloppy,
   IconChevronUp,
   IconChevronDown,
@@ -30,6 +35,7 @@ import { ConnectionContext } from "../components/DeviceConnection";
 import { KeyboardLayoutContext } from "../contexts/KeyboardLayoutContext";
 import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
+import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -73,11 +79,52 @@ export function KeymapPage() {
   // fail→modal→retry path is handled inside useKeymap via runWithUnlock.
   const { requireUnlock: requireUnlocked } = useStudioUnlock();
 
+  const [selectorMode, setSelectorMode] = useState<"modal" | "floating">(() => {
+    try {
+      return localStorage.getItem("keymapSelectorMode") === "floating"
+        ? "floating"
+        : "modal";
+    } catch {
+      return "modal";
+    }
+  });
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    try {
+      return localStorage.getItem("keymapAutoAdvance") !== "false";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("keymapAutoAdvance", String(autoAdvance));
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }, [autoAdvance]);
+  const [isApplyingBinding, setIsApplyingBinding] = useState(false);
+  const applyingBindingRef = useRef(false);
+  const selectionRevision = useRef(0);
+  const closeSelector = useCallback(() => {
+    selectionRevision.current += 1;
+    setShowKeycodeSelector(false);
+    setSelectedKeyPosition(null);
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("keymapSelectorMode", selectorMode);
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }, [selectorMode]);
+
   // Local UI state
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
+  // The info panel and keyboard preview share the same content-column edges.
+  const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
@@ -141,6 +188,7 @@ export function KeymapPage() {
   const handleKeyClick = useCallback(
     (keyPosition: number) =>
       withUnlock(() => {
+        selectionRevision.current += 1;
         setSelectedKeyPosition(keyPosition);
         setShowKeycodeSelector(true);
       }),
@@ -172,12 +220,53 @@ export function KeymapPage() {
     (binding: BehaviorBinding) =>
       withUnlock(async () => {
         if (!currentLayer || selectedKeyPosition === null) return;
-        await keymap.setBinding(currentLayer.id, selectedKeyPosition, binding);
-        setShowKeycodeSelector(false);
-        setSelectedKeyPosition(null);
+        if (applyingBindingRef.current) return;
+        applyingBindingRef.current = true;
+        setIsApplyingBinding(true);
+        const revision = selectionRevision.current;
+        try {
+          const success = await keymap.setBinding(
+            currentLayer.id,
+            selectedKeyPosition,
+            binding,
+          );
+          if (!success || revision !== selectionRevision.current) return;
+          if (selectorMode === "floating" && !autoAdvance) return;
+          const count = Math.min(
+            currentLayer.bindings.length,
+            currentLayout?.keys.length ?? 0,
+          );
+          if (selectorMode === "floating" && selectedKeyPosition + 1 < count) {
+            setSelectedKeyPosition(selectedKeyPosition + 1);
+          } else {
+            closeSelector();
+          }
+        } finally {
+          applyingBindingRef.current = false;
+          setIsApplyingBinding(false);
+        }
       }),
-    [currentLayer, selectedKeyPosition, keymap, withUnlock],
+    [
+      currentLayer,
+      currentLayout,
+      selectedKeyPosition,
+      selectorMode,
+      autoAdvance,
+      keymap,
+      withUnlock,
+      closeSelector,
+    ],
   );
+
+  useEffect(() => {
+    closeSelector();
+  }, [
+    selectedLayerIndex,
+    currentLayout,
+    connection.isConnected,
+    isTabActive,
+    closeSelector,
+  ]);
 
   // Handle save
   const handleSave = useCallback(async () => {
@@ -1040,7 +1129,10 @@ export function KeymapPage() {
           </>
         )}
         {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+        <div
+          ref={keymapContentAnchorRef}
+          className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]"
+        >
           <p className="text-xs text-[var(--color-text-muted)]">
             {connection.isConnected
               ? t(
@@ -1160,11 +1252,102 @@ export function KeymapPage() {
 
       {/* Keycode Selector Dialog */}
       <KeycodeSelector
-        open={showKeycodeSelector}
-        onClose={() => {
-          setShowKeycodeSelector(false);
-          setSelectedKeyPosition(null);
-        }}
+        open={showKeycodeSelector && isTabActive && connection.isConnected}
+        presentation={selectorMode}
+        floatingAnchorRef={keymapContentAnchorRef}
+        selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
+        busy={isApplyingBinding}
+        error={keymap.error}
+        toolbar={
+          selectorMode === "floating" &&
+          selectedKeyPosition !== null &&
+          currentLayer ? (
+            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
+              <span role="status" className="text-xs truncate">
+                {currentLayer.name} ·{" "}
+                {t("Key {{position}} / {{count}}", {
+                  position: selectedKeyPosition + 1,
+                  count: Math.min(
+                    currentLayer.bindings.length,
+                    currentLayout?.keys.length ?? 0,
+                  ),
+                })}
+              </span>
+              <div className="flex gap-1 shrink-0">
+                <EditorTooltip content={t("Automatically select the next key")}>
+                  <button
+                    type="button"
+                    aria-label={t("Auto advance")}
+                    aria-pressed={autoAdvance}
+                    disabled={isApplyingBinding}
+                    onClick={() => setAutoAdvance(!autoAdvance)}
+                    className={`p-1 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                  >
+                    <IconPlayerTrackNext size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Edit the previous key")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Previous key")}
+                    disabled={isApplyingBinding || selectedKeyPosition === 0}
+                    onClick={() => handleKeyClick(selectedKeyPosition - 1)}
+                  >
+                    <IconChevronLeft size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Edit the next key")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Next key")}
+                    disabled={
+                      isApplyingBinding ||
+                      selectedKeyPosition + 1 >=
+                        Math.min(
+                          currentLayer.bindings.length,
+                          currentLayout?.keys.length ?? 0,
+                        )
+                    }
+                    onClick={() => handleKeyClick(selectedKeyPosition + 1)}
+                  >
+                    <IconChevronRight size={16} />
+                  </button>
+                </EditorTooltip>
+                <EditorTooltip content={t("Switch to dialog mode")}>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
+                    aria-label={t("Dialog mode")}
+                    onClick={() => {
+                      selectionRevision.current += 1;
+                      setSelectorMode("modal");
+                    }}
+                  >
+                    <IconArrowsMaximize size={16} />
+                  </button>
+                </EditorTooltip>
+              </div>
+            </div>
+          ) : (
+            <EditorTooltip content={t("Switch to floating mode")}>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--color-border)]"
+                aria-label={t("Floating mode")}
+                onClick={() => {
+                  selectionRevision.current += 1;
+                  setSelectorMode("floating");
+                }}
+              >
+                <IconWindow size={16} />
+                <span>{t("Floating mode")}</span>
+              </button>
+            </EditorTooltip>
+          )
+        }
+        onClose={closeSelector}
         onSelect={handleBindingSelect}
         currentBinding={currentBinding}
         behaviors={keymap.behaviors}
