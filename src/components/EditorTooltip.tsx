@@ -18,6 +18,7 @@ export function EditorTooltip({
   tapToOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [canOpen, setCanOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const origin = useRef<{ x: number; y: number } | undefined>(undefined);
   const held = useRef(false);
@@ -27,7 +28,15 @@ export function EditorTooltip({
     origin.current = undefined;
   };
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    // A trigger can be created underneath a stationary pointer or receive
+    // dialog autofocus. Do not turn that incidental initial state into a tip.
+    const openTimer = window.setTimeout(() => setCanOpen(true), 0);
+    return () => {
+      window.clearTimeout(openTimer);
+      clearTimeout(timer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +58,12 @@ export function EditorTooltip({
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <Tooltip.Root open={open} onOpenChange={setOpen}>
+      <Tooltip.Root
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen || canOpen) setOpen(nextOpen);
+        }}
+      >
         <span
           className="contents"
           onPointerDownCapture={(event) => {

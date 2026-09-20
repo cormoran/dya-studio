@@ -65,7 +65,8 @@ async function promptForSerialPort(
     type: "question",
     title: "Select USB Serial Port",
     message: "Choose the keyboard serial port to connect.",
-    detail: "If multiple ports are listed, pick the one that belongs to your DYA keyboard.",
+    detail:
+      "If multiple ports are listed, pick the one that belongs to your DYA keyboard.",
     buttons,
     cancelId: ports.length,
     defaultId: 0,
@@ -141,50 +142,57 @@ function registerSerialHandlers(session: Session, window: BrowserWindow) {
 }
 
 function registerBluetoothHandlers(window: BrowserWindow) {
-  window.webContents.on("select-bluetooth-device", async (event, devices, callback) => {
-    event.preventDefault();
+  window.webContents.on(
+    "select-bluetooth-device",
+    async (event, devices, callback) => {
+      event.preventDefault();
 
-    pendingBluetoothCallback = callback;
+      pendingBluetoothCallback = callback;
 
-    pendingBluetoothWindow = window;
+      pendingBluetoothWindow = window;
 
-    for (const device of devices) {
-      bluetoothDevices.set(device.deviceId, device);
-    }
-
-    if (bluetoothPromptTimer) {
-      clearTimeout(bluetoothPromptTimer);
-    }
-
-    const promptDelay = bluetoothDevices.size > 0
-      ? BLUETOOTH_DISCOVERY_SETTLE_MS
-      : BLUETOOTH_DISCOVERY_TIMEOUT_MS;
-
-    bluetoothPromptTimer = setTimeout(async () => {
-      const dialogWindow = pendingBluetoothWindow;
-      const selectBluetoothDevice = pendingBluetoothCallback;
-      const discoveredDevices = Array.from(bluetoothDevices.values());
-
-      bluetoothPromptTimer = null;
-      pendingBluetoothWindow = null;
-      pendingBluetoothCallback = null;
-      bluetoothDevices.clear();
-
-      if (!dialogWindow || !selectBluetoothDevice) {
-        return;
+      for (const device of devices) {
+        bluetoothDevices.set(device.deviceId, device);
       }
 
-      let deviceId = "";
-
-      try {
-        deviceId = await promptForBluetoothDevice(dialogWindow, discoveredDevices);
-      } catch (error) {
-        console.error("Failed to choose Bluetooth device:", error);
+      if (bluetoothPromptTimer) {
+        clearTimeout(bluetoothPromptTimer);
       }
 
-      selectBluetoothDevice(deviceId);
-    }, promptDelay);
-  });
+      const promptDelay =
+        bluetoothDevices.size > 0
+          ? BLUETOOTH_DISCOVERY_SETTLE_MS
+          : BLUETOOTH_DISCOVERY_TIMEOUT_MS;
+
+      bluetoothPromptTimer = setTimeout(async () => {
+        const dialogWindow = pendingBluetoothWindow;
+        const selectBluetoothDevice = pendingBluetoothCallback;
+        const discoveredDevices = Array.from(bluetoothDevices.values());
+
+        bluetoothPromptTimer = null;
+        pendingBluetoothWindow = null;
+        pendingBluetoothCallback = null;
+        bluetoothDevices.clear();
+
+        if (!dialogWindow || !selectBluetoothDevice) {
+          return;
+        }
+
+        let deviceId = "";
+
+        try {
+          deviceId = await promptForBluetoothDevice(
+            dialogWindow,
+            discoveredDevices,
+          );
+        } catch (error) {
+          console.error("Failed to choose Bluetooth device:", error);
+        }
+
+        selectBluetoothDevice(deviceId);
+      }, promptDelay);
+    },
+  );
 }
 
 function createWindow() {

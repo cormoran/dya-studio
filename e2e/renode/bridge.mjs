@@ -26,7 +26,10 @@ const tcp = net.createConnection({ host: "127.0.0.1", port: RPC_PORT }, () => {
   console.error(`bridge: TCP connected to Studio relay :${RPC_PORT}`);
 });
 tcp.on("data", (buf) => {
-  if (DEBUG) console.error(`bridge: device->host ${buf.length}B ${buf.subarray(0, 16).toString("hex")}`);
+  if (DEBUG)
+    console.error(
+      `bridge: device->host ${buf.length}B ${buf.subarray(0, 16).toString("hex")}`,
+    );
   if (ws && ws.readyState === ws.OPEN) ws.send(buf);
   else pending.push(buf);
 });
@@ -45,7 +48,10 @@ wss.on("connection", (sock) => {
   sock.binaryType = "nodebuffer";
   while (pending.length) sock.send(pending.shift());
   sock.on("message", (data) => {
-    if (DEBUG) console.error(`bridge: host->device ${data.length}B ${data.subarray(0, 16).toString("hex")}`);
+    if (DEBUG)
+      console.error(
+        `bridge: host->device ${data.length}B ${data.subarray(0, 16).toString("hex")}`,
+      );
     tcp.write(data);
   });
   sock.on("close", () => {

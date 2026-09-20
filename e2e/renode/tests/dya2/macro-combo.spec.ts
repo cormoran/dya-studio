@@ -83,17 +83,23 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
 
   // REVERT: select + delete it (delete_macro re-lists). Selecting reads the
   // slot back, which can transiently fail right after create ("No macro bound
-  // to that slot"), so retry the select+delete until the macro is gone.
+  // to that slot"), so retry the select+delete until the macro is gone. Wait
+  // for the selection RPC to settle before clicking Delete: immediately
+  // re-clicking the list item while Delete is disabled starts another read and
+  // can keep the editor permanently busy on a slow Renode runner.
+  const deleteMacro = page.getByRole("button", {
+    name: "Delete",
+    exact: true,
+  });
   await expect(async () => {
     if ((await macroButton.count()) > 0) {
       await macroButton.click();
-      await page
-        .getByRole("button", { name: "Delete", exact: true })
-        .click({ timeout: 10_000 })
-        .catch(() => {});
+      await expect(deleteMacro).toBeEnabled({ timeout: 60_000 });
+      await deleteMacro.click();
+      await expect(macroButton).toHaveCount(0, { timeout: 90_000 });
     }
     expect(await macroButton.count()).toBe(0);
-  }).toPass({ timeout: 300_000 });
+  }).toPass({ timeout: 300_000, intervals: [5_000] });
   await expect(items).toHaveCount(before.length);
   // Persist the removal if it left a pending change.
   if (await save.isEnabled().catch(() => false)) {

@@ -90,12 +90,13 @@ function isTimeout(value: unknown): value is number {
 }
 
 interface TimeDropdownProps {
+  label: string;
   value: number; // in milliseconds
   onChange: (ms: number) => void;
   presets: { value: number; label: string }[];
 }
 
-function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
+function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [customInput, setCustomInput] = useState("");
@@ -173,6 +174,7 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
       <button
         ref={buttonRef}
         type="button"
+        aria-label={label}
         className="w-40 min-h-9 px-3 py-2 rounded-lg text-sm flex items-center justify-between gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-hover)]"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -583,6 +585,7 @@ export function SettingsPage() {
                     </p>
                   </div>
                   <TimeDropdown
+                    label={t("Idle Timeout")}
                     value={idleTimeout}
                     onChange={handleIdleChange}
                     presets={IDLE_PRESETS}
@@ -599,6 +602,7 @@ export function SettingsPage() {
                     </p>
                   </div>
                   <TimeDropdown
+                    label={t("Sleep Timeout")}
                     value={sleepTimeout}
                     onChange={handleSleepChange}
                     presets={SLEEP_PRESETS}
