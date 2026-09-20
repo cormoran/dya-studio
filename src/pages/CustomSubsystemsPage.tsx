@@ -388,11 +388,11 @@ export function CustomSubsystemsPage() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
             <IconPuzzle size={24} className="text-[var(--color-electric)]" />
           </div>
           <div>

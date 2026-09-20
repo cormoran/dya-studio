@@ -360,9 +360,9 @@ export function MacroComboPage() {
     keymap.error;
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconWand size={24} className="text-[var(--color-electric)]" />
@@ -378,7 +378,7 @@ export function MacroComboPage() {
           </div>
 
           {connection.isConnected && anyAvailable && (
-            <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 className="btn-ghost text-sm flex items-center gap-1.5"
                 onClick={() => void handleRefresh()}

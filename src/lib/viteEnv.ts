@@ -35,15 +35,15 @@ export const BUILD_LABEL: string | null =
   (import.meta.env.VITE_BUILD_LABEL as string | undefined) ||
   (import.meta.env.DEV ? "Dev" : null);
 
+/** True only while running the local Vite development server. */
+export const IS_LOCAL_DEVELOPMENT: boolean = import.meta.env.DEV;
+
 /**
  * OAuth client id issued by Keyboard Abyss (Settings > Developer), or `""` when
  * the build was produced without one.
  *
- * The Import/Export tab is hidden entirely when this is empty — a local
- * `vite dev` without a `.env` should not show a tab whose only action is a login
- * that cannot succeed. Set `VITE_ABYSS_CLIENT_ID` in the build environment
- * (`.github/workflows/test.yml` and `.github/workflows/release.yml`) to enable
- * it.
+ * Set `VITE_ABYSS_CLIENT_ID` in the build environment (`.github/workflows/test.yml`
+ * and `.github/workflows/release.yml`) to enable Abyss OAuth.
  */
 export const ABYSS_CLIENT_ID: string =
   (import.meta.env.VITE_ABYSS_CLIENT_ID as string | undefined) || "";

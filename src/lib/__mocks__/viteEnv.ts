@@ -5,5 +5,6 @@
  */
 export const RPC_LOG_ENABLED = false;
 export const BUILD_LABEL: string | null = null;
+export const IS_LOCAL_DEVELOPMENT = false;
 export const ABYSS_CLIENT_ID = "test-abyss-client-id";
 export const ABYSS_BASE_URL = "";

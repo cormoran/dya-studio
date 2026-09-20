@@ -128,9 +128,9 @@ export function PhysicalKey({
     <button
       type="button"
       className={`
-        relative w-full h-full rounded-lg border cursor-pointer transition-all duration-150
+        physical-key relative w-full h-full rounded-lg border cursor-pointer transition-all duration-150
         flex flex-col items-center justify-center p-1.5 overflow-hidden
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-electric)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-electric)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]
         ${
           isHighlighted
             ? "bg-amber-400/20 border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.45)]"
@@ -156,7 +156,7 @@ export function PhysicalKey({
           font-medium text-center leading-tight break-words line-clamp-2
           ${
             isHighlighted
-              ? "text-amber-100"
+              ? "text-[var(--color-text)]"
               : isModified
                 ? "text-[var(--color-neon)]"
                 : "text-[var(--color-text)]"
@@ -188,7 +188,7 @@ export function PhysicalKey({
   // Always wrap with tooltip to show binding info
   return (
     <div
-      className="absolute"
+      className="physical-key-position absolute"
       style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

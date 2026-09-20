@@ -518,23 +518,27 @@ export function TrackballPage() {
       : undefined;
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-4 sm:p-6 h-full overflow-auto">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
-            <IconPointer size={24} className="text-[var(--color-cyber)]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-medium text-[var(--color-text)]">
-              {t("Trackball Settings")}
-            </h1>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              {t("Adjust sensitivity and behavior via runtime input processor")}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
+              <IconPointer size={24} className="text-[var(--color-cyber)]" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-medium text-[var(--color-text)]">
+                {t("Trackball Settings")}
+              </h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t(
+                  "Adjust sensitivity and behavior via runtime input processor",
+                )}
+              </p>
+            </div>
           </div>
           {isAvailable && (
-            <div className="ml-auto">
+            <div>
               <ResetVersionMenu
                 label={t("Versions")}
                 versions={versionHistory.versions}

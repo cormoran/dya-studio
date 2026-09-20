@@ -17,12 +17,12 @@
     --color-surface-elevated: #363636;
     --color-text: #ffffff;
     --color-text-secondary: rgba(255, 255, 255, 0.7);
-    --color-text-muted: rgba(255, 255, 255, 0.5);
+    --color-text-muted: rgba(255, 255, 255, 0.6);
     --color-border: rgba(255, 255, 255, 0.14);
     --color-border-hover: rgba(255, 255, 255, 0.26);
 
     /* Glass morphism */
-    --glass-bg: rgba(42, 42, 42, 0.90);
+    --glass-bg: rgba(42, 42, 42, 0.9);
     --glass-border: rgba(255, 255, 255, 0.14);
 
     /* Scrollbar */
@@ -37,8 +37,8 @@
     --color-surface: #ffffff;
     --color-surface-elevated: #f1f5f9;
     --color-text: #0f172a;
-    --color-text-secondary: rgba(15, 23, 42, 0.7);
-    --color-text-muted: rgba(15, 23, 42, 0.5);
+    --color-text-secondary: #475569;
+    --color-text-muted: #64748b;
     --color-border: rgba(15, 23, 42, 0.1);
     --color-border-hover: rgba(15, 23, 42, 0.2);
 
@@ -52,8 +52,8 @@
     --scrollbar-thumb-hover: #94a3b8;
 
     /* Adjusted accent colors for better contrast on light */
-    --color-electric: #0099cc;
-    --color-neon: #00b894;
+    --color-electric: #007fa5;
+    --color-neon: #00866b;
     --color-warning: #d97706;
   }
 
@@ -115,14 +115,14 @@
   backdrop-filter: blur(12px);
   border-radius: 0.75rem;
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition:
     background-color 0.3s ease,
     border-color 0.3s ease;
 }
 
 :root.light .glass-card {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .glass-panel {
@@ -140,38 +140,25 @@
 
 .btn-electric {
   position: relative;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  color: white;
-  background: rgba(0, 212, 255, 0.2);
-  border: 1px solid rgba(0, 212, 255, 0.4);
+  color: var(--color-electric);
+  background: color-mix(in srgb, var(--color-electric) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-electric) 35%, transparent);
   transition: all 0.3s ease-out;
   cursor: pointer;
 }
 
-:root.light .btn-electric {
-  color: var(--color-electric);
-  background: rgba(0, 153, 204, 0.1);
-  border: 1px solid rgba(0, 153, 204, 0.3);
+.btn-electric:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-electric) 20%, transparent);
+  border-color: var(--color-electric);
 }
 
-.btn-electric:hover {
-  background: rgba(0, 212, 255, 0.3);
-  border-color: rgba(0, 212, 255, 0.6);
-  box-shadow:
-    0 0 20px rgba(0, 212, 255, 0.4),
-    0 0 40px rgba(0, 212, 255, 0.2);
-}
-
-:root.light .btn-electric:hover {
-  background: rgba(0, 153, 204, 0.2);
-  border-color: rgba(0, 153, 204, 0.5);
-  box-shadow: 0 0 20px rgba(0, 153, 204, 0.2);
-  color: white;
-}
-
-.btn-electric:active {
+.btn-electric:not(:disabled):active {
   transform: scale(0.98);
 }
 
@@ -182,43 +169,33 @@
 
 .btn-neon {
   position: relative;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  color: white;
-  background: rgba(0, 255, 204, 0.2);
-  border: 1px solid rgba(0, 255, 204, 0.4);
+  color: var(--color-neon);
+  background: color-mix(in srgb, var(--color-neon) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-neon) 35%, transparent);
   transition: all 0.3s ease-out;
   cursor: pointer;
 }
 
-:root.light .btn-neon {
-  color: var(--color-neon);
-  background: rgba(0, 184, 148, 0.1);
-  border: 1px solid rgba(0, 184, 148, 0.3);
+.btn-neon:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-neon) 20%, transparent);
+  border-color: var(--color-neon);
 }
 
-.btn-neon:hover {
-  background: rgba(0, 255, 204, 0.3);
-  border-color: rgba(0, 255, 204, 0.6);
-  box-shadow:
-    0 0 20px rgba(0, 255, 204, 0.4),
-    0 0 40px rgba(0, 255, 204, 0.2);
-}
-
-:root.light .btn-neon:hover {
-  background: rgba(0, 184, 148, 0.2);
-  border-color: rgba(0, 184, 148, 0.5);
-  box-shadow: 0 0 20px rgba(0, 184, 148, 0.2);
-  color: white;
-}
-
-.btn-neon:active {
+.btn-neon:not(:disabled):active {
   transform: scale(0.98);
 }
 
 .btn-ghost {
   padding: 0.5rem 1rem;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   border-radius: 0.5rem;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -228,13 +205,24 @@
   cursor: pointer;
 }
 
-.btn-ghost:hover {
+.btn-ghost:not(:disabled):hover {
   color: var(--color-text);
   background: var(--color-border);
 }
 
-.btn-ghost:active {
+.btn-ghost:not(:disabled):active {
   transform: scale(0.98);
+}
+
+.btn-neon:disabled,
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:is(button, a, input, select, textarea, [role="switch"]):focus-visible {
+  outline: 2px solid var(--color-electric);
+  outline-offset: 2px;
 }
 
 .status-indicator {

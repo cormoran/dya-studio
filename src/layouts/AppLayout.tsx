@@ -28,9 +28,9 @@ export function AppLayout({
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-dark">
+    <div className="flex flex-col h-dvh bg-gradient-dark">
       {/* Header */}
-      <header className="relative flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -53,18 +53,22 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           {isConnected ? (
             <>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="status-indicator connected flex-shrink-0" />
-                <span className="text-sm text-[var(--color-text-secondary)]">
+                <span
+                  className="truncate text-sm text-[var(--color-text-secondary)]"
+                  title={deviceName}
+                >
                   {deviceName || t("Connected")}
                 </span>
               </div>
               <button
                 onClick={onDisconnect}
-                className="btn-ghost text-sm flex items-center gap-1.5"
+                aria-label={t("Disconnect")}
+                className="btn-ghost text-sm flex shrink-0 items-center gap-1.5"
               >
                 <IconPlugConnectedX size={18} />
                 <span className="hidden tablet:inline">{t("Disconnect")}</span>
@@ -90,7 +94,7 @@ export function AppLayout({
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="theme-toggle"
+            className="theme-toggle shrink-0"
             aria-label={
               theme === "dark"
                 ? t("Switch to light mode")

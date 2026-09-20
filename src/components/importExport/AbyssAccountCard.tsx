@@ -15,7 +15,7 @@ export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
   const { isAuthenticated, user, isLoading, error, login, logout } = auth;
 
   return (
-    <div className="glass-card p-6">
+    <div className="glass-card p-4 sm:p-6">
       <div className="flex flex-col tablet:flex-row tablet:items-center gap-4">
         <div className="flex items-center gap-3 min-w-0">
           {user?.avatarUrl ? (
@@ -35,7 +35,7 @@ export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
                 ? (user?.displayName ?? user?.username ?? t("Keyboard Abyss"))
                 : t("Keyboard Abyss")}
             </h3>
-            <p className="text-xs text-[var(--color-text-muted)] truncate">
+            <p className="text-xs text-[var(--color-text-muted)] break-words">
               {isAuthenticated
                 ? `@${user?.username ?? ""}`
                 : t("Sign in to import and export keymaps.")}
