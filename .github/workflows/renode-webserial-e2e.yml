@@ -15,12 +15,16 @@
 #   tests/dya2    - the dya2 per-tab specs (dya2 DUT only; the fan-out target)
 # Adding a new DUT is a one-entry edit to that list.
 #
-# Opt-in / path-scoped so it never burdens ordinary PRs (each firmware build is a
-# full Zephyr build, ~15-20 min cold).
+# Path-scoped for PRs so it never burdens ordinary changes (each firmware build
+# is a full Zephyr build, ~15-20 min cold). A daily scheduled run also catches
+# regressions in the external firmware and emulator dependencies.
 name: renode-webserial-e2e
 
 on:
   workflow_dispatch:
+  # GitHub Actions cron uses UTC: 09:00 UTC is 18:00 JST (UTC+09:00).
+  schedule:
+    - cron: "0 9 * * *"
   pull_request:
     paths:
       - "e2e/renode/**"
@@ -36,6 +40,12 @@ env:
   # build source is per-entry in the matrix (`repo`/`ref`/`manifest`/`build`).
   ZMK_WC_REPO: cormoran/zmk-west-commands
   ZMK_WC_REF: main
+
+# The failure-reporting job creates or updates the single open issue used for
+# this workflow's failures. Other jobs only need the default read access.
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   # Single source of truth for the DUT firmware matrix, consumed by both
@@ -100,10 +110,10 @@ jobs:
     outputs:
       # duts: every DUT (build-dut fans out over this -- all firmware builds on
       # every PR). e2e_duts: the DUTs whose e2e runs for THIS event -- all on
-      # manual dispatch, but only non-experimental ones on push/PR (the two-machine
-      # dya2-unlocked emulation can't wire USB CDC on a stock runner, so its e2e
-      # would only ever go red; it stays runnable via workflow_dispatch / a beefier
-      # runner, and its firmware still builds. The single-machine
+      # manual dispatch, but only non-experimental ones on PRs and scheduled
+      # runs (the two-machine dya2-unlocked emulation can't wire USB CDC on a
+      # stock runner, so its e2e would only ever go red; it stays runnable via
+      # workflow_dispatch / a beefier runner, and its firmware still builds. The single-machine
       # dya2-nonsplit-unlocked DUT is NOT experimental and gates on every PR).
       duts: ${{ steps.set.outputs.duts }}
       e2e_duts: ${{ steps.set.outputs.e2e_duts }}
@@ -388,3 +398,96 @@ jobs:
             e2e/renode/renode_serve.err
             e2e/renode/bridge.out
           if-no-files-found: ignore
+
+  report-failure:
+    name: Report failure to GitHub Issue
+    needs: [matrix, build-dut, e2e]
+    # Run after every failed workflow, including a failure before either matrix
+    # job can start. Fork PR tokens cannot write issues, so omit them rather
+    # than turning a reporting permission restriction into another CI failure.
+    if: >-
+      ${{
+        always() &&
+        (needs.matrix.result == 'failure' || needs.build-dut.result == 'failure' || needs.e2e.result == 'failure') &&
+        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update the Renode E2E failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowName = 'renode-webserial-e2e';
+            const issueTitle = `${workflowName}: CI failure`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const failedConclusions = new Set([
+              'failure',
+              'cancelled',
+              'timed_out',
+              'action_required',
+              'startup_failure',
+            ]);
+
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                per_page: 100,
+              },
+            );
+            const failedJobs = jobs.filter((job) => failedConclusions.has(job.conclusion));
+            const jobDetails = failedJobs.length
+              ? failedJobs
+                  .map((job) => `- [${job.name}](${job.html_url}) (\`${job.conclusion}\`)`)
+                  .join('\n')
+              : '- The workflow failed before GitHub reported an individual failed job.';
+            const report = `<!-- ${workflowName}-failure-report -->
+            ## Renode WebSerial E2E CI failure
+
+            - Run: [#${context.runNumber}](${runUrl})
+            - Trigger: \`${context.eventName}\`
+            - Commit: [\`${context.sha.substring(0, 7)}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+            - Ref: \`${context.ref}\`
+
+            ### Failed jobs
+
+            ${jobDetails}
+
+            The linked workflow run contains the full logs and uploaded Playwright artifacts.`;
+
+            const openIssues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                sort: 'created',
+                direction: 'asc',
+                per_page: 100,
+              },
+            );
+            const existingIssue = openIssues.find(
+              (issue) =>
+                !issue.pull_request &&
+                issue.title.toLowerCase().includes(workflowName),
+            );
+
+            if (existingIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: report,
+              });
+              core.info(`Added failure details to issue #${existingIssue.number}.`);
+            } else {
+              const { data: issue } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: report,
+              });
+              core.info(`Created failure issue #${issue.number}.`);
+            }

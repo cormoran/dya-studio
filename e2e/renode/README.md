@@ -77,9 +77,11 @@ E2E_DEBUG=1 ...   # verbose page/shim/bridge byte logging
 ```
 
 CI wiring lives in `.github/workflows/renode-webserial-e2e.yml` (builds the real
-DUT from zmk-west-commands' fixtures, then runs this). To point at a real dya
-keyboard, build its own `studio-rpc-usb-uart` firmware and set `DEVICE_NAME` to
-its keyboard name.
+DUT from zmk-west-commands' fixtures, then runs this). It runs on relevant PRs,
+manual dispatch, and every day at 18:00 JST; a failure creates or updates one
+open `renode-webserial-e2e` Issue with links to the failed job logs. To point at
+a real dya keyboard, build its own `studio-rpc-usb-uart` firmware and set
+`DEVICE_NAME` to its keyboard name.
 
 ## Toward the real flashable image over a real OS serial port (next step)
 
