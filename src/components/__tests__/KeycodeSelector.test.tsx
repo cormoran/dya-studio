@@ -203,3 +203,76 @@ it("shows a caller-provided target identity in modal and floating presentations"
     "Base · Key position 1: B",
   );
 });
+
+it("names modal apply and floating discard actions, and skips unchanged modal callbacks", async () => {
+  const user = userEvent.setup();
+  const onClose = jest.fn();
+  const onSelect = jest.fn();
+  const { rerender } = render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(onSelect).not.toHaveBeenCalled();
+
+  rerender(
+    <KeycodeSelector
+      open
+      presentation="floating"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+  expect(
+    screen.getByRole("button", {
+      name: "Close without applying unfinished edits",
+    }),
+  ).toBeInTheDocument();
+});
+
+it("applies a changed modal draft when its apply action closes the editor", async () => {
+  localStorage.setItem("keycodeSelectorCloseOnSelect", "false");
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const keypress = BEHAVIORS.find(
+    (behavior) => behavior.displayName === "Key Press",
+  )!;
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: keypress.id, param1: 0x70004, param2: 0 }}
+      behaviors={new Map([[keypress.id, keypress]])}
+      layers={[]}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "B", exact: true }));
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: keypress.id,
+    param1: 0x70005,
+    param2: 0,
+  });
+});

@@ -59,8 +59,18 @@ describe("SensorRotationConfig", () => {
   async function setupSensors(sensorCount = 1) {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     // Different directional bindings catch accidental copying of CW into CCW.
-    const cwBinding = { behaviorId: 1, param1: 4, param2: 0, tapMs: 5 };
-    const ccwBinding = { behaviorId: 1, param1: 5, param2: 0, tapMs: 5 };
+    const cwBinding = {
+      behaviorId: 1,
+      param1: 0x70004,
+      param2: 0,
+      tapMs: 5,
+    };
+    const ccwBinding = {
+      behaviorId: 1,
+      param1: 0x70005,
+      param2: 0,
+      tapMs: 5,
+    };
     const setLayerCwBindings = jest.fn().mockResolvedValue(true);
     const setLayerCcwBindings = jest.fn().mockResolvedValue(true);
     const getAllLayerBindings = jest
@@ -105,6 +115,35 @@ describe("SensorRotationConfig", () => {
   }
 
   describe("Tap Time Debouncing", () => {
+    test("names each sensor group, direction binding, and tap-time input", async () => {
+      await setupSensors(2);
+
+      const firstSensor = screen.getByRole("group", {
+        name: "Encoder 1 · Sensor 0 · Layer 0: Default",
+      });
+      expect(
+        screen.getByRole("group", {
+          name: "Encoder 2 · Sensor 1 · Layer 0: Default",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Counter-clockwise: Trans",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Clockwise: Trans",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("spinbutton", {
+          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Tap Time",
+        }),
+      ).toHaveAttribute("aria-describedby", "sensor-tap-time-description-0");
+      expect(firstSensor).toHaveTextContent("Time between rotation triggers");
+    });
+
     test("keeps changes pending until 1500ms, then updates both directional bindings once", async () => {
       const {
         user,

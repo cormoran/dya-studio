@@ -290,6 +290,29 @@ export function SensorRotationConfig({
     [],
   );
 
+  const selectedLayer = layers.find((layer) => layer.id === selectedLayerId);
+  const selectedLayerLabel = selectedLayer
+    ? `${t("Layer {{id}}", { id: selectedLayerId })}: ${selectedLayer.name}`
+    : t("Layer {{id}}", { id: selectedLayerId });
+
+  const selectorTargetLabel = useMemo(() => {
+    if (!editingConfig) return undefined;
+    const sensor = sensorRotate.sensors.find(
+      ({ index }) => index === editingConfig.sensorIndex,
+    );
+    const sensorLabel =
+      sensor?.name || `${t("Rotary Encoder")} ${editingConfig.sensorIndex}`;
+    const sensorIdentifier = t("Sensor {{id}}", {
+      id: editingConfig.sensorIndex,
+    });
+    const direction =
+      editingConfig.direction === "clockwise"
+        ? t("Clockwise")
+        : t("Counter-clockwise");
+
+    return `${sensorLabel} · ${sensorIdentifier} · ${selectedLayerLabel} · ${direction}`;
+  }, [editingConfig, selectedLayerLabel, sensorRotate.sensors, t]);
+
   return (
     <>
       <div className="glass-card p-4 sm:p-6">
@@ -312,14 +335,24 @@ export function SensorRotationConfig({
             );
             const cwBinding = layerBindings?.cwBinding;
             const ccwBinding = layerBindings?.ccwBinding;
+            const sensorLabel =
+              sensor.name || `${t("Rotary Encoder")} ${sensor.index}`;
+            const sensorIdentifier = t("Sensor {{id}}", { id: sensor.index });
+            const sensorContext = `${sensorLabel} · ${sensorIdentifier} · ${selectedLayerLabel}`;
+            const headingId = `sensor-${sensor.index}-heading`;
+            const tapTimeDescriptionId = `sensor-tap-time-description-${sensor.index}`;
 
             return (
-              <div
+              <fieldset
                 key={sensor.index}
+                aria-labelledby={headingId}
                 className="flex-1 min-w-0 basis-[280px] max-w-[400px] p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
               >
                 {/* Sensor Name */}
-                <div className="flex items-center gap-2 mb-4">
+                <legend className="flex w-full items-center gap-2 mb-4 p-0">
+                  <span id={headingId} className="sr-only">
+                    {sensorContext}
+                  </span>
                   <div className="w-8 h-8 rounded-full bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20 flex items-center justify-center">
                     <span className="text-xs font-mono text-[var(--color-electric)]">
                       {sensor.index}
@@ -327,13 +360,13 @@ export function SensorRotationConfig({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[var(--color-text)]">
-                      {sensor.name}
+                      {sensorLabel}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {t("Rotary Encoder")}
+                      {selectedLayerLabel}
                     </p>
                   </div>
-                </div>
+                </legend>
 
                 {/* Rotation Bindings */}
                 <div className="space-y-3">
@@ -352,6 +385,7 @@ export function SensorRotationConfig({
                       </div>
                       <button
                         className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
+                        aria-label={`${sensorContext} · ${t("Counter-clockwise")}: ${getBindingDisplayName(ccwBinding)}`}
                         onClick={() =>
                           handleBindingClick(sensor.index, "counterClockwise")
                         }
@@ -372,6 +406,7 @@ export function SensorRotationConfig({
                       </div>
                       <button
                         className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
+                        aria-label={`${sensorContext} · ${t("Clockwise")}: ${getBindingDisplayName(cwBinding)}`}
                         onClick={() =>
                           handleBindingClick(sensor.index, "clockwise")
                         }
@@ -396,6 +431,8 @@ export function SensorRotationConfig({
                           type="number"
                           min={1}
                           className="w-full min-w-0 h-full px-3 rounded-md text-base tablet:text-sm tabular-nums text-[var(--color-text-secondary)] bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-electric)] text-right"
+                          aria-label={`${sensorContext} · ${t("Tap Time")}`}
+                          aria-describedby={tapTimeDescriptionId}
                           value={
                             pendingTapTimes.get(sensor.index) ??
                             cwBinding?.tapMs ??
@@ -414,7 +451,9 @@ export function SensorRotationConfig({
                       </div>
                     </div>
                     <div className="text-xs text-[var(--color-text-muted)] flex flex-wrap items-center gap-1 justify-between my-2">
-                      <span>{t("Time between rotation triggers")}</span>
+                      <span id={tapTimeDescriptionId}>
+                        {t("Time between rotation triggers")}
+                      </span>
                       {pendingTapTimes.has(sensor.index) && (
                         <span className="text-[var(--color-electric)] ml-1">
                           {t("pending to save...")}
@@ -434,7 +473,7 @@ export function SensorRotationConfig({
                     </div>
                   )}
                 </div>
-              </div>
+              </fieldset>
             );
           })}
         </div>
@@ -467,18 +506,7 @@ export function SensorRotationConfig({
       {/* Behavior Selector Dialog */}
       <KeycodeSelector
         open={showBehaviorSelector}
-        targetLabel={
-          editingConfig
-            ? `${t("Rotary Encoder")} ${editingConfig.sensorIndex} · ${
-                editingConfig.direction === "clockwise"
-                  ? t("Clockwise")
-                  : t("Counter-clockwise")
-              } · ${
-                layers.find((layer) => layer.id === selectedLayerId)?.name ??
-                t("Layer {{index}}", { index: selectedLayerId })
-              }`
-            : undefined
-        }
+        targetLabel={selectorTargetLabel}
         onClose={() => {
           setShowBehaviorSelector(false);
           setEditingConfig(null);

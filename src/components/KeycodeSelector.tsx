@@ -431,8 +431,9 @@ export function KeycodeSelector({
         setActiveParam(1);
         setWasOpened(true);
       } else {
-        // Always apply changes when closing
-        if (!floating && selectedBehavior !== null && wasOpened) {
+        // A no-op close must not make callers dirty by resending the initial
+        // binding. A changed modal draft still applies when it closes.
+        if (!floating && selectedBehavior !== null && wasOpened && hasChanges) {
           setWasOpened(false);
           onSelect({
             behaviorId: selectedBehavior,
@@ -458,6 +459,7 @@ export function KeycodeSelector({
       onSelect,
       wasOpened,
       floating,
+      hasChanges,
     ],
   );
 
@@ -734,7 +736,7 @@ export function KeycodeSelector({
               disabled={busy}
               className="flex flex-col flex-1 min-h-0 min-w-0 overflow-y-auto"
             >
-              {/* Header with Cancel Button */}
+              {/* Header with mode-specific ending action */}
               <div
                 {...floatingWindow.handleProps}
                 className={`flex items-center border-b border-[var(--color-border)] shrink-0 ${floating ? "gap-1 px-2 py-1 cursor-move touch-none select-none" : "gap-3 p-4"}`}
@@ -811,12 +813,23 @@ export function KeycodeSelector({
                     <Dialog.Close asChild>
                       <button
                         className="p-1 rounded hover:bg-[var(--color-border)] transition-colors"
-                        aria-label={t("Close")}
+                        aria-label={
+                          floating
+                            ? t("Close without applying unfinished edits")
+                            : t("Apply changes and close")
+                        }
                       >
-                        <IconX
-                          size={20}
-                          className="text-[var(--color-text-muted)]"
-                        />
+                        {floating ? (
+                          <IconX
+                            size={20}
+                            className="text-[var(--color-text-muted)]"
+                          />
+                        ) : (
+                          <IconCheck
+                            size={20}
+                            className="text-[var(--color-electric)]"
+                          />
+                        )}
                       </button>
                     </Dialog.Close>
                   </EditorTooltip>
