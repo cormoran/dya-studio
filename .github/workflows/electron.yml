@@ -18,6 +18,11 @@ on:
         required: false
         type: string
 
+# The build jobs only need to read the requested source revision. The release
+# job below overrides this with the narrow write permission it needs.
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest

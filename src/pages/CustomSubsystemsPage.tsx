@@ -64,8 +64,12 @@ const SUPPORTED_SUBSYSTEM_IDENTIFIERS = new Set<string>([
 
 type Subsystem = ListCustomSubsystemResponse["subsystems"][number];
 
-// LocalStorage key for trusted subsystem UI URLs
-const TRUSTED_URLS_KEY = "dya-studio-trusted-subsystem-urls";
+// Store an irreversible URL digest rather than a firmware-provided external
+// URL. The digest still lets us match the exact URL the user approved without
+// leaving their approval history as clear text in browser storage.
+const APPROVED_URL_DIGESTS_KEY = "dya-studio-approved-subsystem-url-digests";
+const LEGACY_TRUSTED_URLS_KEY = "dya-studio-trusted-subsystem-urls";
+const SHA_256_HEX = /^[a-f0-9]{64}$/;
 
 function isValidUrl(value: string): boolean {
   try {
@@ -76,15 +80,15 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-function getTrustedUrls(): Set<string> {
+function getApprovedUrlDigests(): Set<string> {
   try {
-    const stored = localStorage.getItem(TRUSTED_URLS_KEY);
+    const stored = localStorage.getItem(APPROVED_URL_DIGESTS_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as unknown;
       if (Array.isArray(parsed)) {
         return new Set(
           (parsed as unknown[]).filter(
-            (v): v is string => typeof v === "string" && isValidUrl(v),
+            (v): v is string => typeof v === "string" && SHA_256_HEX.test(v),
           ),
         );
       }
@@ -95,21 +99,85 @@ function getTrustedUrls(): Set<string> {
   return new Set();
 }
 
-function saveTrustedUrl(url: string): void {
+function getLegacyTrustedUrls(): Set<string> {
   try {
-    const trusted = getTrustedUrls();
-    trusted.add(url);
-    // Trusted URLs are not sensitive data — they are UI links the user
-    // explicitly approved. Stored as plain text intentionally.
-    localStorage.setItem(TRUSTED_URLS_KEY, JSON.stringify(Array.from(trusted)));
+    const stored = localStorage.getItem(LEGACY_TRUSTED_URLS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as unknown;
+      if (Array.isArray(parsed)) {
+        return new Set(
+          (parsed as unknown[]).filter(
+            (value): value is string =>
+              typeof value === "string" && isValidUrl(value),
+          ),
+        );
+      }
+    }
   } catch {
     // Ignore storage errors
+  }
+  return new Set();
+}
+
+async function digestUrl(url: string): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(url),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+async function migrateLegacyTrustedUrls(): Promise<void> {
+  const legacyUrls = getLegacyTrustedUrls();
+  if (legacyUrls.size === 0) {
+    return;
+  }
+
+  const approvedDigests = getApprovedUrlDigests();
+  const legacyDigests = await Promise.all(
+    Array.from(legacyUrls, (url) => digestUrl(url)),
+  );
+  legacyDigests.forEach((digest) => approvedDigests.add(digest));
+
+  // Write the replacement first so a storage failure does not discard an
+  // existing approval. Once this succeeds, remove every plain-text legacy URL.
+  localStorage.setItem(
+    APPROVED_URL_DIGESTS_KEY,
+    JSON.stringify(Array.from(approvedDigests)),
+  );
+  localStorage.removeItem(LEGACY_TRUSTED_URLS_KEY);
+}
+
+async function isUrlApproved(url: string): Promise<boolean> {
+  try {
+    await migrateLegacyTrustedUrls();
+    return getApprovedUrlDigests().has(await digestUrl(url));
+  } catch {
+    // Treat unavailable storage or Web Crypto as an unapproved URL so the user
+    // still receives the confirmation dialog.
+    return false;
+  }
+}
+
+async function saveUrlApproval(url: string): Promise<void> {
+  try {
+    await migrateLegacyTrustedUrls();
+    const approvedDigests = getApprovedUrlDigests();
+    approvedDigests.add(await digestUrl(url));
+    localStorage.setItem(
+      APPROVED_URL_DIGESTS_KEY,
+      JSON.stringify(Array.from(approvedDigests)),
+    );
+  } catch {
+    // Opening the URL does not depend on retaining the approval.
   }
 }
 
 interface ExternalLinkWarningDialogProps {
   url: string;
-  onConfirm: (dontShowAgain: boolean) => void;
+  onConfirm: (dontShowAgain: boolean) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -195,7 +263,7 @@ function ExternalLinkWarningDialog({
           </button>
           <button
             className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors flex items-center gap-2"
-            onClick={() => onConfirm(dontShowAgain)}
+            onClick={() => void onConfirm(dontShowAgain)}
           >
             <IconExternalLink size={16} />
             {t("Open")}
@@ -293,7 +361,7 @@ function DemoSubsystemToggles() {
 
 interface SubsystemCardProps {
   subsystem: Subsystem;
-  onLinkClick: (url: string) => void;
+  onLinkClick: (url: string) => Promise<void>;
 }
 
 function SubsystemCard({ subsystem, onLinkClick }: SubsystemCardProps) {
@@ -327,7 +395,7 @@ function SubsystemCard({ subsystem, onLinkClick }: SubsystemCardProps) {
             <button
               key={urlIndex}
               className="flex items-center gap-2 text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors group w-full text-left"
-              onClick={() => onLinkClick(url)}
+              onClick={() => void onLinkClick(url)}
             >
               <IconExternalLink
                 size={14}
@@ -365,23 +433,23 @@ export function CustomSubsystemsPage() {
     navigateTo(url);
   };
 
-  const handleLinkClick = (url: string) => {
-    const trusted = getTrustedUrls();
-    if (trusted.has(url)) {
+  const handleLinkClick = async (url: string) => {
+    if (await isUrlApproved(url)) {
       navigate(url);
     } else {
       setPendingUrl(url);
     }
   };
 
-  const handleConfirm = (dontShowAgain: boolean) => {
-    if (pendingUrl) {
-      if (dontShowAgain) {
-        saveTrustedUrl(pendingUrl);
-      }
-      navigate(pendingUrl);
-    }
+  const handleConfirm = async (dontShowAgain: boolean) => {
+    const url = pendingUrl;
     setPendingUrl(null);
+    if (url) {
+      if (dontShowAgain) {
+        await saveUrlApproval(url);
+      }
+      navigate(url);
+    }
   };
 
   const handleCancel = () => {

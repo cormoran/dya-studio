@@ -7,6 +7,10 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
+# Jobs override this only where preview deployment or PR comments require it.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
