@@ -1,7 +1,7 @@
 /**
  * Tests for CustomSubsystemsPage component
  */
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CustomSubsystemsPage } from "../CustomSubsystemsPage";
 import {
   ZMKAppProvider,
@@ -14,8 +14,8 @@ jest.mock("../../lib/navigate");
 import { navigateTo } from "../../lib/navigate";
 const mockNavigateTo = navigateTo as jest.MockedFunction<typeof navigateTo>;
 
-// LocalStorage key used by the component
-const TRUSTED_URLS_KEY = "dya-studio-trusted-subsystem-urls";
+const APPROVED_URL_DIGESTS_KEY = "dya-studio-approved-subsystem-url-digests";
+const LEGACY_TRUSTED_URLS_KEY = "dya-studio-trusted-subsystem-urls";
 
 describe("CustomSubsystemsPage", () => {
   beforeEach(() => {
@@ -323,83 +323,91 @@ describe("CustomSubsystemsPage", () => {
         ...zmkAppOverrides,
       });
 
-    it("should show security warning dialog when URL is clicked", () => {
+    it("should show security warning dialog when URL is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
 
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
       expect(screen.getByText("External Link Warning")).toBeInTheDocument();
     });
 
-    it("should display the URL in the warning dialog", () => {
+    it("should display the URL in the warning dialog", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
 
-      expect(
-        screen.getAllByText("https://example.com/ui").length,
-      ).toBeGreaterThan(1);
+      await waitFor(() =>
+        expect(
+          screen.getAllByText("https://example.com/ui").length,
+        ).toBeGreaterThan(1),
+      );
     });
 
-    it("should display security notice text", () => {
+    it("should display security notice text", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
 
       expect(
-        screen.getByText(/please do not connect to an unreliable author/i),
+        await screen.findByText(
+          /please do not connect to an unreliable author/i,
+        ),
       ).toBeInTheDocument();
     });
 
-    it("should close the dialog when Cancel is clicked", () => {
+    it("should close the dialog when Cancel is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Cancel"));
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    it("should close the dialog when backdrop is clicked", () => {
+    it("should close the dialog when backdrop is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
       // Click on the backdrop (the dialog element itself)
       fireEvent.click(screen.getByRole("dialog"));
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    it("should close the dialog when close button is clicked", () => {
+    it("should close the dialog when close button is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
       fireEvent.click(screen.getByLabelText("Close dialog"));
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    it("should navigate in current tab when 'Open' is clicked", () => {
+    it("should navigate in current tab when 'Open' is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      fireEvent.click(screen.getByText("Open"));
+      fireEvent.click(await screen.findByText("Open"));
 
-      expect(mockNavigateTo).toHaveBeenCalledWith("https://example.com/ui");
+      await waitFor(() =>
+        expect(mockNavigateTo).toHaveBeenCalledWith("https://example.com/ui"),
+      );
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    it("should disconnect before navigating when 'Open' is clicked", () => {
+    it("should disconnect before navigating when 'Open' is clicked", async () => {
       const { mockZMKApp } = renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      fireEvent.click(screen.getByText("Open"));
+      fireEvent.click(await screen.findByText("Open"));
 
-      expect(mockZMKApp.disconnect).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(mockZMKApp.disconnect).toHaveBeenCalledTimes(1),
+      );
     });
   });
 
@@ -423,44 +431,48 @@ describe("CustomSubsystemsPage", () => {
         },
       });
 
-    it("should show 'don't show again' checkbox in the dialog", () => {
+    it("should show 'don't show again' checkbox in the dialog", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
 
       expect(
-        screen.getByLabelText(/trust this url and don't warn/i),
+        await screen.findByLabelText(/trust this url and don't warn/i),
       ).toBeInTheDocument();
     });
 
-    it("should save URL to localStorage when 'don't show again' is checked and Open is clicked", () => {
+    it("should store only a URL digest when 'don't show again' is checked and Open is clicked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
-      fireEvent.click(screen.getByLabelText(/trust this url and don't warn/i));
+      fireEvent.click(
+        await screen.findByLabelText(/trust this url and don't warn/i),
+      );
       fireEvent.click(screen.getByText("Open"));
 
-      const stored = JSON.parse(
-        localStorage.getItem(TRUSTED_URLS_KEY) ?? "[]",
-      ) as string[];
-      expect(stored).toContain("https://example.com/ui");
+      await waitFor(() => {
+        const stored = JSON.parse(
+          localStorage.getItem(APPROVED_URL_DIGESTS_KEY) ?? "[]",
+        ) as string[];
+        expect(stored).toHaveLength(1);
+        expect(stored[0]).toMatch(/^[a-f0-9]{64}$/);
+      });
     });
 
-    it("should not save URL to localStorage when 'don't show again' is unchecked", () => {
+    it("should not save URL to localStorage when 'don't show again' is unchecked", async () => {
       renderWithSubsystems();
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
       // leave checkbox unchecked
-      fireEvent.click(screen.getByText("Open"));
+      fireEvent.click(await screen.findByText("Open"));
 
-      const stored = localStorage.getItem(TRUSTED_URLS_KEY);
+      const stored = localStorage.getItem(APPROVED_URL_DIGESTS_KEY);
       expect(stored).toBeNull();
     });
 
-    it("should skip the warning dialog for trusted URLs", () => {
-      // Pre-populate trusted URLs
+    it("should migrate legacy approvals and skip the warning dialog", async () => {
       localStorage.setItem(
-        TRUSTED_URLS_KEY,
+        LEGACY_TRUSTED_URLS_KEY,
         JSON.stringify(["https://example.com/ui"]),
       );
 
@@ -468,10 +480,11 @@ describe("CustomSubsystemsPage", () => {
 
       fireEvent.click(screen.getByText("https://example.com/ui"));
 
-      // Dialog should NOT appear
+      await waitFor(() =>
+        expect(mockNavigateTo).toHaveBeenCalledWith("https://example.com/ui"),
+      );
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      // Should navigate directly
-      expect(mockNavigateTo).toHaveBeenCalledWith("https://example.com/ui");
+      expect(localStorage.getItem(LEGACY_TRUSTED_URLS_KEY)).toBeNull();
     });
   });
 });

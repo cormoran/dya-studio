@@ -6,10 +6,19 @@ import "@testing-library/jest-dom";
 import { TextEncoder, TextDecoder } from "util";
 import { ReadableStream, WritableStream, TransformStream } from "stream/web";
 import { BroadcastChannel } from "worker_threads";
+import { webcrypto } from "crypto";
 
 // Polyfill TextEncoder and TextDecoder for protobuf support
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
+
+// jsdom does not expose Web Crypto. Use Node's standards-compatible
+// implementation so browser code that hashes locally persisted values follows
+// the same path in tests.
+Object.defineProperty(globalThis, "crypto", {
+  configurable: true,
+  value: webcrypto,
+});
 
 // Mock Web Serial API for testing with configurable property
 Object.defineProperty(navigator, "serial", {
