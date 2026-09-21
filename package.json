@@ -123,19 +123,5 @@
       ],
       "category": "Development"
     }
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:rolldown-vite@7.2.5"
-    },
-    "ignoredBuiltDependencies": [
-      "protobufjs"
-    ],
-    "onlyBuiltDependencies": [
-      "@cormoran/zmk-studio-react-hook",
-      "@zmkfirmware/zmk-studio-ts-client",
-      "electron",
-      "electron-builder"
-    ]
   }
 }
