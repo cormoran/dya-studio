@@ -14,14 +14,16 @@
 
 ## 機能要求
 
-| ID       | できるべきこと                                                        | 出典・確度     |
-| -------- | --------------------------------------------------------------------- | -------------- |
-| BIND-R01 | behavior とその parameter 型に応じた値を選択できる                    | S1/S2 から推定 |
-| BIND-R02 | 編集対象や presentation が変わっても、別対象の draft を誤って送らない | S1/S3 から推定 |
+| ID       | できるべきこと                                                                         | 出典・確度                                                         |
+| -------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| BIND-R01 | behavior とその parameter 型に応じた値を選択できる                                     | S1/S2 から推定                                                     |
+| BIND-R02 | 編集対象や presentation が変わっても、別対象の draft を誤って送らない                  | S1/S3 から推定                                                     |
+| BIND-R03 | editor の表示だけから、現在編集する caller 固有の対象を判定できる                      | [#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求 |
+| BIND-R04 | 終了操作の accessible name と実際の適用/破棄を一致させ、無変更では callback を送らない | [#210](https://github.com/cormoran/dya-studio/issues/210) 明示要求 |
 
 ## 前提・状態
 
-caller が open、currentBinding、behaviors、layers と onSelect を渡す。parameter 型で keycode、layer、数値等の入力が変わる。候補は device の behavior metadata と fallback に依存する。未接続/unsupported は caller の表示条件で制御し、この component 単独の接続画面はない。busy 時 fieldset 無効、error prop があると editor 内に alert。保存は caller の責務。
+caller が open、currentBinding、behaviors、layers と onSelect を渡す。`targetLabel` は caller が持つ対象 ID（keymap の layer/position/binding、sensor の回転方向、macro step、combo 等）で、modal/floating の header に表示する。parameter 型で keycode、layer、数値等の入力が変わる。候補は device の behavior metadata と fallback に依存する。未接続/unsupported は caller の表示条件で制御し、この component 単独の接続画面はない。busy 時 fieldset 無効、error prop があると editor 内に alert。保存は caller の責務。
 
 ## 現行の機能仕様
 
@@ -29,25 +31,29 @@ BIND-011: floating editor は680pxを上限にviewport幅内へ収まり、狭�
 
 BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モバイルブラウザのfocus時自動拡大を避ける。modalの選択済みbehavior名と説明は1行を維持し、利用可能幅を超える部分をellipsisで省略する。完全な文言はaccessible nameに保持する。根拠はS4/S5。ユーザーのモバイル最適化要求（2026-09-20）による。
 
-| ID       | 前提 → 操作                                         | 観測できる結果                                                                          | 保存範囲・副作用                                                        | 根拠                       |
-| -------- | --------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------- |
-| BIND-001 | editor を開く / selectionKey 変更                   | currentBinding の behavior/param1/param2 を初期値とし param1 を選択                     | draft を初期化                                                          | S1 handleOpenChange/effect |
-| BIND-002 | behavior を変更                                     | 両 parameter を 0 に戻す。不要なら最終値扱い、必要なら該当入力を表示                    | Close on select 有効時、parameter 不要 behavior は即 callback           | S1                         |
-| BIND-003 | modal、Close on select ON で最後の parameter を選ぶ | callback 後閉じる。OFF なら draft に保持                                                | `keycodeSelectorCloseOnSelect` localStorage。callback と flash 保存は別 | S1                         |
-| BIND-004 | modal の Close / Escape / 外側クリック              | 現在値を callback に渡して閉じる。Close tooltip は `Apply changes and close`            | OFF にしても閉じる時は適用                                              | S1 handleOpenChange        |
-| BIND-005 | floating の Close / Escape                          | 未完 draft を適用せず閉じる。外側クリックだけでは閉じない                               | 完了済み callback の変更は取り消さない                                  | S1                         |
-| BIND-006 | Revert                                              | 開いた時の値と param1 選択へ戻る                                                        | component draft の復帰。device Discard ではない                         | S1 handleRevert            |
-| BIND-007 | floating の数値 parameter を入力                    | 入力途中では送らず Enter で確定。2 parameter なら次の parameter へ                      | caller に完成 binding を渡す                                            | S1 editingNumber           |
-| BIND-008 | Search keycodes に入力、Clear search                | 空白以外の検索は category を越えて検索、クリアで通常表示へ                              | UI のみ                                                                 | S2                         |
-| BIND-009 | layout/category 表示を切替                          | keyboard 表示と category 候補表示を切替                                                 | viewMode を localStorage に保存                                         | S2                         |
-| BIND-010 | modifier を toggle → keycode 選択                   | modifier flags と base keycode を合成。toggle 自体は shouldNotClose を付けて draft 更新 | Clear modifiers は shouldNotClose を付けないので確定を誘発し得る        | S2                         |
+BIND-013: caller が `targetLabel` を渡すと、modal/floating の header はその値を表示する。caller は keymap 固有の名前に制限されず、自身の layer/position/step/direction 等を表現できる。表示形式の切替や keymap の次キー移動では現在の target に更新され、target 表示だけでは binding を送らない。根拠はS1/S3、[#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求。
+
+| ID       | 前提 → 操作                                                  | 観測できる結果                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
+| -------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |
+| BIND-001 | editor を開く / selectionKey 変更                            | currentBinding の behavior/param1/param2 を初期値とし param1 を選択                                                                            | draft を初期化                                                              | S1 handleOpenChange/effect |
+| BIND-002 | behavior を変更                                              | 両 parameter を 0 に戻す。不要なら最終値扱い、必要なら該当入力を表示                                                                           | Close on select 有効時、parameter 不要 behavior は即 callback               | S1                         |
+| BIND-003 | modal、Close on select ON で最後の parameter を選ぶ          | callback 後閉じる。OFF なら draft に保持                                                                                                       | `keycodeSelectorCloseOnSelect` localStorage。callback と flash 保存は別     | S1                         |
+| BIND-004 | modal の Apply changes and close / Escape / 外側クリック     | draft が開始値と異なる時だけ callback に渡して閉じる。終了 button の accessible name/tooltip は `Apply changes and close`                      | OFF でも変更済み draft は終了時に適用。開始値と同じなら callback を送らない | S1 handleOpenChange        |
+| BIND-005 | floating の Close without applying unfinished edits / Escape | 未完 draft を適用せず閉じる。終了 button の accessible name/tooltip は `Close without applying unfinished edits`。外側クリックだけでは閉じない | 完了済み callback の変更は取り消さない                                      | S1                         |
+| BIND-006 | Revert                                                       | 開いた時の値と param1 選択へ戻る                                                                                                               | component draft の復帰。device Discard ではない                             | S1 handleRevert            |
+| BIND-007 | floating の数値 parameter を入力                             | 入力途中では送らず Enter で確定。2 parameter なら次の parameter へ                                                                             | caller に完成 binding を渡す                                                | S1 editingNumber           |
+| BIND-008 | Search keycodes に入力、Clear search                         | 空白以外の検索は category を越えて検索、クリアで通常表示へ                                                                                     | UI のみ                                                                     | S2                         |
+| BIND-009 | layout/category 表示を切替                                   | keyboard 表示と category 候補表示を切替                                                                                                        | viewMode を localStorage に保存                                             | S2                         |
+| BIND-010 | modifier を toggle → keycode 選択                            | modifier flags と base keycode を合成。toggle 自体は shouldNotClose を付けて draft 更新                                                        | Clear modifiers は shouldNotClose を付けないので確定を誘発し得る            | S2                         |
+| BIND-014 | caller が `targetLabel` を渡して editor を開く               | modal/floating の header で現在対象を読める。`selectionKey` により対象が変われば label も追従する                                              | 表示だけでは callback / device 書込みなし                                   | S1/S3/BIND-013             |
+| BIND-015 | modal を開始値のまま終了                                     | `onClose` は呼ぶが `onSelect` callback は送らない                                                                                              | caller の RPC / dirty 状態を増やさない                                      | S1/BIND-R04                |
 
 ## 代表ユーザーフロー
 
 1. Demo → Keymap → preview の任意キー。初期 binding を記録（BIND-001）。
 2. modal で Close on select を OFF → Search keycodes で別キーを選択 → 開いたまま（BIND-003/008）。
-3. Revert → 初期値 → Close。初期 binding を再表示して確認（BIND-006/004）。
-4. 再度開き OFF で別キーを選択 → Escape → 選択値が適用される（BIND-004）。これは取消ではない。
+3. Revert → 初期値 → Apply changes and close。初期 binding を再表示し、callback が増えないことを確認（BIND-006/004/015）。
+4. 再度開き OFF で別キーを選択 → Escape → 選択値が適用される（BIND-004）。floating の Close/Escape は未完 draft を破棄する（BIND-005）。
 5. caller の Discard または元 binding への変更で復帰し、Close on select を元に戻す。
 
 ## 不変条件
@@ -55,6 +61,8 @@ BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モ�
 - BIND-I01: 表示切替だけでは binding を送らない。caller の mode 切替前後で dirty/値比較（BIND-R02）。
 - BIND-I02: 検索語の変更だけでは binding を送らない（S2）。
 - BIND-I03: component を閉じたことだけを device 永続化成功と見なさない。caller の結果を確認（S1 callback 契約）。
+- BIND-I04: target 表示は caller の target を示し、presentation 切替・次対象への移動で古い target を残さない（BIND-R03/BIND-013）。
+- BIND-I05: modal の終了 button は適用、floating の終了 button は未完 draft の破棄を示す name を持ち、無変更終了だけでは caller callback を送らない（BIND-R04/BIND-015）。
 
 ## エラーと復帰
 

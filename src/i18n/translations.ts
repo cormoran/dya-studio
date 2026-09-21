@@ -860,6 +860,7 @@ const ja: Record<string, string> = {
   "The value is saved in real-time upon selection for now.":
     "現在、値は選択時にリアルタイムで保存されます。",
   "Rotary Encoder": "ロータリーエンコーダー",
+  "Sensor {{id}}": "センサー {{id}}",
   "Counter-clockwise": "反時計回り",
   Clockwise: "時計回り",
   "Tap Time": "タップ時間",
@@ -2241,6 +2242,7 @@ const zh: Record<string, string> = {
   "The value is saved in real-time upon selection for now.":
     "目前，选中后值会实时保存。",
   "Rotary Encoder": "旋转编码器",
+  "Sensor {{id}}": "传感器 {{id}}",
   "Counter-clockwise": "逆时针",
   Clockwise: "顺时针",
   "Tap Time": "点击时间",

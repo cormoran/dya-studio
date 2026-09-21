@@ -51,6 +51,7 @@ import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
 import { useStudioUnlock } from "../hooks/useStudioUnlock";
 import { useLanguage } from "../hooks/useLanguage";
+import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
@@ -170,6 +171,37 @@ export function KeymapPage() {
     if (selectedKeyPosition === null || !currentLayer) return null;
     return currentLayer.bindings[selectedKeyPosition] ?? null;
   }, [selectedKeyPosition, currentLayer]);
+
+  const selectorTargetLabel = useMemo(() => {
+    if (selectedKeyPosition === null || !currentLayer) return undefined;
+    const binding = formatBehaviorBinding(
+      currentBinding ?? undefined,
+      currentBinding
+        ? (keymap.behaviors.get(currentBinding.behaviorId) ?? null)
+        : null,
+      {
+        layers: layersForSelector,
+        keyboardLayout: keyboardLayoutContext.layout,
+        runtimeMacros: runtimeMacro.macros,
+      },
+    );
+    return `${currentLayer.name} · ${t(
+      "Key position {{position}}: {{binding}}",
+      {
+        position: selectedKeyPosition,
+        binding,
+      },
+    )}`;
+  }, [
+    currentBinding,
+    currentLayer,
+    keymap.behaviors,
+    keyboardLayoutContext.layout,
+    layersForSelector,
+    runtimeMacro.macros,
+    selectedKeyPosition,
+    t,
+  ]);
 
   // `requireUnlocked` (from the shared unlock gate) guards an edit action: if
   // Studio is locked it opens the unlock modal and returns false so the caller
@@ -1574,6 +1606,7 @@ export function KeymapPage() {
         presentation={selectorMode}
         floatingAnchorRef={keymapContentAnchorRef}
         selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
+        targetLabel={selectorTargetLabel}
         busy={isApplyingBinding}
         error={keymap.error}
         toolbar={
@@ -1581,7 +1614,7 @@ export function KeymapPage() {
           selectedKeyPosition !== null &&
           currentLayer ? (
             <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
-              <span role="status" className="text-xs truncate">
+              <span className="text-xs truncate">
                 {currentLayer.name} ·{" "}
                 {t("Key {{position}} / {{count}}", {
                   position: selectedKeyPosition + 1,

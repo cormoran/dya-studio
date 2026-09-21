@@ -345,6 +345,7 @@ export function ComboEditorCard({
 
       <KeycodeSelector
         open={combo.showBehaviorSelector}
+        targetLabel={`${t("Combo Editor")} · ${draft.index}`}
         onClose={() => combo.setShowBehaviorSelector(false)}
         onSelect={(binding) =>
           combo.applyDraftChange({ ...draft, behavior: binding }, true)
