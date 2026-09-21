@@ -232,6 +232,17 @@ export function MacroEditorCard({
 
       <KeycodeSelector
         open={macro.editingStepIndex !== null}
+        targetLabel={
+          macro.loadedMacro && macro.editingStepIndex !== null
+            ? t("{{macro}} › Step {{step}}", {
+                macro: formatMacroName(
+                  macro.loadedMacro,
+                  macro.loadedMacro.slot,
+                ),
+                step: macro.editingStepIndex + 1,
+              })
+            : undefined
+        }
         onClose={() => macro.setEditingStepIndex(null)}
         onSelect={macro.handleBehaviorSelect}
         currentBinding={

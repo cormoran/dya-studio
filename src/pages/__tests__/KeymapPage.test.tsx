@@ -310,6 +310,11 @@ describe("KeymapPage", () => {
     it("applies once, advances through every key, and closes at the end", async () => {
       const { user, setBinding } = await setup();
       for (let position = 0; position < 3; position++) {
+        expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+          `Base · Key position ${position}: ${String.fromCharCode(
+            65 + position,
+          )}`,
+        );
         expect(
           screen.getByText(`Base · Key ${position + 1} / 3`),
         ).toBeInTheDocument();
@@ -421,6 +426,9 @@ describe("KeymapPage", () => {
       for (let attempt = 0; attempt < 3; attempt++) {
         await user.click(screen.getByRole("button", { name: "Dialog mode" }));
         expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+          "Base · Key position 0: A",
+        );
         expect(
           screen.getByRole("button", { name: "Close on select" }),
         ).toHaveAttribute("aria-pressed", "true");

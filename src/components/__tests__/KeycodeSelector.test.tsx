@@ -166,3 +166,40 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
   expect(screen.getByText("Modifiers:")).toBeInTheDocument();
   expect(screen.getByText("param1 - Select Key")).toBeInTheDocument();
 });
+
+it("shows a caller-provided target identity in modal and floating presentations", () => {
+  const { rerender } = render(
+    <KeycodeSelector
+      open
+      targetLabel="Base · Key position 0: A"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+  expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+    "Base · Key position 0: A",
+  );
+
+  rerender(
+    <KeycodeSelector
+      open
+      presentation="floating"
+      targetLabel="Base · Key position 1: B"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+  expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+    "Base · Key position 1: B",
+  );
+});

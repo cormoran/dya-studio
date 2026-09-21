@@ -65,6 +65,8 @@ interface SelectedBehaviorInfo {
 interface KeycodeSelectorProps {
   presentation?: "modal" | "floating";
   selectionKey?: string;
+  /** Caller-owned identity for the item whose binding is being edited. */
+  targetLabel?: ReactNode;
   toolbar?: ReactNode;
   floatingAnchorRef?: RefObject<HTMLElement | null>;
   busy?: boolean;
@@ -217,6 +219,7 @@ function hasParam(
 export function KeycodeSelector({
   presentation = "modal",
   selectionKey,
+  targetLabel,
   toolbar,
   floatingAnchorRef,
   busy = false,
@@ -742,15 +745,28 @@ export function KeycodeSelector({
                     className="shrink-0 text-[var(--color-text-muted)]"
                   />
                 )}
-                {floating && toolbar}
                 <Dialog.Title className="sr-only">
                   {t("Select Key Binding")}
                 </Dialog.Title>
-                {!floating && (
-                  <span className="text-xs font-medium text-[var(--color-text-muted)]">
-                    {t("Select Keymap")}
-                  </span>
-                )}
+                <div className="min-w-0 flex-1">
+                  {!floating && (
+                    <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Select Keymap")}
+                    </span>
+                  )}
+                  {targetLabel && (
+                    <p
+                      role="status"
+                      data-testid="binding-editor-target"
+                      className={`min-w-0 truncate font-medium text-[var(--color-text)] ${
+                        floating ? "text-xs" : "text-sm"
+                      }`}
+                    >
+                      {targetLabel}
+                    </p>
+                  )}
+                </div>
+                {floating && toolbar}
                 <div className="ml-auto flex items-center gap-1">
                   {!floating && toolbar}
                   {!floating && (

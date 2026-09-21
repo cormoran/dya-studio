@@ -467,6 +467,18 @@ export function SensorRotationConfig({
       {/* Behavior Selector Dialog */}
       <KeycodeSelector
         open={showBehaviorSelector}
+        targetLabel={
+          editingConfig
+            ? `${t("Rotary Encoder")} ${editingConfig.sensorIndex} · ${
+                editingConfig.direction === "clockwise"
+                  ? t("Clockwise")
+                  : t("Counter-clockwise")
+              } · ${
+                layers.find((layer) => layer.id === selectedLayerId)?.name ??
+                t("Layer {{index}}", { index: selectedLayerId })
+              }`
+            : undefined
+        }
         onClose={() => {
           setShowBehaviorSelector(false);
           setEditingConfig(null);
