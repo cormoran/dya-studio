@@ -465,8 +465,8 @@ export function useMacroEditor({
     return `Macro ${n}`;
   }, [runtimeMacro.macros]);
 
-  const handleCreateMacro = useCallback(async () => {
-    if (!requireUnlocked()) return;
+  const handleCreateMacro = useCallback(async (): Promise<boolean> => {
+    if (!requireUnlocked()) return false;
     const name = generateMacroName();
     setIsCreating(true);
     try {
@@ -474,6 +474,7 @@ export function useMacroEditor({
       if (ok) {
         setSelectedName(name);
       }
+      return ok;
     } finally {
       setIsCreating(false);
     }

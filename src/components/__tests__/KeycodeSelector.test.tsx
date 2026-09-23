@@ -431,7 +431,7 @@ it("opens macro editing from Runtime Macro parameter controls", async () => {
       open
       onClose={jest.fn()}
       onSelect={jest.fn()}
-      currentBinding={{ behaviorId: 91, param1: 0, param2: 0 }}
+      currentBinding={{ behaviorId: 91, param1: 7, param2: 0 }}
       behaviors={
         new Map([[91, { id: 91, displayName: "Runtime Macro", metadata: [] }]])
       }
@@ -443,7 +443,8 @@ it("opens macro editing from Runtime Macro parameter controls", async () => {
   await user.click(screen.getByRole("button", { name: "New macro" }));
   await user.click(screen.getByRole("button", { name: "Edit macros" }));
 
-  expect(onOpenMacroEditor).toHaveBeenCalledTimes(2);
+  expect(onOpenMacroEditor).toHaveBeenNthCalledWith(1);
+  expect(onOpenMacroEditor).toHaveBeenNthCalledWith(2, 7);
 });
 
 it("applies a saved macro shortcut as a Runtime Macro binding", async () => {

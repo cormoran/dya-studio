@@ -80,8 +80,12 @@ interface KeycodeSelectorProps {
   keyboardLayout?: KeyboardLayoutType;
   behaviorQuickSelects?: string[]; // Optional list of behavior displayNameVariants for quick select
   runtimeMacros?: Array<{ slot: number; name?: string }>;
-  /** Opens the caller-owned runtime macro editor without changing this draft. */
-  onOpenMacroEditor?: () => void;
+  /**
+   * Opens the caller-owned runtime macro editor without changing this draft.
+   * A slot identifies the macro assigned to the active Runtime Macro binding;
+   * no slot starts the create flow.
+   */
+  onOpenMacroEditor?: (slot?: number) => void;
   /** Lets a selector opened from another modal render above its parent. */
   modalLayerClassName?: string;
 }
@@ -560,7 +564,7 @@ export function KeycodeSelector({
                     <button
                       type="button"
                       className="w-full rounded-lg border border-dashed border-[var(--color-electric)]/60 px-3 py-2 text-sm font-medium text-[var(--color-electric)] hover:bg-[var(--color-electric)]/10"
-                      onClick={onOpenMacroEditor}
+                      onClick={() => onOpenMacroEditor()}
                     >
                       {t("New macro")}
                     </button>
@@ -1028,7 +1032,7 @@ export function KeycodeSelector({
                       <button
                         type="button"
                         className="mt-3 self-start rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)]"
-                        onClick={onOpenMacroEditor}
+                        onClick={() => onOpenMacroEditor(param1)}
                       >
                         {t("Edit macros")}
                       </button>

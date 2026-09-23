@@ -29,6 +29,12 @@ export function MacroEditorDialog({
 }: MacroEditorDialogProps) {
   const { t } = useLanguage();
 
+  const handleCreateMacro = async () => {
+    if (await macro.handleCreateMacro()) {
+      onOpenChange(false);
+    }
+  };
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -45,7 +51,7 @@ export function MacroEditorDialog({
               type="button"
               className="btn-electric flex items-center gap-1.5 text-sm"
               disabled={macro.isCreating || runtimeMacro.isLoading}
-              onClick={() => void macro.handleCreateMacro()}
+              onClick={() => void handleCreateMacro()}
             >
               {macro.isCreating ? (
                 <IconLoader2 size={16} className="animate-spin" />

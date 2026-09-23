@@ -233,6 +233,26 @@ export function KeymapPage() {
     canMaintainSelection: showMacroEditor,
     onAutoSelected: handleMacroAutoSelected,
   });
+  const { clearSelection: clearMacroSelection, selectMacro } = macroEditor;
+
+  const handleOpenMacroEditor = useCallback(
+    (slot?: number) => {
+      if (slot === undefined) {
+        clearMacroSelection();
+      } else {
+        const macro = runtimeMacro.macros.find(
+          (candidate) => candidate.slot === slot,
+        );
+        if (macro) {
+          selectMacro(macro);
+        } else {
+          clearMacroSelection();
+        }
+      }
+      setShowMacroEditor(true);
+    },
+    [clearMacroSelection, runtimeMacro.macros, selectMacro],
+  );
 
   // Get current binding for selected key
   const currentBinding = useMemo(() => {
@@ -1959,7 +1979,7 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
-        onOpenMacroEditor={() => setShowMacroEditor(true)}
+        onOpenMacroEditor={handleOpenMacroEditor}
       />
     </div>
   );
