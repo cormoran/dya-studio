@@ -1,4 +1,5 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { MEMORY_WRITE_DEBOUNCE_MS } from "../../../hooks/useDebouncedMemoryWrite";
 import { useMacroEditor } from "../useMacroEditor";
 import type { UseRuntimeMacroReturn } from "../../../hooks/useRuntimeMacro";
 import type { UseKeymapReturn } from "../../../hooks/useKeymap";
@@ -67,5 +68,56 @@ describe("useMacroEditor", () => {
 
     expect(result.current.selectMacro).toBe(firstSelectMacro);
     expect(result.current.reloadLoadedMacro).toBe(firstReload);
+  });
+
+  it("writes a renamed macro to memory after the debounce interval", async () => {
+    jest.useFakeTimers();
+    try {
+      const getMacro = jest
+        .fn<ReturnType<UseRuntimeMacroReturn["getMacro"]>, [number]>()
+        .mockResolvedValue({
+          slot: 3,
+          name: "Draft",
+          steps: [],
+          encodedSize: 0,
+        });
+      const renameMacro = jest.fn().mockResolvedValue(true);
+      const runtimeMacro = {
+        ...makeRuntimeMacro(getMacro),
+        macros: [{ slot: 3, name: "Draft" }],
+        renameMacro,
+      };
+      const { result } = renderHook(() =>
+        useMacroEditor({
+          runtimeMacro,
+          keymap,
+          layers: [],
+          keyboardLayout: "ansi" as never,
+          requireUnlocked: () => true,
+          t: (key: string) => key,
+          canMaintainSelection: false,
+          onAutoSelected: () => {},
+        }),
+      );
+
+      act(() => result.current.selectMacro({ slot: 3, name: "Draft" }));
+      await waitFor(() => expect(result.current.loadedMacro).not.toBeNull());
+
+      act(() => result.current.handleRenameChange("Renamed"));
+      expect(result.current.isMemoryWritePending).toBe(true);
+      expect(renameMacro).not.toHaveBeenCalled();
+
+      await act(async () => {
+        jest.advanceTimersByTime(MEMORY_WRITE_DEBOUNCE_MS);
+        await Promise.resolve();
+      });
+
+      await waitFor(() => {
+        expect(renameMacro).toHaveBeenCalledWith("Draft", "Renamed");
+      });
+      expect(result.current.isMemoryWritePending).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

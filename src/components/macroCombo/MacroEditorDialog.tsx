@@ -29,10 +29,9 @@ export function MacroEditorDialog({
 }: MacroEditorDialogProps) {
   const { t } = useLanguage();
 
-  const handleCreateMacro = async () => {
-    if (await macro.handleCreateMacro()) {
-      onOpenChange(false);
-    }
+  const handleCreateMacro = () => {
+    void macro.handleCreateMacro();
+    onOpenChange(false);
   };
 
   return (
@@ -47,6 +46,15 @@ export function MacroEditorDialog({
             <Dialog.Title className="min-w-0 flex-1 text-lg font-medium text-[var(--color-text)]">
               {t("Edit macros")}
             </Dialog.Title>
+            {macro.isMemoryWritePending && (
+              <span
+                className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]"
+                role="status"
+              >
+                <IconLoader2 size={16} className="animate-spin" />
+                {t("Memory...")}
+              </span>
+            )}
             <button
               type="button"
               className="btn-electric flex items-center gap-1.5 text-sm"

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LanguageProvider } from "../../../contexts/LanguageContext";
 import type { UseKeymapReturn } from "../../../hooks/useKeymap";
@@ -11,10 +11,16 @@ jest.mock("../MacroEditorCard", () => ({
 }));
 
 describe("MacroEditorDialog", () => {
-  it("closes after creating a macro successfully", async () => {
+  it("closes immediately after starting macro creation", async () => {
     const user = userEvent.setup();
     const onOpenChange = jest.fn();
-    const handleCreateMacro = jest.fn().mockResolvedValue(true);
+    let completeCreate: (created: boolean) => void;
+    const handleCreateMacro = jest.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          completeCreate = resolve;
+        }),
+    );
 
     render(
       <LanguageProvider>
@@ -37,8 +43,31 @@ describe("MacroEditorDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "Create macro" }));
 
-    await waitFor(() => {
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    completeCreate!(true);
+  });
+
+  it("shows memory write progress in the header", () => {
+    render(
+      <LanguageProvider>
+        <MacroEditorDialog
+          open
+          onOpenChange={jest.fn()}
+          macro={
+            {
+              isCreating: false,
+              isMemoryWritePending: true,
+              handleCreateMacro: jest.fn(),
+            } as MacroEditorController
+          }
+          runtimeMacro={{ isLoading: false } as UseRuntimeMacroReturn}
+          keymap={{} as UseKeymapReturn}
+          layers={[]}
+          keyboardLayout="us"
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Memory...");
   });
 });

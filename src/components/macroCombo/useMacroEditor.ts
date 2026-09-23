@@ -201,22 +201,25 @@ export function useMacroEditor({
     selectedName,
   ]);
 
-  const commitRename = useCallback(async () => {
-    if (!requireUnlocked()) return;
-    if (!loadedMacro) return;
-    const trimmedName = renameDraft.slice(0, runtimeMacro.maxNameLength).trim();
-    if (!trimmedName || trimmedName === loadedMacro.name) {
-      setRenameDraft(loadedMacro.name);
-      return;
-    }
-    const ok = await runtimeMacro.renameMacro(loadedMacro.name, trimmedName);
-    if (ok) {
-      setSelectedName(trimmedName);
-      setLoadedMacro({ ...loadedMacro, name: trimmedName });
-    } else {
-      setRenameDraft(loadedMacro.name);
-    }
-  }, [loadedMacro, renameDraft, runtimeMacro, requireUnlocked]);
+  const commitRename = useCallback(
+    async (nextName = renameDraft) => {
+      if (!requireUnlocked()) return;
+      if (!loadedMacro) return;
+      const trimmedName = nextName.slice(0, runtimeMacro.maxNameLength).trim();
+      if (!trimmedName || trimmedName === loadedMacro.name) {
+        setRenameDraft(loadedMacro.name);
+        return;
+      }
+      const ok = await runtimeMacro.renameMacro(loadedMacro.name, trimmedName);
+      if (ok) {
+        setSelectedName(trimmedName);
+        setLoadedMacro({ ...loadedMacro, name: trimmedName });
+      } else {
+        setRenameDraft(loadedMacro.name);
+      }
+    },
+    [loadedMacro, renameDraft, runtimeMacro, requireUnlocked],
+  );
 
   const commitSteps = useCallback(
     async (steps: MacroStep[]) => {
@@ -379,6 +382,15 @@ export function useMacroEditor({
   // Debounced memory writes for free-text/number edits: typing auto-writes to
   // keyboard memory after a quiet period (flushed on blur / before Save).
   // Discrete dropdown selections keep committing immediately (see updateStep).
+  const renameDebounce = useDebouncedMemoryWrite<string>(
+    useCallback(
+      async (name: string) => {
+        await commitRename(name);
+      },
+      [commitRename],
+    ),
+  );
+
   const delayDebounce = useDebouncedMemoryWrite<number>(
     useCallback(
       async (stepIndex: number) => {
@@ -405,6 +417,14 @@ export function useMacroEditor({
       },
       [requireUnlocked, runtimeMacro],
     ),
+  );
+
+  const handleRenameChange = useCallback(
+    (name: string) => {
+      setRenameDraft(name);
+      renameDebounce.queue(name);
+    },
+    [renameDebounce],
   );
 
   const handleBehaviorSelect = useCallback(
@@ -531,17 +551,25 @@ export function useMacroEditor({
 
   /** Flush queued debounced edits so they are part of a persist. */
   const flushPendingWrites = useCallback(async () => {
+    await renameDebounce.flush();
     await tapMsDebounce.flush();
     await delayDebounce.flush();
     await stringDebounce.flush();
-  }, [delayDebounce, stringDebounce, tapMsDebounce]);
+  }, [delayDebounce, renameDebounce, stringDebounce, tapMsDebounce]);
 
   /** Drop queued edits — discard restores the persisted values. */
   const cancelPendingWrites = useCallback(() => {
+    renameDebounce.cancel();
     tapMsDebounce.cancel();
     delayDebounce.cancel();
     stringDebounce.cancel();
-  }, [delayDebounce, stringDebounce, tapMsDebounce]);
+  }, [delayDebounce, renameDebounce, stringDebounce, tapMsDebounce]);
+
+  const isMemoryWritePending =
+    renameDebounce.state !== "idle" ||
+    tapMsDebounce.state !== "idle" ||
+    delayDebounce.state !== "idle" ||
+    stringDebounce.state !== "idle";
 
   /** Clear client-side green tracking after a Save/Discard completed. */
   const clearGlobalModified = useCallback(() => {
@@ -585,8 +613,11 @@ export function useMacroEditor({
     handleDeleteMacro,
     handleCreateMacro,
     handleResetMacro,
+    handleRenameChange,
     handleTapMsChange,
     getStepDisplayName,
+    isMemoryWritePending,
+    renameDebounce,
     delayDebounce,
     stringDebounce,
     tapMsDebounce,

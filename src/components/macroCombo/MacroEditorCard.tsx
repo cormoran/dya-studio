@@ -56,8 +56,10 @@ export function MacroEditorCard({
                 value={macro.renameDraft}
                 maxLength={runtimeMacro.maxNameLength}
                 placeholder={formatMacroName(loadedMacro, loadedMacro.slot)}
-                onChange={(event) => macro.setRenameDraft(event.target.value)}
-                onBlur={() => void macro.commitRename()}
+                onChange={(event) =>
+                  macro.handleRenameChange(event.target.value)
+                }
+                onBlur={() => void macro.renameDebounce.flush()}
               />
             </div>
             <div>
