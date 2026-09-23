@@ -29,6 +29,7 @@ import {
   IconRefresh,
   IconSettings,
   IconX,
+  IconLink,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -48,6 +49,13 @@ import { usePhysicalLayoutModules } from "../hooks/usePhysicalLayoutModules";
 import { useRuntimeSensorRotate } from "../hooks/useRuntimeSensorRotate";
 import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
 import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
+import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
+import { useComboEditor } from "../components/macroCombo/useComboEditor";
+import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
+import {
+  formatComboBehavior,
+  defaultBehaviorBinding,
+} from "../components/macroCombo/comboUtils";
 import { useInputStream } from "../hooks/useInputStream";
 import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
@@ -71,6 +79,7 @@ export function KeymapPage() {
   // to label macro keys, not to paint the preview, so we don't let its RPCs
   // compete with the keymap load. autoLoad:false suppresses the on-mount fetch.
   const runtimeMacro = useRuntimeMacro({ autoLoad: false });
+  const runtimeCombo = useRuntimeCombo({ autoLoad: false });
   const inputStream = useInputStream();
   // Snapshots the keymap into IndexedDB after every full load, and drives the
   // "restore a previous version" flow behind the reset dropdown.
@@ -149,6 +158,49 @@ export function KeymapPage() {
   // Guards the deferred macro load so it fires once per keymap load; reset when
   // a new load starts (see the effect below).
   const macrosRequestedRef = useRef(false);
+  const combosRequestedRef = useRef(false);
+  const [showComboEditor, setShowComboEditor] = useState(false);
+  const [showComboBindingSelector, setShowComboBindingSelector] =
+    useState(false);
+  const comboEditor = useComboEditor({
+    runtimeCombo,
+    keymap,
+    requireUnlocked,
+    t,
+    onComboSelected: () => {},
+  });
+
+  const openComboEditor = useCallback(
+    (combo: Combo) => {
+      comboEditor.selectCombo(combo);
+      setShowComboEditor(true);
+    },
+    [comboEditor],
+  );
+  const openComboBinding = useCallback(
+    (combo: Combo) => {
+      comboEditor.selectCombo(combo);
+      setShowComboBindingSelector(true);
+    },
+    [comboEditor],
+  );
+  const handleCreateCombo = useCallback(async () => {
+    if (await comboEditor.handleNewCombo()) setShowComboEditor(true);
+  }, [comboEditor]);
+  const handleSaveCombo = useCallback(async () => {
+    await comboEditor.flushPendingWrites();
+    const status = await runtimeCombo.saveChanges();
+    if (status) comboEditor.clearModified();
+  }, [comboEditor, runtimeCombo]);
+  const handleDiscardCombo = useCallback(async () => {
+    comboEditor.cancelPendingWrites();
+    const status = await runtimeCombo.discardChanges();
+    if (status) {
+      comboEditor.clearModified();
+      setShowComboEditor(false);
+      setShowComboBindingSelector(false);
+    }
+  }, [comboEditor, runtimeCombo]);
 
   // Get current layer
   const currentLayer = useMemo(() => {
@@ -552,6 +604,40 @@ export function KeymapPage() {
     isMacroAvailable,
     loadRuntimeMacros,
   ]);
+
+  const { isAvailable: isComboAvailable, reload: reloadRuntimeCombos } =
+    runtimeCombo;
+  useEffect(() => {
+    if (keymap.isLoading) {
+      combosRequestedRef.current = false;
+      return;
+    }
+    if (
+      keymap.isFullyLoaded &&
+      isComboAvailable &&
+      !combosRequestedRef.current
+    ) {
+      combosRequestedRef.current = true;
+      void reloadRuntimeCombos();
+    }
+  }, [
+    keymap.isLoading,
+    keymap.isFullyLoaded,
+    isComboAvailable,
+    reloadRuntimeCombos,
+  ]);
+
+  useEffect(() => {
+    if (!isTabActive) {
+      setShowComboEditor(false);
+      setShowComboBindingSelector(false);
+      comboEditor.clearSelection();
+    } else if (combosRequestedRef.current && isComboAvailable) {
+      void runtimeCombo.loadCombos();
+    }
+    // A tab return must read edits made on Macro&Combo while this page was retained.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTabActive]);
 
   const mobileVisibleRemovedLayerIds = keymap.removedLayerIds.slice(0, 3);
   const mobileOverflowRemovedLayerIds = keymap.removedLayerIds.slice(3);
@@ -1429,6 +1515,8 @@ export function KeymapPage() {
                   getDefaultBinding={keymap.getDefaultBinding}
                   keyboardLayout={keyboardLayoutContext.layout}
                   runtimeMacros={runtimeMacro.macros}
+                  combos={isComboAvailable ? runtimeCombo.combos : []}
+                  onComboClick={openComboBinding}
                   modules={
                     physicalLayoutModules.isAvailable
                       ? physicalLayoutModules.modules
@@ -1490,6 +1578,104 @@ export function KeymapPage() {
                   keyboardLayout={keyboardLayoutContext.layout}
                 />
               </div>
+            )}
+            {isComboAvailable && (
+              <section className="glass-card p-4 mt-6" aria-label={t("Combos")}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
+                    <IconLink
+                      size={17}
+                      className="text-[var(--color-electric)]"
+                    />
+                    {t("Combos")}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    {runtimeCombo.hasPendingChanges && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-ghost text-xs"
+                          onClick={() => void handleDiscardCombo()}
+                          disabled={runtimeCombo.isLoading}
+                        >
+                          {t("Discard")}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-electric text-xs"
+                          onClick={() => void handleSaveCombo()}
+                          disabled={
+                            runtimeCombo.isLoading ||
+                            Boolean(
+                              comboEditor.validationError && showComboEditor,
+                            )
+                          }
+                        >
+                          {t("Save")}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="p-1 rounded text-[var(--color-electric)] hover:bg-[var(--color-border)] disabled:opacity-40"
+                      onClick={() => void handleCreateCombo()}
+                      disabled={runtimeCombo.isLoading || !keymap.isFullyLoaded}
+                      aria-label={t("New combo")}
+                      title={t("New combo")}
+                    >
+                      <IconPlus size={18} />
+                    </button>
+                  </div>
+                </div>
+                {runtimeCombo.error && (
+                  <p role="alert" className="text-sm text-red-400 mb-2">
+                    {t(runtimeCombo.error)}
+                  </p>
+                )}
+                {comboEditor.statusMessage && (
+                  <p
+                    role="status"
+                    className="text-sm text-[var(--color-warning)] mb-2"
+                  >
+                    {comboEditor.statusMessage}
+                  </p>
+                )}
+                {runtimeCombo.combos.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    {t("No runtime combos configured")}
+                  </p>
+                ) : (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {runtimeCombo.combos.map((combo) => (
+                      <button
+                        key={combo.index}
+                        type="button"
+                        className={`shrink-0 min-w-32 max-w-52 p-3 rounded-lg border bg-[var(--color-surface)] text-left hover:border-[var(--color-electric)]/60 ${combo.enabled ? "border-[var(--color-border)]" : "border-[var(--color-border)] opacity-60"}`}
+                        onClick={() => openComboEditor(combo)}
+                      >
+                        <span className="block text-sm font-medium truncate">
+                          {combo.name ||
+                            t("Combo {{index}}", { index: combo.index })}
+                        </span>
+                        <span className="block text-xs text-[var(--color-text-muted)] truncate">
+                          {combo.keyPositions.join(" + ")}
+                        </span>
+                        <span className="block text-xs text-[var(--color-electric)] truncate">
+                          {formatComboBehavior(
+                            combo.behavior ??
+                              defaultBehaviorBinding(keymap.behaviors),
+                            keymap.behaviors,
+                            layersForSelector,
+                            keyboardLayoutContext.layout,
+                            runtimeMacro.macros,
+                            t,
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
           </>
         )}
@@ -1614,6 +1800,57 @@ export function KeymapPage() {
       <VersionDiffModal
         {...versionHistory.diffModalProps}
         labeler={versionHistory.labeler}
+      />
+
+      <Dialog.Root
+        open={showComboEditor && isTabActive}
+        onOpenChange={(open) => !open && setShowComboEditor(false)}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[10000]" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(96vw,900px)] max-h-[90vh] overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl z-[10000]"
+          >
+            <Dialog.Title className="sr-only">{t("Combo Editor")}</Dialog.Title>
+            <div className="flex justify-end p-2">
+              <Dialog.Close
+                className="p-1 rounded hover:bg-[var(--color-border)]"
+                aria-label={t("Close")}
+              >
+                <IconX size={18} />
+              </Dialog.Close>
+            </div>
+            {comboEditor.selectedIndex !== null && (
+              <ComboEditorCard
+                combo={comboEditor}
+                runtimeCombo={runtimeCombo}
+                keymap={keymap}
+                layers={layersForSelector}
+                keyboardLayout={keyboardLayoutContext.layout}
+                runtimeMacros={runtimeMacro.macros}
+              />
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <KeycodeSelector
+        open={showComboBindingSelector && isTabActive}
+        onClose={() => setShowComboBindingSelector(false)}
+        onSelect={(binding) => {
+          comboEditor.applyDraftChange(
+            { ...comboEditor.draft, behavior: binding },
+            true,
+          );
+          setShowComboBindingSelector(false);
+        }}
+        targetLabel={`${t("Combo Editor")} · ${comboEditor.draft.name || comboEditor.draft.index}`}
+        currentBinding={comboEditor.draft.behavior}
+        behaviors={keymap.behaviors}
+        layers={layersForSelector}
+        keyboardLayout={keyboardLayoutContext.layout}
+        runtimeMacros={runtimeMacro.macros}
       />
 
       {/* Keycode Selector Dialog */}

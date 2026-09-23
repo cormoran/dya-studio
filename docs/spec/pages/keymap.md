@@ -8,15 +8,17 @@
 
 子仕様: [rotary encoder](keymap-sensors.md)。キー編集と sensor 設定では適用・保存の経路が異なる。
 
-| 根拠 | ソースと symbol                                                                                                                                                                              |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1   | [KeymapPage](../../../src/pages/KeymapPage.tsx): `handleBindingSelect`, `closeSelector`, layer handlers, JSX                                                                                 |
-| S2   | [useKeymap](../../../src/hooks/useKeymap.ts): `setBinding`, `saveChanges`, `discardChanges`, `resetToDefault`, `loadKeymapData`                                                              |
-| S3   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleBehaviorSelect`, `handleParam1Change`, `handleOpenChange`, presentation                                               |
-| S4   | [page tests](../../../src/pages/__tests__/KeymapPage.test.tsx): floating editing, reset menu, layers, lock tests                                                                             |
-| S5   | [PhysicalKey](../../../src/components/PhysicalKey.tsx), [KeyboardLayout](../../../src/components/KeyboardLayout.tsx): key tooltip/reset affordances                                          |
-| S6   | [history hook](../../../src/hooks/versionHistory/useKeymapVersionHistory.ts), [ResetVersionMenu](../../../src/components/versionHistory/ResetVersionMenu.tsx)                                |
-| S7   | [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx), [useMacroEditor](../../../src/components/macroCombo/useMacroEditor.ts): keymap 内 macro editor と list 再読込 |
+| 根拠 | ソースと symbol                                                                                                                                                                                             |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| S1   | [KeymapPage](../../../src/pages/KeymapPage.tsx): `handleBindingSelect`, `closeSelector`, layer handlers, JSX                                                                                                |
+| S2   | [useKeymap](../../../src/hooks/useKeymap.ts): `setBinding`, `saveChanges`, `discardChanges`, `resetToDefault`, `loadKeymapData`                                                                             |
+| S3   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleBehaviorSelect`, `handleParam1Change`, `handleOpenChange`, presentation                                                              |
+| S4   | [page tests](../../../src/pages/__tests__/KeymapPage.test.tsx): floating editing, reset menu, layers, lock tests                                                                                            |
+| S5   | [PhysicalKey](../../../src/components/PhysicalKey.tsx), [KeyboardLayout](../../../src/components/KeyboardLayout.tsx): key tooltip/reset affordances                                                         |
+| S6   | [history hook](../../../src/hooks/versionHistory/useKeymapVersionHistory.ts), [ResetVersionMenu](../../../src/components/versionHistory/ResetVersionMenu.tsx)                                               |
+| S7   | [useRuntimeCombo](../../../src/hooks/useRuntimeCombo.ts)、[useComboEditor](../../../src/components/macroCombo/useComboEditor.ts)、[ComboEditorCard](../../../src/components/macroCombo/ComboEditorCard.tsx) | combo の読込・編集・RAM/flash 保存    |
+| S8   | [comboPreview](../../../src/components/comboPreview.ts)、S5                                                                                                                                                 | combo の隣接判定・preview・tooltip    |
+| S9   | [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx)、[useMacroEditor](../../../src/components/macroCombo/useMacroEditor.ts)                                                       | keymap 内 macro editor と list 再読込 |
 
 ## 機能要求
 
@@ -26,7 +28,8 @@
 | KM-R02 | 未保存と保存済みを見分け、保存・破棄・初期状態への復帰を意図して選べる                  | S1/S2 から推定                                                     |
 | KM-R03 | 連続編集で別キーへの誤適用や意図しないレイヤー移動を起こさない                          | S1/S4 から推定                                                     |
 | KM-R04 | editor 内でも layer、0始まりの物理位置、開始時 binding を確認できる                     | [#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求 |
-| KM-R05 | key binding editor から runtime macro を作成・編集し、作成後の macro を同じキーへ選べる | 2026-09-23ユーザー要求                                             |
+| KM-R05 | Keymap で combo の一覧・追加・編集を行い、preview 上で combo と割当を識別できる         | 2026-09-23 ユーザー明示要求                                        |
+| KM-R06 | key binding editor から runtime macro を作成・編集し、作成後の macro を同じキーへ選べる | 2026-09-23 ユーザー要求                                            |
 
 ## 前提・状態
 
@@ -37,6 +40,7 @@
 - ready: layer ボタン群と keyboard preview。dirty: `Unsaved changes`、Save 有効。保存済みは `Saved`（初期値から変更された保存済み binding は別の色/tooltip）。
 - locked: Save/Reset に代えて `Locked`。閲覧/Reload は可能。編集は共有 unlock prompt を経由する。Demo で任意の lock/RPC failure を起こす UI は未確認。
 - unsupported: Stream は対応時のみ。物理 layout の select は複数 layout 時のみ。sensor rotation 非対応は警告と導入リンク。空の keymap/geometry は主コンテンツ条件から外れる（専用 empty 表示は未確認）。
+- combo subsystem があるときだけ sensor 設定の下に `Combos` card を表示する。keymap の全読込後に combo を読込む。未対応時は card と preview の combo 表示を出さない。combo の編集・保存は keymap binding の dirty/Save/Discard と独立する（S1/S7）。
 
 ## 現行の機能仕様
 
@@ -62,7 +66,10 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 | KM-016 | Reset の保存版を選ぶ                                         | diff を確認してから復元                                                                                                                                                                                                                                                                                                                                                 | IndexedDB の履歴。メニュー選択だけでは device を書き換えない                                                                                       | S6                                                                                          |
 | KM-018 | 639px以下で保存操作列の右端にある `Keymap settings` を開く   | viewport全体のmodalを表示。`Layer editing` の現在layerは横並びボタン、並べ替え・名前変更・追加・削除はtooltip付きのアイコン1行で表示する。削除済みlayerは先頭3件をボタン表示し、残りを `Other` menu（内部scroll）へ格納する。`Layout and display` に物理配列（複数時）・OS配列・Stream（対応時）を表示。元ページではこれらの管理操作を隠す。layer切替列は元ページに残す | 各操作の保存先と即時適用条件はKM-011〜015と同じ。Close/Escapeはmodalを閉じるだけで、すでに適用した設定を戻さない。640px以上は従来配置              | S1、2026-09-20ユーザー要求                                                                  |
 | KM-019 | preview のキーを開く、mode/次キーを切替                      | modal/floating のheaderが `layer · Key position {{0始まり}}: {{開始時 binding}}` を示す。mode/次キーで選択が変われば現在対象へ更新する。floating の重複する `Layer · Key N / count` は表示せず、選択中 behavior の説明を示す                                                                                                                                            | 表示だけでは binding を適用しない。既存の選択・順序・適用契約は変わらない                                                                          | S1/S3/S4、[#211](https://github.com/cormoran/dya-studio/issues/211)、2026-09-23ユーザー要求 |
-| KM-020 | Runtime Macro の param1 の `New macro` / `Edit macros`       | key selector を保ったまま macro editor modal を開く。editor を閉じると macro list を再取得し、param1 の候補と behavior dropdown の `Macro` category を最新の macro 名で表示する                                                                                                                                                                                         | modal を開閉するだけでは key binding を書かない。macro の作成・編集は Runtime Macro subsystem の keyboard memory に反映され、keymap の Save とは別 | S1/S3/S7/BIND-019、2026-09-23ユーザー要求                                                   |
+| KM-020 | `Combos` card の横並び item / `New combo` を選ぶ             | 既存 item は `Combo Editor` modal を開く。+ は空 slot に既定 combo を RAM 作成して modal を開く。空きがなければ拒否を表示する。Escape/外側クリック/Close は modal を閉じる                                                                                                                                                                                              | editor の有効 draft は既存の [COMBO-001〜003](macro-combo.md) と同じ RAM 自動書込。閉じるだけでは巻き戻さない                                      | S1/S7、明示要求                                                                             |
+| KM-021 | preview の combo 表示を確認する                              | 有効で現在 layer 対象の combo のうち、辺で隣接する２キーは境界中央に 0.5U の色付きキーと割当 label を表示。その他は対象キー上部に link icon と該当件数を表示し、キー tooltip に各 combo 名と割当を追加する。無効/他 layer の combo は出さない                                                                                                                           | badge/tooltip の閲覧だけでは書き込まない                                                                                                           | S5/S8、明示要求                                                                             |
+| KM-022 | preview 内の色付き combo キーを選び、behavior を変更する     | 対象 combo の `KeycodeSelector` が開き、適用した割当が preview/card に反映される。通常の key binding は変更しない                                                                                                                                                                                                                                                       | combo RAM に書く。`Combos` card の Save で combo flash 保存。Discard で combo の保存済み値へ復元。keymap header の Save/Discard は keymap のみ     | S1/S7/S8、明示要求                                                                          |
+| KM-023 | Runtime Macro の param1 の `New macro` / `Edit macros`       | key selector を保ったまま macro editor modal を開く。editor を閉じると macro list を再取得し、param1 の候補と behavior dropdown の `Macro` category を最新の macro 名で表示する                                                                                                                                                                                         | modal を開閉するだけでは key binding を書かない。macro の作成・編集は Runtime Macro subsystem の keyboard memory に反映され、keymap の Save とは別 | S1/S3/S9/BIND-019、2026-09-23ユーザー要求                                                   |
 
 ## 代表ユーザーフロー
 
@@ -99,6 +106,13 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 4. 複数の物理配列がある場合は別配列へ変更してpreviewとの同期を確認する。OS配列を変更し、閉じて再度開いた後も選択が維持されることを確認してから初期値へ戻す。
 5. Stream対応時はmodal内でON/OFFできることを確認する。CloseまたはEscapeでmodalを閉じても選択済みの設定は巻き戻らず、triggerへfocusが戻ることを確認する。
 
+### F5: combo 表示・編集（KM-020〜022）
+
+1. combo 対応の Demo/実機で Keymap を開き、`Combos` card と既存 item を確認する。対応しない場合はここで未実施と記録する。
+2. 隣接２キーと離れたキーの combo がある場合、境界の色付きキー、badge、tooltip の名前/割当を照合する。ない場合は作成後に確認する。
+3. item を開き、名前・位置・割当のいずれかを編集する。modal を閉じても RAM 変更が残ること、`Combos` card の Save 後に Refresh/タブ往復で残ることを確認する。実機の電源断後は別途確認する。
+4. preview の色付き combo キーから割当を変更し、通常キーの binding が変わらないことを確認する。元値に戻して Save、または Discard で復元する。
+
 ## 不変条件
 
 - KM-I01: 別の layer/position に binding を誤適用しない。前後 2 キーと別 layer を比較（KM-R01、S1）。
@@ -106,6 +120,7 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 - KM-I03: mode 切替・矢印・floating の Escape だけで draft を書き込まない（S4）。modal は変更済み draft を Close/Escape で適用するが、無変更 Close/Escape では書き込まない（S3 handleOpenChange）。
 - KM-I04: OS Layout の変更だけで device binding を変更しない（S1 の説明、表示用 context）。
 - KM-I05: editor header の layer/position/binding は現在選択中のキーと一致し、同じ binding の別キーを区別できる（KM-R04/KM-019）。
+- KM-I06: combo preview の対象と editor slot は一致し、非隣接 badge はキー binding のクリック対象を奪わない。combo の Save/Discard は keymap の dirty 状態を変えない（KM-020〜022）。
 
 ## エラーと復帰
 
@@ -114,6 +129,7 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 - Rename は hook の boolean 成否を待って判定せず閉じる。入力保持を保証しない。不具合として受け入れた根拠はなく未解決。
 - Reset default は途中失敗なら未保存の部分変更が残り得る。成功と表示されなければ Reload で現状確認、必要なら Discard。原子的 rollback を保証しない。
 - physical module preview 読込失敗は黄色の警告。Stream error は別 alert、Dismiss で消せる。実機/RPC error 注入は今回の通常 Demo 手順外。
+- combo RPC error は `Combos` card の alert に表示する。無効 draft は editor の validation error に表示して書かず、修正して再試行できる。Combo Save/Discard は combo RAM/flash に限り、失敗時は dirty と alert を再確認する（S7）。
 
 ## 探索の観点
 
@@ -123,7 +139,8 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 4. Rename の空文字/上限、取消、layer 並替後の position。
 5. 狭い viewport でページ全体が横スクロールせず、プレビュー内部だけを横に動かせるか。floating の左右toolbar・閉じる操作に到達できるか（KM-017、BIND-011）。
 6. 639px境界の前後で管理操作が二重表示・全消失しないか。モバイルmodalでlayerボタン・アイコン操作のtooltip・削除済みlayer先頭3件と `Other` menu・Closeへ到達でき、削除済みlayer数が増えても復元欄が2行を超えて伸びないか（KM-018）。
-7. Runtime Macro 対応時、key selector から `New macro` を開いて macro を作成し、閉じた後に param1 と `Macro` category の候補更新を確認する。登録済み macro を選んだ binding は Save → Reload で比較し、検証で作った macro は削除せず残存値を記録する（KM-020、BIND-019）。
+7. 横/縦の隣接、離れた２キー、３キー以上、回転キー、layer mask、disabled combo、長い割当で preview が重ならず操作できるか（KM-021/022）。
+8. Runtime Macro 対応時、key selector から `New macro` を開いて macro を作成し、閉じた後に param1 と `Macro` category の候補更新を確認する。登録済み macro を選んだ binding は Save → Reload で比較し、検証で作った macro は削除せず残存値を記録する（KM-023、BIND-019）。
 
 ## 既知の受け入れ済み不具合
 
@@ -131,4 +148,4 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 
 ## 未解決・未検証
 
-実機 flash 永続化、lock と失敗後復帰、遅延競合、sensor rotation の詳細、履歴復元の詳細は通常 Demo のキーマップ pilot で未検証。共有 selector / history / connection の詳細はモジュール仕様の展開時にリンクする。Rename 失敗後の dialog 閉鎖と default reset の部分変更はコード上の注意点で、承認済み不具合ではない。
+実機 flash 永続化、lock と失敗後復帰、遅延競合、sensor rotation の詳細、履歴復元の詳細は通常 Demo のキーマップ pilot で未検証。combo preview の全配置・実機 persistence は未検証。共有 selector / history / connection の詳細はモジュール仕様の展開時にリンクする。Rename 失敗後の dialog 閉鎖と default reset の部分変更はコード上の注意点で、承認済み不具合ではない。
