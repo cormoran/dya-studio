@@ -160,10 +160,12 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
       .closest("[class~='tablet:flex']"),
   ).toHaveClass("hidden", "tablet:flex");
   expect(
-    screen.getByRole("button", { name: /Key: Key to press/ }).parentElement
-      ?.parentElement,
+    screen.getByRole("button", { name: /Key:/ }).parentElement?.parentElement,
   ).toHaveClass("h-7", "mb-2", "flex");
   expect(screen.getByText("Modifiers:")).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Key to press",
+  );
   expect(screen.queryByText("param1 - Select Key")).not.toBeInTheDocument();
 });
 
@@ -183,19 +185,21 @@ it("explains both layer-tap parameters and uses firmware parameter names", async
       layers={[{ id: 0, name: "Base" }]}
     />,
   );
-  expect(
-    screen.getByRole("button", { name: /Layer: Layer active while held/ }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
-  ).toBeInTheDocument();
-  expect(screen.getByText("Layer on hold, key on tap")).toBeInTheDocument();
-  await user.click(
-    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
+  expect(screen.getByRole("button", { name: /Layer:/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Key:/ })).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Layer active while held",
   );
-  expect(
-    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
-  ).toHaveClass("border-[var(--color-electric)]");
+  expect(screen.queryByText("Key sent on tap")).not.toBeInTheDocument();
+  expect(screen.getByText("Layer on hold, key on tap")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /Key:/ }));
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Key sent on tap",
+  );
+  expect(screen.queryByText("Layer active while held")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Key:/ })).toHaveClass(
+    "border-[var(--color-electric)]",
+  );
 });
 
 it("uses firmware parameter names and type guidance for an unknown behavior", () => {
@@ -222,9 +226,10 @@ it("uses firmware parameter names and type guidance for an unknown behavior", ()
       layers={[{ id: 0, name: "Base" }]}
     />,
   );
-  expect(
-    screen.getByRole("button", { name: /Target: Select Layer/ }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Target:/ })).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Select Layer",
+  );
 });
 
 it("shows a caller-provided target identity in modal and floating presentations", () => {

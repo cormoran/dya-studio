@@ -697,9 +697,6 @@ export function KeycodeSelector({
             <span className="text-xs whitespace-nowrap">
               {getParamDisplayName(selectedBehaviorInfo, number, t)}:
             </span>
-            <span className="truncate text-xs text-[var(--color-text-muted)]">
-              {getParamTypeDescription(selectedBehaviorInfo, number, t)}
-            </span>
             <span className="truncate text-xs font-mono text-[var(--color-neon)]">
               {formatParamValue(
                 selectedBehaviorInfo,
@@ -713,6 +710,13 @@ export function KeycodeSelector({
             </span>
           </button>
         ))}
+      <span
+        role="status"
+        data-testid="active-param-description"
+        className="ml-2 min-w-[8rem] flex-1 self-center truncate text-xs text-[var(--color-text-muted)]"
+      >
+        {getParamTypeDescription(selectedBehaviorInfo, activeParam, t)}
+      </span>
     </div>
   );
 
