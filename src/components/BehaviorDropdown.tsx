@@ -117,9 +117,9 @@ export function BehaviorDropdown({
   const [searchQuery, setSearchQuery] = useState("");
   const [keepCategory, setKeepCategory] = useState(() => {
     try {
-      return localStorage.getItem(CATEGORY_PREFERENCE_STORAGE_KEY) === "true";
+      return localStorage.getItem(CATEGORY_PREFERENCE_STORAGE_KEY) !== "false";
     } catch {
-      return false;
+      return true;
     }
   });
   const [filterCategory, setFilterCategory] = useState<

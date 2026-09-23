@@ -23,6 +23,37 @@ function renderDropdown() {
   return onSelect;
 }
 
+it("keeps the selected category by default and honors a saved OFF preference", async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(
+    <BehaviorDropdown
+      behaviors={behaviors}
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  const keep = screen.getByRole("button", { name: "Keep selected category" });
+  expect(keep).toHaveAttribute("aria-pressed", "true");
+  await user.click(screen.getByRole("button", { name: "Layers" }));
+  await user.click(screen.getByRole("button", { name: "Layer-Tap" }));
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(screen.getByRole("button", { name: "Layers" })).toHaveClass(
+    "text-[var(--color-electric)]",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Keep selected category" }),
+  );
+  expect(localStorage.getItem("behaviorDropdownKeepCategory")).toBe("false");
+  unmount();
+  renderDropdown();
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(
+    screen.getByRole("button", { name: "Keep selected category" }),
+  ).toHaveAttribute("aria-pressed", "false");
+});
+
 it("keeps Quick Select settings inside the dropdown in floating mode", async () => {
   const user = userEvent.setup();
   render(

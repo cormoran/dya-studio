@@ -87,7 +87,7 @@ export function KeyLayoutSelector({
           </div>
         ))}
         <p className="mt-3 text-center text-[10px] text-[var(--color-text-muted)]">
-          {t("Click a key to select its keycode")}
+          {t("For other keys, use the category button at the top right")}
         </p>
       </div>
     </div>

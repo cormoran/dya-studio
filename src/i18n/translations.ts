@@ -836,7 +836,8 @@ const ja: Record<string, string> = {
   "No keycodes found": "キーコードが見つかりません",
   "Show key layout": "キー配列を表示",
   "Show keycodes by category": "カテゴリ別に表示",
-  "Click a key to select its keycode": "キーをクリックしてキーコードを選択",
+  "For other keys, use the category button at the top right":
+    "その他のキーは右上のカテゴリ別表示ボタンから選択できます",
   Letters: "文字",
   Numbers: "数字",
   Navigation: "ナビゲーション",
@@ -2236,7 +2237,8 @@ const zh: Record<string, string> = {
   "No keycodes found": "未找到键码",
   "Show key layout": "显示键盘布局",
   "Show keycodes by category": "按类别显示键码",
-  "Click a key to select its keycode": "点击按键以选择其键码",
+  "For other keys, use the category button at the top right":
+    "其他按键可通过右上角的分类显示按钮选择",
   Letters: "字母",
   Numbers: "数字",
   Navigation: "导航",

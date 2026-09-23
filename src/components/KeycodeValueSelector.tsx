@@ -43,9 +43,6 @@ import { useLanguage } from "../hooks/useLanguage";
 /** Selection UI mode: category grid or physical key layout preview */
 type ViewMode = "category" | "layout";
 
-// Start with the keyboard layout even for browsers that auto-saved the old category default.
-const VIEW_MODE_STORAGE_KEY = "keycodeSelectorViewModeV2";
-
 // Keycode categories in display order
 const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
   "letters",
@@ -88,10 +85,7 @@ export function KeycodeValueSelector({
   const [selectedModifiers, setSelectedModifiers] = useState<number>(
     extractModifierFlags(value),
   );
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    return saved === "category" ? "category" : "layout";
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>("layout");
   const [modifiersExpanded, setModifiersExpanded] = useState(false);
   const modifiersVisible = !compact || modifiersExpanded;
   const modifierToggleClassName =
@@ -101,11 +95,6 @@ export function KeycodeValueSelector({
       ? "hidden tablet:flex"
       : "flex";
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Persist view mode preference
-  useEffect(() => {
-    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
-  }, [viewMode]);
 
   // Update modifiers when value changes externally
   useEffect(() => {
@@ -191,16 +180,9 @@ export function KeycodeValueSelector({
               type="button"
               aria-expanded={modifiersExpanded}
               onClick={() => setModifiersExpanded(!modifiersExpanded)}
-              className={`h-7 inline-flex items-center px-2 text-xs rounded border whitespace-nowrap ${modifierToggleClassName ?? ""} ${modifiersExpanded ? "border-[var(--color-electric)] text-[var(--color-electric)] bg-[var(--color-electric)]/10" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+              className={`h-7 inline-flex items-center px-2 text-xs rounded border whitespace-nowrap ${modifierToggleClassName ?? ""} ${selectedModifiers !== 0 ? "bg-[var(--color-cyber)]/20 text-[var(--color-cyber)] border-[var(--color-cyber)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
             >
               {t("Modifiers")}
-              {selectedModifiers !== 0
-                ? ` (${MODIFIER_FLAGS.filter(
-                    (mod) => selectedModifiers & mod.value,
-                  )
-                    .map((mod) => mod.label)
-                    .join("+")})`
-                : ""}
             </button>
           </EditorTooltip>
         )}
@@ -234,17 +216,12 @@ export function KeycodeValueSelector({
                 setLayoutSearchExpanded(false);
                 setViewMode((m) => (m === "layout" ? "category" : "layout"));
               }}
-              aria-pressed={viewMode === "layout"}
               aria-label={
                 viewMode === "layout"
                   ? t("Show keycodes by category")
                   : t("Show key layout")
               }
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors ${
-                viewMode === "layout"
-                  ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-                  : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50"
-              }`}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded border bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-electric)]/50"
             >
               {viewMode === "layout" ? (
                 <IconLayoutGrid size={18} />

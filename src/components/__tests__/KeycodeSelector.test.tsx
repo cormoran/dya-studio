@@ -5,6 +5,7 @@ import { KeycodeValueSelector } from "../KeycodeValueSelector";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
 import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
 import { translate } from "../../i18n/translations";
+import { combineWithModifiers, MODIFIER_FLAGS } from "../../lib/keycodes";
 
 beforeEach(() => localStorage.clear());
 
@@ -46,6 +47,17 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
     screen.getByRole("button", { name: "Show keycodes by category" }),
   ).toBeInTheDocument();
   expect(
+    screen.getByRole("button", { name: "Show keycodes by category" }),
+  ).toHaveClass(
+    "text-[var(--color-text-muted)]",
+    "border-[var(--color-border)]",
+  );
+  expect(
+    screen.getByText(
+      "For other keys, use the category button at the top right",
+    ),
+  ).toBeInTheDocument();
+  expect(
     screen.queryByPlaceholderText("Search keycodes..."),
   ).not.toBeInTheDocument();
   expect(
@@ -69,6 +81,42 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
   expect(
     screen.getByRole("button", { name: "A", exact: true }),
   ).toBeInTheDocument();
+});
+
+it("starts with the keyboard layout even after category mode was previously saved", () => {
+  localStorage.setItem("keycodeSelectorViewModeV2", "category");
+  render(<KeycodeValueSelector compact value={0x70004} onChange={jest.fn()} />);
+  expect(
+    screen.getByRole("button", { name: "Show keycodes by category" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "For other keys, use the category button at the top right",
+    ),
+  ).toBeInTheDocument();
+});
+
+it("shows selected modifiers with the purple toggle without listing their names", async () => {
+  const user = userEvent.setup();
+  const modifier = MODIFIER_FLAGS[0];
+  render(
+    <KeycodeValueSelector
+      compact
+      value={combineWithModifiers(0x70004, modifier.value)}
+      onChange={jest.fn()}
+    />,
+  );
+  const toggle = screen.getByRole("button", { name: "Modifiers", exact: true });
+  expect(toggle).toHaveTextContent("Modifiers");
+  expect(toggle).not.toHaveTextContent(modifier.label);
+  expect(toggle).toHaveClass(
+    "border-[var(--color-cyber)]",
+    "text-[var(--color-cyber)]",
+  );
+  await user.click(toggle);
+  expect(screen.getByRole("button", { name: modifier.label })).toHaveClass(
+    "border-[var(--color-cyber)]",
+  );
 });
 
 it("toggles search in keyboard-layout mode and returns to the keyboard when hidden", async () => {
