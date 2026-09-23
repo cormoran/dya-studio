@@ -1881,7 +1881,9 @@ export function KeymapPage() {
 
       <KeycodeSelector
         open={showComboBindingSelector && isTabActive}
+        presentation={selectorMode}
         modalLayer="nested"
+        floatingAnchorRef={keymapContentAnchorRef}
         onClose={() => setShowComboBindingSelector(false)}
         onSelect={(binding) => {
           comboEditor.applyDraftChange(
@@ -1896,6 +1898,31 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        toolbar={
+          selectorMode === "floating" ? (
+            <EditorTooltip content={t("Switch to dialog mode")}>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-[var(--color-border)]"
+                aria-label={t("Dialog mode")}
+                onClick={() => setSelectorMode("modal")}
+              >
+                <IconArrowsMaximize size={16} />
+              </button>
+            </EditorTooltip>
+          ) : (
+            <EditorTooltip content={t("Switch to floating mode")}>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-[var(--color-border)]"
+                aria-label={t("Floating mode")}
+                onClick={() => setSelectorMode("floating")}
+              >
+                <IconWindow size={16} />
+              </button>
+            </EditorTooltip>
+          )
+        }
       />
 
       {/* Keycode Selector Dialog */}

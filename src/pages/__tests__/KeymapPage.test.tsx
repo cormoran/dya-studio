@@ -632,6 +632,69 @@ describe("KeymapPage", () => {
       expect(item).toHaveTextContent("Escape chord");
     });
 
+    it("edits an adjacent combo in a floating behavior selector", async () => {
+      const user = userEvent.setup();
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Escape chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /Combo Escape chord:/ }),
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      const actions = screen.getByTestId("binding-editor-actions");
+      expect(
+        within(actions).getByRole("button", { name: "Dialog mode" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", {
+          name: "Close without applying unfinished edits",
+        }),
+      ).toBeInTheDocument();
+
+      await user.click(
+        within(actions).getByRole("button", { name: "Dialog mode" }),
+      );
+      expect(
+        screen.getByRole("button", { name: "Floating mode" }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+    });
+
     it("exposes the keymap controls with names and selection state", () => {
       renderComponent(
         { isConnected: true },
