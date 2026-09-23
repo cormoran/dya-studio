@@ -10,10 +10,12 @@ import {
   IconChevronDown,
   IconRestore,
   IconTrash,
+  IconLink,
 } from "@tabler/icons-react";
 import * as Switch from "@radix-ui/react-switch";
 import { KeyboardLayout } from "../KeyboardLayout";
 import { KeycodeSelector } from "../KeycodeSelector";
+import { EditorTooltip } from "../EditorTooltip";
 import { StatusDot } from "../EditStatusIndicator";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { UseKeymapReturn } from "../../hooks/useKeymap";
@@ -215,7 +217,7 @@ export function ComboEditorCard({
           ))}
         </div>
         <p className="text-xs text-[var(--color-text-muted)]">
-          {formatLayerScope(draft.layerMask, t)}
+          {formatLayerScope(draft.layerMask, t, layers)}
         </p>
       </div>
 
@@ -345,6 +347,7 @@ export function ComboEditorCard({
 
       <KeycodeSelector
         open={combo.showBehaviorSelector}
+        modalLayer="nested"
         targetLabel={`${t("Combo Editor")} · ${draft.index}`}
         onClose={() => combo.setShowBehaviorSelector(false)}
         onSelect={(binding) =>
@@ -356,6 +359,18 @@ export function ComboEditorCard({
         keyboardLayout={keyboardLayout}
         behaviorQuickSelects={["kp", "lt", "mt", "none", "transparent"]}
         runtimeMacros={runtimeMacros}
+        toolbar={
+          <EditorTooltip content={t("Open Combo Editor")}>
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-[var(--color-border)]"
+              aria-label={t("Open Combo Editor")}
+              onClick={() => combo.setShowBehaviorSelector(false)}
+            >
+              <IconLink size={16} />
+            </button>
+          </EditorTooltip>
+        }
       />
     </section>
   );

@@ -350,6 +350,76 @@ it("shows a caller-provided target identity in modal and floating presentations"
   );
 });
 
+it("keeps a caller-shared floating position while switching editors", () => {
+  const sharedPosition = { left: 220, top: 170 };
+  const onFloatingPositionChange = jest.fn();
+  const renderSelectors = (active: "key" | "combo") => (
+    <>
+      <KeycodeSelector
+        open={active === "key"}
+        presentation="floating"
+        targetLabel="Base · Key position 0: A"
+        floatingPosition={sharedPosition}
+        onFloatingPositionChange={onFloatingPositionChange}
+        onClose={jest.fn()}
+        onSelect={jest.fn()}
+        currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+        behaviors={new Map([[1, BEHAVIORS[0]]])}
+        layers={[]}
+      />
+      <KeycodeSelector
+        open={active === "combo"}
+        presentation="floating"
+        targetLabel="Combo Editor · Escape chord"
+        floatingPosition={sharedPosition}
+        onFloatingPositionChange={onFloatingPositionChange}
+        onClose={jest.fn()}
+        onSelect={jest.fn()}
+        currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+        behaviors={new Map([[1, BEHAVIORS[0]]])}
+        layers={[]}
+      />
+    </>
+  );
+  const { rerender } = render(renderSelectors("key"));
+
+  expect(screen.getByRole("dialog")).toHaveStyle({
+    left: "220px",
+    top: "170px",
+  });
+  expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+    "Base · Key position 0: A",
+  );
+
+  rerender(renderSelectors("combo"));
+
+  expect(screen.getByRole("dialog")).toHaveStyle({
+    left: "220px",
+    top: "170px",
+  });
+  expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+    "Combo Editor · Escape chord",
+  );
+});
+
+it("raises a selector opened from another modal above that modal", () => {
+  render(
+    <KeycodeSelector
+      open
+      modalLayer="nested"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+
+  expect(screen.getByRole("dialog")).toHaveClass("z-[10001]");
+});
+
 it("names modal apply and floating discard actions, and skips unchanged modal callbacks", async () => {
   const user = userEvent.setup();
   const onClose = jest.fn();

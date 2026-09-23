@@ -97,3 +97,22 @@ describe("PhysicalKey — accessible interaction", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("PhysicalKey — combo badges", () => {
+  it("renders each combo's assigned number rather than the number of combos", () => {
+    renderKey({
+      combos: [
+        {
+          index: 4,
+          name: "Three-key combo",
+          label: "Escape",
+          showBadge: true,
+          badgeNumber: 3,
+        },
+      ],
+    });
+
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.queryByText("1")).not.toBeInTheDocument();
+  });
+});

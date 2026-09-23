@@ -36,6 +36,13 @@ jest.mock("../../hooks/useKeymap", () => ({
   useKeymap: jest.fn(),
 }));
 jest.mock("../../hooks/usePhysicalLayoutModules");
+jest.mock("../../hooks/useRuntimeCombo", () => ({
+  ...jest.requireActual("../../hooks/useRuntimeCombo"),
+  useRuntimeCombo: jest.fn(),
+}));
+jest.mock("../../components/macroCombo/useComboEditor", () => ({
+  useComboEditor: jest.fn(),
+}));
 // Control the proactive lock state the page reads; default to unlocked so the
 // existing tests (which expect Save/Reset) keep passing.
 jest.mock("@cormoran/zmk-studio-react-hook", () => ({
@@ -44,8 +51,11 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => ({
 }));
 import { useKeymap } from "../../hooks/useKeymap";
 import { usePhysicalLayoutModules } from "../../hooks/usePhysicalLayoutModules";
+import { useRuntimeCombo } from "../../hooks/useRuntimeCombo";
+import { useComboEditor } from "../../components/macroCombo/useComboEditor";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import { StudioUnlockProvider } from "../../contexts/StudioUnlockContext";
+import { ComboSource } from "../../proto/cormoran/runtime_combo/runtime_combo";
 
 const mockUseKeymap = useKeymap as jest.MockedFunction<typeof useKeymap>;
 const mockUseStudioLockState = useStudioLockState as jest.MockedFunction<
@@ -55,6 +65,12 @@ const mockUsePhysicalLayoutModules =
   usePhysicalLayoutModules as jest.MockedFunction<
     typeof usePhysicalLayoutModules
   >;
+const mockUseRuntimeCombo = useRuntimeCombo as jest.MockedFunction<
+  typeof useRuntimeCombo
+>;
+const mockUseComboEditor = useComboEditor as jest.MockedFunction<
+  typeof useComboEditor
+>;
 
 describe("KeymapPage", () => {
   // Default mock context values
@@ -169,6 +185,58 @@ describe("KeymapPage", () => {
       error: null,
       loadModules: jest.fn(),
     });
+
+    mockUseRuntimeCombo.mockReturnValue({
+      isAvailable: false,
+      combos: [],
+      globalSettings: null,
+      isLoading: false,
+      error: null,
+      hasPendingChanges: false,
+      reload: jest.fn(),
+    } as never);
+
+    mockUseComboEditor.mockReturnValue({
+      selectedIndex: null,
+      draft: {
+        index: 0,
+        name: "",
+        keyPositions: [],
+        behavior: { behaviorId: 0, param1: 0, param2: 0 },
+        layerMask: 0,
+        enabled: true,
+        timeoutMs: 0,
+        requirePriorIdleMs: 0,
+        slowReleaseOverride: 0,
+        source: ComboSource.COMBO_SOURCE_EMPTY,
+      },
+      showBehaviorSelector: false,
+      setShowBehaviorSelector: jest.fn(),
+      statusMessage: null,
+      isAdvancedExpanded: false,
+      setIsAdvancedExpanded: jest.fn(),
+      modifiedIndices: new Set(),
+      globalModifiedFields: new Set(),
+      maxCombo: undefined,
+      highlightedKeys: new Set(),
+      validationError: null,
+      selectedCombo: null,
+      selectedComboExists: false,
+      editorSource: ComboSource.COMBO_SOURCE_EMPTY,
+      selectCombo: jest.fn(),
+      clearSelection: jest.fn(),
+      applyDraftChange: jest.fn(),
+      handleNewCombo: jest.fn(),
+      handlePositionToggle: jest.fn(),
+      handleDeleteCombo: jest.fn(),
+      handleResetCombo: jest.fn(),
+      handleSlowReleaseChange: jest.fn(),
+      handleTimeoutMsChange: jest.fn(),
+      handleRequirePriorIdleMsChange: jest.fn(),
+      flushPendingWrites: jest.fn(),
+      cancelPendingWrites: jest.fn(),
+      clearModified: jest.fn(),
+    } as never);
   });
 
   /**
@@ -505,6 +573,245 @@ describe("KeymapPage", () => {
 
       expect(screen.getByText("Base")).toBeInTheDocument();
       expect(screen.getByText("Lower")).toBeInTheDocument();
+    });
+
+    it("highlights a RAM-only combo item with the green unsaved treatment", () => {
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Escape chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: true,
+        reload: jest.fn(),
+      } as never);
+
+      const initial = renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+      const initialEditor = mockUseComboEditor.mock.results.at(-1)?.value;
+      initial.unmount();
+      mockUseComboEditor.mockReturnValue({
+        ...initialEditor,
+        modifiedIndices: new Set([0]),
+      });
+
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      const item = screen.getByTestId("combo-list-item-0");
+      expect(item).toHaveClass(
+        "bg-[var(--color-neon)]/10",
+        "border-[var(--color-neon)]/50",
+      );
+      expect(within(item).getByLabelText("Unsaved")).toBeInTheDocument();
+      expect(item).toHaveTextContent("Escape chord");
+    });
+
+    it("edits an adjacent combo in a floating behavior selector", async () => {
+      const user = userEvent.setup();
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Escape chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /Combo Escape chord:/ }),
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      const actions = screen.getByTestId("binding-editor-actions");
+      expect(
+        within(actions).getByRole("button", { name: "Dialog mode" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", {
+          name: "Close without applying unfinished edits",
+        }),
+      ).toBeInTheDocument();
+
+      await user.click(
+        within(actions).getByRole("button", { name: "Dialog mode" }),
+      );
+      expect(
+        screen.getByRole("button", { name: "Floating mode" }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: "Open Combo Editor" }),
+      );
+      expect(
+        screen.queryByTestId("binding-editor-target"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Combo Editor" }),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps the combo and key floating editors mutually exclusive", async () => {
+      const user = userEvent.setup();
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Escape chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0: A",
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /Combo Escape chord:/ }),
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+      expect(
+        screen.queryByText("Base · Key position 0: A"),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0: A",
+      );
+      expect(screen.queryByText("Combo Editor · 0")).not.toBeInTheDocument();
+    });
+
+    it("lists named combo layers on a separate line in a wrapping card", () => {
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Three layer chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0x7,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: {
+            ...mockKeymap,
+            layers: [
+              ...mockKeymap.layers,
+              {
+                id: 2,
+                name: "Raise",
+                bindings: mockKeymap.layers[0].bindings,
+              },
+            ],
+          },
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      const item = screen.getByTestId("combo-list-item-0");
+      expect(item).toHaveClass("min-w-56", "flex-[1_1_14rem]");
+      expect(item).toHaveTextContent("0 + 1");
+      expect(item).toHaveTextContent("Layers: Base, Lower, Raise");
+      expect(item).not.toHaveTextContent("0x7");
     });
 
     it("exposes the keymap controls with names and selection state", () => {

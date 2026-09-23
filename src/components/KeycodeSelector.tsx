@@ -41,7 +41,10 @@ import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-import { useFloatingWindow } from "../hooks/useFloatingWindow";
+import {
+  useFloatingWindow,
+  type FloatingWindowPosition,
+} from "../hooks/useFloatingWindow";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -64,11 +67,18 @@ interface SelectedBehaviorInfo {
 
 interface KeycodeSelectorProps {
   presentation?: "modal" | "floating";
+  /** Renders above an already-open modal dialog when needed by a caller. */
+  modalLayer?: "default" | "nested";
   selectionKey?: string;
   /** Caller-owned identity for the item whose binding is being edited. */
   targetLabel?: ReactNode;
   toolbar?: ReactNode;
   floatingAnchorRef?: RefObject<HTMLElement | null>;
+  /** Caller-owned position shared across mutually exclusive floating editors. */
+  floatingPosition?: FloatingWindowPosition;
+  onFloatingPositionChange?: (
+    position: FloatingWindowPosition | undefined,
+  ) => void;
   busy?: boolean;
   error?: string | null;
   open: boolean;
@@ -249,10 +259,13 @@ function hasParam(
 
 export function KeycodeSelector({
   presentation = "modal",
+  modalLayer = "default",
   selectionKey,
   targetLabel,
   toolbar,
   floatingAnchorRef,
+  floatingPosition,
+  onFloatingPositionChange,
   busy = false,
   error,
   open,
@@ -269,11 +282,19 @@ export function KeycodeSelector({
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
+  const resolvedModalLayerClassName =
+    modalLayer === "nested" ? "z-[10001]" : modalLayerClassName;
   const activePresentation = useRef(presentation);
   useEffect(() => {
     activePresentation.current = presentation;
   }, [presentation]);
-  const floatingWindow = useFloatingWindow(floating, open, floatingAnchorRef);
+  const floatingWindow = useFloatingWindow(
+    floating,
+    open,
+    floatingAnchorRef,
+    floatingPosition,
+    onFloatingPositionChange,
+  );
   const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
@@ -778,13 +799,13 @@ export function KeycodeSelector({
       <Dialog.Portal>
         {!floating && (
           <Dialog.Overlay
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${modalLayerClassName}`}
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${resolvedModalLayerClassName}`}
           />
         )}
         <div
           className={
             floating
-              ? "fixed inset-0 z-50 overflow-hidden pointer-events-none [contain:paint]"
+              ? `fixed inset-0 ${resolvedModalLayerClassName} overflow-hidden pointer-events-none [contain:paint]`
               : "contents"
           }
         >
@@ -803,8 +824,8 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
-                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${modalLayerClassName} flex flex-col overflow-hidden`
+                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
+                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
             }
           >
             {error && (

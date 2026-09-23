@@ -7,17 +7,25 @@ import {
   type RefObject,
 } from "react";
 
+export type FloatingWindowPosition = { left: number; top: number };
+
 /** Allow clipped overflow while leaving enough of the header to drag back. */
 export function useFloatingWindow(
   enabled: boolean,
   open: boolean,
   anchorRef?: RefObject<HTMLElement | null>,
+  sharedPosition?: FloatingWindowPosition,
+  onSharedPositionChange?: (
+    position: FloatingWindowPosition | undefined,
+  ) => void,
 ) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; headerHeight: number } | null>(
     null,
   );
-  const [position, setPosition] = useState<{ left: number; top: number }>();
+  const [localPosition, setLocalPosition] = useState<FloatingWindowPosition>();
+  const position = onSharedPositionChange ? sharedPosition : localPosition;
+  const setPosition = onSharedPositionChange ?? setLocalPosition;
 
   useLayoutEffect(() => {
     if (!enabled || !open) return;
@@ -46,10 +54,11 @@ export function useFloatingWindow(
     const reset = () => setPosition(undefined);
     window.addEventListener("resize", reset);
     return () => window.removeEventListener("resize", reset);
-  }, []);
+  }, [setPosition]);
 
-  // Reset while closed so reopening starts at a known visible position.
-  if (!open && position !== undefined) {
+  // An unshared window resets while closed. Callers that switch between
+  // mutually-exclusive editors can instead own the position and retain it.
+  if (!onSharedPositionChange && !open && position !== undefined) {
     setPosition(undefined);
   }
 

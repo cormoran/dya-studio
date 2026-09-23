@@ -175,8 +175,18 @@ export function toggleLayer(mask: number, layerId: number): number {
 export function formatLayerScope(
   mask: number,
   t: (key: string, params?: Record<string, number | string>) => string,
+  layers: Array<{ id: number; name: string }> = [],
 ): string {
-  return mask === 0 ? t("All layers") : `0x${mask.toString(16)}`;
+  if (mask === 0) return t("All layers");
+
+  return Array.from({ length: 32 }, (_, id) => id)
+    .filter((id) => hasLayer(mask, id))
+    .map(
+      (id) =>
+        layers.find((layer) => layer.id === id)?.name ||
+        t("Layer {{id}}", { id }),
+    )
+    .join(", ");
 }
 
 // Pure validation shared by the error banner and the auto-write guard: an
