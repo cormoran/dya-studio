@@ -203,6 +203,10 @@ export function KeymapPage() {
     },
     [closeSelector, comboEditor],
   );
+  const returnToComboEditor = useCallback(() => {
+    setShowComboBindingSelector(false);
+    setShowComboEditor(true);
+  }, []);
   const handleCreateCombo = useCallback(async () => {
     if (await comboEditor.handleNewCombo()) setShowComboEditor(true);
   }, [comboEditor]);
@@ -1967,29 +1971,41 @@ export function KeymapPage() {
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
         toolbar={
-          selectorMode === "floating" ? (
-            <EditorTooltip content={t("Switch to dialog mode")}>
+          <div className="flex items-center gap-1">
+            <EditorTooltip content={t("Open Combo Editor")}>
               <button
                 type="button"
                 className="p-1 rounded hover:bg-[var(--color-border)]"
-                aria-label={t("Dialog mode")}
-                onClick={() => setSelectorMode("modal")}
+                aria-label={t("Open Combo Editor")}
+                onClick={returnToComboEditor}
               >
-                <IconArrowsMaximize size={16} />
+                <IconLink size={16} />
               </button>
             </EditorTooltip>
-          ) : (
-            <EditorTooltip content={t("Switch to floating mode")}>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-[var(--color-border)]"
-                aria-label={t("Floating mode")}
-                onClick={() => setSelectorMode("floating")}
-              >
-                <IconWindow size={16} />
-              </button>
-            </EditorTooltip>
-          )
+            {selectorMode === "floating" ? (
+              <EditorTooltip content={t("Switch to dialog mode")}>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-[var(--color-border)]"
+                  aria-label={t("Dialog mode")}
+                  onClick={() => setSelectorMode("modal")}
+                >
+                  <IconArrowsMaximize size={16} />
+                </button>
+              </EditorTooltip>
+            ) : (
+              <EditorTooltip content={t("Switch to floating mode")}>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-[var(--color-border)]"
+                  aria-label={t("Floating mode")}
+                  onClick={() => setSelectorMode("floating")}
+                >
+                  <IconWindow size={16} />
+                </button>
+              </EditorTooltip>
+            )}
+          </div>
         }
       />
 

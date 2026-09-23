@@ -693,6 +693,16 @@ describe("KeymapPage", () => {
       expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
         "Combo Editor · 0",
       );
+
+      await user.click(
+        screen.getByRole("button", { name: "Open Combo Editor" }),
+      );
+      expect(
+        screen.queryByTestId("binding-editor-target"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Combo Editor" }),
+      ).toBeInTheDocument();
     });
 
     it("keeps the combo and key floating editors mutually exclusive", async () => {
