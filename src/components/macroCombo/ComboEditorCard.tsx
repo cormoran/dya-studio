@@ -345,6 +345,7 @@ export function ComboEditorCard({
 
       <KeycodeSelector
         open={combo.showBehaviorSelector}
+        modalLayer="nested"
         targetLabel={`${t("Combo Editor")} · ${draft.index}`}
         onClose={() => combo.setShowBehaviorSelector(false)}
         onSelect={(binding) =>

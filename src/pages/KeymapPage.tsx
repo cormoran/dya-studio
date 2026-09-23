@@ -53,6 +53,7 @@ import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
 import {
   formatComboBehavior,
   defaultBehaviorBinding,
+  formatLayerScope,
 } from "../components/macroCombo/comboUtils";
 import { useInputStream } from "../hooks/useInputStream";
 import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
@@ -78,6 +79,8 @@ export function KeymapPage() {
   // compete with the keymap load. autoLoad:false suppresses the on-mount fetch.
   const runtimeMacro = useRuntimeMacro({ autoLoad: false });
   const runtimeCombo = useRuntimeCombo({ autoLoad: false });
+  const { isAvailable: isComboAvailable, reload: reloadRuntimeCombos } =
+    runtimeCombo;
   const inputStream = useInputStream();
   // Snapshots the keymap into IndexedDB after every full load, and drives the
   // "restore a previous version" flow behind the reset dropdown.
@@ -184,21 +187,6 @@ export function KeymapPage() {
   const handleCreateCombo = useCallback(async () => {
     if (await comboEditor.handleNewCombo()) setShowComboEditor(true);
   }, [comboEditor]);
-  const handleSaveCombo = useCallback(async () => {
-    await comboEditor.flushPendingWrites();
-    const status = await runtimeCombo.saveChanges();
-    if (status) comboEditor.clearModified();
-  }, [comboEditor, runtimeCombo]);
-  const handleDiscardCombo = useCallback(async () => {
-    comboEditor.cancelPendingWrites();
-    const status = await runtimeCombo.discardChanges();
-    if (status) {
-      comboEditor.clearModified();
-      setShowComboEditor(false);
-      setShowComboBindingSelector(false);
-    }
-  }, [comboEditor, runtimeCombo]);
-
   // Get current layer
   const currentLayer = useMemo(() => {
     if (!keymap.keymap?.layers) return null;
@@ -357,15 +345,29 @@ export function KeymapPage() {
     closeSelector,
   ]);
 
-  // Handle save
+  const hasComboChanges =
+    runtimeCombo.hasPendingChanges ||
+    comboEditor.modifiedIndices.size > 0 ||
+    comboEditor.globalModifiedFields.size > 0;
+  const hasUnsavedChanges = keymap.hasUnsavedChanges || hasComboChanges;
+
+  // The page-level Save is the single flash-persistence boundary for both
+  // keymap bindings and runtime combos.
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await keymap.saveChanges();
+      await comboEditor.flushPendingWrites();
+      if (keymap.hasUnsavedChanges) {
+        await keymap.saveChanges();
+      }
+      if (isComboAvailable && hasComboChanges) {
+        const status = await runtimeCombo.saveChanges();
+        if (status) comboEditor.clearModified();
+      }
     } finally {
       setIsSaving(false);
     }
-  }, [keymap]);
+  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo]);
 
   // Re-read the keymap from the keyboard. The page keeps its state across tab
   // switches now, so this is the way to pick up changes made outside the app
@@ -375,34 +377,60 @@ export function KeymapPage() {
     void keymap.loadKeymapData();
   }, [keymap]);
 
-  // Handle discard
+  // Discard restores both independent in-memory editing domains to their
+  // last flash-saved values.
   const handleDiscard = useCallback(async () => {
     if (!confirm(t("Are you sure you want to discard all changes?"))) return;
     setIsDiscarding(true);
     try {
-      await keymap.discardChanges();
+      comboEditor.cancelPendingWrites();
+      await Promise.all([
+        keymap.hasUnsavedChanges
+          ? keymap.discardChanges()
+          : Promise.resolve(true),
+        isComboAvailable && hasComboChanges
+          ? runtimeCombo.discardChanges()
+          : Promise.resolve(null),
+      ]);
+      comboEditor.clearModified();
+      setShowComboEditor(false);
+      setShowComboBindingSelector(false);
     } finally {
       setIsDiscarding(false);
     }
-  }, [keymap, t]);
+  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo, t]);
 
-  // Handle reset-to-default: reset the persistent keymap to the hard-coded
-  // default, then close the confirmation dialog. Gated on unlock (it edits +
-  // saves) like every other keymap edit.
+  // Reset combines the keymap's built-in defaults with every currently known
+  // runtime-combo slot, then persists both domains to flash.
   const handleResetToDefault = useCallback(
     () =>
       withUnlock(async () => {
         setIsResetting(true);
         try {
-          const ok = await keymap.resetToDefault();
-          if (ok) {
+          const keymapReset = await keymap.resetToDefault();
+          const combosReset = isComboAvailable
+            ? (
+                await Promise.all(
+                  [...runtimeCombo.combos].map((combo) =>
+                    runtimeCombo.resetCombo(combo.index),
+                  ),
+                )
+              ).every(Boolean)
+            : true;
+          let combosSaved = true;
+          if (isComboAvailable) {
+            combosSaved =
+              combosReset && Boolean(await runtimeCombo.saveChanges());
+          }
+          if (keymapReset && combosSaved) {
+            comboEditor.clearModified();
             setShowResetDialog(false);
           }
         } finally {
           setIsResetting(false);
         }
       }),
-    [keymap, withUnlock],
+    [comboEditor, isComboAvailable, keymap, runtimeCombo, withUnlock],
   );
 
   // Handle layer move up
@@ -589,8 +617,6 @@ export function KeymapPage() {
     loadRuntimeMacros,
   ]);
 
-  const { isAvailable: isComboAvailable, reload: reloadRuntimeCombos } =
-    runtimeCombo;
   useEffect(() => {
     if (keymap.isLoading) {
       combosRequestedRef.current = false;
@@ -723,10 +749,10 @@ export function KeymapPage() {
                       }}
                       discard={{
                         description: t(
-                          "Drops the unsaved edits in keyboard memory and reloads the keymap stored on the keyboard.",
+                          "Drops unsaved keymap and combo edits in keyboard memory, then reloads their saved values.",
                         ),
                         onSelect: () => void handleDiscard(),
-                        disabled: !keymap.hasUnsavedChanges || isDiscarding,
+                        disabled: !hasUnsavedChanges || isDiscarding,
                       }}
                     />
                   </div>
@@ -735,7 +761,10 @@ export function KeymapPage() {
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={
-                      isSaving || !keymap.hasUnsavedChanges || keymap.isLoading
+                      isSaving ||
+                      !hasUnsavedChanges ||
+                      keymap.isLoading ||
+                      Boolean(comboEditor.validationError && showComboEditor)
                     }
                   >
                     {isSaving ? (
@@ -1574,31 +1603,6 @@ export function KeymapPage() {
                     {t("Combos")}
                   </h2>
                   <div className="flex items-center gap-2">
-                    {runtimeCombo.hasPendingChanges && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-ghost text-xs"
-                          onClick={() => void handleDiscardCombo()}
-                          disabled={runtimeCombo.isLoading}
-                        >
-                          {t("Discard")}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-electric text-xs"
-                          onClick={() => void handleSaveCombo()}
-                          disabled={
-                            runtimeCombo.isLoading ||
-                            Boolean(
-                              comboEditor.validationError && showComboEditor,
-                            )
-                          }
-                        >
-                          {t("Save")}
-                        </button>
-                      </>
-                    )}
                     <button
                       type="button"
                       className="p-1 rounded text-[var(--color-electric)] hover:bg-[var(--color-border)] disabled:opacity-40"
@@ -1630,19 +1634,26 @@ export function KeymapPage() {
                   </p>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {runtimeCombo.combos.map((combo) => (
+                    {runtimeCombo.combos.map((combo, position) => (
                       <button
                         key={combo.index}
                         type="button"
                         className={`shrink-0 min-w-32 max-w-52 p-3 rounded-lg border bg-[var(--color-surface)] text-left hover:border-[var(--color-electric)]/60 ${combo.enabled ? "border-[var(--color-border)]" : "border-[var(--color-border)] opacity-60"}`}
                         onClick={() => openComboEditor(combo)}
                       >
-                        <span className="block text-sm font-medium truncate">
-                          {combo.name ||
-                            t("Combo {{index}}", { index: combo.index })}
+                        <span className="flex items-center gap-1.5 text-sm font-medium truncate">
+                          <span className="flex shrink-0 items-center gap-px text-[var(--color-electric)]">
+                            <IconLink size={14} aria-hidden="true" />
+                            {position + 1}
+                          </span>
+                          <span className="truncate">
+                            {combo.name ||
+                              t("Combo {{index}}", { index: combo.index })}
+                          </span>
                         </span>
                         <span className="block text-xs text-[var(--color-text-muted)] truncate">
-                          {combo.keyPositions.join(" + ")}
+                          {combo.keyPositions.join(" + ")} ·{" "}
+                          {formatLayerScope(combo.layerMask, t)}
                         </span>
                         <span className="block text-xs text-[var(--color-electric)] truncate">
                           {formatComboBehavior(
@@ -1754,9 +1765,23 @@ export function KeymapPage() {
             </Dialog.Title>
             <Dialog.Description className="text-sm text-[var(--color-text-muted)] mb-5">
               {t(
-                "This resets the saved keymap on your keyboard back to its hard-coded default and writes it to flash immediately. All saved key bindings will be lost. This cannot be undone.",
+                "This writes the selected defaults to your keyboard flash immediately. This cannot be undone.",
               )}
             </Dialog.Description>
+            <ul className="mb-5 list-disc space-y-1 pl-5 text-sm text-[var(--color-text-muted)]">
+              <li>
+                {t(
+                  "All saved key bindings are reset to the keyboard's built-in default keymap.",
+                )}
+              </li>
+              {isComboAvailable && (
+                <li>
+                  {t(
+                    "All saved runtime combos are reset to their firmware defaults.",
+                  )}
+                </li>
+              )}
+            </ul>
             <div className="flex gap-3">
               <button
                 className="flex-1 btn-ghost border border-[var(--color-border)]"
@@ -1821,6 +1846,7 @@ export function KeymapPage() {
 
       <KeycodeSelector
         open={showComboBindingSelector && isTabActive}
+        modalLayer="nested"
         onClose={() => setShowComboBindingSelector(false)}
         onSelect={(binding) => {
           comboEditor.applyDraftChange(

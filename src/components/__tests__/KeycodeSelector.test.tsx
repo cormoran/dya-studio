@@ -350,6 +350,24 @@ it("shows a caller-provided target identity in modal and floating presentations"
   );
 });
 
+it("raises a selector opened from another modal above that modal", () => {
+  render(
+    <KeycodeSelector
+      open
+      modalLayer="nested"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 1, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Transparent", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+
+  expect(screen.getByRole("dialog")).toHaveClass("z-[10001]");
+});
+
 it("names modal apply and floating discard actions, and skips unchanged modal callbacks", async () => {
   const user = userEvent.setup();
   const onClose = jest.fn();

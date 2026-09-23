@@ -67,6 +67,7 @@ interface PhysicalKeyProps {
     name: string;
     label: string;
     showBadge: boolean;
+    badgeNumber: number;
   }>;
 }
 
@@ -159,8 +160,14 @@ export function PhysicalKey({
     >
       {combos.some((combo) => combo.showBadge) && (
         <span className="absolute top-0.5 left-1 flex items-center gap-0.5 text-[9px] leading-none text-[var(--color-electric)] pointer-events-none">
-          <IconLink size={10} />
-          {combos.filter((combo) => combo.showBadge).length}
+          {combos
+            .filter((combo) => combo.showBadge)
+            .map((combo) => (
+              <span key={combo.index} className="flex items-center gap-px">
+                <IconLink size={10} />
+                {combo.badgeNumber}
+              </span>
+            ))}
         </span>
       )}
       {/* Display Name */}
@@ -222,17 +229,6 @@ export function PhysicalKey({
                     {longDisplayName || displayName}
                   </span>
                 </div>
-                {combos.map((combo) => (
-                  <div key={combo.index}>
-                    <span className="text-[var(--color-text-muted)]">
-                      {t("Combo")}:{" "}
-                    </span>
-                    <span>
-                      {combo.name || `${t("Combo")} ${combo.index}`} ·{" "}
-                      {combo.label}
-                    </span>
-                  </div>
-                ))}
                 {/* Show binding description only if different from displayName */}
                 {bindingDescription &&
                   bindingDescription !== displayName &&
@@ -244,6 +240,17 @@ export function PhysicalKey({
                       <span>{bindingDescription}</span>
                     </div>
                   )}
+                {combos.map((combo) => (
+                  <div key={combo.index}>
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Combo")}:{" "}
+                    </span>
+                    <span>
+                      {combo.name || `${t("Combo")} ${combo.index}`} ·{" "}
+                      {combo.label}
+                    </span>
+                  </div>
+                ))}
                 {/* Original binding info when modified and still known */}
                 {isModified && isOriginalKnown && originalDisplayName && (
                   <div>

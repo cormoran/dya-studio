@@ -64,6 +64,8 @@ interface SelectedBehaviorInfo {
 
 interface KeycodeSelectorProps {
   presentation?: "modal" | "floating";
+  /** Renders above an already-open modal dialog when needed by a caller. */
+  modalLayer?: "default" | "nested";
   selectionKey?: string;
   /** Caller-owned identity for the item whose binding is being edited. */
   targetLabel?: ReactNode;
@@ -241,6 +243,7 @@ function hasParam(
 
 export function KeycodeSelector({
   presentation = "modal",
+  modalLayer = "default",
   selectionKey,
   targetLabel,
   toolbar,
@@ -729,12 +732,18 @@ export function KeycodeSelector({
     >
       <Dialog.Portal>
         {!floating && (
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+          <Dialog.Overlay
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${
+              modalLayer === "nested" ? "z-[10001]" : "z-50"
+            }`}
+          />
         )}
         <div
           className={
             floating
-              ? "fixed inset-0 z-50 overflow-hidden pointer-events-none [contain:paint]"
+              ? `fixed inset-0 ${
+                  modalLayer === "nested" ? "z-[10001]" : "z-50"
+                } overflow-hidden pointer-events-none [contain:paint]`
               : "contents"
           }
         >
@@ -753,8 +762,12 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
-                : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${
+                    modalLayer === "nested" ? "z-[10001]" : "z-50"
+                  } flex flex-col overflow-hidden`
+                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${
+                    modalLayer === "nested" ? "z-[10001]" : "z-50"
+                  } flex flex-col overflow-hidden`
             }
           >
             {error && (

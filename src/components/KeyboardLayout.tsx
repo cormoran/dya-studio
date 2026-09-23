@@ -6,6 +6,7 @@
  * Responsive to window size with min/max limits.
  */
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
+import { IconLink } from "@tabler/icons-react";
 import { PhysicalKey } from "./PhysicalKey";
 import { PhysicalLayoutModule } from "./PhysicalLayoutModule";
 import type {
@@ -317,10 +318,15 @@ export function KeyboardLayout({
       combo.enabled &&
       (combo.layerMask === 0 || hasLayer(combo.layerMask, layer.id)),
   );
+  // Keep the card and preview numbering stable across layer filtering.
+  const comboNumbers = new Map(
+    combos.map((combo, position) => [combo.index, position + 1]),
+  );
   const comboLabels = visibleCombos.map((combo) => ({
     combo,
     label: getKeyLongDisplayName(-1, combo.behavior),
     center: adjacentComboCenter(layout.keys, combo.keyPositions),
+    number: comboNumbers.get(combo.index) ?? 1,
   }));
 
   return (
@@ -389,11 +395,12 @@ export function KeyboardLayout({
               scale={scale}
               combos={comboLabels
                 .filter(({ combo }) => combo.keyPositions.includes(position))
-                .map(({ combo, label, center }) => ({
+                .map(({ combo, label, center, number }) => ({
                   index: combo.index,
                   name: combo.name,
                   label,
                   showBadge: center === null,
+                  badgeNumber: number,
                 }))}
             />
           );
@@ -423,7 +430,7 @@ export function KeyboardLayout({
             <button
               key={`combo-${combo.index}`}
               type="button"
-              className="absolute z-10 flex items-center justify-center rounded border border-[var(--color-electric)] bg-[var(--color-electric)] text-[var(--color-bg)] text-[10px] font-semibold shadow-md hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+              className="absolute z-10 flex items-start justify-start rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-[var(--color-electric)] text-[10px] font-semibold shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
               style={{
                 width: BASE_UNIT_SIZE * scale * 0.5,
                 height: BASE_UNIT_SIZE * scale * 0.5,
@@ -440,7 +447,7 @@ export function KeyboardLayout({
               aria-label={`Combo ${combo.name || combo.index}: ${label}`}
               title={`${combo.name || `Combo ${combo.index}`}: ${label}`}
             >
-              <span className="truncate px-0.5">{label}</span>
+              <IconLink size={14} aria-hidden="true" />
             </button>
           ) : null,
         )}
