@@ -82,6 +82,14 @@ interface KeycodeSelectorProps {
   keyboardLayout?: KeyboardLayoutType;
   behaviorQuickSelects?: string[]; // Optional list of behavior displayNameVariants for quick select
   runtimeMacros?: Array<{ slot: number; name?: string }>;
+  /**
+   * Opens the caller-owned runtime macro editor without changing this draft.
+   * A slot identifies the macro assigned to the active Runtime Macro binding;
+   * no slot starts the create flow.
+   */
+  onOpenMacroEditor?: (slot?: number) => void;
+  /** Lets a selector opened from another modal render above its parent. */
+  modalLayerClassName?: string;
 }
 
 // =============================================================================
@@ -259,9 +267,13 @@ export function KeycodeSelector({
   keyboardLayout,
   behaviorQuickSelects,
   runtimeMacros = [],
+  onOpenMacroEditor,
+  modalLayerClassName = "z-50",
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
+  const resolvedModalLayerClassName =
+    modalLayer === "nested" ? "z-[10001]" : modalLayerClassName;
   const activePresentation = useRef(presentation);
   useEffect(() => {
     activePresentation.current = presentation;
@@ -392,6 +404,30 @@ export function KeycodeSelector({
     ],
   );
 
+  const handleMacroSelect = useCallback(
+    (slot: number) => {
+      const runtimeMacroBehavior = Array.from(behaviors.values()).find(
+        (behavior) =>
+          getBehaviorMetadata(behavior.displayName)?.param1Type === "macro",
+      );
+      if (!runtimeMacroBehavior) return;
+
+      setSelectedBehavior(runtimeMacroBehavior.id);
+      setParam1(slot);
+      setParam2(0);
+      setActiveParam(1);
+      if (closeOnSelect) {
+        onSelect({
+          behaviorId: runtimeMacroBehavior.id,
+          param1: slot,
+          param2: 0,
+        });
+        if (!floating) onClose();
+      }
+    },
+    [behaviors, closeOnSelect, floating, onClose, onSelect],
+  );
+
   const handleParam2Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam2(value);
@@ -515,17 +551,24 @@ export function KeycodeSelector({
       if (overrideType) {
         switch (overrideType) {
           case "macro":
-            return runtimeMacros.length > 0 ? (
-              <ButtonListSelector
-                options={runtimeMacros.map((macro) => ({
-                  value: macro.slot,
-                  label: macro.name || `Macro ${macro.slot}`,
-                }))}
-                value={value}
-                onChange={onChange}
-                columns={Math.min(runtimeMacros.length, 4)}
-              />
-            ) : (
+            if (runtimeMacros.length > 0 || onOpenMacroEditor) {
+              return (
+                <div className="space-y-2">
+                  {runtimeMacros.length > 0 && (
+                    <ButtonListSelector
+                      options={runtimeMacros.map((macro) => ({
+                        value: macro.slot,
+                        label: macro.name || `Macro ${macro.slot}`,
+                      }))}
+                      value={value}
+                      onChange={onChange}
+                      columns={Math.min(runtimeMacros.length, 4)}
+                    />
+                  )}
+                </div>
+              );
+            }
+            return (
               <input
                 type="number"
                 min={0}
@@ -666,7 +709,14 @@ export function KeycodeSelector({
       }
       return null;
     },
-    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros, floating],
+    [
+      layers,
+      selectedBehaviorInfo,
+      keyboardLayout,
+      runtimeMacros,
+      floating,
+      onOpenMacroEditor,
+    ],
   );
 
   const activeDescriptions =
@@ -733,17 +783,13 @@ export function KeycodeSelector({
       <Dialog.Portal>
         {!floating && (
           <Dialog.Overlay
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${
-              modalLayer === "nested" ? "z-[10001]" : "z-50"
-            }`}
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${resolvedModalLayerClassName}`}
           />
         )}
         <div
           className={
             floating
-              ? `fixed inset-0 ${
-                  modalLayer === "nested" ? "z-[10001]" : "z-50"
-                } overflow-hidden pointer-events-none [contain:paint]`
+              ? `fixed inset-0 ${resolvedModalLayerClassName} overflow-hidden pointer-events-none [contain:paint]`
               : "contents"
           }
         >
@@ -762,12 +808,8 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${
-                    modalLayer === "nested" ? "z-[10001]" : "z-50"
-                  } flex flex-col overflow-hidden`
-                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${
-                    modalLayer === "nested" ? "z-[10001]" : "z-50"
-                  } flex flex-col overflow-hidden`
+                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
+                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
             }
           >
             {error && (
@@ -912,6 +954,8 @@ export function KeycodeSelector({
                     onSelect={handleBehaviorSelect}
                     onQuickSelect={handleBehaviorSelect}
                     quickSelects={behaviorQuickSelects}
+                    runtimeMacros={runtimeMacros}
+                    onMacroSelect={handleMacroSelect}
                   />
                 )}
               </div>
@@ -979,6 +1023,24 @@ export function KeycodeSelector({
                             inlineParamToolbar ? parameterTabs : undefined,
                           )
                         : null}
+                    {activeOverride === "macro" && onOpenMacroEditor && (
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-dashed border-[var(--color-electric)]/60 px-3 py-2 text-sm font-medium text-[var(--color-electric)] hover:bg-[var(--color-electric)]/10"
+                          onClick={() => onOpenMacroEditor()}
+                        >
+                          {t("New macro")}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)]"
+                          onClick={() => onOpenMacroEditor(param1)}
+                        >
+                          {t("Edit macros")}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

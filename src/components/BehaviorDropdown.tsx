@@ -29,6 +29,7 @@ const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "mouse", name: "Mouse" },
   { id: "transport", name: "Transport" },
   { id: "system", name: "System" },
+  { id: "macro", name: "Macro" },
   { id: "miscellaneous", name: "Misc" },
 ];
 
@@ -42,6 +43,10 @@ interface BehaviorOption {
   displayName: string;
   category: BehaviorCategory;
   description?: string;
+}
+
+interface MacroOption extends BehaviorOption {
+  macroSlot: number;
 }
 
 interface QuickSelectConfig {
@@ -74,6 +79,9 @@ interface BehaviorDropdownProps {
   onSelect: (behaviorId: number) => void;
   onQuickSelect: (behaviorId: number) => void;
   quickSelects?: string[];
+  /** Saved macro entries exposed as shortcuts when Runtime Macro is available. */
+  runtimeMacros?: Array<{ slot: number; name?: string }>;
+  onMacroSelect?: (slot: number) => void;
 }
 
 function readQuickSelectConfig(storageKey: string): QuickSelectConfig {
@@ -107,6 +115,8 @@ export function BehaviorDropdown({
   onSelect,
   onQuickSelect,
   quickSelects,
+  runtimeMacros = [],
+  onMacroSelect,
 }: BehaviorDropdownProps) {
   const { t } = useLanguage();
   const presetNames = quickSelects || QUICK_SELECT_BEHAVIORS;
@@ -222,19 +232,53 @@ export function BehaviorDropdown({
     });
   }, [behaviors]);
 
+  const runtimeMacroBehavior = useMemo(
+    () =>
+      Array.from(behaviors.values()).find(
+        (behavior) =>
+          getBehaviorMetadata(behavior.displayName)?.param1Type === "macro",
+      ) ?? null,
+    [behaviors],
+  );
+
+  const macroOptions = useMemo(
+    (): MacroOption[] =>
+      runtimeMacroBehavior
+        ? runtimeMacros.map((macro) => ({
+            id: runtimeMacroBehavior.id,
+            macroSlot: macro.slot,
+            name: macro.name || `Macro ${macro.slot}`,
+            displayName: macro.name || `Macro ${macro.slot}`,
+            category: "macro",
+            description: "Execute macro",
+          }))
+        : [],
+    [runtimeMacroBehavior, runtimeMacros],
+  );
+
   const filteredOptions = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
     if (query) {
-      return behaviorOptions.filter((option) =>
+      return [...behaviorOptions, ...macroOptions].filter((option) =>
         [option.displayName, option.name, option.description]
           .filter((value): value is string => Boolean(value))
           .some((value) => value.toLocaleLowerCase().includes(query)),
       );
     }
     return filterCategory === "all"
-      ? behaviorOptions
-      : behaviorOptions.filter((option) => option.category === filterCategory);
-  }, [behaviorOptions, filterCategory, searchQuery]);
+      ? [...behaviorOptions, ...macroOptions]
+      : [...behaviorOptions, ...macroOptions].filter(
+          (option) => option.category === filterCategory,
+        );
+  }, [behaviorOptions, filterCategory, macroOptions, searchQuery]);
+
+  const visibleCategories = useMemo(
+    () =>
+      BEHAVIOR_CATEGORIES.filter(
+        (category) => category.id !== "macro" || macroOptions.length > 0,
+      ),
+    [macroOptions.length],
+  );
 
   const findBehavior = useCallback(
     (name: string) => {
@@ -773,7 +817,7 @@ export function BehaviorDropdown({
                   >
                     {t("All")}
                   </button>
-                  {BEHAVIOR_CATEGORIES.map((category) => (
+                  {visibleCategories.map((category) => (
                     <button
                       key={category.id}
                       type="button"
@@ -789,10 +833,22 @@ export function BehaviorDropdown({
                 {filteredOptions.length > 0 ? (
                   filteredOptions.map((option) => (
                     <button
-                      key={option.id}
+                      key={
+                        "macroSlot" in option
+                          ? `macro-${option.macroSlot}`
+                          : option.id
+                      }
                       type="button"
                       className={`w-full px-3 py-2 text-left transition-colors ${selectedBehaviorId === option.id ? "bg-[var(--color-electric)]/10" : "hover:bg-[var(--color-border)]"}`}
                       onClick={() => {
+                        if (
+                          "macroSlot" in option &&
+                          typeof option.macroSlot === "number"
+                        ) {
+                          onMacroSelect?.(option.macroSlot);
+                          closeDropdown();
+                          return;
+                        }
                         updateRecentBehaviors(option.id);
                         onSelect(option.id);
                         closeDropdown();

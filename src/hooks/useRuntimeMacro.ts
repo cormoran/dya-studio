@@ -32,7 +32,7 @@ export interface UseRuntimeMacroReturn {
   clearError: () => void;
   loadMacros: () => Promise<void>;
   getMacro: (slot: number) => Promise<MacroDetail | null>;
-  createMacro: (name: string) => Promise<boolean>;
+  createMacro: (name: string, steps?: MacroStep[]) => Promise<boolean>;
   deleteMacro: (name: string) => Promise<boolean>;
   renameMacro: (oldName: string, newName: string) => Promise<boolean>;
   resetMacro: (slot: number, persist?: boolean) => Promise<boolean>;
@@ -302,18 +302,43 @@ export function useRuntimeMacro(
   );
 
   const createMacro = useCallback(
-    async (name: string): Promise<boolean> => {
+    async (name: string, steps: MacroStep[] = []): Promise<boolean> => {
       const status = await runMutation(
         Request.create({ createMacro: { name, persist: false } }),
         false,
       );
       if (status !== null) {
+        if (steps.length > 0) {
+          const failAfterCreate = async () => {
+            await loadMacros();
+            setError(
+              "Macro created in memory, but its steps could not be applied. Open the created macro to finish editing.",
+            );
+            return false;
+          };
+          const list = await callRpc(Request.create({ listMacros: {} }));
+          const slot = list?.listMacros?.macros.find(
+            (macro) => macro.name === name,
+          )?.slot;
+          if (slot === undefined) {
+            return failAfterCreate();
+          }
+          const countUpdated = await setMacroStepCount(slot, steps.length);
+          if (!countUpdated) {
+            return failAfterCreate();
+          }
+          for (const [index, step] of steps.entries()) {
+            if (!(await setMacroStep(slot, index, step))) {
+              return failAfterCreate();
+            }
+          }
+        }
         await loadMacros();
         return true;
       }
       return false;
     },
-    [runMutation, loadMacros],
+    [callRpc, loadMacros, runMutation, setMacroStep, setMacroStepCount],
   );
 
   const deleteMacro = useCallback(

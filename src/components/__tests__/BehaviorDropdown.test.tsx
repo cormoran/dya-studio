@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BehaviorDropdown } from "../BehaviorDropdown";
+import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
 
 const behaviors = new Map(BEHAVIORS.map((behavior) => [behavior.id, behavior]));
@@ -203,4 +204,35 @@ it("uses one ordered settings list with separate preset visibility and pin contr
       ) || "{}",
     ),
   ).toEqual({ hiddenPresets: [], pinnedBehaviorNames: [], order: [] });
+});
+
+it("offers saved macros in their own category when Runtime Macro is available", async () => {
+  const user = userEvent.setup();
+  const onMacroSelect = jest.fn();
+  render(
+    <BehaviorDropdown
+      behaviors={
+        new Map([[91, { id: 91, displayName: "Runtime Macro", metadata: [] }]])
+      }
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+      runtimeMacros={[{ slot: 3, name: "Window layout" }]}
+      onMacroSelect={onMacroSelect}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(screen.getByRole("button", { name: "Macro" }));
+  await user.click(
+    screen.getByRole("button", { name: "Window layout Execute macro" }),
+  );
+
+  expect(onMacroSelect).toHaveBeenCalledWith(3);
+});
+
+it("groups Runtime Macro, Trans, and None with key input", () => {
+  expect(getBehaviorMetadata("Runtime Macro")?.category).toBe("keypress");
+  expect(getBehaviorMetadata("Trans")?.category).toBe("keypress");
+  expect(getBehaviorMetadata("None")?.category).toBe("keypress");
 });

@@ -440,3 +440,60 @@ it("applies a changed modal draft when its apply action closes the editor", asyn
     param2: 0,
   });
 });
+
+it("opens macro editing from Runtime Macro parameter controls", async () => {
+  const user = userEvent.setup();
+  const onOpenMacroEditor = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 91, param1: 7, param2: 0 }}
+      behaviors={
+        new Map([[91, { id: 91, displayName: "Runtime Macro", metadata: [] }]])
+      }
+      layers={[]}
+      onOpenMacroEditor={onOpenMacroEditor}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "New macro" }));
+  await user.click(screen.getByRole("button", { name: "Edit macros" }));
+
+  expect(onOpenMacroEditor).toHaveBeenNthCalledWith(1);
+  expect(onOpenMacroEditor).toHaveBeenNthCalledWith(2, 7);
+});
+
+it("applies a saved macro shortcut as a Runtime Macro binding", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 10, param1: 0x70004, param2: 0 }}
+      behaviors={
+        new Map([
+          [10, { id: 10, displayName: "Key Press", metadata: [] }],
+          [91, { id: 91, displayName: "Runtime Macro", metadata: [] }],
+        ])
+      }
+      layers={[]}
+      runtimeMacros={[{ slot: 4, name: "Email" }]}
+    />,
+  );
+
+  await user.click(
+    screen.getByRole("button", { name: "Key Press - Press a key" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Macro" }));
+  await user.click(screen.getByRole("button", { name: "Email Execute macro" }));
+
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 91,
+    param1: 4,
+    param2: 0,
+  });
+});
