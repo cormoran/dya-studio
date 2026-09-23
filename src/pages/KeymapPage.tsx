@@ -1613,17 +1613,7 @@ export function KeymapPage() {
           selectorMode === "floating" &&
           selectedKeyPosition !== null &&
           currentLayer ? (
-            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
-              <span className="text-xs truncate">
-                {currentLayer.name} ·{" "}
-                {t("Key {{position}} / {{count}}", {
-                  position: selectedKeyPosition + 1,
-                  count: Math.min(
-                    currentLayer.bindings.length,
-                    currentLayout?.keys.length ?? 0,
-                  ),
-                })}
-              </span>
+            <div className="flex shrink-0 items-center gap-1">
               <div className="flex gap-1 shrink-0">
                 <EditorTooltip content={t("Automatically select the next key")}>
                   <button

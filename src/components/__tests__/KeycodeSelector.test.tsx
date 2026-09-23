@@ -3,14 +3,59 @@ import userEvent from "@testing-library/user-event";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { KeycodeValueSelector } from "../KeycodeValueSelector";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
+import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
+import { translate } from "../../i18n/translations";
+import { combineWithModifiers, MODIFIER_FLAGS } from "../../lib/keycodes";
 
 beforeEach(() => localStorage.clear());
+
+it("localizes every standard behavior parameter explanation", () => {
+  const names = [
+    "Key Press",
+    "Momentary Layer",
+    "To Layer",
+    "Toggle Layer",
+    "Layer-Tap",
+    "Mod-Tap",
+    "Runtime Macro",
+    "Key Toggle",
+    "Sticky Key",
+    "Sticky Layer",
+    "Mouse Key Press",
+    "Mouse Move",
+    "Mouse Scroll",
+    "Bluetooth",
+    "Output Selection",
+  ];
+  for (const name of names) {
+    const metadata = getBehaviorMetadata(name)!;
+    for (const description of [
+      metadata.param1Description,
+      metadata.param2Description,
+    ]) {
+      if (!description) continue;
+      expect(translate("ja", description)).not.toBe(description);
+      expect(translate("zh", description)).not.toBe(description);
+    }
+  }
+});
 
 it("defaults to the keyboard layout with collapsed modifiers and no search", async () => {
   const user = userEvent.setup();
   render(<KeycodeValueSelector value={0x70004} onChange={jest.fn()} compact />);
   expect(
     screen.getByRole("button", { name: "Show keycodes by category" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Show keycodes by category" }),
+  ).toHaveClass(
+    "text-[var(--color-text-muted)]",
+    "border-[var(--color-border)]",
+  );
+  expect(
+    screen.getByText(
+      "For other keys, use the category button at the top right",
+    ),
   ).toBeInTheDocument();
   expect(
     screen.queryByPlaceholderText("Search keycodes..."),
@@ -36,6 +81,42 @@ it("defaults to the keyboard layout with collapsed modifiers and no search", asy
   expect(
     screen.getByRole("button", { name: "A", exact: true }),
   ).toBeInTheDocument();
+});
+
+it("starts with the keyboard layout even after category mode was previously saved", () => {
+  localStorage.setItem("keycodeSelectorViewModeV2", "category");
+  render(<KeycodeValueSelector compact value={0x70004} onChange={jest.fn()} />);
+  expect(
+    screen.getByRole("button", { name: "Show keycodes by category" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "For other keys, use the category button at the top right",
+    ),
+  ).toBeInTheDocument();
+});
+
+it("shows selected modifiers with the purple toggle without listing their names", async () => {
+  const user = userEvent.setup();
+  const modifier = MODIFIER_FLAGS[0];
+  render(
+    <KeycodeValueSelector
+      compact
+      value={combineWithModifiers(0x70004, modifier.value)}
+      onChange={jest.fn()}
+    />,
+  );
+  const toggle = screen.getByRole("button", { name: "Modifiers", exact: true });
+  expect(toggle).toHaveTextContent("Modifiers");
+  expect(toggle).not.toHaveTextContent(modifier.label);
+  expect(toggle).toHaveClass(
+    "border-[var(--color-cyber)]",
+    "text-[var(--color-cyber)]",
+  );
+  await user.click(toggle);
+  expect(screen.getByRole("button", { name: modifier.label })).toHaveClass(
+    "border-[var(--color-cyber)]",
+  );
 });
 
 it("toggles search in keyboard-layout mode and returns to the keyboard when hidden", async () => {
@@ -160,11 +241,76 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
       .closest("[class~='tablet:flex']"),
   ).toHaveClass("hidden", "tablet:flex");
   expect(
-    screen.getByRole("button", { name: /param1:/ }).parentElement
-      ?.parentElement,
+    screen.getByRole("button", { name: /Key:/ }).parentElement?.parentElement,
   ).toHaveClass("h-7", "mb-2", "flex");
   expect(screen.getByText("Modifiers:")).toBeInTheDocument();
-  expect(screen.getByText("param1 - Select Key")).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Key to press",
+  );
+  expect(screen.queryByText("param1 - Select Key")).not.toBeInTheDocument();
+});
+
+it("explains both layer-tap parameters and uses firmware parameter names", async () => {
+  const user = userEvent.setup();
+  const layerTap = BEHAVIORS.find(
+    (behavior) => behavior.displayName === "Layer-Tap",
+  )!;
+  render(
+    <KeycodeSelector
+      open
+      presentation="floating"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: layerTap.id, param1: 0, param2: 0x70004 }}
+      behaviors={new Map([[layerTap.id, layerTap]])}
+      layers={[{ id: 0, name: "Base" }]}
+    />,
+  );
+  expect(screen.getByRole("button", { name: /Layer:/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Key:/ })).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Layer active while held",
+  );
+  expect(screen.queryByText("Key sent on tap")).not.toBeInTheDocument();
+  expect(screen.getByText("Layer on hold, key on tap")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /Key:/ }));
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Key sent on tap",
+  );
+  expect(screen.queryByText("Layer active while held")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Key:/ })).toHaveClass(
+    "border-[var(--color-electric)]",
+  );
+});
+
+it("uses firmware parameter names and type guidance for an unknown behavior", () => {
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 42, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([
+          [
+            42,
+            {
+              id: 42,
+              displayName: "Custom Layer",
+              metadata: [
+                { param1: [{ name: "Target", layerId: {} }], param2: [] },
+              ],
+            },
+          ],
+        ])
+      }
+      layers={[{ id: 0, name: "Base" }]}
+    />,
+  );
+  expect(screen.getByRole("button", { name: /Target:/ })).toBeInTheDocument();
+  expect(screen.getByTestId("active-param-description")).toHaveTextContent(
+    "Select Layer",
+  );
 });
 
 it("shows a caller-provided target identity in modal and floating presentations", () => {

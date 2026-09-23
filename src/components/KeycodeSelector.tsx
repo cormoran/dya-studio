@@ -102,7 +102,7 @@ function getParamTypeDescription(
         ? overrideMeta.param1Description
         : overrideMeta.param2Description;
     if (overrideDescription) {
-      return overrideDescription;
+      return t(overrideDescription);
     }
   }
   // From firmware metadata
@@ -111,9 +111,32 @@ function getParamTypeDescription(
       ? behaviorInfo.param1Descriptions
       : behaviorInfo.param2Descriptions;
   if (paramDescriptions.length == 1) {
-    return t("Select {{name}}", { name: paramDescriptions[0].name });
+    const description = paramDescriptions[0];
+    const name = description.layerId
+      ? t("Layer")
+      : description.hidUsage
+        ? t("Keycode")
+        : description.name;
+    return t("Select {{name}}", { name });
   }
   return t("Select options"); // Contains constant from multiple options
+}
+
+function getParamDisplayName(
+  behaviorInfo: SelectedBehaviorInfo,
+  paramNumber: 1 | 2,
+  t: (key: string) => string,
+): string {
+  const descriptions =
+    paramNumber === 1
+      ? behaviorInfo.param1Descriptions
+      : behaviorInfo.param2Descriptions;
+  const names = [
+    ...new Set(descriptions.map((description) => description.name)),
+  ];
+  return names.length === 1 && names[0]
+    ? t(names[0])
+    : t(paramNumber === 1 ? "param1" : "param2");
 }
 
 /**
@@ -672,7 +695,7 @@ export function KeycodeSelector({
             className={`flex min-w-0 items-center gap-1 border-b-2 px-2 py-1 text-xs transition-colors ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
           >
             <span className="text-xs whitespace-nowrap">
-              {t(number === 1 ? "param1" : "param2")}:
+              {getParamDisplayName(selectedBehaviorInfo, number, t)}:
             </span>
             <span className="truncate text-xs font-mono text-[var(--color-neon)]">
               {formatParamValue(
@@ -687,6 +710,13 @@ export function KeycodeSelector({
             </span>
           </button>
         ))}
+      <span
+        role="status"
+        data-testid="active-param-description"
+        className="ml-2 min-w-[8rem] flex-1 self-center truncate text-xs text-[var(--color-text-muted)]"
+      >
+        {getParamTypeDescription(selectedBehaviorInfo, activeParam, t)}
+      </span>
     </div>
   );
 
@@ -768,9 +798,17 @@ export function KeycodeSelector({
                     </p>
                   )}
                 </div>
-                {floating && toolbar}
-                <div className="ml-auto flex items-center gap-1">
-                  {!floating && toolbar}
+                {floating &&
+                  selectedBehaviorInfo?.overrideMetadata?.description && (
+                    <span className="min-w-0 truncate text-xs text-[var(--color-text-muted)]">
+                      {t(selectedBehaviorInfo.overrideMetadata.description)}
+                    </span>
+                  )}
+                <div
+                  data-testid="binding-editor-actions"
+                  className="ml-auto flex shrink-0 items-center gap-1"
+                >
+                  {toolbar}
                   {!floating && (
                     <EditorTooltip
                       content={t(
@@ -874,19 +912,9 @@ export function KeycodeSelector({
                   <div
                     className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs font-medium text-[var(--color-text-muted)]">
-                        {t("Parameters")}
-                      </label>
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {t(activeParam === 1 ? "param1" : "param2")} -{" "}
-                        {getParamTypeDescription(
-                          selectedBehaviorInfo,
-                          activeParam,
-                          t,
-                        )}
-                      </span>
-                    </div>
+                    <label className="text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Parameters")}
+                    </label>
                   </div>
                   {!inlineParamToolbar && parameterTabs}
 
