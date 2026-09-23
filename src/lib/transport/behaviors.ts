@@ -322,4 +322,9 @@ export const BEHAVIORS = [
       },
     ],
   },
+  {
+    id: 31,
+    displayName: "Runtime Macro",
+    metadata: [],
+  },
 ].sort((a, b) => a.id - b.id);

@@ -40,12 +40,14 @@ import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
 import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
+import { MacroEditorDialog } from "../components/macroCombo/MacroEditorDialog";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useKeymap, getKeymapLoadingLabel } from "../hooks/useKeymap";
 import { usePhysicalLayoutModules } from "../hooks/usePhysicalLayoutModules";
 import { useRuntimeSensorRotate } from "../hooks/useRuntimeSensorRotate";
 import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
+import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
 import { useInputStream } from "../hooks/useInputStream";
 import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
@@ -130,6 +132,7 @@ export function KeymapPage() {
   // The info panel and keyboard preview share the same content-column edges.
   const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
+  const [showMacroEditor, setShowMacroEditor] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -165,6 +168,19 @@ export function KeymapPage() {
     if (!keymap.keymap?.layers) return [];
     return keymap.keymap.layers.map((l) => ({ id: l.id, name: l.name }));
   }, [keymap.keymap?.layers]);
+
+  const handleMacroAutoSelected = useCallback(() => undefined, []);
+
+  const macroEditor = useMacroEditor({
+    runtimeMacro,
+    keymap,
+    layers: layersForSelector,
+    keyboardLayout: keyboardLayoutContext.layout,
+    requireUnlocked,
+    t,
+    canMaintainSelection: showMacroEditor,
+    onAutoSelected: handleMacroAutoSelected,
+  });
 
   // Get current binding for selected key
   const currentBinding = useMemo(() => {
@@ -1601,6 +1617,18 @@ export function KeymapPage() {
       />
 
       {/* Keycode Selector Dialog */}
+      <MacroEditorDialog
+        open={showMacroEditor}
+        onOpenChange={(open) => {
+          setShowMacroEditor(open);
+          if (!open) void runtimeMacro.loadMacros();
+        }}
+        macro={macroEditor}
+        runtimeMacro={runtimeMacro}
+        keymap={keymap}
+        layers={layersForSelector}
+        keyboardLayout={keyboardLayoutContext.layout}
+      />
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
@@ -1694,6 +1722,7 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        onOpenMacroEditor={() => setShowMacroEditor(true)}
       />
     </div>
   );

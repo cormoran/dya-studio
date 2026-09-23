@@ -25,6 +25,7 @@ interface MacroEditorCardProps {
   keymap: UseKeymapReturn;
   layers: Array<{ id: number; name: string }>;
   keyboardLayout: KeyboardLayoutType;
+  nestedSelectorLayer?: string;
 }
 
 export function MacroEditorCard({
@@ -33,6 +34,7 @@ export function MacroEditorCard({
   keymap,
   layers,
   keyboardLayout,
+  nestedSelectorLayer,
 }: MacroEditorCardProps) {
   const { t } = useLanguage();
   const loadedMacro = macro.loadedMacro;
@@ -253,6 +255,7 @@ export function MacroEditorCard({
         keyboardLayout={keyboardLayout}
         behaviorQuickSelects={["kp", "rmacro", "none", "transparent"]}
         runtimeMacros={runtimeMacro.macros}
+        modalLayerClassName={nestedSelectorLayer}
       />
     </div>
   );

@@ -449,6 +449,8 @@ const ja: Record<string, string> = {
   "Select a macro or combo": "マクロまたはコンボを選択",
   "Select macro, combo, or settings": "マクロ、コンボ、設定を選択",
   "Create macro": "マクロを新規作成",
+  "New macro": "新規マクロ",
+  "Edit macros": "マクロを編集",
   "New combo": "コンボを新規作成",
   "Choose an item from the lists on the left.":
     "左のリストから項目を選択してください。",
@@ -1874,6 +1876,8 @@ const zh: Record<string, string> = {
   "Select a macro or combo": "选择宏或组合键",
   "Select macro, combo, or settings": "选择宏、组合键或设置",
   "Create macro": "新建宏",
+  "New macro": "新建宏",
+  "Edit macros": "编辑宏",
   "New combo": "新建组合键",
   "Choose an item from the lists on the left.":
     "请从左侧的列表中选择一个项目。",

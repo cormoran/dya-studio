@@ -31,6 +31,7 @@ import type { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-
  */
 export type BehaviorCategory =
   | "keypress" // Basic key input
+  | "macro" // Saved runtime macros
   | "layer" // Layer switching/activation
   | "mod" // Modifiers and mod-tap
   | "transport" // Bluetooth and output management
@@ -274,7 +275,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // Miscellaneous Behaviors
   // ============================================================================
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["Trans", "Transparent"],
     shortCode: "▽",
     getDisplayText: (_binding, context) =>
@@ -283,7 +284,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   },
 
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["None"],
     shortCode: "✕",
     getDisplayText: (_binding, context) => (context.shortFormat ? "✕" : "None"),
@@ -315,7 +316,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // Macro Behavior
   // ============================================================================
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["Runtime Macro", "rmacro", "macro", "runtime_macro"],
     shortCode: "Macro",
     param1Type: "macro",
