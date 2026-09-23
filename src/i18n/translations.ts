@@ -576,6 +576,13 @@ const ja: Record<string, string> = {
   "Applied to memory": "メモリに反映済み",
   "Save and close": "保存して閉じる",
   "Macro name already exists": "同じ名前のマクロが既にあります",
+  "Discard macro edits?": "マクロの変更を破棄しますか？",
+  "Changes made in this editor will be removed from device memory. Changes already in memory when you opened it will remain.":
+    "この画面で行った変更はデバイスのメモリから取り消します。開く前からメモリにあった未保存の変更は残ります。",
+  "Keep editing": "編集を続ける",
+  "Discard edits and close": "変更を破棄して閉じる",
+  "Could not restore the macro in memory. Try again.":
+    "メモリ上のマクロを元に戻せませんでした。もう一度お試しください。",
   "In memory": "メモリ内",
   Current: "現在値",
   "Discard item changes": "項目の変更を破棄",
@@ -2001,6 +2008,13 @@ const zh: Record<string, string> = {
   "Applied to memory": "已应用到内存",
   "Save and close": "保存并关闭",
   "Macro name already exists": "宏名称已存在",
+  "Discard macro edits?": "放弃宏编辑？",
+  "Changes made in this editor will be removed from device memory. Changes already in memory when you opened it will remain.":
+    "此编辑器中的更改将从设备内存中撤销。打开编辑器前已有的内存更改会保留。",
+  "Keep editing": "继续编辑",
+  "Discard edits and close": "放弃编辑并关闭",
+  "Could not restore the macro in memory. Try again.":
+    "无法在内存中恢复宏，请重试。",
   "In memory": "内存中",
   Current: "当前值",
   "Discard item changes": "放弃项目更改",

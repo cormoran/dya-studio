@@ -26,6 +26,7 @@ interface MacroEditorCardProps {
   layers: Array<{ id: number; name: string }>;
   keyboardLayout: KeyboardLayoutType;
   nestedSelectorLayer?: string;
+  allowDestructiveActions?: boolean;
 }
 
 export function MacroEditorCard({
@@ -35,6 +36,7 @@ export function MacroEditorCard({
   layers,
   keyboardLayout,
   nestedSelectorLayer,
+  allowDestructiveActions = true,
 }: MacroEditorCardProps) {
   const { t } = useLanguage();
   const loadedMacro = macro.loadedMacro;
@@ -87,7 +89,7 @@ export function MacroEditorCard({
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {!macro.isCreateDraft && (
+              {!macro.isCreateDraft && allowDestructiveActions && (
                 <button
                   className="btn-ghost text-sm flex items-center gap-1.5"
                   onClick={() => void macro.handleResetMacro()}
@@ -102,7 +104,7 @@ export function MacroEditorCard({
                   {t("Reset")}
                 </button>
               )}
-              {!macro.isCreateDraft && (
+              {!macro.isCreateDraft && allowDestructiveActions && (
                 <button
                   className="btn-ghost text-sm flex items-center gap-1.5 text-red-400"
                   onClick={() => void macro.handleDeleteMacro()}

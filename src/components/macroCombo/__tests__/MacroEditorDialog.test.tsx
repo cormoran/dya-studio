@@ -134,4 +134,122 @@ describe("MacroEditorDialog", () => {
       saveMacros.mock.invocationCallOrder[0],
     );
   });
+
+  it("confirms X and restores the opening RAM value without a global discard", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = jest.fn();
+    const cancelPendingWrites = jest.fn();
+    const flushPendingWrites = jest.fn().mockResolvedValue(undefined);
+    const renameMacro = jest.fn().mockResolvedValue(true);
+    const discardMacros = jest.fn();
+    const runtimeMacro = {
+      isLoading: false,
+      macros: [],
+      getMacro: jest.fn().mockResolvedValue({
+        slot: 3,
+        name: "Edited",
+        steps: [],
+        encodedSize: 0,
+      }),
+      renameMacro,
+      loadMacros: jest.fn().mockResolvedValue(undefined),
+      discardMacros,
+    } as unknown as UseRuntimeMacroReturn;
+    const initial = {
+      ...memoryFields,
+      loadedMacro: {
+        slot: 3,
+        name: "Already unsaved",
+        steps: [],
+        encodedSize: 0,
+      },
+      renameDraft: "Already unsaved",
+      cancelPendingWrites,
+      flushPendingWrites,
+    } as MacroEditorController;
+    const renderEditor = (macro: MacroEditorController) => (
+      <LanguageProvider>
+        <MacroEditorDialog
+          open
+          mode="edit"
+          editSlot={3}
+          onOpenChange={onOpenChange}
+          macro={macro}
+          runtimeMacro={runtimeMacro}
+          keymap={{} as UseKeymapReturn}
+          layers={[]}
+          keyboardLayout="us"
+        />
+      </LanguageProvider>
+    );
+    const { rerender } = render(renderEditor(initial));
+    rerender(
+      renderEditor({
+        ...initial,
+        renameDraft: "Edited",
+        loadedMacro: { ...initial.loadedMacro!, name: "Edited" },
+      }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(
+      screen.getByRole("dialog", { name: "Discard macro edits?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Changes already in memory when you opened it will remain/,
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Keep editing" }));
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(cancelPendingWrites).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await user.click(
+      screen.getByRole("button", { name: "Discard edits and close" }),
+    );
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(cancelPendingWrites).toHaveBeenCalledTimes(1);
+    expect(flushPendingWrites).toHaveBeenCalledTimes(1);
+    expect(renameMacro).toHaveBeenCalledWith("Edited", "Already unsaved");
+    expect(discardMacros).not.toHaveBeenCalled();
+  });
+
+  it("closes without confirmation when RAM was already unsaved but this modal made no edit", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = jest.fn();
+    const macro = {
+      ...memoryFields,
+      loadedMacro: {
+        slot: 3,
+        name: "Already unsaved",
+        steps: [],
+        encodedSize: 0,
+      },
+      renameDraft: "Already unsaved",
+      loadedMacroHasUnsavedChanges: true,
+    } as MacroEditorController;
+    render(
+      <LanguageProvider>
+        <MacroEditorDialog
+          open
+          mode="edit"
+          editSlot={3}
+          onOpenChange={onOpenChange}
+          macro={macro}
+          runtimeMacro={
+            { isLoading: false, macros: [] } as UseRuntimeMacroReturn
+          }
+          keymap={{} as UseKeymapReturn}
+          layers={[]}
+          keyboardLayout="us"
+        />
+      </LanguageProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(
+      screen.queryByRole("dialog", { name: "Discard macro edits?" }),
+    ).not.toBeInTheDocument();
+  });
 });

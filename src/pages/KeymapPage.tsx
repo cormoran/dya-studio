@@ -144,6 +144,8 @@ export function KeymapPage() {
   const [macroEditorMode, setMacroEditorMode] = useState<
     "create" | "edit" | null
   >(null);
+  const [macroEditorSlot, setMacroEditorSlot] = useState<number | undefined>();
+  const [macroEditorSession, setMacroEditorSession] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -243,6 +245,8 @@ export function KeymapPage() {
 
   const handleOpenMacroEditor = useCallback(
     (slot?: number) => {
+      setMacroEditorSession((session) => session + 1);
+      setMacroEditorSlot(slot);
       if (slot === undefined) {
         beginMacroCreate();
         setMacroEditorMode("create");
@@ -251,6 +255,7 @@ export function KeymapPage() {
           (candidate) => candidate.slot === slot,
         );
         if (macro) {
+          clearMacroSelection();
           selectMacro(macro);
         } else {
           clearMacroSelection();
@@ -1882,8 +1887,10 @@ export function KeymapPage() {
 
       {/* Keycode Selector Dialog */}
       <MacroEditorDialog
+        key={macroEditorSession}
         open={macroEditorMode !== null}
         mode={macroEditorMode ?? "edit"}
+        editSlot={macroEditorSlot}
         onOpenChange={(open) => {
           if (!open) {
             if (macroEditorMode === "create") macroEditor.cancelCreate();
