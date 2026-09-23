@@ -773,6 +773,15 @@ const ja: Record<string, string> = {
   "Key held until the next key press": "次のキー入力まで保持するキー",
   "Layer active until the next key press": "次のキー入力まで有効なレイヤー",
   "Output to select (USB/BLE)": "選択する出力（USB/BLE）",
+  "Select a keycode, usually modifier":
+    "長押し中の修飾キー（キーコード）を選択",
+  "Select runtime macro": "実行するランタイムマクロを選択",
+  "Select a mouse keycode": "押すマウスボタンを選択",
+  "Configure movement speed (upper 16 bits = X, lower 16 bits = Y)":
+    "マウス移動量を設定（上位16ビット = X、下位16ビット = Y）",
+  "Configure scroll amount (upper 16 bits = X, lower 16 bits = Y)":
+    "スクロール量を設定（上位16ビット = X、下位16ビット = Y）",
+  "Select a Bluetooth command": "Bluetooth コマンドを選択",
   "Mouse Button": "マウスボタン",
   "Pointer movement": "ポインター移動",
   Constant: "定数",
@@ -2166,6 +2175,14 @@ const zh: Record<string, string> = {
   "Key held until the next key press": "保持到下次按键的按键",
   "Layer active until the next key press": "保持到下次按键的层",
   "Output to select (USB/BLE)": "要选择的输出（USB/BLE）",
+  "Select a keycode, usually modifier": "选择按住时的修饰键（键码）",
+  "Select runtime macro": "选择要执行的运行时宏",
+  "Select a mouse keycode": "选择要按下的鼠标按键",
+  "Configure movement speed (upper 16 bits = X, lower 16 bits = Y)":
+    "设置鼠标移动量（高16位 = X，低16位 = Y）",
+  "Configure scroll amount (upper 16 bits = X, lower 16 bits = Y)":
+    "设置滚动量（高16位 = X，低16位 = Y）",
+  "Select a Bluetooth command": "选择蓝牙命令",
   "Mouse Button": "鼠标按键",
   "Pointer movement": "指针移动",
   Constant: "常量",

@@ -3,8 +3,41 @@ import userEvent from "@testing-library/user-event";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { KeycodeValueSelector } from "../KeycodeValueSelector";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
+import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
+import { translate } from "../../i18n/translations";
 
 beforeEach(() => localStorage.clear());
+
+it("localizes every standard behavior parameter explanation", () => {
+  const names = [
+    "Key Press",
+    "Momentary Layer",
+    "To Layer",
+    "Toggle Layer",
+    "Layer-Tap",
+    "Mod-Tap",
+    "Runtime Macro",
+    "Key Toggle",
+    "Sticky Key",
+    "Sticky Layer",
+    "Mouse Key Press",
+    "Mouse Move",
+    "Mouse Scroll",
+    "Bluetooth",
+    "Output Selection",
+  ];
+  for (const name of names) {
+    const metadata = getBehaviorMetadata(name)!;
+    for (const description of [
+      metadata.param1Description,
+      metadata.param2Description,
+    ]) {
+      if (!description) continue;
+      expect(translate("ja", description)).not.toBe(description);
+      expect(translate("zh", description)).not.toBe(description);
+    }
+  }
+});
 
 it("defaults to the keyboard layout with collapsed modifiers and no search", async () => {
   const user = userEvent.setup();
