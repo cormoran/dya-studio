@@ -9,6 +9,8 @@ import type { MacroEditorController } from "./useMacroEditor";
 
 interface MacroEditorDialogProps {
   open: boolean;
+  /** Creation keeps the editor empty until Create macro is pressed. */
+  mode: "create" | "edit";
   onOpenChange: (open: boolean) => void;
   macro: MacroEditorController;
   runtimeMacro: UseRuntimeMacroReturn;
@@ -20,6 +22,7 @@ interface MacroEditorDialogProps {
 /** Runtime macro editing from the key-binding selector. */
 export function MacroEditorDialog({
   open,
+  mode,
   onOpenChange,
   macro,
   runtimeMacro,
@@ -55,19 +58,21 @@ export function MacroEditorDialog({
                 {t("Memory...")}
               </span>
             )}
-            <button
-              type="button"
-              className="btn-electric flex items-center gap-1.5 text-sm"
-              disabled={macro.isCreating || runtimeMacro.isLoading}
-              onClick={() => void handleCreateMacro()}
-            >
-              {macro.isCreating ? (
-                <IconLoader2 size={16} className="animate-spin" />
-              ) : (
-                <IconPlus size={16} />
-              )}
-              {t("Create macro")}
-            </button>
+            {mode === "create" && (
+              <button
+                type="button"
+                className="btn-electric flex items-center gap-1.5 text-sm"
+                disabled={macro.isCreating || runtimeMacro.isLoading}
+                onClick={handleCreateMacro}
+              >
+                {macro.isCreating ? (
+                  <IconLoader2 size={16} className="animate-spin" />
+                ) : (
+                  <IconPlus size={16} />
+                )}
+                {t("Create macro")}
+              </button>
+            )}
             <Dialog.Close asChild>
               <button
                 type="button"

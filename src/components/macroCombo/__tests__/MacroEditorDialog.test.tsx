@@ -26,6 +26,7 @@ describe("MacroEditorDialog", () => {
       <LanguageProvider>
         <MacroEditorDialog
           open
+          mode="create"
           onOpenChange={onOpenChange}
           macro={
             {
@@ -52,6 +53,7 @@ describe("MacroEditorDialog", () => {
       <LanguageProvider>
         <MacroEditorDialog
           open
+          mode="edit"
           onOpenChange={jest.fn()}
           macro={
             {
@@ -69,5 +71,8 @@ describe("MacroEditorDialog", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Memory...");
+    expect(
+      screen.queryByRole("button", { name: "Create macro" }),
+    ).not.toBeInTheDocument();
   });
 });

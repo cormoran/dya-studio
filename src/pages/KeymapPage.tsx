@@ -141,7 +141,9 @@ export function KeymapPage() {
   // The info panel and keyboard preview share the same content-column edges.
   const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
-  const [showMacroEditor, setShowMacroEditor] = useState(false);
+  const [macroEditorMode, setMacroEditorMode] = useState<
+    "create" | "edit" | null
+  >(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -230,7 +232,7 @@ export function KeymapPage() {
     keyboardLayout: keyboardLayoutContext.layout,
     requireUnlocked,
     t,
-    canMaintainSelection: showMacroEditor,
+    canMaintainSelection: macroEditorMode === "edit",
     onAutoSelected: handleMacroAutoSelected,
   });
   const { clearSelection: clearMacroSelection, selectMacro } = macroEditor;
@@ -239,6 +241,7 @@ export function KeymapPage() {
     (slot?: number) => {
       if (slot === undefined) {
         clearMacroSelection();
+        setMacroEditorMode("create");
       } else {
         const macro = runtimeMacro.macros.find(
           (candidate) => candidate.slot === slot,
@@ -248,8 +251,8 @@ export function KeymapPage() {
         } else {
           clearMacroSelection();
         }
+        setMacroEditorMode("edit");
       }
-      setShowMacroEditor(true);
     },
     [clearMacroSelection, runtimeMacro.macros, selectMacro],
   );
@@ -1875,10 +1878,13 @@ export function KeymapPage() {
 
       {/* Keycode Selector Dialog */}
       <MacroEditorDialog
-        open={showMacroEditor}
+        open={macroEditorMode !== null}
+        mode={macroEditorMode ?? "edit"}
         onOpenChange={(open) => {
-          setShowMacroEditor(open);
-          if (!open) void runtimeMacro.loadMacros();
+          if (!open) {
+            setMacroEditorMode(null);
+            void runtimeMacro.loadMacros();
+          }
         }}
         macro={macroEditor}
         runtimeMacro={runtimeMacro}

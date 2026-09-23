@@ -70,6 +70,40 @@ describe("useMacroEditor", () => {
     expect(result.current.reloadLoadedMacro).toBe(firstReload);
   });
 
+  it("does not load or modify an existing macro in creation mode", async () => {
+    jest.useFakeTimers();
+    try {
+      const getMacro = jest
+        .fn<ReturnType<UseRuntimeMacroReturn["getMacro"]>, [number]>()
+        .mockResolvedValue(null);
+      const runtimeMacro = {
+        ...makeRuntimeMacro(getMacro),
+        macros: [{ slot: 3, name: "Existing" }],
+      };
+      renderHook(() =>
+        useMacroEditor({
+          runtimeMacro,
+          keymap,
+          layers: [],
+          keyboardLayout: "ansi" as never,
+          requireUnlocked: () => true,
+          t: (key: string) => key,
+          canMaintainSelection: false,
+          onAutoSelected: () => {},
+        }),
+      );
+
+      await act(async () => {
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+      });
+
+      expect(getMacro).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("writes a renamed macro to memory after the debounce interval", async () => {
     jest.useFakeTimers();
     try {
