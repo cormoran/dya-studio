@@ -800,9 +800,11 @@ export function KeycodeSelector({
                       {t(selectedBehaviorInfo.overrideMetadata.description)}
                     </span>
                   )}
-                {floating && toolbar}
-                <div className="ml-auto flex items-center gap-1">
-                  {!floating && toolbar}
+                <div
+                  data-testid="binding-editor-actions"
+                  className="ml-auto flex shrink-0 items-center gap-1"
+                >
+                  {toolbar}
                   {!floating && (
                     <EditorTooltip
                       content={t(

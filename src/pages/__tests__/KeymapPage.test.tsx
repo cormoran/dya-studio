@@ -309,6 +309,25 @@ describe("KeymapPage", () => {
 
     it("applies once, advances through every key, and closes at the end", async () => {
       const { user, setBinding } = await setup();
+      const actions = screen.getByTestId("binding-editor-actions");
+      expect(actions).toHaveClass("ml-auto", "shrink-0");
+      expect(
+        within(actions).getByRole("button", { name: "Auto advance" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", { name: "Previous key" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", { name: "Next key" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", { name: "Dialog mode" }),
+      ).toBeInTheDocument();
+      expect(
+        within(actions).getByRole("button", {
+          name: "Close without applying unfinished edits",
+        }),
+      ).toBeInTheDocument();
       for (let position = 0; position < 3; position++) {
         expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
           `Base · Key position ${position}: ${String.fromCharCode(

@@ -1613,7 +1613,7 @@ export function KeymapPage() {
           selectorMode === "floating" &&
           selectedKeyPosition !== null &&
           currentLayer ? (
-            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               <div className="flex gap-1 shrink-0">
                 <EditorTooltip content={t("Automatically select the next key")}>
                   <button
