@@ -51,10 +51,12 @@ import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
 import {
+  comboEditStatus,
   formatComboBehavior,
   defaultBehaviorBinding,
   formatLayerScope,
 } from "../components/macroCombo/comboUtils";
+import { StatusDot } from "../components/EditStatusIndicator";
 import { useInputStream } from "../hooks/useInputStream";
 import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
@@ -1634,40 +1636,73 @@ export function KeymapPage() {
                   </p>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {runtimeCombo.combos.map((combo, position) => (
-                      <button
-                        key={combo.index}
-                        type="button"
-                        className={`shrink-0 min-w-32 max-w-52 p-3 rounded-lg border bg-[var(--color-surface)] text-left hover:border-[var(--color-electric)]/60 ${combo.enabled ? "border-[var(--color-border)]" : "border-[var(--color-border)] opacity-60"}`}
-                        onClick={() => openComboEditor(combo)}
-                      >
-                        <span className="flex items-center gap-1.5 text-sm font-medium truncate">
-                          <span className="flex shrink-0 items-center gap-px text-[var(--color-electric)]">
-                            <IconLink size={14} aria-hidden="true" />
-                            {position + 1}
+                    {runtimeCombo.combos.map((combo, position) => {
+                      const status = comboEditStatus(
+                        combo.source,
+                        combo.index,
+                        comboEditor.modifiedIndices,
+                      );
+                      const isUnsaved = status === "unsaved";
+
+                      return (
+                        <button
+                          key={combo.index}
+                          type="button"
+                          data-testid={`combo-list-item-${combo.index}`}
+                          className={`shrink-0 min-w-32 max-w-52 p-3 rounded-lg border text-left transition-colors ${
+                            isUnsaved
+                              ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
+                              : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/60"
+                          } ${combo.enabled ? "" : "opacity-60"}`}
+                          onClick={() => openComboEditor(combo)}
+                        >
+                          <span className="flex items-center gap-1.5 text-sm font-medium truncate">
+                            <span
+                              className={`flex shrink-0 items-center gap-px ${
+                                isUnsaved
+                                  ? "text-[var(--color-neon)]"
+                                  : "text-[var(--color-electric)]"
+                              }`}
+                            >
+                              <IconLink size={14} aria-hidden="true" />
+                              {position + 1}
+                            </span>
+                            <span
+                              className={`truncate ${
+                                isUnsaved
+                                  ? "text-[var(--color-neon)]"
+                                  : "text-[var(--color-text)]"
+                              }`}
+                            >
+                              {combo.name ||
+                                t("Combo {{index}}", { index: combo.index })}
+                            </span>
+                            <StatusDot status={status} />
                           </span>
-                          <span className="truncate">
-                            {combo.name ||
-                              t("Combo {{index}}", { index: combo.index })}
+                          <span className="block text-xs text-[var(--color-text-muted)] truncate">
+                            {combo.keyPositions.join(" + ")} ·{" "}
+                            {formatLayerScope(combo.layerMask, t)}
                           </span>
-                        </span>
-                        <span className="block text-xs text-[var(--color-text-muted)] truncate">
-                          {combo.keyPositions.join(" + ")} ·{" "}
-                          {formatLayerScope(combo.layerMask, t)}
-                        </span>
-                        <span className="block text-xs text-[var(--color-electric)] truncate">
-                          {formatComboBehavior(
-                            combo.behavior ??
-                              defaultBehaviorBinding(keymap.behaviors),
-                            keymap.behaviors,
-                            layersForSelector,
-                            keyboardLayoutContext.layout,
-                            runtimeMacro.macros,
-                            t,
-                          )}
-                        </span>
-                      </button>
-                    ))}
+                          <span
+                            className={`block text-xs truncate ${
+                              isUnsaved
+                                ? "text-[var(--color-neon)]"
+                                : "text-[var(--color-electric)]"
+                            }`}
+                          >
+                            {formatComboBehavior(
+                              combo.behavior ??
+                                defaultBehaviorBinding(keymap.behaviors),
+                              keymap.behaviors,
+                              layersForSelector,
+                              keyboardLayoutContext.layout,
+                              runtimeMacro.macros,
+                              t,
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </section>
