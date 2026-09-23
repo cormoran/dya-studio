@@ -15,6 +15,7 @@ import {
   IconOption,
   IconRotateClockwise,
   IconSpace,
+  IconLink,
 } from "@tabler/icons-react";
 import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
 import { useLanguage } from "../hooks/useLanguage";
@@ -61,6 +62,12 @@ interface PhysicalKeyProps {
   onResetToDefault?: () => void;
   /** Scale factor for responsive sizing */
   scale?: number;
+  combos?: Array<{
+    index: number;
+    name: string;
+    label: string;
+    showBadge: boolean;
+  }>;
 }
 
 export function PhysicalKey({
@@ -80,6 +87,7 @@ export function PhysicalKey({
   onReset,
   onResetToDefault,
   scale = 1.0,
+  combos = [],
 }: PhysicalKeyProps) {
   const { t } = useLanguage();
   const [isHovered, setIsHovered] = useState(false);
@@ -149,6 +157,12 @@ export function PhysicalKey({
       data-key-position={keyPosition}
       data-binding-label={longDisplayName || displayName}
     >
+      {combos.some((combo) => combo.showBadge) && (
+        <span className="absolute top-0.5 left-1 flex items-center gap-0.5 text-[9px] leading-none text-[var(--color-electric)] pointer-events-none">
+          <IconLink size={10} />
+          {combos.filter((combo) => combo.showBadge).length}
+        </span>
+      )}
       {/* Display Name */}
       <span
         className={`
@@ -208,6 +222,17 @@ export function PhysicalKey({
                     {longDisplayName || displayName}
                   </span>
                 </div>
+                {combos.map((combo) => (
+                  <div key={combo.index}>
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Combo")}:{" "}
+                    </span>
+                    <span>
+                      {combo.name || `${t("Combo")} ${combo.index}`} ·{" "}
+                      {combo.label}
+                    </span>
+                  </div>
+                ))}
                 {/* Show binding description only if different from displayName */}
                 {bindingDescription &&
                   bindingDescription !== displayName &&

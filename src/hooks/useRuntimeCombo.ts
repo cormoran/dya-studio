@@ -72,7 +72,9 @@ export interface UseRuntimeComboReturn {
   clearError: () => void;
 }
 
-export function useRuntimeCombo(): UseRuntimeComboReturn {
+export function useRuntimeCombo({
+  autoLoad = true,
+}: { autoLoad?: boolean } = {}): UseRuntimeComboReturn {
   // `call` is unlock-gated by the shared useCustomSubsystem wrapper.
   const { subsystem, ready, call } = useCustomSubsystem(
     RUNTIME_COMBO_IDENTIFIER,
@@ -532,6 +534,7 @@ export function useRuntimeCombo(): UseRuntimeComboReturn {
   const autoLoadedRef = useRef(false);
   useEffect(() => {
     if (ready) {
+      if (!autoLoad) return;
       if (autoLoadedRef.current) return;
       autoLoadedRef.current = true;
       void reload();
@@ -542,7 +545,7 @@ export function useRuntimeCombo(): UseRuntimeComboReturn {
       setHasPendingChanges(false);
       setError(null);
     }
-  }, [reload, ready]);
+  }, [autoLoad, reload, ready]);
 
   return {
     isAvailable: subsystem !== null,

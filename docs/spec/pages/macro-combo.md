@@ -3,6 +3,7 @@
 ## 範囲・根拠
 
 - 種別: `/macro-combo`（`Macro&Combo` タブ）の runtime macro / runtime combo 編集ページ。binding の選択・閉じ方は共通の [binding editor](../modules/binding-editor.md)、履歴の保存先・復元は [version history](../modules/version-history.md) を参照する。
+- combo editor と RAM/flash の保存契約は [Keymap の combo card](keymap.md) からも利用する。各ページの Save/Discard はそれぞれのページが保持する hook 状態を操作するため、タブを戻した際は再読込で最新値を確認する。
 - 入口と利用者: 接続後の `Macro&Combo` タブ。macro subsystem `cormoran__runtime_macro`、combo subsystem `cormoran__runtime_combo` の少なくとも一方が必要で、各 subsystem がない場合は個別の案内を表示する。
 - 確認: 2026-09-20、`857b934` + 作業ツリー。コード確認と Demo（Orca iPhone 12、390×844）で MC-001 / MC-R03 の mobile 選択・配置・状態表示を実測。実機 flash 再起動後の結果は未実施。
 

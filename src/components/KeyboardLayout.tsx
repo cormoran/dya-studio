@@ -18,6 +18,9 @@ import type {
 import type { PhysicalLayoutModulePresentation } from "../hooks/usePhysicalLayoutModules";
 import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import type { KeyboardLayoutType } from "../lib/keyboardLayouts";
+import type { Combo } from "../hooks/useRuntimeCombo";
+import { hasLayer } from "./macroCombo/comboUtils";
+import { adjacentComboCenter } from "./comboPreview";
 
 // Base unit size for 1U key in pixels at scale 1.0
 const BASE_UNIT_SIZE = 54;
@@ -79,6 +82,9 @@ interface KeyboardLayoutProps {
   runtimeMacros?: Array<{ slot: number; name?: string }>;
   /** Accessible name for the keyboard preview region */
   ariaLabel?: string;
+  /** Runtime combos shown on this layer. Omitted in the combo position editor. */
+  combos?: Combo[];
+  onComboClick?: (combo: Combo) => void;
 }
 
 type LayoutGeometry = Pick<
@@ -135,6 +141,8 @@ export function KeyboardLayout({
   highlightedKeys,
   runtimeMacros = [],
   ariaLabel,
+  combos = [],
+  onComboClick,
 }: KeyboardLayoutProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1.0);
@@ -304,6 +312,17 @@ export function KeyboardLayout({
     [behaviors],
   );
 
+  const visibleCombos = combos.filter(
+    (combo) =>
+      combo.enabled &&
+      (combo.layerMask === 0 || hasLayer(combo.layerMask, layer.id)),
+  );
+  const comboLabels = visibleCombos.map((combo) => ({
+    combo,
+    label: getKeyLongDisplayName(-1, combo.behavior),
+    center: adjacentComboCenter(layout.keys, combo.keyPositions),
+  }));
+
   return (
     <div
       ref={containerRef}
@@ -368,6 +387,14 @@ export function KeyboardLayout({
                   : undefined
               }
               scale={scale}
+              combos={comboLabels
+                .filter(({ combo }) => combo.keyPositions.includes(position))
+                .map(({ combo, label, center }) => ({
+                  index: combo.index,
+                  name: combo.name,
+                  label,
+                  showBadge: center === null,
+                }))}
             />
           );
         })}
@@ -391,6 +418,32 @@ export function KeyboardLayout({
             />
           );
         })}
+        {comboLabels.map(({ combo, label, center }) =>
+          center ? (
+            <button
+              key={`combo-${combo.index}`}
+              type="button"
+              className="absolute z-10 flex items-center justify-center rounded border border-[var(--color-electric)] bg-[var(--color-electric)] text-[var(--color-bg)] text-[10px] font-semibold shadow-md hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+              style={{
+                width: BASE_UNIT_SIZE * scale * 0.5,
+                height: BASE_UNIT_SIZE * scale * 0.5,
+                left:
+                  (center.x / 100) * BASE_UNIT_SIZE * scale +
+                  bounds.offsetX -
+                  BASE_UNIT_SIZE * scale * 0.25,
+                top:
+                  (center.y / 100) * BASE_UNIT_SIZE * scale +
+                  bounds.offsetY -
+                  BASE_UNIT_SIZE * scale * 0.25,
+              }}
+              onClick={() => onComboClick?.(combo)}
+              aria-label={`Combo ${combo.name || combo.index}: ${label}`}
+              title={`${combo.name || `Combo ${combo.index}`}: ${label}`}
+            >
+              <span className="truncate px-0.5">{label}</span>
+            </button>
+          ) : null,
+        )}
       </div>
     </div>
   );

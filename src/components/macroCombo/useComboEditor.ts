@@ -205,7 +205,12 @@ export function useComboEditor({
   );
 
   const handleNewCombo = useCallback(async () => {
-    if (!requireUnlocked()) return;
+    if (!requireUnlocked()) return false;
+    const slotLimit = maxCombo && maxCombo > 0 ? maxCombo : 16;
+    if (runtimeCombo.combos.length >= slotLimit) {
+      setStatusMessage(t("No available combo slots."));
+      return false;
+    }
     const base = createDraft(runtimeCombo.combos, maxCombo, keymap.behaviors);
     const newCombo: ComboDraft = {
       ...base,
@@ -227,10 +232,12 @@ export function useComboEditor({
       requirePriorIdleMs: newCombo.requirePriorIdleMs,
       slowReleaseOverride: newCombo.slowReleaseOverride,
     });
-    if (!comboSaved) return;
-    await runtimeCombo.setComboName(newCombo.index, newCombo.name);
+    if (!comboSaved) return false;
+    if (!(await runtimeCombo.setComboName(newCombo.index, newCombo.name)))
+      return false;
     setModifiedIndices((prev) => new Set(prev).add(newCombo.index));
     selectDraft(newCombo);
+    return true;
   }, [
     keymap.behaviors,
     maxCombo,
