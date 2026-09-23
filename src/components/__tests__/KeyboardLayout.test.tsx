@@ -61,8 +61,14 @@ describe("KeyboardLayout combo controls", () => {
       "bg-[var(--color-surface-elevated)]",
       "hover:bg-[var(--color-surface-elevated)]",
     );
-    expect(Number.parseFloat(control.style.width)).toBeLessThan(12);
-    expect(Number.parseFloat(control.style.height)).toBeLessThan(12);
+    expect(Number.parseFloat(control.style.width)).toBeGreaterThan(20);
+    expect(Number.parseFloat(control.style.height)).toBeGreaterThan(20);
+    expect(control).toHaveTextContent("0x0");
+    expect(control.querySelector("svg")).toHaveClass(
+      "absolute",
+      "left-px",
+      "top-px",
+    );
     fireEvent.pointerMove(control);
     act(() => jest.advanceTimersByTime(200));
 
