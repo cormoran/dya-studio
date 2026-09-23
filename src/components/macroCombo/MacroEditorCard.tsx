@@ -59,7 +59,9 @@ export function MacroEditorCard({
                 onChange={(event) =>
                   macro.handleRenameChange(event.target.value)
                 }
-                onBlur={() => void macro.renameDebounce.flush()}
+                onBlur={() => {
+                  if (!macro.isCreateDraft) void macro.renameDebounce.flush();
+                }}
               />
             </div>
             <div>
@@ -85,31 +87,35 @@ export function MacroEditorCard({
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                className="btn-ghost text-sm flex items-center gap-1.5"
-                onClick={() => void macro.handleResetMacro()}
-                disabled={macro.isResetting || runtimeMacro.isLoading}
-                title={t("Reset this macro to its default")}
-              >
-                {macro.isResetting ? (
-                  <IconLoader2 size={16} className="animate-spin" />
-                ) : (
-                  <IconHistory size={16} />
-                )}
-                {t("Reset")}
-              </button>
-              <button
-                className="btn-ghost text-sm flex items-center gap-1.5 text-red-400"
-                onClick={() => void macro.handleDeleteMacro()}
-                disabled={macro.isDeleting || runtimeMacro.isLoading}
-              >
-                {macro.isDeleting ? (
-                  <IconLoader2 size={16} className="animate-spin" />
-                ) : (
-                  <IconTrash size={16} />
-                )}
-                {t("Delete")}
-              </button>
+              {!macro.isCreateDraft && (
+                <button
+                  className="btn-ghost text-sm flex items-center gap-1.5"
+                  onClick={() => void macro.handleResetMacro()}
+                  disabled={macro.isResetting || runtimeMacro.isLoading}
+                  title={t("Reset this macro to its default")}
+                >
+                  {macro.isResetting ? (
+                    <IconLoader2 size={16} className="animate-spin" />
+                  ) : (
+                    <IconHistory size={16} />
+                  )}
+                  {t("Reset")}
+                </button>
+              )}
+              {!macro.isCreateDraft && (
+                <button
+                  className="btn-ghost text-sm flex items-center gap-1.5 text-red-400"
+                  onClick={() => void macro.handleDeleteMacro()}
+                  disabled={macro.isDeleting || runtimeMacro.isLoading}
+                >
+                  {macro.isDeleting ? (
+                    <IconLoader2 size={16} className="animate-spin" />
+                  ) : (
+                    <IconTrash size={16} />
+                  )}
+                  {t("Delete")}
+                </button>
+              )}
               <button
                 className="btn-electric text-sm flex items-center gap-1.5"
                 onClick={macro.handleAddStep}
@@ -169,9 +175,14 @@ export function MacroEditorCard({
                               row.startIndex,
                               Number(event.target.value),
                             );
-                            macro.delayDebounce.queue(row.startIndex);
+                            if (!macro.isCreateDraft)
+                              macro.delayDebounce.queue(row.startIndex);
                           }}
-                          onBlur={() => void macro.delayDebounce.flush()}
+                          onBlur={() => {
+                            if (macro.isCreateDraft)
+                              void macro.commitSteps(loadedMacro.steps);
+                            else void macro.delayDebounce.flush();
+                          }}
                         />
                         <span className="text-xs text-[var(--color-text-muted)]">
                           {t("ms")}
@@ -183,9 +194,13 @@ export function MacroEditorCard({
                         value={row.value ?? ""}
                         onChange={(event) => {
                           macro.handleStringChange(row, event.target.value);
-                          macro.stringDebounce.queue();
+                          if (!macro.isCreateDraft)
+                            macro.stringDebounce.queue();
                         }}
-                        onBlur={() => void macro.stringDebounce.flush()}
+                        onBlur={() => {
+                          if (!macro.isCreateDraft)
+                            void macro.stringDebounce.flush();
+                        }}
                       />
                     ) : (
                       <button

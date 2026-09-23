@@ -70,6 +70,7 @@ export function useMacroEditor({
   const [loadedMacro, setLoadedMacro] = useState<MacroDetail | null>(null);
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isCreateDraft, setIsCreateDraft] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
@@ -136,6 +137,7 @@ export function useMacroEditor({
     async (slot: number) => {
       const macro = await getMacro(slot);
       if (macro) {
+        setIsCreateDraft(false);
         setSelectedName(macro.name);
         setLoadedMacro(macro);
         setRenameDraft(macro.name);
@@ -157,6 +159,7 @@ export function useMacroEditor({
 
   /** Drop the macro selection (e.g. when a combo takes the right column). */
   const clearSelection = useCallback(() => {
+    setIsCreateDraft(false);
     setSelectedName(null);
     setLoadedMacro(null);
     setEditingStepIndex(null);
@@ -164,8 +167,30 @@ export function useMacroEditor({
     setStringConversionError(null);
   }, []);
 
+  const beginCreate = useCallback(() => {
+    const names = new Set(runtimeMacro.macros.map((macro) => macro.name));
+    let number = runtimeMacro.macros.length + 1;
+    while (names.has(`Macro ${number}`)) number++;
+    const name = `Macro ${number}`;
+    setIsCreateDraft(true);
+    setSelectedName(null);
+    setLoadedMacro({ slot: -1, name, steps: [], encodedSize: 0 });
+    setRenameDraft(name);
+    setEditingStepIndex(null);
+    setStringDraft(null);
+    setStringConversionError(null);
+  }, [runtimeMacro.macros]);
+
+  const cancelCreate = useCallback(() => {
+    setIsCreateDraft(false);
+    setLoadedMacro(null);
+    setEditingStepIndex(null);
+    setStringDraft(null);
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      if (isCreateDraft) return;
       if (!runtimeMacro.isAvailable || runtimeMacro.macros.length === 0) {
         setSelectedName(null);
         setLoadedMacro(null);
@@ -193,6 +218,7 @@ export function useMacroEditor({
     return () => window.clearTimeout(timer);
   }, [
     canMaintainSelection,
+    isCreateDraft,
     loadMacro,
     loadedMacro,
     onAutoSelected,
@@ -203,6 +229,7 @@ export function useMacroEditor({
 
   const commitRename = useCallback(
     async (nextName = renameDraft) => {
+      if (isCreateDraft) return;
       if (!requireUnlocked()) return;
       if (!loadedMacro) return;
       const trimmedName = nextName.slice(0, runtimeMacro.maxNameLength).trim();
@@ -218,12 +245,11 @@ export function useMacroEditor({
         setRenameDraft(loadedMacro.name);
       }
     },
-    [loadedMacro, renameDraft, runtimeMacro, requireUnlocked],
+    [isCreateDraft, loadedMacro, renameDraft, runtimeMacro, requireUnlocked],
   );
 
   const commitSteps = useCallback(
     async (steps: MacroStep[]) => {
-      if (!requireUnlocked()) return false;
       if (!loadedMacro) return false;
       if (!canCommitSteps(steps)) {
         return false;
@@ -237,6 +263,15 @@ export function useMacroEditor({
       } catch {
         return false;
       }
+      if (isCreateDraft) {
+        setLoadedMacro({
+          ...loadedMacro,
+          steps,
+          encodedSize: getRuntimeMacroEncodedSize(steps),
+        });
+        return true;
+      }
+      if (!requireUnlocked()) return false;
 
       const countUpdated = await runtimeMacro.setMacroStepCount(
         loadedMacro.slot,
@@ -257,7 +292,7 @@ export function useMacroEditor({
       await runtimeMacro.loadMacros();
       return true;
     },
-    [loadedMacro, runtimeMacro, requireUnlocked],
+    [isCreateDraft, loadedMacro, runtimeMacro, requireUnlocked],
   );
 
   const updateStep = useCallback(
@@ -422,9 +457,13 @@ export function useMacroEditor({
   const handleRenameChange = useCallback(
     (name: string) => {
       setRenameDraft(name);
-      renameDebounce.queue(name);
+      if (isCreateDraft) {
+        setLoadedMacro((macro) => (macro ? { ...macro, name } : null));
+      } else {
+        renameDebounce.queue(name);
+      }
     },
-    [renameDebounce],
+    [isCreateDraft, renameDebounce],
   );
 
   const handleBehaviorSelect = useCallback(
@@ -439,7 +478,6 @@ export function useMacroEditor({
   );
 
   const handleAddStep = useCallback(async () => {
-    if (!requireUnlocked()) return;
     if (!loadedMacro) return;
     const steps = [...loadedMacro.steps, DEFAULT_STEP];
     try {
@@ -449,6 +487,15 @@ export function useMacroEditor({
       return;
     }
     setStringDraft(null);
+    if (isCreateDraft) {
+      setLoadedMacro({
+        ...loadedMacro,
+        steps,
+        encodedSize: getRuntimeMacroEncodedSize(steps),
+      });
+      return;
+    }
+    if (!requireUnlocked()) return;
     const ok = await runtimeMacro.appendMacroStep(
       loadedMacro.slot,
       DEFAULT_STEP,
@@ -461,7 +508,7 @@ export function useMacroEditor({
       });
       await runtimeMacro.loadMacros();
     }
-  }, [loadedMacro, runtimeMacro, requireUnlocked]);
+  }, [isCreateDraft, loadedMacro, runtimeMacro, requireUnlocked]);
 
   const handleDeleteMacro = useCallback(async () => {
     if (!requireUnlocked()) return;
@@ -478,27 +525,48 @@ export function useMacroEditor({
     }
   }, [loadedMacro, runtimeMacro, requireUnlocked]);
 
-  const generateMacroName = useCallback((): string => {
-    const existingNames = new Set(runtimeMacro.macros.map((m) => m.name));
-    let n = runtimeMacro.macros.length + 1;
-    while (existingNames.has(`Macro ${n}`)) n++;
-    return `Macro ${n}`;
-  }, [runtimeMacro.macros]);
-
   const handleCreateMacro = useCallback(async (): Promise<boolean> => {
+    if (!isCreateDraft) {
+      if (!requireUnlocked()) return false;
+      const names = new Set(runtimeMacro.macros.map((macro) => macro.name));
+      let number = runtimeMacro.macros.length + 1;
+      while (names.has(`Macro ${number}`)) number++;
+      setIsCreating(true);
+      try {
+        const name = `Macro ${number}`;
+        const ok = await runtimeMacro.createMacro(name);
+        if (ok) setSelectedName(name);
+        return ok;
+      } finally {
+        setIsCreating(false);
+      }
+    }
+    if (!loadedMacro) return false;
+    const name = renameDraft.slice(0, runtimeMacro.maxNameLength).trim();
+    if (!name || runtimeMacro.macros.some((macro) => macro.name === name)) {
+      return false;
+    }
+    if (!canCommitSteps(loadedMacro.steps) || encodedSizeError) return false;
     if (!requireUnlocked()) return false;
-    const name = generateMacroName();
     setIsCreating(true);
     try {
-      const ok = await runtimeMacro.createMacro(name);
+      const ok = await runtimeMacro.createMacro(name, loadedMacro.steps);
       if (ok) {
+        setIsCreateDraft(false);
         setSelectedName(name);
       }
       return ok;
     } finally {
       setIsCreating(false);
     }
-  }, [generateMacroName, runtimeMacro, requireUnlocked]);
+  }, [
+    encodedSizeError,
+    isCreateDraft,
+    loadedMacro,
+    renameDraft,
+    runtimeMacro,
+    requireUnlocked,
+  ]);
 
   const handleResetMacro = useCallback(async () => {
     if (!requireUnlocked()) return;
@@ -545,7 +613,9 @@ export function useMacroEditor({
   }, [runtimeMacro.globalSettings?.tapMs]);
 
   const loadedMacroHasUnsavedChanges =
-    loadedMacro !== null && runtimeMacro.isSlotUnsaved(loadedMacro.slot);
+    !isCreateDraft &&
+    loadedMacro !== null &&
+    runtimeMacro.isSlotUnsaved(loadedMacro.slot);
 
   // --- Integration points for the page-level unified Save/Discard bar ---
 
@@ -585,6 +655,7 @@ export function useMacroEditor({
 
   return {
     selectedName,
+    isCreateDraft,
     loadedMacro,
     editingStepIndex,
     setEditingStepIndex,
@@ -603,6 +674,8 @@ export function useMacroEditor({
     loadedMacroHasUnsavedChanges,
     selectMacro,
     clearSelection,
+    beginCreate,
+    cancelCreate,
     commitRename,
     commitSteps,
     handleActionChange,

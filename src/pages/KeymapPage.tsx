@@ -235,12 +235,16 @@ export function KeymapPage() {
     canMaintainSelection: macroEditorMode === "edit",
     onAutoSelected: handleMacroAutoSelected,
   });
-  const { clearSelection: clearMacroSelection, selectMacro } = macroEditor;
+  const {
+    clearSelection: clearMacroSelection,
+    selectMacro,
+    beginCreate: beginMacroCreate,
+  } = macroEditor;
 
   const handleOpenMacroEditor = useCallback(
     (slot?: number) => {
       if (slot === undefined) {
-        clearMacroSelection();
+        beginMacroCreate();
         setMacroEditorMode("create");
       } else {
         const macro = runtimeMacro.macros.find(
@@ -254,7 +258,7 @@ export function KeymapPage() {
         setMacroEditorMode("edit");
       }
     },
-    [clearMacroSelection, runtimeMacro.macros, selectMacro],
+    [beginMacroCreate, clearMacroSelection, runtimeMacro.macros, selectMacro],
   );
 
   // Get current binding for selected key
@@ -1882,8 +1886,9 @@ export function KeymapPage() {
         mode={macroEditorMode ?? "edit"}
         onOpenChange={(open) => {
           if (!open) {
+            if (macroEditorMode === "create") macroEditor.cancelCreate();
             setMacroEditorMode(null);
-            void runtimeMacro.loadMacros();
+            if (macroEditorMode === "edit") void runtimeMacro.loadMacros();
           }
         }}
         macro={macroEditor}

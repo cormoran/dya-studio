@@ -560,15 +560,6 @@ export function KeycodeSelector({
                       columns={Math.min(runtimeMacros.length, 4)}
                     />
                   )}
-                  {onOpenMacroEditor && (
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-dashed border-[var(--color-electric)]/60 px-3 py-2 text-sm font-medium text-[var(--color-electric)] hover:bg-[var(--color-electric)]/10"
-                      onClick={() => onOpenMacroEditor()}
-                    >
-                      {t("New macro")}
-                    </button>
-                  )}
                 </div>
               );
             }
@@ -720,7 +711,6 @@ export function KeycodeSelector({
       runtimeMacros,
       floating,
       onOpenMacroEditor,
-      t,
     ],
   );
 
@@ -1029,13 +1019,22 @@ export function KeycodeSelector({
                           )
                         : null}
                     {activeOverride === "macro" && onOpenMacroEditor && (
-                      <button
-                        type="button"
-                        className="mt-3 self-start rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)]"
-                        onClick={() => onOpenMacroEditor(param1)}
-                      >
-                        {t("Edit macros")}
-                      </button>
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-dashed border-[var(--color-electric)]/60 px-3 py-2 text-sm font-medium text-[var(--color-electric)] hover:bg-[var(--color-electric)]/10"
+                          onClick={() => onOpenMacroEditor()}
+                        >
+                          {t("New macro")}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)]"
+                          onClick={() => onOpenMacroEditor(param1)}
+                        >
+                          {t("Edit macros")}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

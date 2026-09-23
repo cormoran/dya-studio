@@ -58,3 +58,42 @@ describe("useRuntimeMacro autoLoad", () => {
     expect(listMacrosCalls().length).toBe(1);
   });
 });
+
+it("creates a macro with steps in RAM without issuing SaveMacros", async () => {
+  mockCall.mockImplementation(async (req: Record<string, unknown>) => {
+    if (req.listMacros)
+      return {
+        listMacros: {
+          macros: [{ slot: 4, name: "Draft" }],
+          maxMacroBytes: 64,
+          maxNameLength: 64,
+        },
+      };
+    if (req.getMacroGlobalSettings)
+      return { getMacroGlobalSettings: { settings: { tapMs: 0 } } };
+    return { status: { affectedCount: 1 } };
+  });
+  const { result } = renderHook(() => useRuntimeMacro({ autoLoad: false }));
+  await act(async () => {
+    expect(
+      await result.current.createMacro("Draft", [{ delay: { delayMs: 25 } }]),
+    ).toBe(true);
+  });
+  const requests = mockCall.mock.calls.map(([request]) => request);
+  expect(requests.find((request) => request.createMacro)?.createMacro).toEqual({
+    name: "Draft",
+    persist: false,
+  });
+  expect(
+    requests.find((request) => request.setMacroStepCount)?.setMacroStepCount,
+  ).toEqual({ slot: 4, stepCount: 1, persist: false });
+  expect(
+    requests.find((request) => request.setMacroStep)?.setMacroStep,
+  ).toEqual({
+    slot: 4,
+    stepIndex: 0,
+    step: { delay: { delayMs: 25 } },
+    persist: false,
+  });
+  expect(requests.some((request) => request.saveMacros)).toBe(false);
+});

@@ -47,6 +47,95 @@ function renderEditor(getMacro: UseRuntimeMacroReturn["getMacro"]) {
 }
 
 describe("useMacroEditor", () => {
+  it("keeps the Macro & Combo page's immediate-create action", async () => {
+    const createMacro = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = { ...makeRuntimeMacro(jest.fn()), createMacro };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    await act(async () => {
+      expect(await result.current.handleCreateMacro()).toBe(true);
+    });
+    expect(createMacro).toHaveBeenCalledWith("Macro 1");
+  });
+
+  it("keeps creation edits local until Create and sends the draft to RAM", async () => {
+    const getMacro = jest.fn().mockResolvedValue(null);
+    const createMacro = jest.fn().mockResolvedValue(true);
+    const setMacroStepCount = jest.fn();
+    const runtimeMacro = {
+      ...makeRuntimeMacro(getMacro),
+      macros: [{ slot: 2, name: "Existing" }],
+      createMacro,
+      setMacroStepCount,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+
+    act(() => result.current.beginCreate());
+    expect(result.current.loadedMacro?.name).toBe("Macro 2");
+    act(() => result.current.handleRenameChange("New draft"));
+    await act(async () => {
+      await result.current.handleAddStep();
+    });
+    expect(result.current.loadedMacro?.steps).toHaveLength(1);
+    expect(getMacro).not.toHaveBeenCalled();
+    expect(createMacro).not.toHaveBeenCalled();
+    expect(setMacroStepCount).not.toHaveBeenCalled();
+
+    await act(async () => {
+      expect(await result.current.handleCreateMacro()).toBe(true);
+    });
+    expect(createMacro).toHaveBeenCalledWith("New draft", [
+      { delay: { delayMs: 0 } },
+    ]);
+
+    act(() => result.current.beginCreate());
+    act(() => result.current.cancelCreate());
+    expect(result.current.loadedMacro).toBeNull();
+    expect(createMacro).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains the new-macro form when the device has no macros", async () => {
+    const runtimeMacro = makeRuntimeMacro(jest.fn().mockResolvedValue(null));
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    act(() => result.current.beginCreate());
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    expect(result.current.loadedMacro?.name).toBe("Macro 1");
+  });
+
   it("keeps selectMacro stable when runtimeMacro's identity churns but getMacro does not", () => {
     // Regression: loadMacro used to depend on the whole `runtimeMacro` object,
     // which is a new reference every render. That gave the auto-select effect a

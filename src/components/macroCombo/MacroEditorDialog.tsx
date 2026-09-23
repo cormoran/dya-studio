@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconLoader2, IconPlus, IconX } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import { IconCheck, IconLoader2, IconPlus, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { UseRuntimeMacroReturn } from "../../hooks/useRuntimeMacro";
 import type { UseKeymapReturn } from "../../hooks/useKeymap";
@@ -31,10 +32,43 @@ export function MacroEditorDialog({
   keyboardLayout,
 }: MacroEditorDialogProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const duplicateName =
+    mode === "create" &&
+    runtimeMacro.macros.some(
+      (candidate) => candidate.name === macro.renameDraft.trim(),
+    );
+  const memoryState = [
+    macro.renameDebounce.state,
+    macro.delayDebounce.state,
+    macro.stringDebounce.state,
+    macro.tapMsDebounce.state,
+  ].includes("saving")
+    ? "saving"
+    : macro.isMemoryWritePending
+      ? "queued"
+      : "idle";
 
-  const handleCreateMacro = () => {
-    void macro.handleCreateMacro();
-    onOpenChange(false);
+  useEffect(() => {
+    if (!open || mode === "create") setHasApplied(false);
+    else if (memoryState === "idle" && macro.loadedMacroHasUnsavedChanges) {
+      setHasApplied(true);
+    }
+  }, [macro.loadedMacroHasUnsavedChanges, memoryState, mode, open]);
+
+  const handleCreateMacro = async () => {
+    if (await macro.handleCreateMacro()) onOpenChange(false);
+  };
+
+  const handleSaveAndClose = async () => {
+    setIsSaving(true);
+    try {
+      await macro.flushPendingWrites();
+      if (await runtimeMacro.saveMacros()) onOpenChange(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -47,23 +81,42 @@ export function MacroEditorDialog({
         >
           <div className="flex shrink-0 items-center gap-3 border-b border-[var(--color-border)] p-4">
             <Dialog.Title className="min-w-0 flex-1 text-lg font-medium text-[var(--color-text)]">
-              {t("Edit macros")}
+              {t(mode === "create" ? "New macro" : "Edit macros")}
             </Dialog.Title>
-            {macro.isMemoryWritePending && (
+            {mode === "edit" && (memoryState !== "idle" || hasApplied) && (
               <span
                 className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]"
                 role="status"
               >
-                <IconLoader2 size={16} className="animate-spin" />
-                {t("Memory...")}
+                {memoryState === "idle" ? (
+                  <IconCheck size={16} />
+                ) : (
+                  <IconLoader2
+                    size={16}
+                    className={memoryState === "saving" ? "animate-spin" : ""}
+                  />
+                )}
+                {t(
+                  memoryState === "queued"
+                    ? "Waiting to apply..."
+                    : memoryState === "saving"
+                      ? "Applying to memory..."
+                      : "Applied to memory",
+                )}
               </span>
             )}
             {mode === "create" && (
               <button
                 type="button"
                 className="btn-electric flex items-center gap-1.5 text-sm"
-                disabled={macro.isCreating || runtimeMacro.isLoading}
-                onClick={handleCreateMacro}
+                disabled={
+                  macro.isCreating ||
+                  runtimeMacro.isLoading ||
+                  !macro.renameDraft.trim() ||
+                  duplicateName ||
+                  !!macro.encodedSizeError
+                }
+                onClick={() => void handleCreateMacro()}
               >
                 {macro.isCreating ? (
                   <IconLoader2 size={16} className="animate-spin" />
@@ -71,6 +124,21 @@ export function MacroEditorDialog({
                   <IconPlus size={16} />
                 )}
                 {t("Create macro")}
+              </button>
+            )}
+            {mode === "edit" && (
+              <button
+                type="button"
+                className="btn-electric text-sm"
+                disabled={
+                  isSaving || runtimeMacro.isLoading || !!macro.encodedSizeError
+                }
+                onClick={() => void handleSaveAndClose()}
+              >
+                {isSaving ? (
+                  <IconLoader2 size={16} className="animate-spin" />
+                ) : null}
+                {t("Save and close")}
               </button>
             )}
             <Dialog.Close asChild>
@@ -84,6 +152,16 @@ export function MacroEditorDialog({
             </Dialog.Close>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {duplicateName && (
+              <p role="alert" className="mb-3 text-sm text-red-400">
+                {t("Macro name already exists")}
+              </p>
+            )}
+            {runtimeMacro.error && (
+              <p role="alert" className="mb-3 text-sm text-red-400">
+                {runtimeMacro.error}
+              </p>
+            )}
             <MacroEditorCard
               macro={macro}
               runtimeMacro={runtimeMacro}
