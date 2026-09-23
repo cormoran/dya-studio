@@ -243,4 +243,129 @@ describe("useMacroEditor", () => {
       jest.useRealTimers();
     }
   });
+
+  it("flushes a pending step edit before appending or removing steps", async () => {
+    const initial = {
+      slot: 3,
+      name: "Draft",
+      steps: [{ delay: { delayMs: 10 } }, { delay: { delayMs: 30 } }],
+      encodedSize: 4,
+    };
+    const getMacro = jest.fn().mockResolvedValue(initial);
+    const setMacroStepCount = jest.fn().mockResolvedValue(true);
+    const setMacroStep = jest.fn().mockResolvedValue(true);
+    const appendMacroStep = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = {
+      ...makeRuntimeMacro(getMacro),
+      macros: [{ slot: 3, name: "Draft" }],
+      setMacroStepCount,
+      setMacroStep,
+      appendMacroStep,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    act(() => result.current.selectMacro({ slot: 3, name: "Draft" }));
+    await waitFor(() => expect(result.current.loadedMacro).not.toBeNull());
+
+    act(() => {
+      result.current.handleDelayChange(0, 20);
+      result.current.delayDebounce.queue(0);
+    });
+    await act(async () => result.current.handleAddStep());
+    expect(setMacroStep).toHaveBeenCalledWith(3, 0, {
+      delay: { delayMs: 20 },
+    });
+    expect(setMacroStep.mock.invocationCallOrder[0]).toBeLessThan(
+      appendMacroStep.mock.invocationCallOrder[0],
+    );
+    expect(result.current.loadedMacro?.steps).toHaveLength(3);
+
+    act(() => {
+      result.current.handleDelayChange(0, 25);
+      result.current.delayDebounce.queue(0);
+    });
+    await act(async () => result.current.handleRemoveStep(2, 1));
+    expect(setMacroStep.mock.calls).toContainEqual([
+      3,
+      0,
+      { delay: { delayMs: 25 } },
+    ]);
+    expect(result.current.loadedMacro?.steps).toEqual([
+      { delay: { delayMs: 25 } },
+      { delay: { delayMs: 30 } },
+    ]);
+    expect(setMacroStepCount).toHaveBeenLastCalledWith(3, 2);
+  });
+
+  it("waits for an in-flight step write before appending", async () => {
+    let finishCount!: (value: boolean) => void;
+    const setMacroStepCount = jest.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishCount = resolve;
+        }),
+    );
+    const appendMacroStep = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = {
+      ...makeRuntimeMacro(
+        jest.fn().mockResolvedValue({
+          slot: 3,
+          name: "Draft",
+          steps: [{ delay: { delayMs: 10 } }],
+          encodedSize: 2,
+        }),
+      ),
+      macros: [{ slot: 3, name: "Draft" }],
+      setMacroStepCount,
+      setMacroStep: jest.fn().mockResolvedValue(true),
+      appendMacroStep,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    act(() => result.current.selectMacro({ slot: 3, name: "Draft" }));
+    await waitFor(() => expect(result.current.loadedMacro).not.toBeNull());
+    act(() => {
+      result.current.handleDelayChange(0, 20);
+      result.current.delayDebounce.queue(0);
+    });
+    let pendingWrite!: Promise<void>;
+    act(() => {
+      pendingWrite = result.current.delayDebounce.flush();
+    });
+    await waitFor(() => expect(setMacroStepCount).toHaveBeenCalledTimes(1));
+    let append!: Promise<void>;
+    act(() => {
+      append = result.current.handleAddStep();
+    });
+    expect(appendMacroStep).not.toHaveBeenCalled();
+    await act(async () => {
+      finishCount(true);
+      await Promise.all([pendingWrite, append]);
+    });
+    expect(appendMacroStep).toHaveBeenCalledTimes(1);
+    expect(result.current.loadedMacro?.steps).toEqual([
+      { delay: { delayMs: 20 } },
+      { delay: { delayMs: 0 } },
+    ]);
+  });
 });

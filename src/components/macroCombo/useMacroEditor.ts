@@ -3,7 +3,7 @@
  * selection, the loaded macro draft, step editing, debounced memory writes and
  * the tap-ms global setting. Extracted from the former MacroPage.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedMemoryWrite } from "../../hooks/useDebouncedMemoryWrite";
 import type { UseRuntimeMacroReturn } from "../../hooks/useRuntimeMacro";
 import type {
@@ -68,6 +68,8 @@ export function useMacroEditor({
 }: UseMacroEditorArgs) {
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [loadedMacro, setLoadedMacro] = useState<MacroDetail | null>(null);
+  const loadedMacroRef = useRef<MacroDetail | null>(null);
+  loadedMacroRef.current = loadedMacro;
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isCreateDraft, setIsCreateDraft] = useState(false);
@@ -250,7 +252,8 @@ export function useMacroEditor({
 
   const commitSteps = useCallback(
     async (steps: MacroStep[]) => {
-      if (!loadedMacro) return false;
+      const current = loadedMacroRef.current;
+      if (!current) return false;
       if (!canCommitSteps(steps)) {
         return false;
       }
@@ -264,35 +267,47 @@ export function useMacroEditor({
         return false;
       }
       if (isCreateDraft) {
-        setLoadedMacro({
-          ...loadedMacro,
+        loadedMacroRef.current = {
+          ...current,
           steps,
           encodedSize: getRuntimeMacroEncodedSize(steps),
-        });
+        };
+        setLoadedMacro((loaded) =>
+          loaded?.slot === current.slot
+            ? {
+                ...loaded,
+                steps,
+                encodedSize: getRuntimeMacroEncodedSize(steps),
+              }
+            : loaded,
+        );
         return true;
       }
       if (!requireUnlocked()) return false;
 
       const countUpdated = await runtimeMacro.setMacroStepCount(
-        loadedMacro.slot,
+        current.slot,
         steps.length,
       );
       if (!countUpdated) return false;
 
       for (const [stepIndex, step] of steps.entries()) {
         const stepUpdated = await runtimeMacro.setMacroStep(
-          loadedMacro.slot,
+          current.slot,
           stepIndex,
           step,
         );
         if (!stepUpdated) return false;
       }
 
-      setLoadedMacro({ ...loadedMacro, steps });
+      loadedMacroRef.current = { ...current, steps };
+      setLoadedMacro((loaded) =>
+        loaded?.slot === current.slot ? { ...loaded, steps } : loaded,
+      );
       await runtimeMacro.loadMacros();
       return true;
     },
-    [isCreateDraft, loadedMacro, runtimeMacro, requireUnlocked],
+    [isCreateDraft, runtimeMacro, requireUnlocked],
   );
 
   const updateStep = useCallback(
@@ -477,9 +492,16 @@ export function useMacroEditor({
     [editingStepIndex, loadedMacro, updateStep],
   );
 
+  const flushStepWrites = useCallback(async () => {
+    await delayDebounce.flush();
+    await stringDebounce.flush();
+  }, [delayDebounce, stringDebounce]);
+
   const handleAddStep = useCallback(async () => {
-    if (!loadedMacro) return;
-    const steps = [...loadedMacro.steps, DEFAULT_STEP];
+    if (!isCreateDraft) await flushStepWrites();
+    const current = loadedMacroRef.current;
+    if (!current) return;
+    const steps = [...current.steps, DEFAULT_STEP];
     try {
       const size = getRuntimeMacroEncodedSize(steps);
       if (size > runtimeMacro.maxMacroBytes) return;
@@ -488,27 +510,47 @@ export function useMacroEditor({
     }
     setStringDraft(null);
     if (isCreateDraft) {
+      loadedMacroRef.current = {
+        ...current,
+        steps,
+        encodedSize: getRuntimeMacroEncodedSize(steps),
+      };
       setLoadedMacro({
-        ...loadedMacro,
+        ...current,
         steps,
         encodedSize: getRuntimeMacroEncodedSize(steps),
       });
       return;
     }
     if (!requireUnlocked()) return;
-    const ok = await runtimeMacro.appendMacroStep(
-      loadedMacro.slot,
-      DEFAULT_STEP,
-    );
+    const ok = await runtimeMacro.appendMacroStep(current.slot, DEFAULT_STEP);
     if (ok) {
-      setLoadedMacro({
-        ...loadedMacro,
+      loadedMacroRef.current = {
+        ...current,
         steps,
         encodedSize: getRuntimeMacroEncodedSize(steps),
-      });
+      };
+      setLoadedMacro((loaded) =>
+        loaded?.slot === current.slot
+          ? { ...loaded, steps, encodedSize: getRuntimeMacroEncodedSize(steps) }
+          : loaded,
+      );
       await runtimeMacro.loadMacros();
     }
-  }, [isCreateDraft, loadedMacro, runtimeMacro, requireUnlocked]);
+  }, [flushStepWrites, isCreateDraft, runtimeMacro, requireUnlocked]);
+
+  const handleRemoveStep = useCallback(
+    async (startIndex: number, length: number) => {
+      if (!isCreateDraft) await flushStepWrites();
+      const current = loadedMacroRef.current;
+      if (!current) return;
+      await commitSteps([
+        ...current.steps.slice(0, startIndex),
+        ...current.steps.slice(startIndex + length),
+      ]);
+    },
+    [commitSteps, flushStepWrites, isCreateDraft],
+  );
 
   const handleDeleteMacro = useCallback(async () => {
     if (!requireUnlocked()) return;
@@ -683,6 +725,7 @@ export function useMacroEditor({
     handleDelayChange,
     handleBehaviorSelect,
     handleAddStep,
+    handleRemoveStep,
     handleDeleteMacro,
     handleCreateMacro,
     handleResetMacro,

@@ -218,12 +218,7 @@ export function MacroEditorCard({
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-40"
                       onClick={() =>
-                        void macro.commitSteps([
-                          ...loadedMacro.steps.slice(0, row.startIndex),
-                          ...loadedMacro.steps.slice(
-                            row.startIndex + row.length,
-                          ),
-                        ])
+                        void macro.handleRemoveStep(row.startIndex, row.length)
                       }
                       disabled={runtimeMacro.isLoading}
                       aria-label={t("Remove step {{n}}", {
