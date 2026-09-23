@@ -36,6 +36,7 @@ export function useDebouncedMemoryWrite<T>(
   const [state, setState] = useState<MemoryWriteState>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef<{ value: T } | null>(null);
+  const inFlightRef = useRef<Set<Promise<void>>>(new Set());
   // Keep the latest writer without re-creating callbacks on every render.
   const writeRef = useRef(write);
   writeRef.current = write;
@@ -52,13 +53,27 @@ export function useDebouncedMemoryWrite<T>(
     if (!pending) return;
     pendingRef.current = null;
     clearTimer();
-    setState("saving");
+    const write = (async () => {
+      setState("saving");
+      try {
+        await writeRef.current(pending.value);
+      } catch (error) {
+        console.error("Debounced memory write failed:", error);
+      } finally {
+        setState(
+          pendingRef.current
+            ? "queued"
+            : inFlightRef.current.size > 1
+              ? "saving"
+              : "idle",
+        );
+      }
+    })();
+    inFlightRef.current.add(write);
     try {
-      await writeRef.current(pending.value);
-    } catch (error) {
-      console.error("Debounced memory write failed:", error);
+      await write;
     } finally {
-      setState("idle");
+      inFlightRef.current.delete(write);
     }
   }, [clearTimer]);
 
@@ -78,6 +93,7 @@ export function useDebouncedMemoryWrite<T>(
     if (pendingRef.current) {
       await runWrite();
     }
+    await Promise.all(inFlightRef.current);
   }, [runWrite]);
 
   const cancel = useCallback(() => {
