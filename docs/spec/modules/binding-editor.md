@@ -39,7 +39,7 @@ BIND-017: floating の header は選択中 behavior の説明を表示する。b
 
 BIND-018: keycode selector は開くたびにキー配列表示から始める。配列下に「その他のキーは右上のカテゴリ別表示ボタンから選択できます」と案内し、右上の表示切替ボタンは通常色にする。修飾キー表示ボタンは選択中の修飾キー名を含めず、修飾キーが一つ以上選択されている場合だけ修飾キートグルと同じ紫で示す。behavior dropdown の「選択したカテゴリを維持」は未設定時 ON で、明示的に OFF にした設定は保持する。根拠はS2/S4/S3/S5、2026-09-23ユーザー要求。
 
-BIND-019: caller が modal 内から selector を開く場合、selector の overlay と content は caller modal より前面に表示する。Combo Editor の Behavior 選択では selector を背後に隠さず操作できる。Keymap preview の combo control から開く selector はこの重なり順を維持したまま modal/floating を切替できる。通常の caller は既存の overlay 順を使う。根拠はS1、2026-09-24ユーザー要求。
+BIND-019: caller が modal 内から selector を開く場合、selector の overlay と content は caller modal より前面に表示する。Combo Editor の Behavior 選択では selector を背後に隠さず操作できる。Keymap preview の combo control から開く selector はこの重なり順を維持したまま modal/floating を切替でき、通常キー selector と同時に開かず同じ floating anchor を使う。通常の caller は既存の overlay 順を使う。根拠はS1、2026-09-24ユーザー要求。
 
 | ID       | 前提 → 操作                                                  | 観測できる結果                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
 | -------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |

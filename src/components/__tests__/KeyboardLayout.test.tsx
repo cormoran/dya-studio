@@ -57,6 +57,12 @@ describe("KeyboardLayout combo controls", () => {
     const control = screen.getByRole("button", {
       name: /Combo Twin escape:/,
     });
+    expect(control).toHaveClass(
+      "bg-[var(--color-surface-elevated)]",
+      "hover:bg-[var(--color-surface-elevated)]",
+    );
+    expect(Number.parseFloat(control.style.width)).toBeLessThan(12);
+    expect(Number.parseFloat(control.style.height)).toBeLessThan(12);
     fireEvent.pointerMove(control);
     act(() => jest.advanceTimersByTime(200));
 

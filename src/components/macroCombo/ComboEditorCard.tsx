@@ -215,7 +215,7 @@ export function ComboEditorCard({
           ))}
         </div>
         <p className="text-xs text-[var(--color-text-muted)]">
-          {formatLayerScope(draft.layerMask, t)}
+          {formatLayerScope(draft.layerMask, t, layers)}
         </p>
       </div>
 

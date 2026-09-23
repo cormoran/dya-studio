@@ -695,6 +695,115 @@ describe("KeymapPage", () => {
       );
     });
 
+    it("keeps the combo and key floating editors mutually exclusive", async () => {
+      const user = userEvent.setup();
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Escape chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0: A",
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /Combo Escape chord:/ }),
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Combo Editor · 0",
+      );
+      expect(
+        screen.queryByText("Base · Key position 0: A"),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0: A",
+      );
+      expect(screen.queryByText("Combo Editor · 0")).not.toBeInTheDocument();
+    });
+
+    it("lists named combo layers on a separate line in a wrapping card", () => {
+      mockUseRuntimeCombo.mockReturnValue({
+        isAvailable: true,
+        combos: [
+          {
+            index: 0,
+            name: "Three layer chord",
+            keyPositions: [0, 1],
+            behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+            layerMask: 0x7,
+            enabled: true,
+            timeoutMs: 0,
+            requirePriorIdleMs: 0,
+            slowReleaseOverride: 0,
+            source: ComboSource.COMBO_SOURCE_DEFAULT,
+          },
+        ],
+        globalSettings: { maxCombo: 8 },
+        isLoading: false,
+        error: null,
+        hasPendingChanges: false,
+        reload: jest.fn(),
+      } as never);
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: {
+            ...mockKeymap,
+            layers: [
+              ...mockKeymap.layers,
+              {
+                id: 2,
+                name: "Raise",
+                bindings: mockKeymap.layers[0].bindings,
+              },
+            ],
+          },
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      const item = screen.getByTestId("combo-list-item-0");
+      expect(item).toHaveClass("min-w-56", "flex-[1_1_14rem]");
+      expect(item).toHaveTextContent("0 + 1");
+      expect(item).toHaveTextContent("Layers: Base, Lower, Raise");
+      expect(item).not.toHaveTextContent("0x7");
+    });
+
     it("exposes the keymap controls with names and selection state", () => {
       renderComponent(
         { isConnected: true },

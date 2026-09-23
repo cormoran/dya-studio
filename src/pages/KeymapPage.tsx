@@ -174,17 +174,19 @@ export function KeymapPage() {
 
   const openComboEditor = useCallback(
     (combo: Combo) => {
+      closeSelector();
       comboEditor.selectCombo(combo);
       setShowComboEditor(true);
     },
-    [comboEditor],
+    [closeSelector, comboEditor],
   );
   const openComboBinding = useCallback(
     (combo: Combo) => {
+      closeSelector();
       comboEditor.selectCombo(combo);
       setShowComboBindingSelector(true);
     },
-    [comboEditor],
+    [closeSelector, comboEditor],
   );
   const handleCreateCombo = useCallback(async () => {
     if (await comboEditor.handleNewCombo()) setShowComboEditor(true);
@@ -268,6 +270,7 @@ export function KeymapPage() {
     (keyPosition: number) =>
       withUnlock(() => {
         selectionRevision.current += 1;
+        setShowComboBindingSelector(false);
         setSelectedKeyPosition(keyPosition);
         setShowKeycodeSelector(true);
       }),
@@ -1635,7 +1638,7 @@ export function KeymapPage() {
                     {t("No runtime combos configured")}
                   </p>
                 ) : (
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <div className="flex flex-wrap gap-2">
                     {runtimeCombo.combos.map((combo, position) => {
                       const status = comboEditStatus(
                         combo.source,
@@ -1649,7 +1652,7 @@ export function KeymapPage() {
                           key={combo.index}
                           type="button"
                           data-testid={`combo-list-item-${combo.index}`}
-                          className={`shrink-0 min-w-32 max-w-52 p-3 rounded-lg border text-left transition-colors ${
+                          className={`min-w-56 max-w-full flex-[1_1_14rem] p-3 rounded-lg border text-left transition-colors ${
                             isUnsaved
                               ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
                               : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/60"
@@ -1680,8 +1683,15 @@ export function KeymapPage() {
                             <StatusDot status={status} />
                           </span>
                           <span className="block text-xs text-[var(--color-text-muted)] truncate">
-                            {combo.keyPositions.join(" + ")} ·{" "}
-                            {formatLayerScope(combo.layerMask, t)}
+                            {combo.keyPositions.join(" + ")}
+                          </span>
+                          <span className="block text-xs text-[var(--color-text-muted)] truncate">
+                            {t("Layers")}:{" "}
+                            {formatLayerScope(
+                              combo.layerMask,
+                              t,
+                              layersForSelector,
+                            )}
                           </span>
                           <span
                             className={`block text-xs truncate ${

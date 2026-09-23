@@ -435,23 +435,23 @@ export function KeyboardLayout({
                 <Tooltip.Trigger asChild>
                   <button
                     type="button"
-                    className="absolute z-10 flex items-start justify-start rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-[var(--color-electric)] text-[10px] font-semibold shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+                    className="absolute z-10 flex items-center justify-center rounded-sm border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-0 text-[var(--color-electric)] shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
                     style={{
-                      width: BASE_UNIT_SIZE * scale * 0.5,
-                      height: BASE_UNIT_SIZE * scale * 0.5,
+                      width: BASE_UNIT_SIZE * scale * 0.24,
+                      height: BASE_UNIT_SIZE * scale * 0.24,
                       left:
                         (center.x / 100) * BASE_UNIT_SIZE * scale +
                         bounds.offsetX -
-                        BASE_UNIT_SIZE * scale * 0.25,
+                        BASE_UNIT_SIZE * scale * 0.12,
                       top:
                         (center.y / 100) * BASE_UNIT_SIZE * scale +
                         bounds.offsetY -
-                        BASE_UNIT_SIZE * scale * 0.25,
+                        BASE_UNIT_SIZE * scale * 0.12,
                     }}
                     onClick={() => onComboClick?.(combo)}
                     aria-label={`${t("Combo")} ${combo.name || combo.index}: ${label}`}
                   >
-                    <IconLink size={14} aria-hidden="true" />
+                    <IconLink size={8} aria-hidden="true" />
                   </button>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>

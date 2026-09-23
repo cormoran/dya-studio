@@ -776,7 +776,11 @@ export function MacroComboPage() {
                           </div>
                           <div className="mt-1 text-xs text-[var(--color-text-muted)] truncate">
                             {combo.keyPositions.join(" + ")} ·{" "}
-                            {formatLayerScope(combo.layerMask, t)}
+                            {formatLayerScope(
+                              combo.layerMask,
+                              t,
+                              layersForSelector,
+                            )}
                           </div>
                           <div className="mt-1 text-xs text-[var(--color-text-secondary)] truncate">
                             {formatComboBehavior(
