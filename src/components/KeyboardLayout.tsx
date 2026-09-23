@@ -7,6 +7,7 @@
  */
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { IconLink } from "@tabler/icons-react";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { PhysicalKey } from "./PhysicalKey";
 import { PhysicalLayoutModule } from "./PhysicalLayoutModule";
 import type {
@@ -22,6 +23,7 @@ import type { KeyboardLayoutType } from "../lib/keyboardLayouts";
 import type { Combo } from "../hooks/useRuntimeCombo";
 import { hasLayer } from "./macroCombo/comboUtils";
 import { adjacentComboCenter } from "./comboPreview";
+import { useLanguage } from "../hooks/useLanguage";
 
 // Base unit size for 1U key in pixels at scale 1.0
 const BASE_UNIT_SIZE = 54;
@@ -145,6 +147,7 @@ export function KeyboardLayout({
   combos = [],
   onComboClick,
 }: KeyboardLayoutProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1.0);
 
@@ -427,28 +430,46 @@ export function KeyboardLayout({
         })}
         {comboLabels.map(({ combo, label, center }) =>
           center ? (
-            <button
-              key={`combo-${combo.index}`}
-              type="button"
-              className="absolute z-10 flex items-start justify-start rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-[var(--color-electric)] text-[10px] font-semibold shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
-              style={{
-                width: BASE_UNIT_SIZE * scale * 0.5,
-                height: BASE_UNIT_SIZE * scale * 0.5,
-                left:
-                  (center.x / 100) * BASE_UNIT_SIZE * scale +
-                  bounds.offsetX -
-                  BASE_UNIT_SIZE * scale * 0.25,
-                top:
-                  (center.y / 100) * BASE_UNIT_SIZE * scale +
-                  bounds.offsetY -
-                  BASE_UNIT_SIZE * scale * 0.25,
-              }}
-              onClick={() => onComboClick?.(combo)}
-              aria-label={`Combo ${combo.name || combo.index}: ${label}`}
-              title={`${combo.name || `Combo ${combo.index}`}: ${label}`}
-            >
-              <IconLink size={14} aria-hidden="true" />
-            </button>
+            <Tooltip.Provider key={`combo-${combo.index}`} delayDuration={200}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <button
+                    type="button"
+                    className="absolute z-10 flex items-start justify-start rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-[var(--color-electric)] text-[10px] font-semibold shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+                    style={{
+                      width: BASE_UNIT_SIZE * scale * 0.5,
+                      height: BASE_UNIT_SIZE * scale * 0.5,
+                      left:
+                        (center.x / 100) * BASE_UNIT_SIZE * scale +
+                        bounds.offsetX -
+                        BASE_UNIT_SIZE * scale * 0.25,
+                      top:
+                        (center.y / 100) * BASE_UNIT_SIZE * scale +
+                        bounds.offsetY -
+                        BASE_UNIT_SIZE * scale * 0.25,
+                    }}
+                    onClick={() => onComboClick?.(combo)}
+                    aria-label={`${t("Combo")} ${combo.name || combo.index}: ${label}`}
+                  >
+                    <IconLink size={14} aria-hidden="true" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
+                    sideOffset={5}
+                  >
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Combo")}:{" "}
+                    </span>
+                    <span>
+                      {combo.name || `${t("Combo")} ${combo.index}`} · {label}
+                    </span>
+                    <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           ) : null,
         )}
       </div>
