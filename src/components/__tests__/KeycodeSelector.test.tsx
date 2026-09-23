@@ -160,11 +160,71 @@ it("uses the keycode control row for parameters and collapses modal modifiers on
       .closest("[class~='tablet:flex']"),
   ).toHaveClass("hidden", "tablet:flex");
   expect(
-    screen.getByRole("button", { name: /param1:/ }).parentElement
+    screen.getByRole("button", { name: /Key: Key to press/ }).parentElement
       ?.parentElement,
   ).toHaveClass("h-7", "mb-2", "flex");
   expect(screen.getByText("Modifiers:")).toBeInTheDocument();
-  expect(screen.getByText("param1 - Select Key")).toBeInTheDocument();
+  expect(screen.queryByText("param1 - Select Key")).not.toBeInTheDocument();
+});
+
+it("explains both layer-tap parameters and uses firmware parameter names", async () => {
+  const user = userEvent.setup();
+  const layerTap = BEHAVIORS.find(
+    (behavior) => behavior.displayName === "Layer-Tap",
+  )!;
+  render(
+    <KeycodeSelector
+      open
+      presentation="floating"
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: layerTap.id, param1: 0, param2: 0x70004 }}
+      behaviors={new Map([[layerTap.id, layerTap]])}
+      layers={[{ id: 0, name: "Base" }]}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: /Layer: Layer active while held/ }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Layer on hold, key on tap")).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
+  );
+  expect(
+    screen.getByRole("button", { name: /Key: Key sent on tap/ }),
+  ).toHaveClass("border-[var(--color-electric)]");
+});
+
+it("uses firmware parameter names and type guidance for an unknown behavior", () => {
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={jest.fn()}
+      currentBinding={{ behaviorId: 42, param1: 0, param2: 0 }}
+      behaviors={
+        new Map([
+          [
+            42,
+            {
+              id: 42,
+              displayName: "Custom Layer",
+              metadata: [
+                { param1: [{ name: "Target", layerId: {} }], param2: [] },
+              ],
+            },
+          ],
+        ])
+      }
+      layers={[{ id: 0, name: "Base" }]}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: /Target: Select Layer/ }),
+  ).toBeInTheDocument();
 });
 
 it("shows a caller-provided target identity in modal and floating presentations", () => {

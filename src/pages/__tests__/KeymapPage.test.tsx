@@ -315,9 +315,10 @@ describe("KeymapPage", () => {
             65 + position,
           )}`,
         );
+        expect(screen.getByText("Press a key")).toBeInTheDocument();
         expect(
-          screen.getByText(`Base · Key ${position + 1} / 3`),
-        ).toBeInTheDocument();
+          screen.queryByText(/Base · Key \d+ \/ 3/),
+        ).not.toBeInTheDocument();
         expect(
           screen.getAllByRole("button", { name: /Key position \d+:/ })[
             position
@@ -342,7 +343,9 @@ describe("KeymapPage", () => {
       const { user, setBinding } = await setup();
       await user.click(screen.getByRole("button", { name: "B", exact: true }));
       expect(setBinding).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 1:",
+      );
       await user.click(
         screen.getByRole("button", { name: "Trans", exact: true }),
       );
@@ -352,7 +355,9 @@ describe("KeymapPage", () => {
         param1: 0,
         param2: 0,
       });
-      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 2:",
+      );
     });
 
     it("stays on the selected key when auto advance is off and remembers the setting", async () => {
@@ -362,12 +367,16 @@ describe("KeymapPage", () => {
       await user.click(toggle);
       await user.click(screen.getByRole("button", { name: "A", exact: true }));
       expect(setBinding).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0:",
+      );
       expect(localStorage.getItem("keymapAutoAdvance")).toBe("false");
       await user.click(screen.getByRole("button", { name: "Next key" }));
       await user.click(screen.getByRole("button", { name: "Next key" }));
       await user.click(screen.getByRole("button", { name: "B", exact: true }));
-      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 2:",
+      );
       await user.click(screen.getByRole("button", { name: "Auto advance" }));
       await user.click(screen.getByRole("button", { name: "A", exact: true }));
       await waitFor(() =>
@@ -380,10 +389,14 @@ describe("KeymapPage", () => {
         jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
       );
       await user.click(screen.getByRole("button", { name: "A", exact: true }));
-      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 0:",
+      );
       await user.click(screen.getByRole("button", { name: "A", exact: true }));
       expect(setBinding).toHaveBeenCalledTimes(2);
-      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 1:",
+      );
     });
 
     it("does not move a newly clicked key when an earlier request completes", async () => {
@@ -405,7 +418,9 @@ describe("KeymapPage", () => {
       );
       await act(async () => resolve(true));
       expect(setBinding).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 2:",
+      );
     });
 
     it("navigates without applying and closes on Escape without writing", async () => {
@@ -414,7 +429,9 @@ describe("KeymapPage", () => {
         screen.getByRole("button", { name: "Previous key" }),
       ).toBeDisabled();
       await user.click(screen.getByRole("button", { name: "Next key" }));
-      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+        "Base · Key position 1:",
+      );
       await user.click(screen.getByRole("button", { name: "Previous key" }));
       await user.keyboard("{Escape}");
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

@@ -33,6 +33,10 @@ BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モ�
 
 BIND-013: caller が `targetLabel` を渡すと、modal/floating の header はその値を表示する。caller は keymap 固有の名前に制限されず、自身の layer/position/step/direction 等を表現できる。表示形式の切替や keymap の次キー移動では現在の target に更新され、target 表示だけでは binding を送らない。根拠はS1/S3、[#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求。
 
+BIND-016: modal/floating の parameter タブは、firmware が単一の名前を定義していればその名前を表示し、複数の名前がある場合は `param1` / `param2` に戻す。各タブの右には選択対象の説明を表示する。標準 behavior は操作の意味（例: Layer-Tap の layer は「長押し中のレイヤー」）、それ以外は parameter 型に応じた選択案内を表示する。modal の `Parameters` 見出しには説明を重複表示しない。根拠はS1/S3、2026-09-23ユーザー要求。
+
+BIND-017: floating の header は選択中 behavior の説明を表示する。behavior を変更すれば説明も更新される。modal は behavior dropdown の選択表示で説明を示す。説明を持たない未知の behavior には説明を追加しない。根拠はS1/S4、2026-09-23ユーザー要求。
+
 | ID       | 前提 → 操作                                                  | 観測できる結果                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
 | -------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |
 | BIND-001 | editor を開く / selectionKey 変更                            | currentBinding の behavior/param1/param2 を初期値とし param1 を選択                                                                            | draft を初期化                                                              | S1 handleOpenChange/effect |
