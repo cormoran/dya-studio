@@ -69,6 +69,7 @@ import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu"
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
 import { useIsTabActive } from "../hooks/useIsTabActive";
+import type { FloatingWindowPosition } from "../hooks/useFloatingWindow";
 import "./keymap.css";
 
 export function KeymapPage() {
@@ -171,6 +172,13 @@ export function KeymapPage() {
   const [showComboEditor, setShowComboEditor] = useState(false);
   const [showComboBindingSelector, setShowComboBindingSelector] =
     useState(false);
+  const [sharedFloatingPosition, setSharedFloatingPosition] =
+    useState<FloatingWindowPosition>();
+  useEffect(() => {
+    if (!showKeycodeSelector && !showComboBindingSelector) {
+      setSharedFloatingPosition(undefined);
+    }
+  }, [showComboBindingSelector, showKeycodeSelector]);
   const comboEditor = useComboEditor({
     runtimeCombo,
     keymap,
@@ -1942,6 +1950,8 @@ export function KeymapPage() {
         presentation={selectorMode}
         modalLayer="nested"
         floatingAnchorRef={keymapContentAnchorRef}
+        floatingPosition={sharedFloatingPosition}
+        onFloatingPositionChange={setSharedFloatingPosition}
         onClose={() => setShowComboBindingSelector(false)}
         onSelect={(binding) => {
           comboEditor.applyDraftChange(
@@ -2006,6 +2016,8 @@ export function KeymapPage() {
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
         floatingAnchorRef={keymapContentAnchorRef}
+        floatingPosition={sharedFloatingPosition}
+        onFloatingPositionChange={setSharedFloatingPosition}
         selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
         targetLabel={selectorTargetLabel}
         busy={isApplyingBinding}

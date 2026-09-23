@@ -41,7 +41,10 @@ import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-import { useFloatingWindow } from "../hooks/useFloatingWindow";
+import {
+  useFloatingWindow,
+  type FloatingWindowPosition,
+} from "../hooks/useFloatingWindow";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -71,6 +74,11 @@ interface KeycodeSelectorProps {
   targetLabel?: ReactNode;
   toolbar?: ReactNode;
   floatingAnchorRef?: RefObject<HTMLElement | null>;
+  /** Caller-owned position shared across mutually exclusive floating editors. */
+  floatingPosition?: FloatingWindowPosition;
+  onFloatingPositionChange?: (
+    position: FloatingWindowPosition | undefined,
+  ) => void;
   busy?: boolean;
   error?: string | null;
   open: boolean;
@@ -256,6 +264,8 @@ export function KeycodeSelector({
   targetLabel,
   toolbar,
   floatingAnchorRef,
+  floatingPosition,
+  onFloatingPositionChange,
   busy = false,
   error,
   open,
@@ -278,7 +288,13 @@ export function KeycodeSelector({
   useEffect(() => {
     activePresentation.current = presentation;
   }, [presentation]);
-  const floatingWindow = useFloatingWindow(floating, open, floatingAnchorRef);
+  const floatingWindow = useFloatingWindow(
+    floating,
+    open,
+    floatingAnchorRef,
+    floatingPosition,
+    onFloatingPositionChange,
+  );
   const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
