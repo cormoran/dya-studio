@@ -18,7 +18,7 @@ import type {
   BehaviorDefinition,
 } from "../hooks/useKeymap";
 import type { PhysicalLayoutModulePresentation } from "../hooks/usePhysicalLayoutModules";
-import { formatBehaviorBinding } from "../lib/behaviorMetadata";
+import { formatBehaviorBinding, getBehaviorTag } from "../lib/behaviorMetadata";
 import type { KeyboardLayoutType } from "../lib/keyboardLayouts";
 import type { Combo } from "../hooks/useRuntimeCombo";
 import { hasLayer } from "./macroCombo/comboUtils";
@@ -232,7 +232,8 @@ export function KeyboardLayout({
     [rawBounds, scale],
   );
 
-  // Get display name for a key at position
+  // Get display name for a key at position (content only; the behavior tag,
+  // e.g. "&kp", is rendered separately as a corner label — see behaviorTag)
   const getKeyDisplayName = useCallback(
     (_keyPosition: number, binding: BehaviorBinding | undefined): string => {
       if (!binding) return "—";
@@ -247,17 +248,39 @@ export function KeyboardLayout({
     [behaviors, layers, keyboardLayout, runtimeMacros],
   );
 
+  // Get the behavior tag for a key (e.g. "&kp", "&hml"), for the corner label
+  const getKeyBehaviorTag = useCallback(
+    (_keyPosition: number, binding: BehaviorBinding | undefined): string => {
+      if (!binding) return "";
+      return getBehaviorTag(behaviors.get(binding.behaviorId) || null);
+    },
+    [behaviors],
+  );
+
+  // Tooltip lines combine the tag and content into one readable string
+  // (unlike the on-key label, tooltip text has room for both).
+  const withTag = useCallback(
+    (behavior: BehaviorDefinition | null, content: string): string => {
+      const tag = getBehaviorTag(behavior);
+      return tag ? `${tag} ${content}` : content;
+    },
+    [],
+  );
+
   const getKeyLongDisplayName = useCallback(
     (_keyPosition: number, binding: BehaviorBinding | undefined): string => {
       if (!binding) return "—";
       const behavior = behaviors.get(binding.behaviorId) || null;
-      return formatBehaviorBinding(binding, behavior, {
-        layers: layers,
-        keyboardLayout,
-        runtimeMacros,
-      });
+      return withTag(
+        behavior,
+        formatBehaviorBinding(binding, behavior, {
+          layers: layers,
+          keyboardLayout,
+          runtimeMacros,
+        }),
+      );
     },
-    [behaviors, layers, keyboardLayout, runtimeMacros],
+    [behaviors, layers, keyboardLayout, runtimeMacros, withTag],
   );
 
   // Get original display name for tooltip
@@ -266,11 +289,14 @@ export function KeyboardLayout({
       const original = getOriginalBinding(layer.id, keyPosition);
       if (!original) return undefined;
       const behavior = behaviors.get(original.behaviorId) || null;
-      return formatBehaviorBinding(original, behavior, {
-        layers: layers,
-        keyboardLayout,
-        runtimeMacros,
-      });
+      return withTag(
+        behavior,
+        formatBehaviorBinding(original, behavior, {
+          layers: layers,
+          keyboardLayout,
+          runtimeMacros,
+        }),
+      );
     },
     [
       getOriginalBinding,
@@ -279,6 +305,7 @@ export function KeyboardLayout({
       layers,
       keyboardLayout,
       runtimeMacros,
+      withTag,
     ],
   );
 
@@ -288,11 +315,14 @@ export function KeyboardLayout({
       const def = getDefaultBinding?.(layer.id, keyPosition);
       if (!def) return undefined;
       const behavior = behaviors.get(def.behaviorId) || null;
-      return formatBehaviorBinding(def, behavior, {
-        layers: layers,
-        keyboardLayout,
-        runtimeMacros,
-      });
+      return withTag(
+        behavior,
+        formatBehaviorBinding(def, behavior, {
+          layers: layers,
+          keyboardLayout,
+          runtimeMacros,
+        }),
+      );
     },
     [
       getDefaultBinding,
@@ -301,19 +331,27 @@ export function KeyboardLayout({
       layers,
       keyboardLayout,
       runtimeMacros,
+      withTag,
     ],
   );
 
-  // Get full binding description for tooltip
+  // Get full binding description for tooltip. Reuses the same formatter as
+  // the long display name, so this only surfaces as an extra tooltip line
+  // when it actually adds information beyond what's already shown.
   const getBindingDescription = useCallback(
     (binding: BehaviorBinding | undefined): string => {
       if (!binding) return "No binding";
       const behavior = behaviors.get(binding.behaviorId) || null;
-      const behaviorName =
-        behavior?.displayName || `Behavior ${binding.behaviorId}`;
-      return `${behaviorName} (param1: ${binding.param1}, param2: ${binding.param2})`;
+      return withTag(
+        behavior,
+        formatBehaviorBinding(binding, behavior, {
+          layers: layers,
+          keyboardLayout,
+          runtimeMacros,
+        }),
+      );
     },
-    [behaviors],
+    [behaviors, layers, keyboardLayout, runtimeMacros, withTag],
   );
 
   const visibleCombos = combos.filter(
@@ -376,6 +414,7 @@ export function KeyboardLayout({
               isOriginalKnown={originalKnown}
               isChangedFromDefault={changedFromDefault}
               displayName={getKeyDisplayName(position, binding)}
+              behaviorTag={getKeyBehaviorTag(position, binding)}
               longDisplayName={getKeyLongDisplayName(position, binding)}
               originalDisplayName={
                 modified && originalKnown
