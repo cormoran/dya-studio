@@ -4,8 +4,28 @@
       "version": "upcoming",
       "date": null,
       "changes": {
-        "major": [],
-        "minor": [],
+        "major": [
+          {
+            "en": "Configure runtime combos directly on the keymap with visual previews and floating binding editors.",
+            "ja": "キーマップ上でランタイムコンボをプレビューし、フローティングバインディングエディタから直接編集できるようになりました。",
+            "zh": "现在可在键位图中直接配置运行时组合键，并使用可视化预览和浮动绑定编辑器进行编辑。",
+            "pr": [226, 228]
+          },
+          {
+            "en": "Create and edit runtime macros directly from key bindings.",
+            "ja": "キー割り当てからランタイムマクロを直接作成・編集できるようになりました。",
+            "zh": "现在可直接从按键绑定创建和编辑运行时宏。",
+            "pr": 227
+          }
+        ],
+        "minor": [
+          {
+            "en": "Edit key bindings with clearer parameter guidance, refined selectors, and improved floating-editor controls.",
+            "ja": "パラメータ説明を分かりやすくし、セレクターとフローティングエディタの操作性を改善しました。",
+            "zh": "通过更清晰的参数说明、改进的选择器和更易用的浮动编辑器控件，优化按键绑定编辑。",
+            "pr": [220, 225]
+          }
+        ],
         "patch": []
       }
     },
