@@ -105,5 +105,6 @@
 ## 未解決・未検証
 
 - actual firmware slot capacity、flash 保存後の電源断耐性、遅延 RPC の競合は未検証。mobile の長い item 名と macro-only / combo-only 構成は UI 未実測。
+- non-split DYA2 Renode の空 macro を `Create macro` → `Save` すると、list entry は残る一方、再選択の `GetMacro` は `No macro bound to that slot`、`Delete` は `No macro with that name` になる事例を [CI #36151779631](https://github.com/cormoran/dya-studio/actions/runs/36151779631) で 2 回観測した。empty body の flash 保存・Renode NVS・firmware keyspace のどの層が原因かは未確定。UI の Delete 再試行で解消したとは扱わない。
 - Delete の確認がない現行挙動はコードで確認したが、意図的な受容根拠は確認できない。
 - default reset / save の部分成功に対する user-visible transaction 要件は不明。

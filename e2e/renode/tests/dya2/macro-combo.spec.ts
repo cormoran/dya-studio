@@ -16,7 +16,9 @@ import { connectDya2 } from "./dya2.helpers";
 // emulated USB-CDC device->host path stalls, so each test is meant to run in
 // its own boot (Playwright `-g` selects one).
 //
-// The runtime-macro test is verified GREEN against the real firmware in Renode.
+// The runtime-macro test uses a real step: an empty macro can appear in the
+// firmware list but lose its slot/name binding after Save in Renode. That
+// emulator/firmware failure is separate from the normal macro edit round trip.
 // The runtime-combo test is implemented but marked `fixme` (skipped) because it
 // is not reliably green on this emulator (see the note above that test).
 
@@ -75,6 +77,15 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
     .locator("div.space-y-1 > button")
     .filter({ has: page.getByText(newMacro!, { exact: true }) });
   await expect(macroButton).toBeVisible();
+
+  // Exercise a real body write before persisting. Saving an empty macro on the
+  // Renode DUT can leave a stale list entry that GetMacro and DeleteMacro both
+  // reject. The representative user flow adds a step before Save as well.
+  await expect(page.getByText("No steps in this macro")).toBeVisible();
+  await page.getByRole("button", { name: "Step", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Remove step 1" })).toBeVisible(
+    { timeout: 90_000 },
+  );
 
   // PERSIST to flash (save_macros). Save disables once nothing is pending.
   await expect(save).toBeEnabled();
