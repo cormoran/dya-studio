@@ -159,6 +159,80 @@ describe("useMacroEditor", () => {
     expect(result.current.reloadLoadedMacro).toBe(firstReload);
   });
 
+  it("does not start a duplicate detail read when selection triggers auto-selection", async () => {
+    jest.useFakeTimers();
+    try {
+      let finishRead!: (value: {
+        slot: number;
+        name: string;
+        steps: [];
+        encodedSize: number;
+      }) => void;
+      const getMacro = jest.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishRead = resolve;
+          }),
+      );
+      const runtimeMacro = {
+        ...makeRuntimeMacro(getMacro),
+        macros: [{ slot: 3, name: "Draft" }],
+      };
+      const { result } = renderHook(() =>
+        useMacroEditor({
+          runtimeMacro,
+          keymap,
+          layers: [],
+          keyboardLayout: "ansi" as never,
+          requireUnlocked: () => true,
+          t: (key: string) => key,
+          canMaintainSelection: true,
+          onAutoSelected: () => {},
+        }),
+      );
+
+      act(() => result.current.selectMacro(runtimeMacro.macros[0]));
+      await act(async () => {
+        jest.runOnlyPendingTimers();
+      });
+      expect(getMacro).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        finishRead({ slot: 3, name: "Draft", steps: [], encodedSize: 0 });
+      });
+      expect(result.current.loadedMacro?.name).toBe("Draft");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("can delete a selected list entry when its detail read fails", async () => {
+    const deleteMacro = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = {
+      ...makeRuntimeMacro(jest.fn().mockResolvedValue(null)),
+      macros: [{ slot: 3, name: "Draft" }],
+      deleteMacro,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+
+    act(() => result.current.selectMacro(runtimeMacro.macros[0]));
+    await act(async () => {
+      await result.current.handleDeleteMacro();
+    });
+    expect(deleteMacro).toHaveBeenCalledWith("Draft");
+    expect(result.current.selectedName).toBeNull();
+  });
+
   it("does not load or modify an existing macro in creation mode", async () => {
     jest.useFakeTimers();
     try {

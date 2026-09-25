@@ -239,10 +239,24 @@ export function MacroEditorCard({
       ) : (
         <div className="p-6 text-center">
           <p className="text-sm text-[var(--color-text-muted)]">
-            {runtimeMacro.macros.length === 0
-              ? t("No macros yet. Create one to get started.")
-              : t("Select a macro")}
+            {macro.selectedName ??
+              (runtimeMacro.macros.length === 0
+                ? t("No macros yet. Create one to get started.")
+                : t("Select a macro"))}
           </p>
+          {allowDestructiveActions &&
+            macro.selectedName &&
+            runtimeMacro.macros.some(
+              (summary) => summary.name === macro.selectedName,
+            ) && (
+              <button
+                className="btn-ghost text-sm text-red-400 mt-3"
+                onClick={() => void macro.handleDeleteMacro()}
+                disabled={macro.isDeleting || runtimeMacro.isLoading}
+              >
+                {t("Delete")}
+              </button>
+            )}
         </div>
       )}
 
