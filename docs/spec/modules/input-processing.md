@@ -42,7 +42,7 @@
 | INPUT-007 | `setInertiaNotifications` / 状態notification | request29で通知ON/OFF。notification2でactive/stop reason、3でFast inputを対象IDだけ更新。停止でFast表示を解除。失敗はerrorとreject | セッションの診断通知。設定の履歴captureから除外                                          | S1    |
 | INPUT-008 | 接続/notification購読対象が変わる            | processor listと新機能対応情報を破棄し、新しい通知から読込み直す                                                                   | 古いdeviceの対応を次deviceへ持ち越さない                                                 | S1    |
 
-根拠: [protocol](../../../proto/zmk/runtime_input_processor/runtime_input_processor.proto)、[upstream PR #28](https://github.com/cormoran/zmk-module-runtime-input-processor/pull/28) commit `7fa97aca3fefe4212c51a53c84f7caf889476086`。既存のRPC/write-through挙動は変更しない。
+根拠: [protocol](../../../proto/zmk/runtime_input_processor/runtime_input_processor.proto)、[upstream PR #28](https://github.com/cormoran/zmk-module-runtime-input-processor/pull/28) commit `bcf4e727ce1a1f3b128ead98839c8fed333d979c`。既存のRPC/write-through挙動は変更しない。
 
 ## 代表ユーザーフロー
 

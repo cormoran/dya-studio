@@ -15,8 +15,8 @@ const ja: Record<string, string> = {
   "Example input": "想定入力",
   "Inertia output": "通常の慣性：合計出力",
   "Fast input output": "Fast input：合計出力",
-  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
-    "入力は3.2秒で頂点になる放物線で、5秒で途中停止します（20ms周期）。想定入力の大きさはスケーリングとしきい値に合わせ、最大32767に調整します。出力線は200ms区間で平均した慣性出力と入力曲線の合計です。両モードをONとして比較します。Fast inputがOFFの場合、プレビューのしきい値はmax(入力閾値×1.5,20)を切上げ、65535以内にします。倍率100%やFastしきい値に届かない場合は線が重なります。15秒以降も出力が続く場合があります。",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average physical input plus supplemental inertia over 200 ms. Inertia fills the gap between retained speed and the latest physical input rate. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
+    "入力は3.2秒で頂点になる放物線で、5秒で途中停止します（20ms周期）。想定入力の大きさはスケーリングとしきい値に合わせ、最大32767に調整します。出力線は実入力と補助慣性出力の合計を200ms区間で平均しています。慣性は保持した速度と直近の実入力速度の不足分を補います。両モードをONとして比較します。Fast inputがOFFの場合、プレビューのしきい値はmax(入力閾値×1.5,20)を切上げ、65535以内にします。倍率100%やFastしきい値に届かない場合は線が重なります。15秒以降も出力が続く場合があります。",
 
   "Toggle input test": "動作確認ウィンドウの表示を切り替える",
   Inertia: "慣性",
@@ -1576,8 +1576,8 @@ const zh: Record<string, string> = {
   "Example input": "示例输入",
   "Inertia output": "普通惯性：总输出",
   "Fast input output": "Fast input：总输出",
-  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
-    "抛物线输入在3.2秒达到峰值，并在5秒突然停止（20ms周期）。示例输入幅度按缩放和阈值调整，上限32767。输出趋势为200ms区间的惯性输出平均值与输入曲线之和。预览假定两种模式开启。Fast input关闭时，预览阈值为ceil(max(输入阈值×1.5,20))，上限65535。倍率100%或未达到Fast阈值时曲线可重合。输出可能在15秒后继续。",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average physical input plus supplemental inertia over 200 ms. Inertia fills the gap between retained speed and the latest physical input rate. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
+    "抛物线输入在3.2秒达到峰值，并在5秒突然停止（20ms周期）。示例输入幅度按缩放和阈值调整，上限32767。输出趋势为实际输入和补充惯性输出之和的200ms区间平均值。惯性补足保持速度与最新实际输入速度之间的差。预览假定两种模式开启。Fast input关闭时，预览阈值为ceil(max(输入阈值×1.5,20))，上限65535。倍率100%或未达到Fast阈值时曲线可重合。输出可能在15秒后继续。",
 
   "Toggle input test": "切换输入测试窗口",
   Inertia: "惯性",

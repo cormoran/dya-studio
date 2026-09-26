@@ -1,6 +1,6 @@
 import type { InertiaSettings } from "./inputInertia";
 
-// Port of PR #28, 7fa97aca: inertia_add_report/window_total_q16,
+// Port of PR #28, bcf4e727: inertia_add_report/window_total_q16,
 // inertia_handle_physical_event and inertia_finish_interval. One positive axis,
 // default Kconfig (64 slices / 66 buckets), active layer, deterministic timing.
 const Q16 = 65536n;
@@ -128,7 +128,20 @@ export function simulateInertia(
       }
       continue;
     }
-    const numerator = speed * BigInt(interval) + outputRemainder;
+    const bucketMs = Math.ceil(window / 64);
+    let physical = 0n;
+    if (rawTrack.last !== null && time - rawTrack.last < bucketMs) {
+      let number = Math.floor(rawTrack.last / bucketMs);
+      let bucket = rawTrack.buckets[number % 66];
+      if (number > 0 && (bucket.number !== number || bucket.value === 0n)) {
+        number--;
+        bucket = rawTrack.buckets[number % 66];
+      }
+      if (bucket.number === number)
+        physical = (bucket.value * BigInt(window)) / BigInt(bucketMs);
+    }
+    const supplemental = speed > physical ? speed - physical : 0n;
+    const numerator = supplemental * BigInt(interval) + outputRemainder;
     const raw = numerator / denominator;
     outputRemainder = numerator % denominator;
     const scaledNumerator = raw * m + scaleRemainder;

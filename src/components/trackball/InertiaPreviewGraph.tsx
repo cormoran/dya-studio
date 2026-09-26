@@ -30,8 +30,8 @@ export function InertiaPreviewGraph({
   );
   const x = (time: number) => 48 + (532 * time) / EXAMPLE_DURATION_MS;
   const y = (value: number) => 130 - (value * 100) / peak;
-  // Average firmware ticks into 200 ms spans for a readable trend. Keep the
-  // physical-input cutoff explicit rather than smoothing across it.
+  // Average total output into 200 ms spans. Only the separate physical-input
+  // curve has an explicit cutoff; supplemental inertia handles the handoff.
   const ratio =
     processor.scaleMultiplier > 0 && processor.scaleDivisor > 0
       ? processor.scaleMultiplier / processor.scaleDivisor
@@ -54,12 +54,12 @@ export function InertiaPreviewGraph({
     let result = `M${x(0)},${y(0)}`;
     for (let time = 200; time <= EXAMPLE_DURATION_MS; time += 200) {
       const span = points.filter((p) => p.time > time - 200 && p.time <= time);
-      const inertia =
-        span.reduce((sum, p) => sum + p[key] - p.input, 0) / span.length;
-      const physical = time <= EXAMPLE_INPUT_MS ? input(time) : 0;
-      result += ` L${x(time).toFixed(2)},${y(inertia + physical).toFixed(2)}`;
-      if (time === EXAMPLE_INPUT_MS) result += ` V${y(inertia).toFixed(2)}`;
+      const average = span.reduce((sum, p) => sum + p[key], 0) / span.length;
+      // Place interval totals at their midpoint. Do not force a drop when
+      // physical input stops: supplemental inertia now takes over.
+      result += ` L${x(time - 100).toFixed(2)},${y(average).toFixed(2)}`;
     }
+    result += ` L${x(EXAMPLE_DURATION_MS)},${y(points[points.length - 1][key])}`;
     return result;
   };
   return (
@@ -136,7 +136,7 @@ export function InertiaPreviewGraph({
       </p>
       <p className="text-xs text-[var(--color-text-muted)]">
         {t(
-          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.",
+          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average physical input plus supplemental inertia over 200 ms. Inertia fills the gap between retained speed and the latest physical input rate. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.",
         )}
       </p>
     </figure>

@@ -36,9 +36,9 @@ it("keeps the fixed example independent of live activity and updates for setting
   const normalPath = chart
     .querySelector('[data-series="normal"]')!
     .getAttribute("d")!;
-  expect(normalPath.match(/ L/g)).toHaveLength(75);
-  // Only the abrupt physical cutoff is vertical; integer ticks are not stairs.
-  expect(normalPath.match(/ V/g)).toHaveLength(1);
+  expect(normalPath.match(/ L/g)).toHaveLength(76);
+  // Only the input curve has a forced cutoff; total output can take over.
+  expect(normalPath).not.toContain(" V");
   expect(normalPath).not.toContain("NaN");
   expect(chart.textContent).toContain("5 s");
   rerender(
