@@ -25,6 +25,7 @@ export function InputTestCard({
 }) {
   const { t } = useLanguage();
   const area = useRef<HTMLDivElement>(null);
+  const releaseClick = useRef(false);
   const [horizontal, setHorizontal] = useState(true);
   const [vertical, setVertical] = useState(true);
   const [captured, setCaptured] = useState(false);
@@ -232,12 +233,25 @@ export function InputTestCard({
             )
               event.preventDefault();
           }}
+          onMouseDown={(event) => {
+            if (
+              document.pointerLockElement === area.current &&
+              (event.button === 0 || event.button === 2)
+            ) {
+              releaseClick.current = event.button === 0;
+              document.exitPointerLock();
+            }
+          }}
           onContextMenu={(event) => {
             event.preventDefault();
             if (document.pointerLockElement === area.current)
               document.exitPointerLock();
           }}
           onClick={async () => {
+            if (releaseClick.current) {
+              releaseClick.current = false;
+              return;
+            }
             if (document.pointerLockElement === area.current) {
               document.exitPointerLock();
               return;

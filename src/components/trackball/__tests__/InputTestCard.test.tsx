@@ -49,6 +49,48 @@ describe("finite input test area", () => {
     fireEvent.wheel(area, { deltaY: 20 });
     expect(screen.getByText(/Scroll Δ X: 0, Y: 20/)).toBeInTheDocument();
   });
+  it("moves the window by dragging its header", () => {
+    render(<InputTestCard processor={processor} />);
+    const panel = screen.getByRole("region", { name: "Input test" });
+    const header = screen.getByRole("heading", {
+      name: "Input test",
+    }).parentElement!;
+    const rect = {
+      x: 200,
+      y: 100,
+      left: 200,
+      top: 100,
+      right: 800,
+      bottom: 600,
+      width: 600,
+      height: 500,
+      toJSON: () => ({}),
+    };
+    jest.spyOn(panel, "getBoundingClientRect").mockReturnValue(rect);
+    jest
+      .spyOn(header, "getBoundingClientRect")
+      .mockReturnValue({ ...rect, height: 24 });
+    Object.assign(header, { setPointerCapture: jest.fn() });
+    fireEvent(
+      header,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 300,
+        clientY: 110,
+      }),
+    );
+    fireEvent(
+      header,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        clientX: 350,
+        clientY: 150,
+      }),
+    );
+    expect(panel).toHaveStyle({ left: "250px", top: "140px" });
+    fireEvent(header, new MouseEvent("pointerup", { bubbles: true }));
+  });
   it("releases pointer lock with either mouse button", async () => {
     render(<InputTestCard processor={processor} />);
     const area = screen.getByRole("region", { name: "Finite input test area" });
@@ -65,7 +107,7 @@ describe("finite input test area", () => {
     document.exitPointerLock = exit;
     try {
       await act(async () => fireEvent.click(area));
-      fireEvent.contextMenu(area);
+      fireEvent.mouseDown(area, { button: 2 });
       expect(exit).toHaveBeenCalledTimes(2);
     } finally {
       if (original)
