@@ -18,6 +18,8 @@ export interface KeyLayoutKey {
   code: number;
   /** Width in key units (1u = a standard key). Defaults to 1. */
   w?: number;
+  /** Height in key rows. JIS Enter spans the top and home rows. */
+  h?: number;
 }
 
 export interface KeyLayoutSpacer {
@@ -57,6 +59,7 @@ const RSHIFT = 0xe5;
 const LCTRL = 0xe0;
 const LGUI = 0xe3;
 const LALT = 0xe2;
+const RCTRL = 0xe4;
 const SPACE = 0x2c;
 const RALT = 0xe6;
 const RGUI = 0xe7;
@@ -69,6 +72,11 @@ const UP = 0x52;
 const LEFT = 0x50;
 const DOWN = 0x51;
 const RIGHT = 0x4f;
+const INTL1 = 0x87;
+const KANA = 0x88;
+const YEN = 0x89;
+const MUHENKAN = 0x8a;
+const HENKAN = 0x8b;
 
 /** Letters A..Z are contiguous starting at 0x04 */
 function letter(ch: string): number {
@@ -151,6 +159,79 @@ export const KEY_LAYOUT_70: KeyLayoutItem[][] = [
     { code: SPACE, w: 6.25 },
     { code: RALT, w: 1.25 },
     { code: RGUI, w: 1.25 },
+    { spacer: true, w: 0.5 },
+    { code: LEFT },
+    { code: DOWN },
+    { code: RIGHT },
+  ],
+];
+
+/**
+ * ~70% JIS layout. It keeps the selector's function and navigation coverage,
+ * while the main block follows the Japanese physical key positions. In
+ * particular, Enter spans two rows like an ISO Enter key.
+ */
+export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
+  [
+    { code: ESC },
+    { spacer: true, w: 0.5 },
+    ...[1, 2, 3, 4].map((n) => ({ code: fn(n) })),
+    { spacer: true, w: 0.5 },
+    ...[5, 6, 7, 8].map((n) => ({ code: fn(n) })),
+    { spacer: true, w: 0.5 },
+    ...[9, 10, 11, 12].map((n) => ({ code: fn(n) })),
+    { spacer: true, w: 0.5 },
+    { code: DEL },
+  ],
+  [
+    { code: GRAVE },
+    ...Array.from({ length: 10 }, (_, i) => ({ code: num(i + 1) })),
+    { code: MINUS },
+    { code: EQUAL },
+    { code: YEN },
+    { code: BSPC, w: 2 },
+  ],
+  [
+    { code: TAB, w: 1.5 },
+    ...["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"].map((c) => ({
+      code: letter(c),
+    })),
+    { code: LBKT },
+    { code: RBKT },
+    { code: ENTER, w: 1.5, h: 2 },
+    { spacer: true, w: 1 },
+  ],
+  [
+    { code: CAPS, w: 1.75 },
+    ...["A", "S", "D", "F", "G", "H", "J", "K", "L"].map((c) => ({
+      code: letter(c),
+    })),
+    { code: SEMI },
+    { code: SQT },
+    { code: 0x32 },
+    { spacer: true, w: 2.25 },
+  ],
+  [
+    { code: LSHIFT, w: 1.25 },
+    ...["Z", "X", "C", "V", "B", "N", "M"].map((c) => ({ code: letter(c) })),
+    { code: COMMA },
+    { code: DOT },
+    { code: FSLH },
+    { code: INTL1 },
+    { code: RSHIFT, w: 1.25 },
+    { spacer: true, w: 0.5 },
+    { code: UP },
+    { code: END },
+  ],
+  [
+    { code: LCTRL, w: 1.25 },
+    { code: LGUI, w: 1.25 },
+    { code: LALT, w: 1.25 },
+    { code: SPACE, w: 3.75 },
+    { code: MUHENKAN, w: 1.25 },
+    { code: HENKAN, w: 1.25 },
+    { code: KANA, w: 1.25 },
+    { code: RCTRL, w: 1.25 },
     { spacer: true, w: 0.5 },
     { code: LEFT },
     { code: DOWN },

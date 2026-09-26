@@ -7,6 +7,7 @@
  */
 import {
   KEY_LAYOUT_70,
+  KEY_LAYOUT_70_JIS,
   ROW_UNITS,
   isSpacer,
   type KeyLayoutItem,
@@ -33,6 +34,8 @@ export function KeyLayoutSelector({
   keyboardLayout,
 }: KeyLayoutSelectorProps) {
   const { t } = useLanguage();
+  const keyLayout =
+    keyboardLayout === "JIS" ? KEY_LAYOUT_70_JIS : KEY_LAYOUT_70;
 
   const renderKey = (item: KeyLayoutItem, index: number) => {
     if (isSpacer(item)) {
@@ -46,6 +49,7 @@ export function KeyLayoutSelector({
     }
 
     const w = item.w ?? 1;
+    const h = item.h ?? 1;
     const keycode = getKeycodeByCode(item.code);
     const mapped = keycode ? mapToLayout(keycode, keyboardLayout) : undefined;
     const label = mapped?.displayName ?? `0x${item.code.toString(16)}`;
@@ -55,7 +59,7 @@ export function KeyLayoutSelector({
     return (
       <div
         key={`key-${item.code}`}
-        className="p-[2px]"
+        className={`relative z-0 p-[2px] ${h === 2 ? "z-10 h-16 tablet:h-20" : "h-full"}`}
         style={{ width: widthPercent(w) }}
       >
         <button
@@ -64,7 +68,7 @@ export function KeyLayoutSelector({
           title={`${name} (0x${item.code.toString(16).toUpperCase()})`}
           aria-label={name}
           aria-pressed={isSelected}
-          className={`flex h-8 w-full items-center justify-center overflow-hidden rounded border px-0.5 text-center transition-colors tablet:h-10 ${
+          className={`flex h-full w-full items-center justify-center overflow-hidden rounded border px-0.5 text-center transition-colors ${
             isSelected
               ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
               : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50"
@@ -81,8 +85,8 @@ export function KeyLayoutSelector({
   return (
     <div className="flex-1 overflow-auto">
       <div className="mx-auto min-w-[540px] max-w-3xl px-1 py-2">
-        {KEY_LAYOUT_70.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex w-full">
+        {keyLayout.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex h-8 w-full tablet:h-10">
             {row.map((item, index) => renderKey(item, index))}
           </div>
         ))}
