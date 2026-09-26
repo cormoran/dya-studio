@@ -9,6 +9,60 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  Center: "中央に戻す",
+  Scroll: "スクロール",
+  "Inertia / Fast input": "慣性 / Fast input",
+  "Inertia is not supported by this device":
+    "このデバイスは慣性設定に対応していません",
+  "Enable Inertia": "慣性を有効にする",
+  "Changes are saved to the device after a short delay. Inertia settings remain editable when disabled.":
+    "変更は少し待ってからデバイスに保存されます。慣性が無効でも設定を編集できます。",
+  "Measurement Window (ms)": "測定期間 (ms)",
+  "Input measurement window for inertia and Fast input.":
+    "慣性と Fast input の入力を測定する期間です。",
+  "Output Interval (ms)": "出力間隔 (ms)",
+  "Generated output cadence; output is scaled by interval / window.":
+    "慣性の出力間隔です。出力量は出力間隔 ÷ 測定期間で調整されます。",
+  "Input Threshold": "入力しきい値",
+  "Threshold in scaled input counts. Reverse input stops inertia.":
+    "スケーリング後の入力カウントのしきい値です。逆方向の入力で慣性が止まります。",
+  "Decay per Output Interval (%)": "出力ごとの減衰率 (%)",
+  "0 keeps speed; 100 stops after one more interval.":
+    "0 は速度を維持し、100 は次の出力後に停止します。",
+  "Normal Output Limit": "通常時の出力上限",
+  "0 is unlimited. Fast input ignores this limit.":
+    "0 は無制限です。Fast input にはこの上限を適用しません。",
+  "Fast Input Threshold": "Fast input しきい値",
+  "0 disables Fast input. Boost lasts until inertia stops.":
+    "0 は Fast input を無効にします。加速は慣性が止まるまで続きます。",
+  "Fast Output (%)": "Fast input 出力 (%)",
+  "200% doubles generated inertia output.": "200% は慣性出力を2倍にします。",
+  "Input test": "動作確認",
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape releases it.":
+    "有限エリア内でスクロールを試せます。左クリックでマウス移動をキャプチャし、Escape で解除します。",
+  "Horizontal scroll": "左右スクロール",
+  "Vertical scroll": "上下スクロール",
+  "Show inertia activity": "慣性 / Fast input の状態を表示",
+  "Activity notifications are off": "状態通知はオフです",
+  "Fast input": "Fast input 動作中",
+  "Inertia active": "慣性動作中",
+  "Inertia idle": "慣性停止中",
+  Settled: "出力終了",
+  "Reverse input": "逆方向の入力",
+  "Layer inactive": "レイヤー無効",
+  "Settings changed": "設定変更",
+  "Unknown stop reason": "不明な停止理由",
+  "Mouse captured — Escape to release":
+    "マウス移動をキャプチャ中 — Escape で解除",
+  "Mouse not captured": "マウス移動のキャプチャなし",
+  "Mouse capture is unavailable. Scrolling still works.":
+    "マウス移動をキャプチャできません。スクロールは引き続き試せます。",
+  "Finite input test area": "有限の動作確認エリア",
+  "Scroll position": "スクロール位置",
+  "Mouse position": "マウス位置",
+  "Mouse movement": "マウス移動",
+  "Movement is browser input from any pointing device. Activity is reported by the selected processor; this area does not simulate inertia.":
+    "移動量はブラウザが受け取る各ポインティングデバイスの入力です。慣性 / Fast input の状態は選択中の processor の通知で、ここでは慣性をシミュレーションしません。",
   "Search behaviors...": "ビヘイビアを検索...",
   "Keep the selected behavior category": "選択したビヘイビアカテゴリを維持",
   "Reset the behavior category when reopening":
@@ -1496,6 +1550,58 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  Center: "回到中央",
+  Scroll: "滚动",
+  "Inertia / Fast input": "惯性 / Fast input",
+  "Inertia is not supported by this device": "此设备不支持惯性设置",
+  "Enable Inertia": "启用惯性",
+  "Changes are saved to the device after a short delay. Inertia settings remain editable when disabled.":
+    "更改会在短暂延迟后保存到设备。惯性关闭时也可编辑设置。",
+  "Measurement Window (ms)": "测量窗口 (ms)",
+  "Input measurement window for inertia and Fast input.":
+    "测量惯性和 Fast input 的输入窗口。",
+  "Output Interval (ms)": "输出间隔 (ms)",
+  "Generated output cadence; output is scaled by interval / window.":
+    "惯性输出频率；输出按间隔 / 测量窗口缩放。",
+  "Input Threshold": "输入阈值",
+  "Threshold in scaled input counts. Reverse input stops inertia.":
+    "缩放后输入计数的阈值。反向输入会停止惯性。",
+  "Decay per Output Interval (%)": "每次输出的衰减率 (%)",
+  "0 keeps speed; 100 stops after one more interval.":
+    "0 保持速度；100 在下次输出后停止。",
+  "Normal Output Limit": "正常输出上限",
+  "0 is unlimited. Fast input ignores this limit.":
+    "0 表示无限制。Fast input 不受此限制。",
+  "Fast Input Threshold": "Fast input 阈值",
+  "0 disables Fast input. Boost lasts until inertia stops.":
+    "0 禁用 Fast input。加速持续到惯性停止。",
+  "Fast Output (%)": "Fast input 输出 (%)",
+  "200% doubles generated inertia output.": "200% 将惯性输出加倍。",
+  "Input test": "输入测试",
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape releases it.":
+    "在有限区域内测试滚动。左键捕获鼠标移动，Escape 释放。",
+  "Horizontal scroll": "水平滚动",
+  "Vertical scroll": "垂直滚动",
+  "Show inertia activity": "显示惯性 / Fast input 状态",
+  "Activity notifications are off": "状态通知已关闭",
+  "Fast input": "Fast input 活动中",
+  "Inertia active": "惯性活动中",
+  "Inertia idle": "惯性空闲",
+  Settled: "输出结束",
+  "Reverse input": "反向输入",
+  "Layer inactive": "层未激活",
+  "Settings changed": "设置已更改",
+  "Unknown stop reason": "未知停止原因",
+  "Mouse captured — Escape to release": "鼠标已捕获 — Escape 释放",
+  "Mouse not captured": "鼠标未捕获",
+  "Mouse capture is unavailable. Scrolling still works.":
+    "无法捕获鼠标。仍可测试滚动。",
+  "Finite input test area": "有限输入测试区域",
+  "Scroll position": "滚动位置",
+  "Mouse position": "鼠标位置",
+  "Mouse movement": "鼠标移动",
+  "Movement is browser input from any pointing device. Activity is reported by the selected processor; this area does not simulate inertia.":
+    "移动量来自浏览器接收的任意指点设备输入。状态由所选 processor 报告；此区域不模拟惯性。",
   "Search behaviors...": "搜索行为...",
   "Keep the selected behavior category": "保留所选行为类别",
   "Reset the behavior category when reopening": "重新打开时重置行为类别",

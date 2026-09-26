@@ -1,3 +1,5 @@
+import { InertiaCard } from "../components/trackball/InertiaCard";
+import { InputTestCard } from "../components/trackball/InputTestCard";
 import { useMemo, useState, useRef } from "react";
 import {
   IconAlertTriangleFilled,
@@ -164,6 +166,8 @@ export function TrackballPage() {
     isLoading,
     error,
     loadProcessors,
+    setInertia,
+    setInertiaNotifications,
     setScaling,
     setRotation,
     setTempLayerEnabled,
@@ -937,6 +941,11 @@ export function TrackballPage() {
                       )}
                     </div>
 
+                    <InertiaCard
+                      key={`inertia-${processor.id}`}
+                      processor={processor}
+                      setInertia={setInertia}
+                    />
                     {/* Scaling Setting */}
                     <div className="glass-card p-6">
                       <div className="flex items-center justify-between mb-4">
@@ -1526,6 +1535,11 @@ export function TrackballPage() {
                         </div>
                       </div>
                     </div>
+                    <InputTestCard
+                      key={`test-${processor.id}`}
+                      processor={processor}
+                      setInertiaNotifications={setInertiaNotifications}
+                    />
                   </div>
                 )}
               </>

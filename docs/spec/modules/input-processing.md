@@ -33,6 +33,17 @@
 | INPUT-003 | rotation/temp layer/active layer/axis snap/invert/scroll/swap を ID 指定で更新 | 対象 processor の表示を先に更新し、response error を error にする | 各 request は write-through RPC。flash/RAM の区別は protocol 実装外で未確認                                        | S2   |
 | INPUT-004 | custom processor notification を受信                                           | 同 ID の processor を notification 値に置換                       | caller の pending UI と競合する場合の優先規則は hook 単独にない                                                    | S1   |
 
+### #28 拡張プロトコル
+
+| ID        | 前提 → 操作                                  | 観測できる結果                                                                                                                     | 保存範囲・副作用                                                                         | 根拠  |
+| --------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----- |
+| INPUT-005 | processor notificationで慣性設定を受信       | 測定期間と出力間隔が正のprocessorだけ慣性対応として扱う。protobufの省略値を旧firmwareで有効な既定設定と誤認しない                  | discovery/readに新RPCを追加しない。既存タグ1–19は維持                                    | S1    |
+| INPUT-006 | `setInertia`を呼ぶ                           | ID、整数範囲、対応を確認し#28の設定タグ23–26/30–33を送る。成功後に対象設定のみ更新。応答なし/firmware error/例外はerrorとreject    | PERSIST mode 0でflash保存を要求。実機電源断の検証とは別。consumerはdebounce/エラーを担当 | S1/S2 |
+| INPUT-007 | `setInertiaNotifications` / 状態notification | request29で通知ON/OFF。notification2でactive/stop reason、3でFast inputを対象IDだけ更新。停止でFast表示を解除。失敗はerrorとreject | セッションの診断通知。設定の履歴captureから除外                                          | S1    |
+| INPUT-008 | 接続/notification購読対象が変わる            | processor listと新機能対応情報を破棄し、新しい通知から読込み直す                                                                   | 古いdeviceの対応を次deviceへ持ち越さない                                                 | S1    |
+
+根拠: [protocol](../../../proto/zmk/runtime_input_processor/runtime_input_processor.proto)、[upstream PR #28](https://github.com/cormoran/zmk-module-runtime-input-processor/pull/28) commit `7fa97aca3fefe4212c51a53c84f7caf889476086`。既存のRPC/write-through挙動は変更しない。
+
 ## 代表ユーザーフロー
 
 1. Trackball を開き processor list が届くまで待つ（INPUT-001）。0 件の場合は firmware support と notification 到達を分けて記録する。

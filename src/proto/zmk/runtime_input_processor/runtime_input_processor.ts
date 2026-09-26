@@ -9,6 +9,25 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 
 export const protobufPackage = "zmk.runtime_input_processor";
 
+export const WriteMode = {
+  /** WRITE_MODE_PERSIST - Update the saved value and write it to flash (default) */
+  WRITE_MODE_PERSIST: 0,
+  /** WRITE_MODE_MEMORY - Update the saved value in RAM only (lost on reboot) */
+  WRITE_MODE_MEMORY: 1,
+  /** WRITE_MODE_TEMPORARY - Apply to the live value only (not part of the saved value) */
+  WRITE_MODE_TEMPORARY: 2,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type WriteMode = typeof WriteMode[keyof typeof WriteMode];
+
+export namespace WriteMode {
+  export type WRITE_MODE_PERSIST = typeof WriteMode.WRITE_MODE_PERSIST;
+  export type WRITE_MODE_MEMORY = typeof WriteMode.WRITE_MODE_MEMORY;
+  export type WRITE_MODE_TEMPORARY = typeof WriteMode.WRITE_MODE_TEMPORARY;
+  export type UNRECOGNIZED = typeof WriteMode.UNRECOGNIZED;
+}
+
 /** Axis snap mode enum */
 export const AxisSnapMode = {
   /** AXIS_SNAP_MODE_NONE - No snapping */
@@ -27,6 +46,26 @@ export namespace AxisSnapMode {
   export type AXIS_SNAP_MODE_X = typeof AxisSnapMode.AXIS_SNAP_MODE_X;
   export type AXIS_SNAP_MODE_Y = typeof AxisSnapMode.AXIS_SNAP_MODE_Y;
   export type UNRECOGNIZED = typeof AxisSnapMode.UNRECOGNIZED;
+}
+
+export const InertiaStopReason = {
+  INERTIA_STOP_REASON_UNSPECIFIED: 0,
+  INERTIA_STOP_REASON_SETTLED: 1,
+  INERTIA_STOP_REASON_REVERSE_INPUT: 3,
+  INERTIA_STOP_REASON_LAYER_INACTIVE: 4,
+  INERTIA_STOP_REASON_SETTINGS_CHANGED: 5,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type InertiaStopReason = typeof InertiaStopReason[keyof typeof InertiaStopReason];
+
+export namespace InertiaStopReason {
+  export type INERTIA_STOP_REASON_UNSPECIFIED = typeof InertiaStopReason.INERTIA_STOP_REASON_UNSPECIFIED;
+  export type INERTIA_STOP_REASON_SETTLED = typeof InertiaStopReason.INERTIA_STOP_REASON_SETTLED;
+  export type INERTIA_STOP_REASON_REVERSE_INPUT = typeof InertiaStopReason.INERTIA_STOP_REASON_REVERSE_INPUT;
+  export type INERTIA_STOP_REASON_LAYER_INACTIVE = typeof InertiaStopReason.INERTIA_STOP_REASON_LAYER_INACTIVE;
+  export type INERTIA_STOP_REASON_SETTINGS_CHANGED = typeof InertiaStopReason.INERTIA_STOP_REASON_SETTINGS_CHANGED;
+  export type UNRECOGNIZED = typeof InertiaStopReason.UNRECOGNIZED;
 }
 
 /** Information about a single input processor */
@@ -62,6 +101,19 @@ export interface ProcessorInfo {
   xInvert: boolean;
   /** Whether to invert Y axis */
   yInvert: boolean;
+  inertiaIntervalMs?: number | undefined;
+  inertiaThreshold?: number | undefined;
+  inertiaWindowMs?: number | undefined;
+  inertiaDecayPercent?: number | undefined;
+  inertiaNotificationsEnabled?: boolean | undefined;
+  inertiaActive?: boolean | undefined;
+  inertiaFastThreshold?: number | undefined;
+  inertiaFastOutputPercent?: number | undefined;
+  inertiaEnabled?:
+    | boolean
+    | undefined;
+  /** 0 means unlimited; fast stage ignores it */
+  inertiaNormalMaxOutput?: number | undefined;
 }
 
 /** Information about a keyboard layer */
@@ -261,6 +313,15 @@ export interface Request {
   setXySwapEnabled?: SetXySwapEnabledRequest | undefined;
   setXInvert?: SetXInvertRequest | undefined;
   setYInvert?: SetYInvertRequest | undefined;
+  setInertiaInterval?: SetInertiaIntervalRequest | undefined;
+  setInertiaThreshold?: SetInertiaThresholdRequest | undefined;
+  setInertiaWindow?: SetInertiaWindowRequest | undefined;
+  setInertiaDecay?: SetInertiaDecayRequest | undefined;
+  setInertiaNotifications?: SetInertiaNotificationsRequest | undefined;
+  setInertiaFastThreshold?: SetInertiaFastThresholdRequest | undefined;
+  setInertiaFastOutputPercent?: SetInertiaFastOutputPercentRequest | undefined;
+  setInertiaEnabled?: SetInertiaEnabledRequest | undefined;
+  setInertiaNormalMaxOutput?: SetInertiaNormalMaxOutputRequest | undefined;
 }
 
 /** Error response */
@@ -290,6 +351,15 @@ export interface Response {
   setXySwapEnabled?: SetXySwapEnabledResponse | undefined;
   setXInvert?: SetXInvertResponse | undefined;
   setYInvert?: SetYInvertResponse | undefined;
+  setInertiaInterval?: SetInertiaIntervalResponse | undefined;
+  setInertiaThreshold?: SetInertiaThresholdResponse | undefined;
+  setInertiaWindow?: SetInertiaWindowResponse | undefined;
+  setInertiaDecay?: SetInertiaDecayResponse | undefined;
+  setInertiaNotifications?: SetInertiaNotificationsResponse | undefined;
+  setInertiaFastThreshold?: SetInertiaFastThresholdResponse | undefined;
+  setInertiaFastOutputPercent?: SetInertiaFastOutputPercentResponse | undefined;
+  setInertiaEnabled?: SetInertiaEnabledResponse | undefined;
+  setInertiaNormalMaxOutput?: SetInertiaNormalMaxOutputResponse | undefined;
 }
 
 /** Notification when processor settings change */
@@ -300,6 +370,116 @@ export interface ProcessorChangedNotification {
 /** Notification wrapper */
 export interface Notification {
   processorChanged?: ProcessorChangedNotification | undefined;
+  inertiaStateChanged?: InertiaStateChangedNotification | undefined;
+  inertiaFastInputChanged?: InertiaFastInputChangedNotification | undefined;
+}
+
+export interface SetInertiaIntervalRequest {
+  /** ID of the input processor to update */
+  id: number;
+  /** Time window and inertia output interval */
+  intervalMs: number;
+  /** Where to store the value (default: persist) */
+  writeMode: WriteMode;
+}
+
+/** Empty - use notification to report changes */
+export interface SetInertiaIntervalResponse {
+}
+
+export interface SetInertiaThresholdRequest {
+  /** ID of the input processor to update */
+  id: number;
+  /** Must be greater than zero */
+  threshold: number;
+  /** Where to store the value (default: persist) */
+  writeMode: WriteMode;
+}
+
+/** Empty - use notification to report changes */
+export interface SetInertiaThresholdResponse {
+}
+
+export interface SetInertiaEnabledRequest {
+  id: number;
+  enabled: boolean;
+  writeMode: WriteMode;
+}
+
+export interface SetInertiaEnabledResponse {
+}
+
+export interface SetInertiaWindowRequest {
+  /** ID of the input processor to update */
+  id: number;
+  /** Input measurement window */
+  windowMs: number;
+  /** Where to store the value (default: persist) */
+  writeMode: WriteMode;
+}
+
+/** Empty - use notification to report changes */
+export interface SetInertiaWindowResponse {
+}
+
+export interface SetInertiaDecayRequest {
+  /** ID of the input processor to update */
+  id: number;
+  /** Amount removed after each output interval (0-100) */
+  decayPercent: number;
+  /** Where to store the value (default: persist) */
+  writeMode: WriteMode;
+}
+
+/** Empty - use notification to report changes */
+export interface SetInertiaDecayResponse {
+}
+
+export interface SetInertiaNormalMaxOutputRequest {
+  id: number;
+  /** 0 means unlimited */
+  maxOutput: number;
+  writeMode: WriteMode;
+}
+
+export interface SetInertiaNormalMaxOutputResponse {
+}
+
+export interface SetInertiaFastThresholdRequest {
+  id: number;
+  threshold: number;
+  writeMode: WriteMode;
+}
+
+export interface SetInertiaFastThresholdResponse {
+}
+
+export interface SetInertiaFastOutputPercentRequest {
+  id: number;
+  percent: number;
+  writeMode: WriteMode;
+}
+
+export interface SetInertiaFastOutputPercentResponse {
+}
+
+export interface SetInertiaNotificationsRequest {
+  id: number;
+  enabled: boolean;
+}
+
+export interface SetInertiaNotificationsResponse {
+}
+
+export interface InertiaStateChangedNotification {
+  id: number;
+  active: boolean;
+  stopReason: InertiaStopReason;
+}
+
+export interface InertiaFastInputChangedNotification {
+  id: number;
+  fastInput: boolean;
 }
 
 function createBaseProcessorInfo(): ProcessorInfo {
@@ -321,6 +501,16 @@ function createBaseProcessorInfo(): ProcessorInfo {
     xySwapEnabled: false,
     xInvert: false,
     yInvert: false,
+    inertiaIntervalMs: undefined,
+    inertiaThreshold: undefined,
+    inertiaWindowMs: undefined,
+    inertiaDecayPercent: undefined,
+    inertiaNotificationsEnabled: undefined,
+    inertiaActive: undefined,
+    inertiaFastThreshold: undefined,
+    inertiaFastOutputPercent: undefined,
+    inertiaEnabled: undefined,
+    inertiaNormalMaxOutput: undefined,
   };
 }
 
@@ -376,6 +566,36 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     }
     if (message.yInvert !== false) {
       writer.uint32(136).bool(message.yInvert);
+    }
+    if (message.inertiaIntervalMs !== undefined) {
+      writer.uint32(144).uint32(message.inertiaIntervalMs);
+    }
+    if (message.inertiaThreshold !== undefined) {
+      writer.uint32(152).uint32(message.inertiaThreshold);
+    }
+    if (message.inertiaWindowMs !== undefined) {
+      writer.uint32(160).uint32(message.inertiaWindowMs);
+    }
+    if (message.inertiaDecayPercent !== undefined) {
+      writer.uint32(168).uint32(message.inertiaDecayPercent);
+    }
+    if (message.inertiaNotificationsEnabled !== undefined) {
+      writer.uint32(192).bool(message.inertiaNotificationsEnabled);
+    }
+    if (message.inertiaActive !== undefined) {
+      writer.uint32(200).bool(message.inertiaActive);
+    }
+    if (message.inertiaFastThreshold !== undefined) {
+      writer.uint32(208).uint32(message.inertiaFastThreshold);
+    }
+    if (message.inertiaFastOutputPercent !== undefined) {
+      writer.uint32(216).uint32(message.inertiaFastOutputPercent);
+    }
+    if (message.inertiaEnabled !== undefined) {
+      writer.uint32(224).bool(message.inertiaEnabled);
+    }
+    if (message.inertiaNormalMaxOutput !== undefined) {
+      writer.uint32(232).uint32(message.inertiaNormalMaxOutput);
     }
     return writer;
   },
@@ -523,6 +743,86 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
           message.yInvert = reader.bool();
           continue;
         }
+        case 18: {
+          if (tag !== 144) {
+            break;
+          }
+
+          message.inertiaIntervalMs = reader.uint32();
+          continue;
+        }
+        case 19: {
+          if (tag !== 152) {
+            break;
+          }
+
+          message.inertiaThreshold = reader.uint32();
+          continue;
+        }
+        case 20: {
+          if (tag !== 160) {
+            break;
+          }
+
+          message.inertiaWindowMs = reader.uint32();
+          continue;
+        }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.inertiaDecayPercent = reader.uint32();
+          continue;
+        }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.inertiaNotificationsEnabled = reader.bool();
+          continue;
+        }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.inertiaActive = reader.bool();
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.inertiaFastThreshold = reader.uint32();
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.inertiaFastOutputPercent = reader.uint32();
+          continue;
+        }
+        case 28: {
+          if (tag !== 224) {
+            break;
+          }
+
+          message.inertiaEnabled = reader.bool();
+          continue;
+        }
+        case 29: {
+          if (tag !== 232) {
+            break;
+          }
+
+          message.inertiaNormalMaxOutput = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -554,6 +854,16 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     message.xySwapEnabled = object.xySwapEnabled ?? false;
     message.xInvert = object.xInvert ?? false;
     message.yInvert = object.yInvert ?? false;
+    message.inertiaIntervalMs = object.inertiaIntervalMs ?? undefined;
+    message.inertiaThreshold = object.inertiaThreshold ?? undefined;
+    message.inertiaWindowMs = object.inertiaWindowMs ?? undefined;
+    message.inertiaDecayPercent = object.inertiaDecayPercent ?? undefined;
+    message.inertiaNotificationsEnabled = object.inertiaNotificationsEnabled ?? undefined;
+    message.inertiaActive = object.inertiaActive ?? undefined;
+    message.inertiaFastThreshold = object.inertiaFastThreshold ?? undefined;
+    message.inertiaFastOutputPercent = object.inertiaFastOutputPercent ?? undefined;
+    message.inertiaEnabled = object.inertiaEnabled ?? undefined;
+    message.inertiaNormalMaxOutput = object.inertiaNormalMaxOutput ?? undefined;
     return message;
   },
 };
@@ -2339,6 +2649,15 @@ function createBaseRequest(): Request {
     setXySwapEnabled: undefined,
     setXInvert: undefined,
     setYInvert: undefined,
+    setInertiaInterval: undefined,
+    setInertiaThreshold: undefined,
+    setInertiaWindow: undefined,
+    setInertiaDecay: undefined,
+    setInertiaNotifications: undefined,
+    setInertiaFastThreshold: undefined,
+    setInertiaFastOutputPercent: undefined,
+    setInertiaEnabled: undefined,
+    setInertiaNormalMaxOutput: undefined,
   };
 }
 
@@ -2401,6 +2720,33 @@ export const Request: MessageFns<Request> = {
     }
     if (message.setYInvert !== undefined) {
       SetYInvertRequest.encode(message.setYInvert, writer.uint32(154).fork()).join();
+    }
+    if (message.setInertiaInterval !== undefined) {
+      SetInertiaIntervalRequest.encode(message.setInertiaInterval, writer.uint32(186).fork()).join();
+    }
+    if (message.setInertiaThreshold !== undefined) {
+      SetInertiaThresholdRequest.encode(message.setInertiaThreshold, writer.uint32(194).fork()).join();
+    }
+    if (message.setInertiaWindow !== undefined) {
+      SetInertiaWindowRequest.encode(message.setInertiaWindow, writer.uint32(202).fork()).join();
+    }
+    if (message.setInertiaDecay !== undefined) {
+      SetInertiaDecayRequest.encode(message.setInertiaDecay, writer.uint32(210).fork()).join();
+    }
+    if (message.setInertiaNotifications !== undefined) {
+      SetInertiaNotificationsRequest.encode(message.setInertiaNotifications, writer.uint32(234).fork()).join();
+    }
+    if (message.setInertiaFastThreshold !== undefined) {
+      SetInertiaFastThresholdRequest.encode(message.setInertiaFastThreshold, writer.uint32(242).fork()).join();
+    }
+    if (message.setInertiaFastOutputPercent !== undefined) {
+      SetInertiaFastOutputPercentRequest.encode(message.setInertiaFastOutputPercent, writer.uint32(250).fork()).join();
+    }
+    if (message.setInertiaEnabled !== undefined) {
+      SetInertiaEnabledRequest.encode(message.setInertiaEnabled, writer.uint32(258).fork()).join();
+    }
+    if (message.setInertiaNormalMaxOutput !== undefined) {
+      SetInertiaNormalMaxOutputRequest.encode(message.setInertiaNormalMaxOutput, writer.uint32(266).fork()).join();
     }
     return writer;
   },
@@ -2564,6 +2910,78 @@ export const Request: MessageFns<Request> = {
           message.setYInvert = SetYInvertRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.setInertiaInterval = SetInertiaIntervalRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.setInertiaThreshold = SetInertiaThresholdRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.setInertiaWindow = SetInertiaWindowRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.setInertiaDecay = SetInertiaDecayRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.setInertiaNotifications = SetInertiaNotificationsRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.setInertiaFastThreshold = SetInertiaFastThresholdRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.setInertiaFastOutputPercent = SetInertiaFastOutputPercentRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.setInertiaEnabled = SetInertiaEnabledRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 33: {
+          if (tag !== 266) {
+            break;
+          }
+
+          message.setInertiaNormalMaxOutput = SetInertiaNormalMaxOutputRequest.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2637,6 +3055,37 @@ export const Request: MessageFns<Request> = {
     message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
       ? SetYInvertRequest.fromPartial(object.setYInvert)
       : undefined;
+    message.setInertiaInterval = (object.setInertiaInterval !== undefined && object.setInertiaInterval !== null)
+      ? SetInertiaIntervalRequest.fromPartial(object.setInertiaInterval)
+      : undefined;
+    message.setInertiaThreshold = (object.setInertiaThreshold !== undefined && object.setInertiaThreshold !== null)
+      ? SetInertiaThresholdRequest.fromPartial(object.setInertiaThreshold)
+      : undefined;
+    message.setInertiaWindow = (object.setInertiaWindow !== undefined && object.setInertiaWindow !== null)
+      ? SetInertiaWindowRequest.fromPartial(object.setInertiaWindow)
+      : undefined;
+    message.setInertiaDecay = (object.setInertiaDecay !== undefined && object.setInertiaDecay !== null)
+      ? SetInertiaDecayRequest.fromPartial(object.setInertiaDecay)
+      : undefined;
+    message.setInertiaNotifications =
+      (object.setInertiaNotifications !== undefined && object.setInertiaNotifications !== null)
+        ? SetInertiaNotificationsRequest.fromPartial(object.setInertiaNotifications)
+        : undefined;
+    message.setInertiaFastThreshold =
+      (object.setInertiaFastThreshold !== undefined && object.setInertiaFastThreshold !== null)
+        ? SetInertiaFastThresholdRequest.fromPartial(object.setInertiaFastThreshold)
+        : undefined;
+    message.setInertiaFastOutputPercent =
+      (object.setInertiaFastOutputPercent !== undefined && object.setInertiaFastOutputPercent !== null)
+        ? SetInertiaFastOutputPercentRequest.fromPartial(object.setInertiaFastOutputPercent)
+        : undefined;
+    message.setInertiaEnabled = (object.setInertiaEnabled !== undefined && object.setInertiaEnabled !== null)
+      ? SetInertiaEnabledRequest.fromPartial(object.setInertiaEnabled)
+      : undefined;
+    message.setInertiaNormalMaxOutput =
+      (object.setInertiaNormalMaxOutput !== undefined && object.setInertiaNormalMaxOutput !== null)
+        ? SetInertiaNormalMaxOutputRequest.fromPartial(object.setInertiaNormalMaxOutput)
+        : undefined;
     return message;
   },
 };
@@ -2709,6 +3158,15 @@ function createBaseResponse(): Response {
     setXySwapEnabled: undefined,
     setXInvert: undefined,
     setYInvert: undefined,
+    setInertiaInterval: undefined,
+    setInertiaThreshold: undefined,
+    setInertiaWindow: undefined,
+    setInertiaDecay: undefined,
+    setInertiaNotifications: undefined,
+    setInertiaFastThreshold: undefined,
+    setInertiaFastOutputPercent: undefined,
+    setInertiaEnabled: undefined,
+    setInertiaNormalMaxOutput: undefined,
   };
 }
 
@@ -2774,6 +3232,33 @@ export const Response: MessageFns<Response> = {
     }
     if (message.setYInvert !== undefined) {
       SetYInvertResponse.encode(message.setYInvert, writer.uint32(162).fork()).join();
+    }
+    if (message.setInertiaInterval !== undefined) {
+      SetInertiaIntervalResponse.encode(message.setInertiaInterval, writer.uint32(194).fork()).join();
+    }
+    if (message.setInertiaThreshold !== undefined) {
+      SetInertiaThresholdResponse.encode(message.setInertiaThreshold, writer.uint32(202).fork()).join();
+    }
+    if (message.setInertiaWindow !== undefined) {
+      SetInertiaWindowResponse.encode(message.setInertiaWindow, writer.uint32(210).fork()).join();
+    }
+    if (message.setInertiaDecay !== undefined) {
+      SetInertiaDecayResponse.encode(message.setInertiaDecay, writer.uint32(218).fork()).join();
+    }
+    if (message.setInertiaNotifications !== undefined) {
+      SetInertiaNotificationsResponse.encode(message.setInertiaNotifications, writer.uint32(242).fork()).join();
+    }
+    if (message.setInertiaFastThreshold !== undefined) {
+      SetInertiaFastThresholdResponse.encode(message.setInertiaFastThreshold, writer.uint32(250).fork()).join();
+    }
+    if (message.setInertiaFastOutputPercent !== undefined) {
+      SetInertiaFastOutputPercentResponse.encode(message.setInertiaFastOutputPercent, writer.uint32(258).fork()).join();
+    }
+    if (message.setInertiaEnabled !== undefined) {
+      SetInertiaEnabledResponse.encode(message.setInertiaEnabled, writer.uint32(266).fork()).join();
+    }
+    if (message.setInertiaNormalMaxOutput !== undefined) {
+      SetInertiaNormalMaxOutputResponse.encode(message.setInertiaNormalMaxOutput, writer.uint32(274).fork()).join();
     }
     return writer;
   },
@@ -2945,6 +3430,78 @@ export const Response: MessageFns<Response> = {
           message.setYInvert = SetYInvertResponse.decode(reader, reader.uint32());
           continue;
         }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.setInertiaInterval = SetInertiaIntervalResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.setInertiaThreshold = SetInertiaThresholdResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.setInertiaWindow = SetInertiaWindowResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.setInertiaDecay = SetInertiaDecayResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.setInertiaNotifications = SetInertiaNotificationsResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.setInertiaFastThreshold = SetInertiaFastThresholdResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.setInertiaFastOutputPercent = SetInertiaFastOutputPercentResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 33: {
+          if (tag !== 266) {
+            break;
+          }
+
+          message.setInertiaEnabled = SetInertiaEnabledResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 34: {
+          if (tag !== 274) {
+            break;
+          }
+
+          message.setInertiaNormalMaxOutput = SetInertiaNormalMaxOutputResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3021,6 +3578,37 @@ export const Response: MessageFns<Response> = {
     message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
       ? SetYInvertResponse.fromPartial(object.setYInvert)
       : undefined;
+    message.setInertiaInterval = (object.setInertiaInterval !== undefined && object.setInertiaInterval !== null)
+      ? SetInertiaIntervalResponse.fromPartial(object.setInertiaInterval)
+      : undefined;
+    message.setInertiaThreshold = (object.setInertiaThreshold !== undefined && object.setInertiaThreshold !== null)
+      ? SetInertiaThresholdResponse.fromPartial(object.setInertiaThreshold)
+      : undefined;
+    message.setInertiaWindow = (object.setInertiaWindow !== undefined && object.setInertiaWindow !== null)
+      ? SetInertiaWindowResponse.fromPartial(object.setInertiaWindow)
+      : undefined;
+    message.setInertiaDecay = (object.setInertiaDecay !== undefined && object.setInertiaDecay !== null)
+      ? SetInertiaDecayResponse.fromPartial(object.setInertiaDecay)
+      : undefined;
+    message.setInertiaNotifications =
+      (object.setInertiaNotifications !== undefined && object.setInertiaNotifications !== null)
+        ? SetInertiaNotificationsResponse.fromPartial(object.setInertiaNotifications)
+        : undefined;
+    message.setInertiaFastThreshold =
+      (object.setInertiaFastThreshold !== undefined && object.setInertiaFastThreshold !== null)
+        ? SetInertiaFastThresholdResponse.fromPartial(object.setInertiaFastThreshold)
+        : undefined;
+    message.setInertiaFastOutputPercent =
+      (object.setInertiaFastOutputPercent !== undefined && object.setInertiaFastOutputPercent !== null)
+        ? SetInertiaFastOutputPercentResponse.fromPartial(object.setInertiaFastOutputPercent)
+        : undefined;
+    message.setInertiaEnabled = (object.setInertiaEnabled !== undefined && object.setInertiaEnabled !== null)
+      ? SetInertiaEnabledResponse.fromPartial(object.setInertiaEnabled)
+      : undefined;
+    message.setInertiaNormalMaxOutput =
+      (object.setInertiaNormalMaxOutput !== undefined && object.setInertiaNormalMaxOutput !== null)
+        ? SetInertiaNormalMaxOutputResponse.fromPartial(object.setInertiaNormalMaxOutput)
+        : undefined;
     return message;
   },
 };
@@ -3074,13 +3662,19 @@ export const ProcessorChangedNotification: MessageFns<ProcessorChangedNotificati
 };
 
 function createBaseNotification(): Notification {
-  return { processorChanged: undefined };
+  return { processorChanged: undefined, inertiaStateChanged: undefined, inertiaFastInputChanged: undefined };
 }
 
 export const Notification: MessageFns<Notification> = {
   encode(message: Notification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.processorChanged !== undefined) {
       ProcessorChangedNotification.encode(message.processorChanged, writer.uint32(10).fork()).join();
+    }
+    if (message.inertiaStateChanged !== undefined) {
+      InertiaStateChangedNotification.encode(message.inertiaStateChanged, writer.uint32(18).fork()).join();
+    }
+    if (message.inertiaFastInputChanged !== undefined) {
+      InertiaFastInputChangedNotification.encode(message.inertiaFastInputChanged, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -3100,6 +3694,22 @@ export const Notification: MessageFns<Notification> = {
           message.processorChanged = ProcessorChangedNotification.decode(reader, reader.uint32());
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.inertiaStateChanged = InertiaStateChangedNotification.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.inertiaFastInputChanged = InertiaFastInputChangedNotification.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3117,6 +3727,1065 @@ export const Notification: MessageFns<Notification> = {
     message.processorChanged = (object.processorChanged !== undefined && object.processorChanged !== null)
       ? ProcessorChangedNotification.fromPartial(object.processorChanged)
       : undefined;
+    message.inertiaStateChanged = (object.inertiaStateChanged !== undefined && object.inertiaStateChanged !== null)
+      ? InertiaStateChangedNotification.fromPartial(object.inertiaStateChanged)
+      : undefined;
+    message.inertiaFastInputChanged =
+      (object.inertiaFastInputChanged !== undefined && object.inertiaFastInputChanged !== null)
+        ? InertiaFastInputChangedNotification.fromPartial(object.inertiaFastInputChanged)
+        : undefined;
+    return message;
+  },
+};
+
+function createBaseSetInertiaIntervalRequest(): SetInertiaIntervalRequest {
+  return { id: 0, intervalMs: 0, writeMode: 0 };
+}
+
+export const SetInertiaIntervalRequest: MessageFns<SetInertiaIntervalRequest> = {
+  encode(message: SetInertiaIntervalRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.intervalMs !== 0) {
+      writer.uint32(16).uint32(message.intervalMs);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaIntervalRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaIntervalRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.intervalMs = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaIntervalRequest>): SetInertiaIntervalRequest {
+    return SetInertiaIntervalRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaIntervalRequest>): SetInertiaIntervalRequest {
+    const message = createBaseSetInertiaIntervalRequest();
+    message.id = object.id ?? 0;
+    message.intervalMs = object.intervalMs ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaIntervalResponse(): SetInertiaIntervalResponse {
+  return {};
+}
+
+export const SetInertiaIntervalResponse: MessageFns<SetInertiaIntervalResponse> = {
+  encode(_: SetInertiaIntervalResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaIntervalResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaIntervalResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaIntervalResponse>): SetInertiaIntervalResponse {
+    return SetInertiaIntervalResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaIntervalResponse>): SetInertiaIntervalResponse {
+    const message = createBaseSetInertiaIntervalResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaThresholdRequest(): SetInertiaThresholdRequest {
+  return { id: 0, threshold: 0, writeMode: 0 };
+}
+
+export const SetInertiaThresholdRequest: MessageFns<SetInertiaThresholdRequest> = {
+  encode(message: SetInertiaThresholdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.threshold !== 0) {
+      writer.uint32(16).uint32(message.threshold);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaThresholdRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaThresholdRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.threshold = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaThresholdRequest>): SetInertiaThresholdRequest {
+    return SetInertiaThresholdRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaThresholdRequest>): SetInertiaThresholdRequest {
+    const message = createBaseSetInertiaThresholdRequest();
+    message.id = object.id ?? 0;
+    message.threshold = object.threshold ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaThresholdResponse(): SetInertiaThresholdResponse {
+  return {};
+}
+
+export const SetInertiaThresholdResponse: MessageFns<SetInertiaThresholdResponse> = {
+  encode(_: SetInertiaThresholdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaThresholdResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaThresholdResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaThresholdResponse>): SetInertiaThresholdResponse {
+    return SetInertiaThresholdResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaThresholdResponse>): SetInertiaThresholdResponse {
+    const message = createBaseSetInertiaThresholdResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaEnabledRequest(): SetInertiaEnabledRequest {
+  return { id: 0, enabled: false, writeMode: 0 };
+}
+
+export const SetInertiaEnabledRequest: MessageFns<SetInertiaEnabledRequest> = {
+  encode(message: SetInertiaEnabledRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.enabled !== false) {
+      writer.uint32(16).bool(message.enabled);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaEnabledRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaEnabledRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaEnabledRequest>): SetInertiaEnabledRequest {
+    return SetInertiaEnabledRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaEnabledRequest>): SetInertiaEnabledRequest {
+    const message = createBaseSetInertiaEnabledRequest();
+    message.id = object.id ?? 0;
+    message.enabled = object.enabled ?? false;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaEnabledResponse(): SetInertiaEnabledResponse {
+  return {};
+}
+
+export const SetInertiaEnabledResponse: MessageFns<SetInertiaEnabledResponse> = {
+  encode(_: SetInertiaEnabledResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaEnabledResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaEnabledResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaEnabledResponse>): SetInertiaEnabledResponse {
+    return SetInertiaEnabledResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaEnabledResponse>): SetInertiaEnabledResponse {
+    const message = createBaseSetInertiaEnabledResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaWindowRequest(): SetInertiaWindowRequest {
+  return { id: 0, windowMs: 0, writeMode: 0 };
+}
+
+export const SetInertiaWindowRequest: MessageFns<SetInertiaWindowRequest> = {
+  encode(message: SetInertiaWindowRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.windowMs !== 0) {
+      writer.uint32(16).uint32(message.windowMs);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaWindowRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaWindowRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.windowMs = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaWindowRequest>): SetInertiaWindowRequest {
+    return SetInertiaWindowRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaWindowRequest>): SetInertiaWindowRequest {
+    const message = createBaseSetInertiaWindowRequest();
+    message.id = object.id ?? 0;
+    message.windowMs = object.windowMs ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaWindowResponse(): SetInertiaWindowResponse {
+  return {};
+}
+
+export const SetInertiaWindowResponse: MessageFns<SetInertiaWindowResponse> = {
+  encode(_: SetInertiaWindowResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaWindowResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaWindowResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaWindowResponse>): SetInertiaWindowResponse {
+    return SetInertiaWindowResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaWindowResponse>): SetInertiaWindowResponse {
+    const message = createBaseSetInertiaWindowResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaDecayRequest(): SetInertiaDecayRequest {
+  return { id: 0, decayPercent: 0, writeMode: 0 };
+}
+
+export const SetInertiaDecayRequest: MessageFns<SetInertiaDecayRequest> = {
+  encode(message: SetInertiaDecayRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.decayPercent !== 0) {
+      writer.uint32(16).uint32(message.decayPercent);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaDecayRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaDecayRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.decayPercent = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaDecayRequest>): SetInertiaDecayRequest {
+    return SetInertiaDecayRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaDecayRequest>): SetInertiaDecayRequest {
+    const message = createBaseSetInertiaDecayRequest();
+    message.id = object.id ?? 0;
+    message.decayPercent = object.decayPercent ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaDecayResponse(): SetInertiaDecayResponse {
+  return {};
+}
+
+export const SetInertiaDecayResponse: MessageFns<SetInertiaDecayResponse> = {
+  encode(_: SetInertiaDecayResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaDecayResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaDecayResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaDecayResponse>): SetInertiaDecayResponse {
+    return SetInertiaDecayResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaDecayResponse>): SetInertiaDecayResponse {
+    const message = createBaseSetInertiaDecayResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaNormalMaxOutputRequest(): SetInertiaNormalMaxOutputRequest {
+  return { id: 0, maxOutput: 0, writeMode: 0 };
+}
+
+export const SetInertiaNormalMaxOutputRequest: MessageFns<SetInertiaNormalMaxOutputRequest> = {
+  encode(message: SetInertiaNormalMaxOutputRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.maxOutput !== 0) {
+      writer.uint32(16).uint32(message.maxOutput);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaNormalMaxOutputRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaNormalMaxOutputRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maxOutput = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaNormalMaxOutputRequest>): SetInertiaNormalMaxOutputRequest {
+    return SetInertiaNormalMaxOutputRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaNormalMaxOutputRequest>): SetInertiaNormalMaxOutputRequest {
+    const message = createBaseSetInertiaNormalMaxOutputRequest();
+    message.id = object.id ?? 0;
+    message.maxOutput = object.maxOutput ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaNormalMaxOutputResponse(): SetInertiaNormalMaxOutputResponse {
+  return {};
+}
+
+export const SetInertiaNormalMaxOutputResponse: MessageFns<SetInertiaNormalMaxOutputResponse> = {
+  encode(_: SetInertiaNormalMaxOutputResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaNormalMaxOutputResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaNormalMaxOutputResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaNormalMaxOutputResponse>): SetInertiaNormalMaxOutputResponse {
+    return SetInertiaNormalMaxOutputResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaNormalMaxOutputResponse>): SetInertiaNormalMaxOutputResponse {
+    const message = createBaseSetInertiaNormalMaxOutputResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaFastThresholdRequest(): SetInertiaFastThresholdRequest {
+  return { id: 0, threshold: 0, writeMode: 0 };
+}
+
+export const SetInertiaFastThresholdRequest: MessageFns<SetInertiaFastThresholdRequest> = {
+  encode(message: SetInertiaFastThresholdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.threshold !== 0) {
+      writer.uint32(16).uint32(message.threshold);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaFastThresholdRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaFastThresholdRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.threshold = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaFastThresholdRequest>): SetInertiaFastThresholdRequest {
+    return SetInertiaFastThresholdRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaFastThresholdRequest>): SetInertiaFastThresholdRequest {
+    const message = createBaseSetInertiaFastThresholdRequest();
+    message.id = object.id ?? 0;
+    message.threshold = object.threshold ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaFastThresholdResponse(): SetInertiaFastThresholdResponse {
+  return {};
+}
+
+export const SetInertiaFastThresholdResponse: MessageFns<SetInertiaFastThresholdResponse> = {
+  encode(_: SetInertiaFastThresholdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaFastThresholdResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaFastThresholdResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaFastThresholdResponse>): SetInertiaFastThresholdResponse {
+    return SetInertiaFastThresholdResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaFastThresholdResponse>): SetInertiaFastThresholdResponse {
+    const message = createBaseSetInertiaFastThresholdResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaFastOutputPercentRequest(): SetInertiaFastOutputPercentRequest {
+  return { id: 0, percent: 0, writeMode: 0 };
+}
+
+export const SetInertiaFastOutputPercentRequest: MessageFns<SetInertiaFastOutputPercentRequest> = {
+  encode(message: SetInertiaFastOutputPercentRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.percent !== 0) {
+      writer.uint32(16).uint32(message.percent);
+    }
+    if (message.writeMode !== 0) {
+      writer.uint32(24).int32(message.writeMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaFastOutputPercentRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaFastOutputPercentRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.percent = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.writeMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaFastOutputPercentRequest>): SetInertiaFastOutputPercentRequest {
+    return SetInertiaFastOutputPercentRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaFastOutputPercentRequest>): SetInertiaFastOutputPercentRequest {
+    const message = createBaseSetInertiaFastOutputPercentRequest();
+    message.id = object.id ?? 0;
+    message.percent = object.percent ?? 0;
+    message.writeMode = object.writeMode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetInertiaFastOutputPercentResponse(): SetInertiaFastOutputPercentResponse {
+  return {};
+}
+
+export const SetInertiaFastOutputPercentResponse: MessageFns<SetInertiaFastOutputPercentResponse> = {
+  encode(_: SetInertiaFastOutputPercentResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaFastOutputPercentResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaFastOutputPercentResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaFastOutputPercentResponse>): SetInertiaFastOutputPercentResponse {
+    return SetInertiaFastOutputPercentResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaFastOutputPercentResponse>): SetInertiaFastOutputPercentResponse {
+    const message = createBaseSetInertiaFastOutputPercentResponse();
+    return message;
+  },
+};
+
+function createBaseSetInertiaNotificationsRequest(): SetInertiaNotificationsRequest {
+  return { id: 0, enabled: false };
+}
+
+export const SetInertiaNotificationsRequest: MessageFns<SetInertiaNotificationsRequest> = {
+  encode(message: SetInertiaNotificationsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.enabled !== false) {
+      writer.uint32(16).bool(message.enabled);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaNotificationsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaNotificationsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaNotificationsRequest>): SetInertiaNotificationsRequest {
+    return SetInertiaNotificationsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetInertiaNotificationsRequest>): SetInertiaNotificationsRequest {
+    const message = createBaseSetInertiaNotificationsRequest();
+    message.id = object.id ?? 0;
+    message.enabled = object.enabled ?? false;
+    return message;
+  },
+};
+
+function createBaseSetInertiaNotificationsResponse(): SetInertiaNotificationsResponse {
+  return {};
+}
+
+export const SetInertiaNotificationsResponse: MessageFns<SetInertiaNotificationsResponse> = {
+  encode(_: SetInertiaNotificationsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetInertiaNotificationsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetInertiaNotificationsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetInertiaNotificationsResponse>): SetInertiaNotificationsResponse {
+    return SetInertiaNotificationsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetInertiaNotificationsResponse>): SetInertiaNotificationsResponse {
+    const message = createBaseSetInertiaNotificationsResponse();
+    return message;
+  },
+};
+
+function createBaseInertiaStateChangedNotification(): InertiaStateChangedNotification {
+  return { id: 0, active: false, stopReason: 0 };
+}
+
+export const InertiaStateChangedNotification: MessageFns<InertiaStateChangedNotification> = {
+  encode(message: InertiaStateChangedNotification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.active !== false) {
+      writer.uint32(16).bool(message.active);
+    }
+    if (message.stopReason !== 0) {
+      writer.uint32(24).int32(message.stopReason);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InertiaStateChangedNotification {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInertiaStateChangedNotification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.active = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.stopReason = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<InertiaStateChangedNotification>): InertiaStateChangedNotification {
+    return InertiaStateChangedNotification.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<InertiaStateChangedNotification>): InertiaStateChangedNotification {
+    const message = createBaseInertiaStateChangedNotification();
+    message.id = object.id ?? 0;
+    message.active = object.active ?? false;
+    message.stopReason = object.stopReason ?? 0;
+    return message;
+  },
+};
+
+function createBaseInertiaFastInputChangedNotification(): InertiaFastInputChangedNotification {
+  return { id: 0, fastInput: false };
+}
+
+export const InertiaFastInputChangedNotification: MessageFns<InertiaFastInputChangedNotification> = {
+  encode(message: InertiaFastInputChangedNotification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.fastInput !== false) {
+      writer.uint32(16).bool(message.fastInput);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InertiaFastInputChangedNotification {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInertiaFastInputChangedNotification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.fastInput = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<InertiaFastInputChangedNotification>): InertiaFastInputChangedNotification {
+    return InertiaFastInputChangedNotification.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<InertiaFastInputChangedNotification>): InertiaFastInputChangedNotification {
+    const message = createBaseInertiaFastInputChangedNotification();
+    message.id = object.id ?? 0;
+    message.fastInput = object.fastInput ?? false;
     return message;
   },
 };

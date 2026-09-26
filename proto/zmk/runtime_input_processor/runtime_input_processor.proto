@@ -2,6 +2,12 @@ syntax = "proto3";
 
 package zmk.runtime_input_processor;
 
+enum WriteMode {
+    WRITE_MODE_PERSIST = 0;   // Update the saved value and write it to flash (default)
+    WRITE_MODE_MEMORY = 1;    // Update the saved value in RAM only (lost on reboot)
+    WRITE_MODE_TEMPORARY = 2; // Apply to the live value only (not part of the saved value)
+}
+
 // Axis snap mode enum
 enum AxisSnapMode {
     AXIS_SNAP_MODE_NONE = 0;  // No snapping
@@ -38,6 +44,18 @@ message ProcessorInfo {
     // Axis invert settings
     bool x_invert = 16;  // Whether to invert X axis
     bool y_invert = 17;  // Whether to invert Y axis
+
+    optional uint32 inertia_interval_ms = 18;
+    optional uint32 inertia_threshold = 19;
+    optional uint32 inertia_window_ms = 20;
+    optional uint32 inertia_decay_percent = 21;
+    reserved 22, 23;
+    optional bool inertia_notifications_enabled = 24;
+    optional bool inertia_active = 25;
+    optional uint32 inertia_fast_threshold = 26;
+    optional uint32 inertia_fast_output_percent = 27;
+    optional bool inertia_enabled = 28;
+    optional uint32 inertia_normal_max_output = 29; // 0 means unlimited; fast stage ignores it
 }
 
 // Information about a keyboard layer
@@ -218,6 +236,15 @@ message Request {
         SetXySwapEnabledRequest set_xy_swap_enabled = 17;
         SetXInvertRequest set_x_invert = 18;
         SetYInvertRequest set_y_invert = 19;
+        SetInertiaIntervalRequest set_inertia_interval = 23;
+        SetInertiaThresholdRequest set_inertia_threshold = 24;
+        SetInertiaWindowRequest set_inertia_window = 25;
+        SetInertiaDecayRequest set_inertia_decay = 26;
+        SetInertiaNotificationsRequest set_inertia_notifications = 29;
+        SetInertiaFastThresholdRequest set_inertia_fast_threshold = 30;
+        SetInertiaFastOutputPercentRequest set_inertia_fast_output_percent = 31;
+        SetInertiaEnabledRequest set_inertia_enabled = 32;
+        SetInertiaNormalMaxOutputRequest set_inertia_normal_max_output = 33;
     }
 }
 
@@ -249,6 +276,15 @@ message Response {
         SetXySwapEnabledResponse set_xy_swap_enabled = 18;
         SetXInvertResponse set_x_invert = 19;
         SetYInvertResponse set_y_invert = 20;
+        SetInertiaIntervalResponse set_inertia_interval = 24;
+        SetInertiaThresholdResponse set_inertia_threshold = 25;
+        SetInertiaWindowResponse set_inertia_window = 26;
+        SetInertiaDecayResponse set_inertia_decay = 27;
+        SetInertiaNotificationsResponse set_inertia_notifications = 30;
+        SetInertiaFastThresholdResponse set_inertia_fast_threshold = 31;
+        SetInertiaFastOutputPercentResponse set_inertia_fast_output_percent = 32;
+        SetInertiaEnabledResponse set_inertia_enabled = 33;
+        SetInertiaNormalMaxOutputResponse set_inertia_normal_max_output = 34;
     }
 }
 
@@ -261,5 +297,101 @@ message ProcessorChangedNotification {
 message Notification {
     oneof notification_type {
         ProcessorChangedNotification processor_changed = 1;
+        InertiaStateChangedNotification inertia_state_changed = 2;
+        InertiaFastInputChangedNotification inertia_fast_input_changed = 3;
     }
+}
+
+message SetInertiaIntervalRequest {
+    uint32 id = 1;            // ID of the input processor to update
+    uint32 interval_ms = 2;   // Time window and inertia output interval
+    WriteMode write_mode = 3; // Where to store the value (default: persist)
+}
+
+message SetInertiaIntervalResponse {
+    // Empty - use notification to report changes
+}
+
+message SetInertiaThresholdRequest {
+    uint32 id = 1;            // ID of the input processor to update
+    uint32 threshold = 2;     // Must be greater than zero
+    WriteMode write_mode = 3; // Where to store the value (default: persist)
+}
+
+message SetInertiaThresholdResponse {
+    // Empty - use notification to report changes
+}
+
+message SetInertiaEnabledRequest {
+    uint32 id = 1;
+    bool enabled = 2;
+    WriteMode write_mode = 3;
+}
+
+message SetInertiaEnabledResponse {}
+
+message SetInertiaWindowRequest {
+    uint32 id = 1;            // ID of the input processor to update
+    uint32 window_ms = 2;     // Input measurement window
+    WriteMode write_mode = 3; // Where to store the value (default: persist)
+}
+
+message SetInertiaWindowResponse {
+    // Empty - use notification to report changes
+}
+
+message SetInertiaDecayRequest {
+    uint32 id = 1;            // ID of the input processor to update
+    uint32 decay_percent = 2; // Amount removed after each output interval (0-100)
+    WriteMode write_mode = 3; // Where to store the value (default: persist)
+}
+
+message SetInertiaDecayResponse {
+    // Empty - use notification to report changes
+}
+
+message SetInertiaNormalMaxOutputRequest {
+    uint32 id = 1;
+    uint32 max_output = 2; // 0 means unlimited
+    WriteMode write_mode = 3;
+}
+message SetInertiaNormalMaxOutputResponse {}
+
+message SetInertiaFastThresholdRequest {
+    uint32 id = 1;
+    uint32 threshold = 2;
+    WriteMode write_mode = 3;
+}
+message SetInertiaFastThresholdResponse {}
+
+message SetInertiaFastOutputPercentRequest {
+    uint32 id = 1;
+    uint32 percent = 2;
+    WriteMode write_mode = 3;
+}
+message SetInertiaFastOutputPercentResponse {}
+
+message SetInertiaNotificationsRequest {
+    uint32 id = 1;
+    bool enabled = 2;
+}
+message SetInertiaNotificationsResponse {}
+
+
+enum InertiaStopReason {
+    INERTIA_STOP_REASON_UNSPECIFIED = 0;
+    INERTIA_STOP_REASON_SETTLED = 1;
+    reserved 2;
+    INERTIA_STOP_REASON_REVERSE_INPUT = 3;
+    INERTIA_STOP_REASON_LAYER_INACTIVE = 4;
+    INERTIA_STOP_REASON_SETTINGS_CHANGED = 5;
+}
+message InertiaStateChangedNotification {
+    uint32 id = 1;
+    bool active = 2;
+    InertiaStopReason stop_reason = 3;
+}
+message InertiaFastInputChangedNotification {
+    uint32 id = 1;
+    bool fast_input = 2;
 }
