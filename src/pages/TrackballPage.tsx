@@ -14,6 +14,7 @@ import { useRuntimeInputProcessor } from "../hooks/useRuntimeInputProcessor";
 import {
   CustomSettingsSectionCard,
   PMW3610_CUSTOM_SETTINGS_IDENTIFIER,
+  PAW3222_CUSTOM_SETTINGS_IDENTIFIER,
 } from "../components/AdvancedSettingsSection";
 import { StatusDot } from "../components/EditStatusIndicator";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -31,9 +32,18 @@ import { useTrackballVersionHistory } from "../hooks/versionHistory/useTrackball
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import { MobileTrackballMenu } from "../components/trackball/MobileTrackballMenu";
 
+// Custom-settings-backed sensor drivers with a dedicated grouping/description
+// set in AdvancedSettingsSection (PMW3610, PAW3222, ...). Any other driver's
+// settings still work through the generic custom-settings machinery, just
+// without this page's curated grouping.
+const KNOWN_DRIVER_IDENTIFIERS = [
+  PMW3610_CUSTOM_SETTINGS_IDENTIFIER,
+  PAW3222_CUSTOM_SETTINGS_IDENTIFIER,
+];
+
 // Which detail is shown in the right pane: the selected runtime input
-// processor, or one PMW3610 driver section (keyed by its subsystem index).
-type RightView = { kind: "processor" } | { kind: "pmw3610"; index: number };
+// processor, or one sensor driver section (keyed by its subsystem index).
+type RightView = { kind: "processor" } | { kind: "driver"; index: number };
 
 interface LayerInfo {
   id: number;
@@ -180,11 +190,10 @@ export function TrackballPage() {
     setXySwapEnabled,
   } = inputProcessor;
 
-  // PMW3610 driver sections (custom settings) shown in the left list. Scoped to
-  // the pmw3610 subsystem so unrelated custom subsystems aren't fetched here.
-  const customSettings = useCustomSettings({
-    subsystemIdentifier: PMW3610_CUSTOM_SETTINGS_IDENTIFIER,
-  });
+  // Sensor driver sections (custom settings) shown in the left list. Left
+  // unscoped since more than one driver identifier is of interest here (see
+  // KNOWN_DRIVER_IDENTIFIERS) — driverSections below filters to just those.
+  const customSettings = useCustomSettings();
   const { keymap, behaviors, isLoading: keymapLoading } = useKeymap();
   const keymapLayers = useMemo<LayerInfo[]>(
     () =>
@@ -194,7 +203,7 @@ export function TrackballPage() {
       })) ?? [],
     [keymap?.layers, t],
   );
-  // Version history over the processor tuning plus the PMW3610 custom
+  // Version history over the processor tuning plus the sensor driver custom
   // settings. Processor writes are persistent write-throughs and the tab has
   // no firmware-default RPC, so the menu offers captured versions only.
   const versionHistory = useTrackballVersionHistory({
@@ -207,12 +216,15 @@ export function TrackballPage() {
     t,
   });
 
-  const pmw3610Sections = useMemo(
+  const driverSections = useMemo(
     () =>
-      customSettings.sections.filter(
-        (section) => section.identifier === PMW3610_CUSTOM_SETTINGS_IDENTIFIER,
+      customSettings.sections.filter((section) =>
+        KNOWN_DRIVER_IDENTIFIERS.includes(section.identifier),
       ),
     [customSettings.sections],
+  );
+  const hasPmw3610Section = driverSections.some(
+    (section) => section.identifier === PMW3610_CUSTOM_SETTINGS_IDENTIFIER,
   );
 
   // Selected processor index
@@ -509,12 +521,12 @@ export function TrackballPage() {
   };
 
   const handleSelectDriver = (customSubsystemIndex: number) => {
-    setRightView({ kind: "pmw3610", index: customSubsystemIndex });
+    setRightView({ kind: "driver", index: customSubsystemIndex });
   };
 
   const selectedDriverSection =
-    rightView.kind === "pmw3610"
-      ? pmw3610Sections.find(
+    rightView.kind === "driver"
+      ? driverSections.find(
           (section) => section.customSubsystemIndex === rightView.index,
         )
       : undefined;
@@ -526,13 +538,13 @@ export function TrackballPage() {
       rightView.kind === "processor" && selectedProcessorIndex === index,
     onSelect: () => handleSelectProcessor(index),
   }));
-  const mobileDriverItems = pmw3610Sections.map((section) => ({
-    id: `pmw3610-${section.customSubsystemIndex}`,
+  const mobileDriverItems = driverSections.map((section) => ({
+    id: `driver-${section.customSubsystemIndex}`,
     label: `${section.identifier}${
-      pmw3610Sections.length > 1 ? ` #${section.customSubsystemIndex}` : ""
+      driverSections.length > 1 ? ` #${section.customSubsystemIndex}` : ""
     }`,
     selected:
-      rightView.kind === "pmw3610" &&
+      rightView.kind === "driver" &&
       rightView.index === section.customSubsystemIndex,
     status: section.settings.some((setting) => setting.hasUnsavedValue)
       ? ("unsaved" as const)
@@ -540,15 +552,15 @@ export function TrackballPage() {
     onSelect: () => handleSelectDriver(section.customSubsystemIndex),
   }));
   const reloadSelected =
-    rightView.kind === "pmw3610"
+    rightView.kind === "driver"
       ? customSettings.loadSettings
       : () => void loadProcessors();
   const reloadSelectedLabel =
-    rightView.kind === "pmw3610"
-      ? t("Reload PMW3610 drivers")
+    rightView.kind === "driver"
+      ? t("Reload driver settings")
       : t("Reload processors");
   const reloadSelectedDisabled =
-    rightView.kind === "pmw3610" ? customSettings.isLoading : isLoading;
+    rightView.kind === "driver" ? customSettings.isLoading : isLoading;
 
   return (
     <div className="app-page p-4 sm:p-6 h-full">
@@ -695,15 +707,15 @@ export function TrackballPage() {
               )}
             </section>
 
-            {/* PMW3610 drivers */}
+            {/* Sensor driver settings */}
             <section className="glass-card p-3">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <IconMouse size={16} className="text-[var(--color-neon)]" />
                   <h2 className="text-sm font-medium text-[var(--color-text)]">
-                    {t("PMW3610 Drivers")}
+                    {t("Sensor Driver Settings")}
                   </h2>
-                  <DocTip content={pmw3610Doc(t)} />
+                  {hasPmw3610Section && <DocTip content={pmw3610Doc(t)} />}
                 </div>
                 <div className="flex items-center gap-1">
                   {customSettings.isLoading && (
@@ -730,21 +742,21 @@ export function TrackballPage() {
                       "Custom settings subsystem is not available for this keyboard.",
                     )}
                   </p>
-                ) : customSettings.isLoading && pmw3610Sections.length === 0 ? (
+                ) : customSettings.isLoading && driverSections.length === 0 ? (
                   <LoadingIndicator
                     variant="inline"
                     label={t("Loading advanced settings...")}
                   />
-                ) : pmw3610Sections.length === 0 ? (
+                ) : driverSections.length === 0 ? (
                   <p className="text-xs text-[var(--color-text-muted)] py-2">
                     {t(
-                      "No pmw3610 driver settings were reported by the keyboard.",
+                      "No sensor driver settings were reported by the keyboard.",
                     )}
                   </p>
                 ) : (
-                  pmw3610Sections.map((section) => {
+                  driverSections.map((section) => {
                     const isSelectedDriver =
-                      rightView.kind === "pmw3610" &&
+                      rightView.kind === "driver" &&
                       rightView.index === section.customSubsystemIndex;
                     const hasUnsaved = section.settings.some(
                       (s) => s.hasUnsavedValue,
@@ -764,7 +776,7 @@ export function TrackballPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="block text-sm font-medium text-[var(--color-text)] truncate flex-1">
                             {section.identifier}
-                            {pmw3610Sections.length > 1
+                            {driverSections.length > 1
                               ? ` #${section.customSubsystemIndex}`
                               : ""}
                           </span>
@@ -785,7 +797,7 @@ export function TrackballPage() {
 
           {/* Right: detail pane for the selected item */}
           <div className="min-w-0">
-            {rightView.kind === "pmw3610" ? (
+            {rightView.kind === "driver" ? (
               selectedDriverSection ? (
                 <CustomSettingsSectionCard
                   section={selectedDriverSection}
