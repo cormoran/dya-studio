@@ -27,10 +27,12 @@ export function InputGraph({
   const windowMs = 10000;
   const magnitude = (s: InputSample) => (axis ? s[axis] : Math.hypot(s.x, s.y));
   const peak = Math.max(
-    20,
+    reference ? 1 : 20,
     ...samples.map((s) => Math.abs(magnitude(s))),
     reference
-      ? ((settings?.inertiaThreshold ?? 10) *
+      ? ((((settings?.inertiaThreshold ?? 10) *
+          (settings?.inertiaIntervalMs ?? 20)) /
+          (settings?.inertiaWindowMs ?? 200)) *
           (settings?.inertiaFastOutputPercent ?? 200)) /
           100
       : 0,
@@ -53,7 +55,7 @@ export function InputGraph({
         seed *
         Math.pow(
           1 - (settings?.inertiaDecayPercent ?? 8) / 100,
-          (i * 50) / interval,
+          (i * windowMs) / 100 / interval,
         ) *
         (fast ? (settings?.inertiaFastOutputPercent ?? 200) / 100 : 1);
       const value =
