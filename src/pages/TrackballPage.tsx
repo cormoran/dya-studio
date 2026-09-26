@@ -1,8 +1,6 @@
+import { InertiaPreviewGraph } from "../components/trackball/InertiaPreviewGraph";
 import { TabActiveContext } from "../contexts/TabActiveContext";
-import {
-  InputGraph,
-  type InputSample,
-} from "../components/trackball/InputGraph";
+import { type InputSample } from "../components/trackball/InputGraph";
 import { InertiaCard } from "../components/trackball/InertiaCard";
 import { InputTestCard } from "../components/trackball/InputTestCard";
 import {
@@ -323,7 +321,7 @@ export function TrackballPage() {
     };
   }, [activityId]);
   useEffect(() => {
-    if (!tabActive || rightView.kind !== "processor") return;
+    if (!tabActive || !testOpen || rightView.kind !== "processor") return;
     const timer = window.setInterval(() => {
       const time = Date.now();
       setNow(time);
@@ -346,6 +344,7 @@ export function TrackballPage() {
     return () => window.clearInterval(timer);
   }, [
     tabActive,
+    testOpen,
     rightView.kind,
     processor?.inertiaNotificationsEnabled,
     processor?.inertiaFastInput,
@@ -1638,14 +1637,7 @@ export function TrackballPage() {
                       key={`inertia-${processor.id}`}
                       processor={processor}
                       setInertia={setInertia}
-                      graph={
-                        <InputGraph
-                          samples={samples}
-                          now={now}
-                          processor={processor}
-                          reference
-                        />
-                      }
+                      graph={<InertiaPreviewGraph processor={processor} />}
                     />
                     {testOpen && tabActive && (
                       <InputTestCard

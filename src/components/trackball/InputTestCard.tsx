@@ -186,13 +186,7 @@ export function InputTestCard({
         </p>
       )}
       <div className="grid grid-cols-[100px_minmax(0,1fr)] gap-2">
-        <InputGraph
-          samples={samples}
-          now={now}
-          processor={processor}
-          axis="y"
-          vertical
-        />
+        <InputGraph samples={samples} now={now} axis="y" vertical />
         <div
           ref={area}
           role="region"
@@ -296,12 +290,7 @@ export function InputTestCard({
           </div>
         </div>
         <div className="col-start-2">
-          <InputGraph
-            samples={samples}
-            now={now}
-            processor={processor}
-            axis="x"
-          />
+          <InputGraph samples={samples} now={now} axis="x" />
         </div>
       </div>
       <p className="text-xs font-mono">

@@ -9,6 +9,14 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Inertia simulation": "慣性シミュレーション",
+  "Five-second input and simulated output": "5秒の入力とシミュレーション出力",
+  "Example input": "想定入力",
+  "Inertia output": "通常の慣性：合計出力",
+  "Fast input output": "Fast input：合計出力",
+  "A fixed mountain-shaped input lasts 5 seconds (peak 40 counts every 20 ms, before scaling). Lines show total output per 20 ms, including physical input. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
+    "固定の山形入力を5秒間与えます（スケーリング前の最大入力は20msあたり40）。縦軸は20msあたりの入出力量で、出力線は実入力と慣性の合計です。慣性ONを仮定し、Fast inputは設定したしきい値で切り替わります。15秒以降も出力が続く場合があります。",
+
   "Toggle input test": "動作確認ウィンドウの表示を切り替える",
   Inertia: "慣性",
   "Enable Fast input": "Fast input を有効にする",
@@ -1561,6 +1569,14 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Inertia simulation": "惯性模拟",
+  "Five-second input and simulated output": "5秒输入及模拟输出",
+  "Example input": "示例输入",
+  "Inertia output": "普通惯性：总输出",
+  "Fast input output": "Fast input：总输出",
+  "A fixed mountain-shaped input lasts 5 seconds (peak 40 counts every 20 ms, before scaling). Lines show total output per 20 ms, including physical input. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
+    "固定山形输入持续5秒（缩放前峰值为每20ms 40计数）。纵轴为每20ms的输入/输出量，输出线包含实际输入与惯性之和。假定惯性开启；Fast input按设置的阈值触发。输出可能在15秒后继续。",
+
   "Toggle input test": "切换输入测试窗口",
   Inertia: "惯性",
   "Enable Fast input": "启用 Fast input",

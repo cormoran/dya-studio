@@ -50,6 +50,8 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 
 ### 慣性と動作確認（2026-09-26 追加）
 
+根拠 S6: [InertiaPreviewGraph](../../../src/components/trackball/InertiaPreviewGraph.tsx)、[inertiaSimulation](../../../src/lib/inertiaSimulation.ts)、[C参照値との比較テスト](../../../src/lib/__tests__/inertiaSimulation.test.ts)。#28 commitのC関数をホストでコンパイルして生成した7ケースの全出力tick列との一致を確認（物理デバイスの検証とは別）。参照値の再生成は[ホストC検証スクリプト](../../../scripts/generate-inertia-simulation-fixtures.py)を参照する。
+
 根拠 S5: [InertiaCard](../../../src/components/trackball/InertiaCard.tsx)、[InputTestCard](../../../src/components/trackball/InputTestCard.tsx)、[inputInertia](../../../src/lib/inputInertia.ts)。プロトコル根拠は [runtime input processor PR #28](https://github.com/cormoran/zmk-module-runtime-input-processor/pull/28) の commit `7fa97aca3fefe4212c51a53c84f7caf889476086`。
 
 | ID        | 前提 → 操作                                                                      | 観測できる結果                                                                                                                                                                                                                                                                                                                                                                                                          | 保存範囲・副作用                                                                                                                                                                                                              | 根拠     |
@@ -61,8 +63,8 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 | TRACK-015 | 対応processorのタブを開く                                                        | 通知を自動で有効化し、成功後、慣性停止/動作/Fast inputを文字と枠色で表示し、停止理由を表示。別processor/driver/タブへ離れると通知OFF。手動OFFボタンなし                                                                                                                                                                                                                                                                 | 診断通知のセッション設定。実際の通知だけを表示し、wheelから慣性を推定・生成しない。ブラウザ入力は全ポインティングデバイスから来るため選択processor専用測定ではない                                                            | S2/S5    |
 | TRACK-016 | 新しい設定をVersionsでcapture/restore                                            | 慣性設定もdiff/restoreの対象。旧snapshotは慣性を変更せず、旧processorへ慣性restoreを送らない                                                                                                                                                                                                                                                                                                                            | 履歴はブラウザ、restoreはfirmware PERSIST。状態通知・capture・スクロール位置は履歴対象外                                                                                                                                      | S1/S2/S5 |
 
-| TRACK-017 | 慣性カードのグラフを見る | 時間を横軸、入力Δの大きさを縦軸にし、慣性/Fast inputの参考減衰曲線を破線で固定表示。実測線は直近10秒を流し、ブラウザ入力は紫、通知で慣性中は青、Fast中は橙。通知なしでは慣性を推定しない | 参考曲線は例示でありfirmware出力の再現ではない。ブラウザには物理入力と生成出力の由来情報がないため通知で分類し、その制約を図の説明に表示。履歴は最大1000点、processor切替で破棄 | S5 |
-| TRACK-018 | Input testを開く/ドラッグ/閉じる | ヘッダーでドラッグ可能。×で閉じ、ページ右上Versions左のStreamと同じ枠付きラベル＋スイッチで開閉。×で閉じたときもスイッチはOFF。左に上下入力の時間を縦軸にしたグラフ、下に左右入力の時間を横軸にしたグラフ | 閉じる/他タブ・driverへ離れるとキャプチャ解除。通知はウィンドウ開閉と独立して対象processorタブの間維持。ブラウザのみ、永続化なし | S5 |
+| TRACK-017 | 慣性カードのグラフを見る | 0–5秒の固定山形入力（20ms周期、スケーリング前の最大40）と、同じ入力に対する通常慣性/Fast inputの合計出力を0–15秒で表示。紫は想定実入力、青実線はFast無効の通常出力、橙破線は設定したFastしきい値/倍率での出力。縦軸は20msあたりの入出力量。慣性ONを仮定し、Fastしきい値0では出力2線が一致。リアルタイム値は表示しない | 一方向・active layer・既定64測定窓分割/66バケット・同時刻の入力を出力より先に処理する固定シミュレーション。#28のQ16整数測定、整数出力、端数繰越、入力区間の減衰スキップ、出力後減衰、通常上限、Fast発動/継続、停止条件を移植。15秒以降の継続出力は省略する。Kconfig差・実機スケジューラー・逆方向/軸/layer変化は対象外。デバイスRPC/保存なし | S5/S6 |
+| TRACK-018 | Input testを開く/ドラッグ/閉じる | ヘッダーでドラッグ可能。×で閉じ、ページ右上Versions左のStreamと同じ枠付きラベル＋スイッチで開閉。×で閉じたときもスイッチはOFF。左に上下入力の時間を縦軸にしたリアルタイムグラフ、下に左右入力の時間を横軸にしたリアルタイムグラフ。直近10秒・最大1000点をブラウザ入力は紫、通知で慣性中は青、Fast中は橙に分類 | 閉じる/他タブ・driverへ離れるとキャプチャ解除。通知はウィンドウ開閉と独立して対象processorタブの間維持。ブラウザのみ、永続化なし | S5 |
 
 ## 代表ユーザーフロー
 
@@ -91,6 +93,12 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 3. エリア内の左右/上下scrollを試し、各checkbox OFF後に当該軸が固定されることを確認する。再度ON、Centerで中央に戻し、端までscrollして有限な端で停止する。
 4. 左クリック→キャプチャ→移動Δ/マーカー→Escape解除。未対応のブラウザでは具体的なalertを記録しcapture成功としない。
 5. タブを開く→実機の慣性/Fast input発動と逆方向停止→表示を比較し別タブへ離れて通知OFFを確認。Demoは設定読戻しまでで、物理入力による状態通知は生成しない。
+
+### F5: 固定シミュレーションとリアルタイム表示（TRACK-017/018）
+
+1. 慣性カードでは想定入力が0から山形に増減して5秒で0になり、合計出力の尾が続くことを確認。ブラウザを動かしても固定グラフは変わらない。
+2. decay 0/100、通常出力上限、Fastしきい値0/有効、intervalを変更し、保存後に固定グラフだけが設定に応じて変わることを確認。Fastしきい値0では出力2線が一致する。元の値へ復帰しページReloadで確認。
+3. Input testをONにしてキャプチャ/移動すると、floating内の左右/上下グラフだけが流れる。×で閉じ、表示スイッチOFFを確認する。通知購読は別タブへ移動するまで維持される。
 
 ## 不変条件
 
