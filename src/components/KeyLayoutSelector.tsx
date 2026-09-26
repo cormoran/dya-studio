@@ -60,7 +60,7 @@ export function KeyLayoutSelector({
     return (
       <div
         key={`key-${item.code}`}
-        className={`relative z-0 p-[2px] ${h === 2 ? "z-10 h-16 tablet:h-20" : "h-full"}`}
+        className={`relative shrink-0 p-[2px] ${h === 2 ? "pointer-events-none z-10 h-16 tablet:h-20" : "h-full"}`}
         style={{ width: widthPercent(w) }}
       >
         <button
@@ -73,18 +73,42 @@ export function KeyLayoutSelector({
           style={
             isIsoEnter
               ? {
+                  // The 0.25u notch is 1/6 of the 1.5u key. Account for
+                  // the wrapper's 2px padding to keep a 4px gap on both rows.
                   clipPath:
-                    "polygon(0 0, 100% 0, 100% 100%, 25% 100%, 25% 50%, 0 50%)",
+                    "polygon(0 0, 100% 0, 100% 100%, calc(100% / 6 + 2px / 3) 100%, calc(100% / 6 + 2px / 3) calc(50% - 2px), 0 calc(50% - 2px))",
                 }
               : undefined
           }
-          className={`flex h-full w-full items-center justify-center overflow-hidden rounded border px-0.5 text-center transition-colors ${
-            isSelected
-              ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-              : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50"
+          className={`relative flex h-full w-full items-center justify-center overflow-hidden px-0.5 text-center transition-colors ${isIsoEnter ? "pointer-events-auto group" : "rounded border"} ${
+            isIsoEnter
+              ? isSelected
+                ? "bg-[var(--color-electric)] text-[var(--color-electric)]"
+                : "bg-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-electric)]/50 focus-visible:bg-[var(--color-electric)]"
+              : isSelected
+                ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
+                : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50"
           }`}
         >
-          <span className="truncate text-[10px] font-medium leading-tight tablet:text-xs">
+          {isIsoEnter && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-px bg-[var(--color-bg)]"
+              style={{
+                // Inset the entire L-shaped contour by 1px, including the
+                // notch. Clipping a rectangular border loses these two edges.
+                clipPath:
+                  "polygon(0 0, 100% 0, 100% 100%, calc(100% / 6 + 1px) 100%, calc(100% / 6 + 1px) calc(50% - 3px), 0 calc(50% - 3px))",
+              }}
+            >
+              {isSelected && (
+                <span className="absolute inset-0 bg-[var(--color-electric)]/20" />
+              )}
+            </span>
+          )}
+          <span
+            className={`relative truncate text-[10px] font-medium leading-tight tablet:text-xs ${isIsoEnter ? "ml-[16.666667%]" : ""}`}
+          >
             {label}
           </span>
         </button>

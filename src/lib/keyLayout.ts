@@ -169,8 +169,8 @@ export const KEY_LAYOUT_70: KeyLayoutItem[][] = [
 ];
 
 /**
- * ~70% JIS layout. It keeps the selector's function and navigation coverage,
- * while the main block follows the Japanese physical key positions. In
+ * ~70% JIS layout. The main block follows Japanese physical key positions,
+ * with a compact right Shift beside the inverted-T arrow cluster. In
  * particular, Enter spans two rows like an ISO Enter key.
  */
 export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
@@ -191,7 +191,8 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     { code: MINUS },
     { code: EQUAL },
     { code: YEN },
-    { code: BSPC, w: 2 },
+    { code: BSPC },
+    { spacer: true, w: 1 },
   ],
   [
     { code: TAB, w: 1.5 },
@@ -200,8 +201,8 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     })),
     { code: LBKT },
     { code: RBKT },
-    { code: ENTER, w: 2, h: 2, shape: "iso-enter" },
-    { spacer: true, w: 0.5 },
+    { code: ENTER, w: 1.5, h: 2, shape: "iso-enter" },
+    { spacer: true, w: 1 },
   ],
   [
     { code: CAPS, w: 1.75 },
@@ -210,18 +211,17 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     })),
     { code: SEMI },
     { code: SQT },
-    { code: 0x32, w: 1.25 },
-    { spacer: true, w: 2 },
+    { code: 0x32 },
+    { spacer: true, w: 2.25 },
   ],
   [
-    { code: LSHIFT, w: 1.25 },
+    { code: LSHIFT, w: 2.25 },
     ...["Z", "X", "C", "V", "B", "N", "M"].map((c) => ({ code: letter(c) })),
     { code: COMMA },
     { code: DOT },
     { code: FSLH },
     { code: INTL1 },
-    { code: RSHIFT, w: 1.25 },
-    { spacer: true, w: 0.5 },
+    { code: RSHIFT, w: 0.75 },
     { code: UP },
     { code: END },
   ],
@@ -229,8 +229,8 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     { code: LCTRL, w: 1.25 },
     { code: LGUI, w: 1.25 },
     { code: LALT, w: 1.25 },
-    { code: SPACE, w: 3.75 },
     { code: MUHENKAN, w: 1.25 },
+    { code: SPACE, w: 3.75 },
     { code: HENKAN, w: 1.25 },
     { code: KANA, w: 1.25 },
     { code: RCTRL, w: 1.25 },

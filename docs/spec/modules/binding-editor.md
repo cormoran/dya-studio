@@ -41,6 +41,8 @@ BIND-018: keycode selector は開くたびにキー配列表示から始める�
 
 BIND-019: `Runtime Macro`、`Trans`、`None` は behavior dropdown の `Key Press` category に表示する。Runtime Macro 対応 keyboard で登録済み macro があれば、各 macro は `Macro` category の個別項目として表示し、選択時は Runtime Macro behavior と slot を `param1` にした binding を caller に渡す。Runtime Macro の param1 候補には `New macro` / `Edit macros` を表示する。根拠はS1/S4、2026-09-24ユーザー要求。
 
+BIND-023: JIS のキー配列表示では Q/A/Z の左端をそれぞれ 1.5u/1.75u/2.25u とし、無変換・Space・変換・かなの順に並べる。Enter は上部 1.5u、下部 1.25u の逆 L 字で、切り欠きにも枠線を表示し、隣の `]` キーと重ならず個別に選択できる。Backspace と Enter の右端、上下矢印の列を揃える。通常・hover・選択状態、狭幅の横スクロールでも輪郭と間隔を保つ。根拠は [keyLayout](../../../src/lib/keyLayout.ts)、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、2026-09-27ユーザー修正要求。binding の適用と保存は既存の caller 契約に従う。
+
 BIND-020: `Edit macros` の modal を変更後に閉じる場合、`Keep editing` または `Discard edits and close` を選べる。discard は queued write を cancel し、進行中 write を待ってから、modal を開いた時点の同じ slot の名前と step に RAM を戻す。開く前からあった他の RAM-only 変更は残し、失敗時は editor を開いたまま error を示す。根拠は [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx)、[restoreMacroMemory](../../../src/components/macroCombo/restoreMacroMemory.ts)。
 
 BIND-021: `Edit macros` の step 追加・削除は、同じ macro への待機中または進行中の文字列・delay write を先に完了してから RAM に構造変更を適用し、古い step 一式の後続 write による上書きを防ぐ。根拠は [useMacroEditor](../../../src/components/macroCombo/useMacroEditor.ts) の `flushStepWrites`。
