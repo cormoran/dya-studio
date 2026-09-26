@@ -118,7 +118,6 @@ export function InertiaCard({
               "Changes are saved to the device after a short delay. Inertia settings remain editable when disabled.",
             )}
           </p>
-          <h4 className="font-medium text-sm">{t("Inertia")}</h4>
           <label className="flex gap-2 items-center">
             <input
               type="checkbox"
@@ -142,12 +141,12 @@ export function InertiaCard({
             {t("Enable Inertia")}
           </label>
           {[false, true].map((fast) => (
-            <div key={String(fast)} className="space-y-3">
+            <div
+              key={String(fast)}
+              className={`space-y-3 ${fast ? "border-t border-[var(--color-border)] pt-4" : ""}`}
+            >
               {fast && (
                 <>
-                  <h4 className="border-t border-[var(--color-border)] pt-4 text-sm font-medium">
-                    {t("Fast input")}
-                  </h4>
                   <label className="flex gap-2 items-center">
                     <input
                       type="checkbox"
