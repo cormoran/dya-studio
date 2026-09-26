@@ -1,8 +1,7 @@
+import { InputGraph, type InputSample } from "./InputGraph";
+import { useFloatingWindow } from "../../hooks/useFloatingWindow";
 import { useEffect, useRef, useState } from "react";
-import type {
-  InputProcessor,
-  UseRuntimeInputProcessorReturn,
-} from "../../hooks/useRuntimeInputProcessor";
+import type { InputProcessor } from "../../hooks/useRuntimeInputProcessor";
 import { useLanguage } from "../../hooks/useLanguage";
 
 const STOP_LABELS: Record<number, string> = {
@@ -13,10 +12,16 @@ const STOP_LABELS: Record<number, string> = {
 };
 export function InputTestCard({
   processor,
-  setInertiaNotifications,
+  samples = [],
+  now = 0,
+  onClose,
+  onInput,
 }: {
   processor: InputProcessor;
-  setInertiaNotifications: UseRuntimeInputProcessorReturn["setInertiaNotifications"];
+  samples?: InputSample[];
+  now?: number;
+  onClose?: () => void;
+  onInput?: (x: number, y: number) => void;
 }) {
   const { t } = useLanguage();
   const area = useRef<HTMLDivElement>(null);
@@ -24,14 +29,14 @@ export function InputTestCard({
   const [vertical, setVertical] = useState(true);
   const [captured, setCaptured] = useState(false);
   const [captureError, setCaptureError] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [point, setPoint] = useState({ x: 1200, y: 1200 });
+  const floating = useFloatingWindow(true, true);
+  const [point, setPoint] = useState({ x: 12000, y: 12000 });
   const [delta, setDelta] = useState({ x: 0, y: 0, kind: "Scroll" });
   const [position, setPosition] = useState({ x: 0, y: 0 });
   useEffect(() => {
     const element = area.current!;
-    element.scrollLeft = (2400 - element.clientWidth) / 2;
-    element.scrollTop = (2400 - element.clientHeight) / 2;
+    element.scrollLeft = (24000 - element.clientWidth) / 2;
+    element.scrollTop = (24000 - element.clientHeight) / 2;
   }, []);
   useEffect(() => {
     const element = area.current!;
@@ -46,6 +51,7 @@ export function InputTestCard({
             : 1;
       if (horizontal) element.scrollLeft += event.deltaX * factor;
       if (vertical) element.scrollTop += event.deltaY * factor;
+      onInput?.(event.deltaX * factor, event.deltaY * factor);
       setDelta({ x: event.deltaX, y: event.deltaY, kind: "Scroll" });
     };
     const lock = () => setCaptured(document.pointerLockElement === element);
@@ -53,9 +59,10 @@ export function InputTestCard({
     const move = (event: MouseEvent) => {
       if (document.pointerLockElement !== element) return;
       setPoint((point) => ({
-        x: Math.max(0, Math.min(2400, point.x + event.movementX)),
-        y: Math.max(0, Math.min(2400, point.y + event.movementY)),
+        x: Math.max(0, Math.min(24000, point.x + event.movementX)),
+        y: Math.max(0, Math.min(24000, point.y + event.movementY)),
       }));
+      onInput?.(event.movementX, event.movementY);
       setDelta({
         x: event.movementX,
         y: event.movementY,
@@ -67,13 +74,18 @@ export function InputTestCard({
     document.addEventListener("pointerlockerror", failure);
     document.addEventListener("mousemove", move);
     return () => {
-      if (document.pointerLockElement === element) document.exitPointerLock();
       element.removeEventListener("wheel", wheel);
       document.removeEventListener("pointerlockchange", lock);
       document.removeEventListener("pointerlockerror", failure);
       document.removeEventListener("mousemove", move);
     };
-  }, [horizontal, vertical]);
+  }, [horizontal, vertical, onInput]);
+  useEffect(() => {
+    const element = area.current;
+    return () => {
+      if (document.pointerLockElement === element) document.exitPointerLock();
+    };
+  }, []);
   const notifications = processor.inertiaNotificationsEnabled;
   const status = !processor.inertia
     ? "Inertia is not supported by this device"
@@ -85,11 +97,28 @@ export function InputTestCard({
           ? "Inertia active"
           : "Inertia idle";
   return (
-    <section className="glass-card p-6 space-y-4" aria-label={t("Input test")}>
-      <h3 className="text-sm font-medium">{t("Input test")}</h3>
+    <section
+      ref={floating.ref}
+      style={floating.style}
+      className="fixed right-4 bottom-4 z-[100] w-[min(760px,calc(100vw-32px))] max-h-[85vh] overflow-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 shadow-xl"
+      aria-label={t("Input test")}
+    >
+      <div
+        {...floating.handleProps}
+        className="flex justify-between cursor-move touch-none"
+      >
+        <h3 className="text-sm font-medium">{t("Input test")}</h3>
+        <button
+          type="button"
+          aria-label={t("Close input test")}
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
       <p className="text-xs text-[var(--color-text-muted)]">
         {t(
-          "Scroll in the finite area. Left-click to capture mouse movement; Escape releases it.",
+          "Scroll in the finite area. Left-click to capture mouse movement; Escape, left-click or right-click releases it.",
         )}
       </p>
       <div className="flex flex-wrap gap-4 text-sm">
@@ -109,35 +138,14 @@ export function InputTestCard({
           />{" "}
           {t("Vertical scroll")}
         </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={Boolean(notifications)}
-            disabled={!processor.inertia || busy}
-            onChange={async (event) => {
-              setBusy(true);
-              try {
-                await setInertiaNotifications(
-                  processor.id,
-                  event.target.checked,
-                );
-              } catch {
-                /* hook displays the error */
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />{" "}
-          {t("Show inertia activity")}
-        </label>
         <button
           type="button"
           className="btn-secondary"
           onClick={() => {
             const element = area.current!;
-            element.scrollLeft = (2400 - element.clientWidth) / 2;
-            element.scrollTop = (2400 - element.clientHeight) / 2;
-            setPoint({ x: 1200, y: 1200 });
+            element.scrollLeft = (24000 - element.clientWidth) / 2;
+            element.scrollTop = (24000 - element.clientHeight) / 2;
+            setPoint({ x: 12000, y: 12000 });
             setDelta({ x: 0, y: 0, kind: "Scroll" });
           }}
         >
@@ -176,82 +184,109 @@ export function InputTestCard({
           {t("Mouse capture is unavailable. Scrolling still works.")}
         </p>
       )}
-      <div
-        ref={area}
-        role="region"
-        tabIndex={0}
-        aria-label={t("Finite input test area")}
-        className="relative h-80 rounded border-2"
-        style={{
-          overflowX: horizontal ? "scroll" : "hidden",
-          overflowY: vertical ? "scroll" : "hidden",
-          overscrollBehavior: "contain",
-          borderColor:
-            notifications && processor.inertiaFastInput
-              ? "#f59e0b"
-              : notifications && processor.inertiaActive
-                ? "var(--color-electric)"
-                : "var(--color-border)",
-        }}
-        onScroll={(event) =>
-          setPosition({
-            x: event.currentTarget.scrollLeft,
-            y: event.currentTarget.scrollTop,
-          })
-        }
-        onKeyDown={(event) => {
-          if (
-            (!horizontal && ["ArrowLeft", "ArrowRight"].includes(event.key)) ||
-            (!vertical &&
-              [
-                "ArrowUp",
-                "ArrowDown",
-                "PageUp",
-                "PageDown",
-                " ",
-                "Home",
-                "End",
-              ].includes(event.key))
-          )
-            event.preventDefault();
-        }}
-        onClick={async () => {
-          setCaptureError(false);
-          try {
-            if (!area.current?.requestPointerLock)
-              throw new Error("Unsupported");
-            await area.current.requestPointerLock();
-          } catch {
-            setCaptureError(true);
-          }
-        }}
-      >
+      <div className="grid grid-cols-[100px_minmax(0,1fr)] gap-2">
+        <InputGraph
+          samples={samples}
+          now={now}
+          processor={processor}
+          axis="y"
+          vertical
+        />
         <div
+          ref={area}
+          role="region"
+          tabIndex={0}
+          aria-label={t("Finite input test area")}
+          className="relative h-80 rounded border-2"
           style={{
-            width: 2400,
-            height: 2400,
-            position: "relative",
-            backgroundImage:
-              "linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)",
-            backgroundSize: "80px 80px",
+            overflowX: horizontal ? "scroll" : "hidden",
+            overflowY: vertical ? "scroll" : "hidden",
+            overscrollBehavior: "contain",
+            borderColor:
+              notifications && processor.inertiaFastInput
+                ? "#f59e0b"
+                : notifications && processor.inertiaActive
+                  ? "var(--color-electric)"
+                  : "var(--color-border)",
+          }}
+          onScroll={(event) =>
+            setPosition({
+              x: event.currentTarget.scrollLeft,
+              y: event.currentTarget.scrollTop,
+            })
+          }
+          onKeyDown={(event) => {
+            if (
+              (!horizontal &&
+                ["ArrowLeft", "ArrowRight"].includes(event.key)) ||
+              (!vertical &&
+                [
+                  "ArrowUp",
+                  "ArrowDown",
+                  "PageUp",
+                  "PageDown",
+                  " ",
+                  "Home",
+                  "End",
+                ].includes(event.key))
+            )
+              event.preventDefault();
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            if (document.pointerLockElement === area.current)
+              document.exitPointerLock();
+          }}
+          onClick={async () => {
+            if (document.pointerLockElement === area.current) {
+              document.exitPointerLock();
+              return;
+            }
+            setCaptureError(false);
+            try {
+              if (!area.current?.requestPointerLock)
+                throw new Error("Unsupported");
+              await area.current.requestPointerLock();
+            } catch {
+              setCaptureError(true);
+            }
           }}
         >
-          {Array.from({ length: 100 }, (_, i) => (
+          <div
+            style={{
+              width: 24000,
+              height: 24000,
+              position: "relative",
+              backgroundImage:
+                "linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)",
+              backgroundSize: "80px 80px",
+            }}
+          >
+            {Array.from({ length: 100 }, (_, i) => (
+              <span
+                aria-hidden="true"
+                key={i}
+                className="absolute text-xs text-[var(--color-text-muted)]"
+                style={{
+                  left: (i % 10) * 2400 + 12,
+                  top: Math.floor(i / 10) * 2400 + 12,
+                }}
+              >
+                {i % 10}, {Math.floor(i / 10)}
+              </span>
+            ))}
             <span
-              aria-hidden="true"
-              key={i}
-              className="absolute text-xs text-[var(--color-text-muted)]"
-              style={{
-                left: (i % 10) * 240 + 12,
-                top: Math.floor(i / 10) * 240 + 12,
-              }}
-            >
-              {i % 10}, {Math.floor(i / 10)}
-            </span>
-          ))}
-          <span
-            className="absolute w-4 h-4 rounded-full bg-[var(--color-electric)] pointer-events-none"
-            style={{ left: point.x - 8, top: point.y - 8 }}
+              className="absolute w-4 h-4 rounded-full bg-[var(--color-electric)] pointer-events-none"
+              style={{ left: point.x - 8, top: point.y - 8 }}
+            />
+          </div>
+        </div>
+        <div className="col-start-2">
+          <InputGraph
+            samples={samples}
+            now={now}
+            processor={processor}
+            axis="x"
           />
         </div>
       </div>

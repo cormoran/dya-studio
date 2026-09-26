@@ -9,6 +9,16 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  Inertia: "慣性",
+  "Enable Fast input": "Fast input を有効にする",
+  "Close input test": "動作確認を閉じる",
+  "Browser input": "ブラウザ入力",
+  "Horizontal input history": "左右方向の入力履歴",
+  "Vertical input history": "上下方向の入力履歴",
+  "Inertia output history": "慣性の出力履歴",
+  "Dashed: reference curves; solid: live browser input classified by device activity.":
+    "破線：設定の参考曲線。実線：デバイスの状態通知で分類したブラウザの実測入力。",
+
   Center: "中央に戻す",
   Scroll: "スクロール",
   "Inertia / Fast input": "慣性 / Fast input",
@@ -38,7 +48,7 @@ const ja: Record<string, string> = {
   "Fast Output (%)": "Fast input 出力 (%)",
   "200% doubles generated inertia output.": "200% は慣性出力を2倍にします。",
   "Input test": "動作確認",
-  "Scroll in the finite area. Left-click to capture mouse movement; Escape releases it.":
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape, left-click or right-click releases it.":
     "有限エリア内でスクロールを試せます。左クリックでマウス移動をキャプチャし、Escape で解除します。",
   "Horizontal scroll": "左右スクロール",
   "Vertical scroll": "上下スクロール",
@@ -1550,6 +1560,16 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  Inertia: "惯性",
+  "Enable Fast input": "启用 Fast input",
+  "Close input test": "关闭输入测试",
+  "Browser input": "浏览器输入",
+  "Horizontal input history": "水平输入历史",
+  "Vertical input history": "垂直输入历史",
+  "Inertia output history": "惯性输出历史",
+  "Dashed: reference curves; solid: live browser input classified by device activity.":
+    "虚线：设置参考曲线。实线：按设备状态分类的浏览器实时输入。",
+
   Center: "回到中央",
   Scroll: "滚动",
   "Inertia / Fast input": "惯性 / Fast input",
@@ -1578,7 +1598,7 @@ const zh: Record<string, string> = {
   "Fast Output (%)": "Fast input 输出 (%)",
   "200% doubles generated inertia output.": "200% 将惯性输出加倍。",
   "Input test": "输入测试",
-  "Scroll in the finite area. Left-click to capture mouse movement; Escape releases it.":
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape, left-click or right-click releases it.":
     "在有限区域内测试滚动。左键捕获鼠标移动，Escape 释放。",
   "Horizontal scroll": "水平滚动",
   "Vertical scroll": "垂直滚动",

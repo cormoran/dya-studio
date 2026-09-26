@@ -1,6 +1,18 @@
+import { TabActiveContext } from "../contexts/TabActiveContext";
+import {
+  InputGraph,
+  type InputSample,
+} from "../components/trackball/InputGraph";
 import { InertiaCard } from "../components/trackball/InertiaCard";
 import { InputTestCard } from "../components/trackball/InputTestCard";
-import { useMemo, useState, useRef } from "react";
+import {
+  useMemo,
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import {
   IconAlertTriangleFilled,
   IconChevronLeft,
@@ -285,6 +297,80 @@ export function TrackballPage() {
 
   // Get the selected processor
   const processor = processors[selectedProcessorIndex] || null;
+  const tabActive = useContext(TabActiveContext);
+  const [testOpen, setTestOpen] = useState(false);
+  const [samples, setSamples] = useState<InputSample[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  const activityId =
+    tabActive && rightView.kind === "processor" && processor?.inertia
+      ? processor.id
+      : null;
+  const notificationsWriter = useRef(setInertiaNotifications);
+  useEffect(() => {
+    notificationsWriter.current = setInertiaNotifications;
+  }, [setInertiaNotifications]);
+  const notificationsQueue = useRef(Promise.resolve());
+  useEffect(() => {
+    if (activityId === null) return;
+    notificationsQueue.current = notificationsQueue.current
+      .then(() => notificationsWriter.current(activityId, true))
+      .catch(() => {});
+    return () => {
+      notificationsQueue.current = notificationsQueue.current
+        .then(() => notificationsWriter.current(activityId, false))
+        .catch(() => {});
+    };
+  }, [activityId]);
+  useEffect(() => {
+    if (!tabActive || rightView.kind !== "processor") return;
+    const timer = window.setInterval(() => {
+      const time = Date.now();
+      setNow(time);
+      setSamples((previous) => [
+        ...previous.filter((s) => time - s.time <= 10000).slice(-999),
+        {
+          time,
+          x: 0,
+          y: 0,
+          mode:
+            processor?.inertiaNotificationsEnabled && processor.inertiaFastInput
+              ? "fast"
+              : processor?.inertiaNotificationsEnabled &&
+                  processor.inertiaActive
+                ? "inertia"
+                : "input",
+        },
+      ]);
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [
+    tabActive,
+    rightView.kind,
+    processor?.inertiaNotificationsEnabled,
+    processor?.inertiaFastInput,
+    processor?.inertiaActive,
+  ]);
+  const [sampleProcessorId, setSampleProcessorId] = useState(processor?.id);
+  if (sampleProcessorId !== processor?.id) {
+    setSampleProcessorId(processor?.id);
+    setSamples([]);
+  }
+  const recordInput = useCallback(
+    (x: number, y: number) => {
+      const time = Date.now();
+      const mode =
+        processor?.inertiaNotificationsEnabled && processor.inertiaFastInput
+          ? "fast"
+          : processor?.inertiaNotificationsEnabled && processor.inertiaActive
+            ? "inertia"
+            : "input";
+      setSamples((previous) => [
+        ...previous.filter((s) => time - s.time <= 10000).slice(-999),
+        { time, x, y, mode },
+      ]);
+    },
+    [processor],
+  );
 
   // Reset pending state when processor changes
   const currentProcessorName = processor?.name || null;
@@ -591,6 +677,16 @@ export function TrackballPage() {
                 <IconRefresh size={16} />
               )}
             </ResponsiveButton>
+            {processor && rightView.kind === "processor" && (
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                aria-pressed={testOpen}
+                onClick={() => setTestOpen((open) => !open)}
+              >
+                {t("Input test")}
+              </button>
+            )}
             {isAvailable && (
               <ResetVersionMenu
                 label={t("Versions")}
@@ -941,11 +1037,6 @@ export function TrackballPage() {
                       )}
                     </div>
 
-                    <InertiaCard
-                      key={`inertia-${processor.id}`}
-                      processor={processor}
-                      setInertia={setInertia}
-                    />
                     {/* Scaling Setting */}
                     <div className="glass-card p-6">
                       <div className="flex items-center justify-between mb-4">
@@ -1535,11 +1626,29 @@ export function TrackballPage() {
                         </div>
                       </div>
                     </div>
-                    <InputTestCard
-                      key={`test-${processor.id}`}
+                    <InertiaCard
+                      key={`inertia-${processor.id}`}
                       processor={processor}
-                      setInertiaNotifications={setInertiaNotifications}
+                      setInertia={setInertia}
+                      graph={
+                        <InputGraph
+                          samples={samples}
+                          now={now}
+                          processor={processor}
+                          reference
+                        />
+                      }
                     />
+                    {testOpen && tabActive && (
+                      <InputTestCard
+                        key={`test-${processor.id}`}
+                        processor={processor}
+                        samples={samples}
+                        now={now}
+                        onInput={recordInput}
+                        onClose={() => setTestOpen(false)}
+                      />
+                    )}
                   </div>
                 )}
               </>

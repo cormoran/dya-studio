@@ -8,16 +8,11 @@ const processor = { id: 0 } as InputProcessor;
 
 describe("finite input test area", () => {
   it("consumes wheel input, fixes disabled axes at the current position", () => {
-    render(
-      <InputTestCard
-        processor={processor}
-        setInertiaNotifications={jest.fn()}
-      />,
-    );
+    render(<InputTestCard processor={processor} />);
     const area = screen.getByRole("region", { name: "Finite input test area" });
     expect(area.firstElementChild).toHaveStyle({
-      width: "2400px",
-      height: "2400px",
+      width: "24000px",
+      height: "24000px",
     });
     const initialX = area.scrollLeft,
       initialY = area.scrollTop;
@@ -37,15 +32,12 @@ describe("finite input test area", () => {
     act(() => area.dispatchEvent(wheel));
     expect(wheel.defaultPrevented).toBe(true);
     expect(area.scrollTop).toBe(initialY + 120);
-    expect(screen.getByLabelText("Show inertia activity")).toBeDisabled();
+    expect(
+      screen.queryByLabelText("Show inertia activity"),
+    ).not.toBeInTheDocument();
   });
   it("requests mouse capture from a click and falls back gracefully when unavailable", async () => {
-    render(
-      <InputTestCard
-        processor={processor}
-        setInertiaNotifications={jest.fn()}
-      />,
-    );
+    render(<InputTestCard processor={processor} />);
     const area = screen.getByRole("region", { name: "Finite input test area" });
     const request = jest.fn().mockRejectedValue(new Error("not supported"));
     Object.assign(area, { requestPointerLock: request });
@@ -57,6 +49,31 @@ describe("finite input test area", () => {
     fireEvent.wheel(area, { deltaY: 20 });
     expect(screen.getByText(/Scroll Δ X: 0, Y: 20/)).toBeInTheDocument();
   });
+  it("releases pointer lock with either mouse button", async () => {
+    render(<InputTestCard processor={processor} />);
+    const area = screen.getByRole("region", { name: "Finite input test area" });
+    const original = Object.getOwnPropertyDescriptor(
+      document,
+      "pointerLockElement",
+    );
+    const originalExit = document.exitPointerLock;
+    const exit = jest.fn();
+    Object.defineProperty(document, "pointerLockElement", {
+      configurable: true,
+      value: area,
+    });
+    document.exitPointerLock = exit;
+    try {
+      await act(async () => fireEvent.click(area));
+      fireEvent.contextMenu(area);
+      expect(exit).toHaveBeenCalledTimes(2);
+    } finally {
+      if (original)
+        Object.defineProperty(document, "pointerLockElement", original);
+      else Reflect.deleteProperty(document, "pointerLockElement");
+      document.exitPointerLock = originalExit;
+    }
+  });
   it("shows reported Fast input and stop reason without inferring them from wheel input", () => {
     const modern = {
       ...processor,
@@ -65,9 +82,7 @@ describe("finite input test area", () => {
       inertiaActive: true,
       inertiaFastInput: true,
     } as InputProcessor;
-    const { rerender } = render(
-      <InputTestCard processor={modern} setInertiaNotifications={jest.fn()} />,
-    );
+    const { rerender } = render(<InputTestCard processor={modern} />);
     expect(screen.getByText("Fast input")).toBeInTheDocument();
     rerender(
       <InputTestCard
@@ -77,7 +92,6 @@ describe("finite input test area", () => {
           inertiaFastInput: false,
           inertiaStopReason: 3,
         }}
-        setInertiaNotifications={jest.fn()}
       />,
     );
     expect(screen.getByText("Inertia idle")).toBeInTheDocument();

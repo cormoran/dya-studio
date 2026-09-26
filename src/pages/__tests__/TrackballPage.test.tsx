@@ -1,3 +1,4 @@
+import { TabActiveContext } from "../../contexts/TabActiveContext";
 /**
  * Tests for TrackballPage component
  */
@@ -44,6 +45,8 @@ const createMockHookReturn = (overrides = {}) => ({
   error: null,
   loadProcessors: jest.fn(),
   loadLayers: jest.fn(),
+  setInertia: jest.fn(),
+  setInertiaNotifications: jest.fn().mockResolvedValue(undefined),
   setScaling: jest.fn(),
   setRotation: jest.fn(),
   setTempLayerEnabled: jest.fn(),
@@ -76,6 +79,60 @@ describe("TrackballPage", () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it("automatically subscribes only while active and does not resubscribe when the writer identity changes", async () => {
+    const processor = createMockProcessor({
+      inertia: {
+        inertiaEnabled: false,
+        inertiaWindowMs: 200,
+        inertiaIntervalMs: 20,
+        inertiaThreshold: 10,
+        inertiaDecayPercent: 8,
+        inertiaNormalMaxOutput: 0,
+        inertiaFastThreshold: 0,
+        inertiaFastOutputPercent: 200,
+      },
+    });
+    const writer = jest.fn().mockResolvedValue(undefined);
+    mockUseRuntimeInputProcessor.mockReturnValue(
+      createMockHookReturn({
+        processors: [processor],
+        isAvailable: true,
+        setInertiaNotifications: writer,
+      }),
+    );
+    const { rerender } = render(
+      <TabActiveContext.Provider value={true}>
+        <TrackballPage />
+      </TabActiveContext.Provider>,
+    );
+    await act(async () => {});
+    expect(writer).toHaveBeenCalledTimes(1);
+    expect(writer).toHaveBeenLastCalledWith(0, true);
+    const nextWriter = jest.fn().mockResolvedValue(undefined);
+    mockUseRuntimeInputProcessor.mockReturnValue(
+      createMockHookReturn({
+        processors: [processor],
+        isAvailable: true,
+        setInertiaNotifications: nextWriter,
+      }),
+    );
+    rerender(
+      <TabActiveContext.Provider value={true}>
+        <TrackballPage />
+      </TabActiveContext.Provider>,
+    );
+    await act(async () => {});
+    expect(nextWriter).not.toHaveBeenCalled();
+    rerender(
+      <TabActiveContext.Provider value={false}>
+        <TrackballPage />
+      </TabActiveContext.Provider>,
+    );
+    await act(async () => {});
+    expect(nextWriter).toHaveBeenCalledTimes(1);
+    expect(nextWriter).toHaveBeenLastCalledWith(0, false);
   });
 
   it("should render trackball settings header", () => {

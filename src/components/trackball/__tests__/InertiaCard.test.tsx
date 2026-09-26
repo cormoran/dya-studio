@@ -54,7 +54,86 @@ describe("inertia editing", () => {
     );
     await act(async () => jest.advanceTimersByTimeAsync(1500));
     expect(save).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText("Fast Input Threshold")).toHaveValue(0);
+    expect(screen.getByLabelText("Fast Input Threshold")).toHaveValue("0");
+  });
+  it("keeps empty and invalid drafts, and only saves a corrected value after debounce", async () => {
+    const save = jest.fn().mockResolvedValue(undefined);
+    render(<InertiaCard processor={processor} setInertia={save} />);
+    const input = screen.getByLabelText("Input Threshold");
+    fireEvent.change(input, { target: { value: "" } });
+    expect(input).toHaveValue("");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    fireEvent.change(input, { target: { value: "abc" } });
+    expect(input).toHaveValue("abc");
+    await act(async () => jest.advanceTimersByTimeAsync(1600));
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: "15" } });
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    await act(async () => jest.advanceTimersByTimeAsync(1500));
+    expect(save).toHaveBeenCalledWith(0, "inertiaThreshold", 15);
+  });
+  it("enables Fast input with a bounded integer default and disables it with zero", async () => {
+    const save = jest.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <InertiaCard processor={processor} setInertia={save} />,
+    );
+    await act(async () =>
+      fireEvent.click(screen.getByLabelText("Enable Fast input")),
+    );
+    expect(save).toHaveBeenLastCalledWith(0, "inertiaFastThreshold", 20);
+    rerender(
+      <InertiaCard
+        processor={{
+          ...processor,
+          inertia: { ...processor.inertia!, inertiaFastThreshold: 20 },
+        }}
+        setInertia={save}
+      />,
+    );
+    await act(async () =>
+      fireEvent.click(screen.getByLabelText("Enable Fast input")),
+    );
+    expect(save).toHaveBeenLastCalledWith(0, "inertiaFastThreshold", 0);
+  });
+  it("cancels a queued Fast threshold when the checkbox turns it off", async () => {
+    const save = jest.fn().mockResolvedValue(undefined);
+    render(
+      <InertiaCard
+        processor={{
+          ...processor,
+          inertia: { ...processor.inertia!, inertiaFastThreshold: 20 },
+        }}
+        setInertia={save}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Fast Input Threshold"), {
+      target: { value: "100" },
+    });
+    await act(async () =>
+      fireEvent.click(screen.getByLabelText("Enable Fast input")),
+    );
+    await act(async () => jest.advanceTimersByTimeAsync(1500));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(0, "inertiaFastThreshold", 0);
+  });
+  it("retains a focused invalid draft when an earlier write updates the value", () => {
+    const { rerender } = render(
+      <InertiaCard processor={processor} setInertia={jest.fn()} />,
+    );
+    const input = screen.getByLabelText("Input Threshold");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "" } });
+    rerender(
+      <InertiaCard
+        processor={{
+          ...processor,
+          inertia: { ...processor.inertia!, inertiaThreshold: 15 },
+        }}
+        setInertia={jest.fn()}
+      />,
+    );
+    expect(input).toHaveValue("");
+    expect(input).toHaveAttribute("aria-invalid", "true");
   });
   it("shows unsupported without editors", () => {
     render(
