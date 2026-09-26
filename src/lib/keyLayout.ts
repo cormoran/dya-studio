@@ -20,6 +20,8 @@ export interface KeyLayoutKey {
   w?: number;
   /** Height in key rows. JIS Enter spans the top and home rows. */
   h?: number;
+  /** Physical keycap shape when it differs from a rectangle. */
+  shape?: "iso-enter";
 }
 
 export interface KeyLayoutSpacer {
@@ -198,8 +200,8 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     })),
     { code: LBKT },
     { code: RBKT },
-    { code: ENTER, w: 1.5, h: 2 },
-    { spacer: true, w: 1 },
+    { code: ENTER, w: 2, h: 2, shape: "iso-enter" },
+    { spacer: true, w: 0.5 },
   ],
   [
     { code: CAPS, w: 1.75 },
@@ -208,8 +210,8 @@ export const KEY_LAYOUT_70_JIS: KeyLayoutItem[][] = [
     })),
     { code: SEMI },
     { code: SQT },
-    { code: 0x32 },
-    { spacer: true, w: 2.25 },
+    { code: 0x32, w: 1.25 },
+    { spacer: true, w: 2 },
   ],
   [
     { code: LSHIFT, w: 1.25 },

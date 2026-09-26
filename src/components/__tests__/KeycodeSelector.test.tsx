@@ -111,9 +111,9 @@ it("uses the JIS physical layout and JIS key labels in key-layout mode", () => {
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Muhenkan" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Henkan" })).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Enter" }).parentElement,
-  ).toHaveClass("h-16");
+  const enter = screen.getByRole("button", { name: "Enter" });
+  expect(enter.parentElement).toHaveClass("h-16");
+  expect(enter).toHaveAttribute("data-key-shape", "iso-enter");
   expect(screen.getByText('2"', { exact: true })).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Home" }),

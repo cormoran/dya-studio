@@ -50,6 +50,7 @@ export function KeyLayoutSelector({
 
     const w = item.w ?? 1;
     const h = item.h ?? 1;
+    const isIsoEnter = item.shape === "iso-enter";
     const keycode = getKeycodeByCode(item.code);
     const mapped = keycode ? mapToLayout(keycode, keyboardLayout) : undefined;
     const label = mapped?.displayName ?? `0x${item.code.toString(16)}`;
@@ -68,6 +69,15 @@ export function KeyLayoutSelector({
           title={`${name} (0x${item.code.toString(16).toUpperCase()})`}
           aria-label={name}
           aria-pressed={isSelected}
+          data-key-shape={item.shape}
+          style={
+            isIsoEnter
+              ? {
+                  clipPath:
+                    "polygon(0 0, 100% 0, 100% 100%, 25% 100%, 25% 50%, 0 50%)",
+                }
+              : undefined
+          }
           className={`flex h-full w-full items-center justify-center overflow-hidden rounded border px-0.5 text-center transition-colors ${
             isSelected
               ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
