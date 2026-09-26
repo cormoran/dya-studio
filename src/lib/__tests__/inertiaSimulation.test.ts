@@ -45,7 +45,7 @@ it.each(fixtures)("matches upstream C ticks: $name", (fixture) => {
     fixture.hash,
   );
 });
-it("uses one five-second truncated parabolic input for both comparisons, and honors Fast disabled", () => {
+it("uses one five-second truncated parabolic input for both comparisons, and previews enabling Fast when disabled", () => {
   const points = inertiaExample(settings(fixtures[4].config), 1, 1);
   expect(points.find((p) => p.time === 3200)?.input).toBe(40);
   expect(points.find((p) => p.time === 4980)?.input).toBeGreaterThan(0);
@@ -53,7 +53,11 @@ it("uses one five-second truncated parabolic input for both comparisons, and hon
   expect(points.filter((p) => p.time > 5000).every((p) => p.input === 0)).toBe(
     true,
   );
-  expect(points.every((p) => p.normal === p.fast)).toBe(true);
+  expect(points.some((p) => p.fast > p.normal)).toBe(true);
+  const disabled = settings(fixtures[4].config);
+  const enabled = { ...disabled, inertiaFastThreshold: 20 };
+  expect(points).toEqual(inertiaExample(enabled, 1, 1));
+  expect(disabled.inertiaFastThreshold).toBe(0);
   expect(points.some((p) => p.time > 5000 && p.normal > 0)).toBe(true);
 });
 it("does not emit output below activation threshold or with inertia disabled", () => {
@@ -67,4 +71,16 @@ it("does not emit output below activation threshold or with inertia disabled", (
       1000,
     ),
   ).toEqual([]);
+});
+
+it("preserves configured Fast thresholds and legitimately equal 100-percent output", () => {
+  const s = { ...settings(fixtures[0].config), inertiaFastOutputPercent: 100 };
+  expect(inertiaExample(s, 1, 1).every((p) => p.fast === p.normal)).toBe(true);
+  expect(
+    inertiaExample(
+      { ...s, inertiaFastThreshold: 65535, inertiaFastOutputPercent: 200 },
+      1,
+      1,
+    ).every((p) => p.fast === p.normal),
+  ).toBe(true);
 });

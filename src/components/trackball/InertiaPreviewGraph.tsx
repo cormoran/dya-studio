@@ -125,7 +125,7 @@ export function InertiaPreviewGraph({
       </figcaption>
       <p className="text-xs text-[var(--color-text-muted)]">
         {t(
-          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.",
+          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.",
         )}
       </p>
     </figure>

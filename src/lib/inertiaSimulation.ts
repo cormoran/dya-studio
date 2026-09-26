@@ -198,8 +198,18 @@ export function inertiaExample(
     d,
     false,
   );
+  // Compare enabling Fast input even when the device currently has it OFF.
+  // Use the same threshold as the card's enable action; never persist it.
   const fast = simulateInertia(
-    enabled,
+    {
+      ...enabled,
+      inertiaFastThreshold:
+        settings.inertiaFastThreshold ||
+        Math.min(
+          65535,
+          Math.ceil(Math.max(settings.inertiaThreshold * 1.5, 20)),
+        ),
+    },
     reports,
     EXAMPLE_DURATION_MS,
     m,
