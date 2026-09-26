@@ -180,12 +180,10 @@ export function inertiaExample(
   const reports: SimulationReport[] = [];
   for (
     let time = EXAMPLE_REPORT_MS;
-    time <= EXAMPLE_INPUT_MS;
+    time < EXAMPLE_INPUT_MS;
     time += EXAMPLE_REPORT_MS
   ) {
-    const raw = Math.round(
-      40 * (1 - Math.abs((2 * time) / EXAMPLE_INPUT_MS - 1)),
-    );
+    const raw = Math.round(40 * (1 - ((time - 3200) / 3200) ** 2));
     const numerator = raw * m + remainder;
     const scaled = Math.trunc(numerator / d);
     remainder = numerator - scaled * d;

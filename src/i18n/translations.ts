@@ -14,8 +14,8 @@ const ja: Record<string, string> = {
   "Example input": "想定入力",
   "Inertia output": "通常の慣性：合計出力",
   "Fast input output": "Fast input：合計出力",
-  "A fixed mountain-shaped input lasts 5 seconds (peak 40 counts every 20 ms, before scaling). Lines show total output per 20 ms, including physical input. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
-    "固定の山形入力を5秒間与えます（スケーリング前の最大入力は20msあたり40）。縦軸は20msあたりの入出力量で、出力線は実入力と慣性の合計です。慣性ONを仮定し、Fast inputは設定したしきい値で切り替わります。15秒以降も出力が続く場合があります。",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
+    "入力は3.2秒で頂点になる放物線で、5秒で途中停止します（スケーリング前の最大入力は20msあたり40）。出力線は200ms区間で平均した慣性出力と入力曲線の合計です。慣性ONを仮定し、Fast inputは設定したしきい値で切り替わります。15秒以降も出力が続く場合があります。",
 
   "Toggle input test": "動作確認ウィンドウの表示を切り替える",
   Inertia: "慣性",
@@ -1574,8 +1574,8 @@ const zh: Record<string, string> = {
   "Example input": "示例输入",
   "Inertia output": "普通惯性：总输出",
   "Fast input output": "Fast input：总输出",
-  "A fixed mountain-shaped input lasts 5 seconds (peak 40 counts every 20 ms, before scaling). Lines show total output per 20 ms, including physical input. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
-    "固定山形输入持续5秒（缩放前峰值为每20ms 40计数）。纵轴为每20ms的输入/输出量，输出线包含实际输入与惯性之和。假定惯性开启；Fast input按设置的阈值触发。输出可能在15秒后继续。",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.":
+    "抛物线输入在3.2秒达到峰值，并在5秒突然停止（缩放前峰值为每20ms 40计数）。输出趋势为200ms区间的惯性输出平均值与输入曲线之和。假定惯性开启；Fast input按设置的阈值触发。输出可能在15秒后继续。",
 
   "Toggle input test": "切换输入测试窗口",
   Inertia: "惯性",

@@ -29,13 +29,31 @@ export function InertiaPreviewGraph({
   );
   const x = (time: number) => 48 + (532 * time) / EXAMPLE_DURATION_MS;
   const y = (value: number) => 130 - (value * 100) / peak;
-  const path = (key: "input" | "normal" | "fast") =>
-    points
-      .map(
-        (p, i) =>
-          `${i ? "H" : "M"}${x(p.time).toFixed(2)}${i ? "V" : ","}${y(p[key]).toFixed(2)}`,
-      )
-      .join(" ");
+  // Average firmware ticks into 200 ms spans for a readable trend. Keep the
+  // physical-input cutoff explicit rather than smoothing across it.
+  const ratio =
+    processor.scaleMultiplier > 0 && processor.scaleDivisor > 0
+      ? processor.scaleMultiplier / processor.scaleDivisor
+      : 1;
+  const input = (time: number) =>
+    40 * ratio * (1 - ((time - 3200) / 3200) ** 2);
+  const path = (key: "input" | "normal" | "fast") => {
+    if (!points.length) return "";
+    if (key === "input") {
+      // Exact quadratic Bezier for the unquantized scenario, then a hard stop.
+      return `M${x(0)},${y(0)} Q${x(2500)},${y(62.5 * ratio)} ${x(5000)},${y(input(5000))} V${y(0)} H${x(EXAMPLE_DURATION_MS)}`;
+    }
+    let result = `M${x(0)},${y(0)}`;
+    for (let time = 200; time <= EXAMPLE_DURATION_MS; time += 200) {
+      const span = points.filter((p) => p.time > time - 200 && p.time <= time);
+      const inertia =
+        span.reduce((sum, p) => sum + p[key] - p.input, 0) / span.length;
+      const physical = time <= EXAMPLE_INPUT_MS ? input(time) : 0;
+      result += ` L${x(time).toFixed(2)},${y(inertia + physical).toFixed(2)}`;
+      if (time === EXAMPLE_INPUT_MS) result += ` V${y(inertia).toFixed(2)}`;
+    }
+    return result;
+  };
   return (
     <figure className="space-y-2" aria-label={t("Inertia simulation")}>
       <svg
@@ -107,7 +125,7 @@ export function InertiaPreviewGraph({
       </figcaption>
       <p className="text-xs text-[var(--color-text-muted)]">
         {t(
-          "A fixed mountain-shaped input lasts 5 seconds (peak 40 counts every 20 ms, before scaling). Lines show total output per 20 ms, including physical input. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.",
+          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Inertia is assumed enabled; Fast input uses its configured threshold. Output may continue beyond 15 seconds.",
         )}
       </p>
     </figure>

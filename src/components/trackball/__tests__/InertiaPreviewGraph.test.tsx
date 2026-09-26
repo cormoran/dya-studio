@@ -28,6 +28,18 @@ it("keeps the fixed example independent of live activity and updates for setting
       p.getAttribute("d"),
     );
   const initial = paths();
+  const inputPath = chart
+    .querySelector('[data-series="input"]')!
+    .getAttribute("d")!;
+  expect(inputPath).toContain(" Q");
+  expect(inputPath).toMatch(/ V[\d.]+ H580$/);
+  const normalPath = chart
+    .querySelector('[data-series="normal"]')!
+    .getAttribute("d")!;
+  expect(normalPath.match(/ L/g)).toHaveLength(75);
+  // Only the abrupt physical cutoff is vertical; integer ticks are not stairs.
+  expect(normalPath.match(/ V/g)).toHaveLength(1);
+  expect(normalPath).not.toContain("NaN");
   expect(chart.textContent).toContain("5 s");
   rerender(
     <InertiaPreviewGraph

@@ -22,9 +22,9 @@ it.each(fixtures)("matches upstream C ticks: $name", (fixture) => {
   const m = fixture.config[7],
     d = fixture.config[8];
   let remainder = 0;
-  const reports = Array.from({ length: 250 }, (_, i) => {
+  const reports = Array.from({ length: 249 }, (_, i) => {
     const time = (i + 1) * 20;
-    const raw = Math.round(40 * (1 - Math.abs((2 * time) / 5000 - 1)));
+    const raw = Math.round(40 * (1 - ((time - 3200) / 3200) ** 2));
     const numerator = raw * m + remainder;
     const scaled = Math.trunc(numerator / d);
     remainder = numerator - scaled * d;
@@ -45,9 +45,11 @@ it.each(fixtures)("matches upstream C ticks: $name", (fixture) => {
     fixture.hash,
   );
 });
-it("uses one five-second mountain input for both comparisons, and honors Fast disabled", () => {
+it("uses one five-second truncated parabolic input for both comparisons, and honors Fast disabled", () => {
   const points = inertiaExample(settings(fixtures[4].config), 1, 1);
-  expect(points.find((p) => p.time === 2500)?.input).toBe(40);
+  expect(points.find((p) => p.time === 3200)?.input).toBe(40);
+  expect(points.find((p) => p.time === 4980)?.input).toBeGreaterThan(0);
+  expect(points.find((p) => p.time === 5000)?.input).toBe(0);
   expect(points.filter((p) => p.time > 5000).every((p) => p.input === 0)).toBe(
     true,
   );

@@ -35,8 +35,8 @@ for (name, *config) in cases:
     reports = []
     rem = 0
     (m, d) = config[-2:]
-    for time in range(20, 5001, 20):
-        raw = int(40 * (1 - abs(2 * time / 5000 - 1)) + 0.5)
+    for time in range(20, 5000, 20):
+        raw = int(40 * (1 - ((time - 3200) / 3200) ** 2) + 0.5)
         num = raw * m + rem
         scaled = num // d
         rem = num - scaled * d
