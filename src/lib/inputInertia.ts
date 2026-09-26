@@ -62,7 +62,7 @@ export const inertiaFields = [
     label: "Fast Output (%)",
     min: 100,
     max: 1000,
-    hint: "200% doubles generated inertia output.",
+    hint: "200% doubles the total target speed, including physical input.",
   },
 ] as const;
 export type InertiaField = (typeof inertiaFields)[number]["key"];

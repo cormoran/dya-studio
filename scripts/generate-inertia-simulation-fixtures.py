@@ -2,16 +2,16 @@
 """Generate golden tick hashes from upstream PR #28 C functions.
 
 Fetch src/pointing/input_processor_runtime.c at
-bcf4e727ce1a1f3b128ead98839c8fed333d979c and pass its local path:
+875c314ebbd351208908b303814a313c80120dbd and pass its local path:
   python3 scripts/generate-inertia-simulation-fixtures.py SOURCE.c OUTPUT.json
 Host timing stubs process physical input before same-time scheduled output.
 Only the positive single-axis example and default 64/66 Kconfig are modeled.
 """
 import re, json, subprocess, hashlib, sys, tempfile, pathlib
 source = pathlib.Path(sys.argv[1]).read_text()
-expected_hash = '623f240bd4af06c75a50bec476e06079ba930ffee31e08a2f68ccf0919477717'
+expected_hash = '2245081ab869eec74f36963ade04516c09ca820c2923da10453b7c0cf328a39a'
 if hashlib.sha256(source.encode()).hexdigest() != expected_hash:
-    raise SystemExit('Source does not match pinned PR #28 commit bcf4e727')
+    raise SystemExit('Source does not match pinned PR #28 commit 875c314e')
 temp = tempfile.TemporaryDirectory()
 root = pathlib.Path(temp.name)
 

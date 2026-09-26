@@ -1,6 +1,6 @@
 import type { InertiaSettings } from "./inputInertia";
 
-// Port of PR #28, bcf4e727: inertia_add_report/window_total_q16,
+// Port of PR #28, 875c314e: inertia_add_report/window_total_q16,
 // inertia_handle_physical_event and inertia_finish_interval. One positive axis,
 // default Kconfig (64 slices / 66 buckets), active layer, deterministic timing.
 const Q16 = 65536n;
@@ -140,7 +140,14 @@ export function simulateInertia(
       if (bucket.number === number)
         physical = (bucket.value * BigInt(window)) / BigInt(bucketMs);
     }
-    const supplemental = speed > physical ? speed - physical : 0n;
+    let target = speed;
+    if (fast) {
+      const boosted =
+        target * BigInt(settings.inertiaFastOutputPercent) + fastRemainder;
+      target = boosted / 100n;
+      fastRemainder = boosted % 100n;
+    }
+    const supplemental = target > physical ? target - physical : 0n;
     const numerator = supplemental * BigInt(interval) + outputRemainder;
     const raw = numerator / denominator;
     outputRemainder = numerator % denominator;
@@ -153,12 +160,6 @@ export function simulateInertia(
         value > BigInt(settings.inertiaNormalMaxOutput)
           ? BigInt(settings.inertiaNormalMaxOutput)
           : value;
-    if (fast) {
-      const boosted =
-        value * BigInt(settings.inertiaFastOutputPercent) + fastRemainder;
-      value = boosted / 100n;
-      fastRemainder = boosted % 100n;
-    }
     value = value > MAX_OUTPUT ? MAX_OUTPUT : value;
     outputs.push({ time, value: Number(value), fast });
     if (!received)
@@ -167,7 +168,10 @@ export function simulateInertia(
     if (!received && decay !== 0n && speed <= 4294967295n) {
       const rawNeeded = (d - scaleRemainder + m - 1n) / m;
       const missing = rawNeeded * denominator - outputRemainder;
-      const future = speed * BigInt(interval) * 100n;
+      const future =
+        speed *
+        BigInt(interval) *
+        BigInt(fast ? settings.inertiaFastOutputPercent : 100);
       if (missing > 18446744073709551615n / decay || future < missing * decay) {
         active = false;
         fast = false;
