@@ -165,6 +165,44 @@ const PMW3610_FIELD_DESCRIPTIONS: Record<string, string> = {
     "Minimum time between motion reports sent to the host.",
 };
 
+// Custom subsystem identifier registered by the paw3222 driver's settings
+// module (see src/settings/paw3222_settings.c in the driver repository).
+export const PAW3222_CUSTOM_SETTINGS_IDENTIFIER = "cormoran__paw3222";
+
+// Groups + light descriptions for the paw3222 driver's own settings (see
+// PAW3222_DEFINE_INST_SETTINGS in that repo's paw3222_settings.c) -- it only
+// exposes "cpi" and "force_awake" as editable custom settings.
+const PAW3222_SETTING_GROUPS: SettingGroupDef[] = [
+  {
+    title: "Sensitivity",
+    description: "Tracking resolution.",
+    fields: ["cpi"],
+  },
+  {
+    title: "Power",
+    description: "Whether the sensor stays fully powered while idle.",
+    fields: ["force_awake"],
+  },
+];
+
+const PAW3222_FIELD_DESCRIPTIONS: Record<string, string> = {
+  cpi: "Sensor resolution in counts per inch. Higher values move the cursor faster for the same physical motion.",
+  force_awake: "Keep the sensor fully powered instead of letting it idle.",
+};
+
+// Per-driver grouping/description lookups, keyed by custom subsystem
+// identifier. A subsystem with no entry here falls back to a flat,
+// ungrouped settings list (still fully functional, just unstyled).
+const KNOWN_SETTING_GROUPS: Record<string, SettingGroupDef[]> = {
+  [PMW3610_CUSTOM_SETTINGS_IDENTIFIER]: PMW3610_SETTING_GROUPS,
+  [PAW3222_CUSTOM_SETTINGS_IDENTIFIER]: PAW3222_SETTING_GROUPS,
+};
+
+const KNOWN_FIELD_DESCRIPTIONS: Record<string, Record<string, string>> = {
+  [PMW3610_CUSTOM_SETTINGS_IDENTIFIER]: PMW3610_FIELD_DESCRIPTIONS,
+  [PAW3222_CUSTOM_SETTINGS_IDENTIFIER]: PAW3222_FIELD_DESCRIPTIONS,
+};
+
 // Setting keys are unique per pmw3610 device instance ("<field>@<id>"); the
 // grouping/description lookups above only care about the field name.
 function fieldName(key: string): string {
@@ -1153,18 +1191,22 @@ export function CustomSettingsSectionCard({
     .filter((setting) => setting.source === activeSource)
     .sort((a, b) => settingSortValue(a).localeCompare(settingSortValue(b)));
 
-  const isPmw3610 = section.identifier === PMW3610_CUSTOM_SETTINGS_IDENTIFIER;
-  const groups = isPmw3610
-    ? PMW3610_SETTING_GROUPS.map((group) => ({
-        ...group,
-        settings: sortedSettings
-          .filter((setting) => group.fields.includes(fieldName(setting.key)))
-          .sort(
-            (a, b) =>
-              group.fields.indexOf(fieldName(a.key)) -
-              group.fields.indexOf(fieldName(b.key)),
-          ),
-      })).filter((group) => group.settings.length > 0)
+  const knownSettingGroups = KNOWN_SETTING_GROUPS[section.identifier];
+  const fieldDescriptions =
+    KNOWN_FIELD_DESCRIPTIONS[section.identifier] ?? {};
+  const groups = knownSettingGroups
+    ? knownSettingGroups
+        .map((group) => ({
+          ...group,
+          settings: sortedSettings
+            .filter((setting) => group.fields.includes(fieldName(setting.key)))
+            .sort(
+              (a, b) =>
+                group.fields.indexOf(fieldName(a.key)) -
+                group.fields.indexOf(fieldName(b.key)),
+            ),
+        }))
+        .filter((group) => group.settings.length > 0)
     : null;
   const groupedKeys = new Set(groups?.flatMap((group) => group.settings));
   const ungroupedSettings = groups
@@ -1318,7 +1360,7 @@ export function CustomSettingsSectionCard({
                   behaviors={behaviors}
                   customSettings={customSettings}
                   describeField={(field) => {
-                    const description = PMW3610_FIELD_DESCRIPTIONS[field];
+                    const description = fieldDescriptions[field];
                     return description ? t(description) : undefined;
                   }}
                 />

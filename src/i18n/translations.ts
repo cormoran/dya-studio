@@ -248,20 +248,20 @@ const ja: Record<string, string> = {
   "Advanced (PMW3610 Sensor Driver)": "詳細設定（PMW3610 センサードライバー）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 ドライバーのカスタム Studio RPC が公開するセンサーレベルの調整項目です",
-  "No pmw3610 driver settings were reported by the keyboard.":
-    "キーボードから pmw3610 ドライバーの設定が報告されませんでした。",
+  "No sensor driver settings were reported by the keyboard.":
+    "キーボードからセンサードライバーの設定が報告されませんでした。",
   "Select Processor": "プロセッサーを選択",
   Processor: "プロセッサー",
   "PMW3610 Driver": "PMW3610 ドライバー",
   "Select processor or PMW3610 driver":
     "プロセッサーまたは PMW3610 ドライバーを選択",
-  "Reload PMW3610 drivers": "PMW3610 ドライバーを再読み込み",
+  "Reload driver settings": "ドライバー設定を再読み込み",
   "{{count}} processors detected": "{{count}} 個のプロセッサーを検出",
   Processors: "プロセッサー",
   "Processor {{id}}": "プロセッサー {{id}}",
   "No processors found": "プロセッサーが見つかりません",
   "Loading...": "読み込み中...",
-  "PMW3610 Drivers": "PMW3610 ドライバー",
+  "Sensor Driver Settings": "センサードライバー設定",
   "This driver is no longer available.":
     "このドライバーは利用できなくなりました。",
   "Active on layer": "有効なレイヤー",
@@ -645,6 +645,11 @@ const ja: Record<string, string> = {
     "Memory...: 変更を書き込んでいる最中です。",
   Sensitivity: "感度",
   "Tracking resolution.": "トラッキングの解像度です。",
+  Power: "電源",
+  "Whether the sensor stays fully powered while idle.":
+    "アイドル中もセンサーを常時給電状態に保つかどうかです。",
+  "Keep the sensor fully powered instead of letting it idle.":
+    "アイドル状態にせず、センサーを常時給電状態に保ちます。",
   Orientation: "向き",
   "Axis mapping for how the sensor is mounted.":
     "センサーの取り付け方向に応じた軸のマッピングです。",
@@ -1702,19 +1707,19 @@ const zh: Record<string, string> = {
   "Advanced (PMW3610 Sensor Driver)": "高级（PMW3610 传感器驱动）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 驱动通过自定义 Studio RPC 公开的传感器级调整",
-  "No pmw3610 driver settings were reported by the keyboard.":
-    "键盘未报告任何 pmw3610 驱动设置。",
+  "No sensor driver settings were reported by the keyboard.":
+    "键盘未报告任何传感器驱动设置。",
   "Select Processor": "选择处理器",
   Processor: "处理器",
   "PMW3610 Driver": "PMW3610 驱动",
   "Select processor or PMW3610 driver": "选择处理器或 PMW3610 驱动",
-  "Reload PMW3610 drivers": "重新加载 PMW3610 驱动",
+  "Reload driver settings": "重新加载驱动设置",
   "{{count}} processors detected": "检测到 {{count}} 个处理器",
   Processors: "处理器",
   "Processor {{id}}": "处理器 {{id}}",
   "No processors found": "未找到处理器",
   "Loading...": "加载中...",
-  "PMW3610 Drivers": "PMW3610 驱动",
+  "Sensor Driver Settings": "传感器驱动设置",
   "This driver is no longer available.": "此驱动已不可用。",
   "Active on layer": "在层上激活",
   "Temp layer": "临时层",
@@ -2074,6 +2079,11 @@ const zh: Record<string, string> = {
     "内存中...：修改正在写入。",
   Sensitivity: "灵敏度",
   "Tracking resolution.": "跟踪分辨率。",
+  Power: "电源",
+  "Whether the sensor stays fully powered while idle.":
+    "空闲时传感器是否保持满功率供电。",
+  "Keep the sensor fully powered instead of letting it idle.":
+    "让传感器始终保持满功率供电，不进入空闲状态。",
   Orientation: "方向",
   "Axis mapping for how the sensor is mounted.": "传感器安装方向对应的轴映射。",
   "Power & Rest Mode": "省电与休眠模式",
