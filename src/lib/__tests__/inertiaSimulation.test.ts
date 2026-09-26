@@ -80,7 +80,23 @@ it("preserves configured Fast thresholds and legitimately equal 100-percent outp
     inertiaExample(
       { ...s, inertiaFastThreshold: 65535, inertiaFastOutputPercent: 200 },
       1,
-      1,
+      10000000,
     ).every((p) => p.fast === p.normal),
   ).toBe(true);
+});
+
+it("keeps scroll-scaled input large enough to compare a 300-percent Fast output", () => {
+  const s = {
+    ...settings(fixtures[0].config),
+    inertiaWindowMs: 300,
+    inertiaFastThreshold: 15,
+    inertiaFastOutputPercent: 300,
+  };
+  const points = inertiaExample(s, 1, 60);
+  expect(Math.max(...points.map((p) => p.input))).toBe(40);
+  expect(points.some((p) => p.fast > p.normal)).toBe(true);
+  const tail = points.filter((p) => p.time > 5000);
+  expect(tail.reduce((sum, p) => sum + p.fast, 0)).toBeGreaterThan(
+    tail.reduce((sum, p) => sum + p.normal, 0) * 2,
+  );
 });

@@ -3,6 +3,7 @@ import type { InputProcessor } from "../../hooks/useRuntimeInputProcessor";
 import { useLanguage } from "../../hooks/useLanguage";
 import {
   inertiaExample,
+  inertiaExamplePeak,
   EXAMPLE_DURATION_MS,
   EXAMPLE_INPUT_MS,
 } from "../../lib/inertiaSimulation";
@@ -35,13 +36,20 @@ export function InertiaPreviewGraph({
     processor.scaleMultiplier > 0 && processor.scaleDivisor > 0
       ? processor.scaleMultiplier / processor.scaleDivisor
       : 1;
+  const rawPeak = processor.inertia
+    ? inertiaExamplePeak(
+        processor.inertia,
+        processor.scaleMultiplier,
+        processor.scaleDivisor,
+      )
+    : 40;
   const input = (time: number) =>
-    40 * ratio * (1 - ((time - 3200) / 3200) ** 2);
+    rawPeak * ratio * (1 - ((time - 3200) / 3200) ** 2);
   const path = (key: "input" | "normal" | "fast") => {
     if (!points.length) return "";
     if (key === "input") {
       // Exact quadratic Bezier for the unquantized scenario, then a hard stop.
-      return `M${x(0)},${y(0)} Q${x(2500)},${y(62.5 * ratio)} ${x(5000)},${y(input(5000))} V${y(0)} H${x(EXAMPLE_DURATION_MS)}`;
+      return `M${x(0)},${y(0)} Q${x(2500)},${y(rawPeak * 1.5625 * ratio)} ${x(5000)},${y(input(5000))} V${y(0)} H${x(EXAMPLE_DURATION_MS)}`;
     }
     let result = `M${x(0)},${y(0)}`;
     for (let time = 200; time <= EXAMPLE_DURATION_MS; time += 200) {
@@ -124,8 +132,11 @@ export function InertiaPreviewGraph({
         <span style={{ color: "#f59e0b" }}>┄ {t("Fast input output")}</span>
       </figcaption>
       <p className="text-xs text-[var(--color-text-muted)]">
+        {t("Example input peak before scaling")}: {rawPeak} / 20 ms
+      </p>
+      <p className="text-xs text-[var(--color-text-muted)]">
         {t(
-          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (peak 40 counts every 20 ms, before scaling). Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.",
+          "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average inertia ticks over 200 ms and include the input curve. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.",
         )}
       </p>
     </figure>

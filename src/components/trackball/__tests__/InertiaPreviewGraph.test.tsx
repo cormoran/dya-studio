@@ -57,3 +57,27 @@ it("keeps the fixed example independent of live activity and updates for setting
   );
   expect(paths()).not.toEqual(initial);
 });
+
+it("draws distinct smooth comparisons for scroll scaling", () => {
+  const { container } = render(
+    <InertiaPreviewGraph
+      processor={{
+        ...processor,
+        scaleMultiplier: 1,
+        scaleDivisor: 60,
+        inertia: {
+          ...processor.inertia!,
+          inertiaWindowMs: 300,
+          inertiaFastThreshold: 15,
+          inertiaFastOutputPercent: 300,
+        },
+      }}
+    />,
+  );
+  expect(
+    container.querySelector('[data-series="normal"]')!.getAttribute("d"),
+  ).not.toBe(
+    container.querySelector('[data-series="fast"]')!.getAttribute("d"),
+  );
+  expect(container.textContent).toContain("2400 / 20 ms");
+});

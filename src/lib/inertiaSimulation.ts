@@ -169,6 +169,25 @@ export function simulateInertia(
   }
   return outputs;
 }
+// Keep the comparison visible after scroll scaling, and large enough to
+// cross both configured measurement thresholds. Respect signed input range.
+export function inertiaExamplePeak(
+  settings: InertiaSettings,
+  multiplier: number,
+  divisor: number,
+) {
+  const ratio = multiplier > 0 && divisor > 0 ? multiplier / divisor : 1;
+  const fastThreshold =
+    settings.inertiaFastThreshold ||
+    Math.min(65535, Math.ceil(Math.max(settings.inertiaThreshold * 1.5, 20)));
+  const scaledPeak = Math.max(
+    40,
+    ((Math.max(settings.inertiaThreshold, fastThreshold) * EXAMPLE_REPORT_MS) /
+      settings.inertiaWindowMs) *
+      1.5,
+  );
+  return Math.min(32767, Math.max(40, Math.ceil(scaledPeak / ratio)));
+}
 export function inertiaExample(
   settings: InertiaSettings,
   multiplier: number,
@@ -176,6 +195,7 @@ export function inertiaExample(
 ) {
   const m = multiplier > 0 && divisor > 0 ? multiplier : 1;
   const d = multiplier > 0 && divisor > 0 ? divisor : 1;
+  const peak = inertiaExamplePeak(settings, multiplier, divisor);
   let remainder = 0;
   const reports: SimulationReport[] = [];
   for (
@@ -183,7 +203,7 @@ export function inertiaExample(
     time < EXAMPLE_INPUT_MS;
     time += EXAMPLE_REPORT_MS
   ) {
-    const raw = Math.round(40 * (1 - ((time - 3200) / 3200) ** 2));
+    const raw = Math.round(peak * (1 - ((time - 3200) / 3200) ** 2));
     const numerator = raw * m + remainder;
     const scaled = Math.trunc(numerator / d);
     remainder = numerator - scaled * d;
