@@ -42,6 +42,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useTrackballVersionHistory } from "../hooks/versionHistory/useTrackballVersionHistory";
+import { EditorTooltip } from "../components/EditorTooltip";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import { MobileTrackballMenu } from "../components/trackball/MobileTrackballMenu";
 
@@ -678,14 +679,21 @@ export function TrackballPage() {
               )}
             </ResponsiveButton>
             {processor && rightView.kind === "processor" && (
-              <button
-                type="button"
-                className="btn-secondary text-sm"
-                aria-pressed={testOpen}
-                onClick={() => setTestOpen((open) => !open)}
-              >
-                {t("Input test")}
-              </button>
+              <EditorTooltip content={t("Toggle input test")}>
+                <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    {t("Input test")}
+                  </span>
+                  <Switch.Root
+                    checked={testOpen}
+                    onCheckedChange={setTestOpen}
+                    aria-label={t("Input test")}
+                    className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                  </Switch.Root>
+                </div>
+              </EditorTooltip>
             )}
             {isAvailable && (
               <ResetVersionMenu

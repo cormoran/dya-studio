@@ -9,6 +9,7 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Toggle input test": "動作確認ウィンドウの表示を切り替える",
   Inertia: "慣性",
   "Enable Fast input": "Fast input を有効にする",
   "Close input test": "動作確認を閉じる",
@@ -1560,6 +1561,7 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Toggle input test": "切换输入测试窗口",
   Inertia: "惯性",
   "Enable Fast input": "启用 Fast input",
   "Close input test": "关闭输入测试",
