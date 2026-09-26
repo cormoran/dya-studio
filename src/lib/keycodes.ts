@@ -14,11 +14,7 @@
  * - bits 24-31 (8bits): modifier flags (custom for zmk)
  */
 
-import {
-  getLayoutDisplayName,
-  mapToLayout,
-  type KeyboardLayoutType,
-} from "./keyboardLayouts";
+import { mapToLayout, type KeyboardLayoutType } from "./keyboardLayouts";
 
 // HID Usage Page definitions
 export const HID_USAGE_PAGE_KEYBOARD = 0x07;
@@ -1044,78 +1040,6 @@ export function combineWithModifiers(
   }
   // Otherwise, create full HID usage with keyboard page and modifiers
   return createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode) | (modifiers << 24);
-}
-
-/**
- * Format keycode with modifiers for display.
- * Returns both human-readable text and raw code.
- *
- * @param hidUsage - HID usage value with optional modifier flags
- * @param keyboardLayout - Optional keyboard layout for localized display names
- * @returns Object with display string and raw code hex string
- */
-export function formatKeycodeWithModifiers(
-  hidUsage: number,
-  keyboardLayout?: KeyboardLayoutType,
-): {
-  display: string;
-  rawCode: string;
-} {
-  if (hidUsage === 0) {
-    return {
-      display: "Not set",
-      rawCode: "0x0",
-    };
-  }
-  const modifiers = extractModifierFlags(hidUsage);
-  const baseCode = extractBaseKeycode(hidUsage);
-  const hidUsageWithoutMods = dropModifierFlags(hidUsage);
-
-  // Try to find the keycode definition
-  // First check if it's a full HID usage (consumer page, etc.)
-  let keycode = getKeycodeByCode(hidUsageWithoutMods); // Mask out modifiers
-  if (!keycode) {
-    // Try keyboard page code
-    keycode = getKeycodeByCode(baseCode);
-  }
-
-  // Check for layout-specific override
-  let baseName =
-    keycode?.displayName || `0x${baseCode.toString(16).toUpperCase()}`;
-
-  if (keyboardLayout) {
-    const layoutDisplayName = getLayoutDisplayName(baseCode, keyboardLayout);
-
-    if (layoutDisplayName) {
-      baseName = layoutDisplayName;
-    }
-  }
-
-  const rawCodeHex = `0x${(hidUsage >>> 0).toString(16).toUpperCase()}`;
-
-  if (modifiers === 0) {
-    return {
-      display:
-        baseName != rawCodeHex ? `${baseName} (${rawCodeHex})` : baseName,
-      rawCode: rawCodeHex,
-    };
-  }
-
-  // Build modifier prefix
-  const modParts: string[] = [];
-  MODIFIER_FLAGS.forEach((mod) => {
-    if (modifiers & mod.value) {
-      modParts.push(mod.shortLabel);
-    }
-  });
-
-  const modPrefix = modParts.join("+");
-  return {
-    display:
-      `${modPrefix}(${baseName})` +
-      (baseName !== rawCodeHex ? ` (${rawCodeHex})` : ""),
-    rawCode: rawCodeHex,
-  };
 }
 
 // =============================================================================

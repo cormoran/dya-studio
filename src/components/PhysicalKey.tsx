@@ -8,6 +8,7 @@ import { useState, useMemo } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   IconArrowBigUp,
+  IconBackspace,
   IconBrandWindows,
   IconChevronUp,
   IconCommand,
@@ -42,8 +43,10 @@ interface PhysicalKeyProps {
   isChangedFromDefault?: boolean;
   /** Default-binding display name (for tooltip when changed from default) */
   defaultDisplayName?: string;
-  /** Display name for the binding */
+  /** Display name for the binding (content only, e.g. "A", "LAlt S") */
   displayName: string;
+  /** The binding's ZMK tag (e.g. "&kp", "&hml"), shown as a small corner label */
+  behaviorTag?: string;
   /** Long display name (for tooltip) */
   longDisplayName?: string;
   /** Original display name (for tooltip when modified) */
@@ -78,6 +81,7 @@ export function PhysicalKey({
   isOriginalKnown = true,
   isChangedFromDefault = false,
   displayName,
+  behaviorTag,
   longDisplayName,
   originalDisplayName,
   defaultDisplayName,
@@ -186,8 +190,19 @@ export function PhysicalKey({
         style={{ fontSize: `${fontSize}px` }}
         title={displayName}
       >
-        {iconReplace(displayName) || "—"}
+        {renderKeyLabel(displayName) || "—"}
       </span>
+
+      {/* Behavior tag (e.g. "&hml"), kept out of the main label so it
+          doesn't crowd the icon/keycode content */}
+      {behaviorTag && (
+        <span
+          className="absolute top-0.5 left-1 text-[8px] leading-none text-[var(--color-text-muted)] pointer-events-none"
+          aria-hidden="true"
+        >
+          {behaviorTag}
+        </span>
+      )}
 
       {/* Modified indicator */}
       {isModified && (
@@ -340,6 +355,14 @@ export function PhysicalKey({
   );
 }
 
+// Delete is a backspace facing the other direction; there's no dedicated
+// icon for it, so mirror the backspace one.
+function IconDelete(props: React.ComponentProps<typeof IconBackspace>) {
+  return (
+    <IconBackspace {...props} style={{ ...props.style, transform: "scaleX(-1)" }} />
+  );
+}
+
 const isWindows = navigator.userAgent.includes("Windows");
 const IconComponents = {
   IconCommand: isWindows ? IconBrandWindows : IconCommand,
@@ -347,6 +370,8 @@ const IconComponents = {
   IconShift: IconArrowBigUp,
   IconAlt: IconOption,
   IconSpace: IconSpace,
+  IconBackspace: IconBackspace,
+  IconDelete: IconDelete,
 };
 const IconMap: Record<keyof typeof IconComponents, string[]> = {
   IconCommand: ["LGui", "RGui"],
@@ -354,6 +379,8 @@ const IconMap: Record<keyof typeof IconComponents, string[]> = {
   IconShift: ["LShift", "RShift"],
   IconAlt: ["LAlt", "RAlt"],
   IconSpace: ["Space"],
+  IconBackspace: ["Bksp"],
+  IconDelete: ["Del"],
 };
 const TermToIcon: Record<string, keyof typeof IconComponents> = Object.entries(
   IconMap,
@@ -363,6 +390,48 @@ const TermToIcon: Record<string, keyof typeof IconComponents> = Object.entries(
   });
   return acc;
 }, {});
+
+/** Renders one space-separated group of a key's label (e.g. the hold side of
+ * a hold-tap). A "+"-joined modifier+key combo (e.g. "LGui+A") becomes a row
+ * of small keycap chips, one per modifier/key; anything else renders plain. */
+function renderKeyLabelGroup(group: string, key: number): React.ReactNode {
+  if (!group.includes("+")) {
+    return <span key={key}>{iconReplace(group)}</span>;
+  }
+  return (
+    <span key={key} className="flex items-center justify-center gap-1">
+      {group.split("+").map((part, index) => (
+        <span
+          key={index}
+          className="flex items-center justify-center min-w-[1.4em] px-1 py-0.5 rounded-md bg-[var(--color-border)]"
+        >
+          {iconReplace(part)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Renders a key's label. Only reaches for the chip layout above when a
+ * modifier+key combo is actually present (a "+" appears); a plain hold-tap
+ * pair like "LAlt S" (no combo on either side) keeps its existing inline
+ * icon-and-letter look via `iconReplace` unchanged. When a combo IS present,
+ * each space-separated group (e.g. hold vs. tap) renders as its own row,
+ * stacked vertically so a chip row (hold) can sit above a plain key (tap). */
+function renderKeyLabel(str: string): React.ReactNode {
+  if (!str.includes("+")) {
+    return iconReplace(str);
+  }
+  const groups = str.split(" ");
+  if (groups.length === 1) {
+    return renderKeyLabelGroup(groups[0], 0);
+  }
+  return (
+    <span className="flex flex-col items-center gap-0.5">
+      {groups.map((group, index) => renderKeyLabelGroup(group, index))}
+    </span>
+  );
+}
 
 function iconReplace(str: string): React.ReactNode {
   const splits = str.split(" ");
