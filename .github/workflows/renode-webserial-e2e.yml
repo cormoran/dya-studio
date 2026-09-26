@@ -68,6 +68,8 @@ jobs:
             ]);
             return files.some(({ filename }) =>
               filename === '.github/workflows/renode-webserial-e2e.yml' ||
+              filename === 'src/hooks/useRuntimeMacro.ts' ||
+              filename.startsWith('src/components/macroCombo/') ||
               (filename.startsWith('e2e/renode/') && !excluded.has(filename)));
 
   # Single source of truth for the DUT firmware matrix, consumed by both
@@ -390,6 +392,13 @@ jobs:
                 fi
                 echo "::endgroup::"
                 echo "::warning::$spec failed on attempt $attempt"
+                # The next Playwright invocation clears test-results. Preserve
+                # this failure's context and trace before retrying or moving on.
+                if [ -d test-results ]; then
+                  artifact_key=${spec//\//_}
+                  mkdir -p failure-results
+                  cp -R test-results "failure-results/${artifact_key}-attempt-${attempt}"
+                fi
               done
               [ "$ok" = 1 ] || rc=1
             done
@@ -419,6 +428,7 @@ jobs:
           path: |
             e2e/renode/playwright-report
             e2e/renode/test-results
+            e2e/renode/failure-results
             e2e/renode/renode_serve.err
             e2e/renode/bridge.out
           if-no-files-found: ignore

@@ -68,6 +68,7 @@ export function useMacroEditor({
 }: UseMacroEditorArgs) {
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [loadedMacro, setLoadedMacro] = useState<MacroDetail | null>(null);
+  const loadingSlotRef = useRef<number | null>(null);
   const loadedMacroRef = useRef<MacroDetail | null>(null);
   loadedMacroRef.current = loadedMacro;
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
@@ -137,14 +138,23 @@ export function useMacroEditor({
   const getMacro = runtimeMacro.getMacro;
   const loadMacro = useCallback(
     async (slot: number) => {
-      const macro = await getMacro(slot);
-      if (macro) {
-        setIsCreateDraft(false);
-        setSelectedName(macro.name);
-        setLoadedMacro(macro);
-        setRenameDraft(macro.name);
-        setStringDraft(null);
-        setStringConversionError(null);
+      // The explicit list click and the auto-selection effect can both request
+      // this slot before the first read completes. getMacro rejects concurrent
+      // reads, so keep the first request and let its result populate the editor.
+      if (loadingSlotRef.current === slot) return;
+      loadingSlotRef.current = slot;
+      try {
+        const macro = await getMacro(slot);
+        if (macro) {
+          setIsCreateDraft(false);
+          setSelectedName(macro.name);
+          setLoadedMacro(macro);
+          setRenameDraft(macro.name);
+          setStringDraft(null);
+          setStringConversionError(null);
+        }
+      } finally {
+        if (loadingSlotRef.current === slot) loadingSlotRef.current = null;
       }
     },
     [getMacro],
@@ -154,6 +164,7 @@ export function useMacroEditor({
   const selectMacro = useCallback(
     (macro: MacroSummary) => {
       setSelectedName(macro.name);
+      setLoadedMacro(null);
       void loadMacro(macro.slot);
     },
     [loadMacro],
@@ -554,10 +565,14 @@ export function useMacroEditor({
 
   const handleDeleteMacro = useCallback(async () => {
     if (!requireUnlocked()) return;
-    if (!loadedMacro) return;
+    // A list entry can remain when its detail read fails. Deletion uses the
+    // summary's name, so it must still be available in that state.
+    const name = !isCreateDraft && selectedName;
+    if (!name || !runtimeMacro.macros.some((macro) => macro.name === name))
+      return;
     setIsDeleting(true);
     try {
-      const ok = await runtimeMacro.deleteMacro(loadedMacro.name);
+      const ok = await runtimeMacro.deleteMacro(name);
       if (ok) {
         setSelectedName(null);
         setLoadedMacro(null);
@@ -565,7 +580,7 @@ export function useMacroEditor({
     } finally {
       setIsDeleting(false);
     }
-  }, [loadedMacro, runtimeMacro, requireUnlocked]);
+  }, [isCreateDraft, selectedName, runtimeMacro, requireUnlocked]);
 
   const handleCreateMacro = useCallback(async (): Promise<boolean> => {
     if (!isCreateDraft) {
