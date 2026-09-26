@@ -1,3 +1,9 @@
+import {
+  inertiaFields,
+  inertiaRequest,
+  type InertiaSettings,
+  type InertiaSetting,
+} from "../lib/inputInertia";
 import { useState, useEffect, useCallback, useContext } from "react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { useCustomSubsystem, useLockAwareCall } from "./useCustomSubsystem";
@@ -51,6 +57,11 @@ function simplifyFraction(
 }
 
 export interface InputProcessor {
+  inertia?: InertiaSettings;
+  inertiaNotificationsEnabled?: boolean;
+  inertiaActive?: boolean;
+  inertiaFastInput?: boolean;
+  inertiaStopReason?: number;
   id: number;
   name: string;
   scaleMultiplier: number;
@@ -76,6 +87,12 @@ export interface LayerInformation {
 }
 
 export interface UseRuntimeInputProcessorReturn {
+  setInertia: (
+    id: number,
+    key: InertiaSetting,
+    value: number | boolean,
+  ) => Promise<void>;
+  setInertiaNotifications: (id: number, enabled: boolean) => Promise<void>;
   isAvailable: boolean;
   processors: InputProcessor[];
   layers: LayerInformation[];
@@ -123,7 +140,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
 
   // Set up persistent notification listener for processor updates
   useEffect(() => {
-    if (!zmkApp || subsystemIndex === undefined) {
+    setProcessors([]);
+    if (!ready || !zmkApp || subsystemIndex === undefined) {
       return;
     }
 
@@ -133,9 +151,47 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
       callback: (customNotification) => {
         try {
           const notification = Notification.decode(customNotification.payload);
+          const state = notification.inertiaStateChanged;
+          const fast = notification.inertiaFastInputChanged;
+          if (state || fast)
+            setProcessors((prev) =>
+              prev.map((p) =>
+                p.id === (state?.id ?? fast?.id)
+                  ? {
+                      ...p,
+                      ...(state
+                        ? {
+                            inertiaActive: state.active,
+                            inertiaStopReason: state.stopReason,
+                            ...(!state.active
+                              ? { inertiaFastInput: false }
+                              : {}),
+                          }
+                        : {}),
+                      ...(fast ? { inertiaFastInput: fast.fastInput } : {}),
+                    }
+                  : p,
+              ),
+            );
           if (notification.processorChanged?.processor) {
             const processorInfo = notification.processorChanged.processor;
             const updatedProcessor: InputProcessor = {
+              inertia:
+                (processorInfo.inertiaIntervalMs ?? 0) > 0 &&
+                (processorInfo.inertiaWindowMs ?? 0) > 0
+                  ? ({
+                      ...Object.fromEntries(
+                        inertiaFields.map(({ key }) => [
+                          key,
+                          processorInfo[key] ?? 0,
+                        ]),
+                      ),
+                      inertiaEnabled: processorInfo.inertiaEnabled ?? false,
+                    } as InertiaSettings)
+                  : undefined,
+              inertiaNotificationsEnabled:
+                processorInfo.inertiaNotificationsEnabled ?? false,
+              inertiaActive: processorInfo.inertiaActive ?? false,
               id: processorInfo.id,
               name: processorInfo.name,
               scaleMultiplier: processorInfo.scaleMultiplier,
@@ -163,7 +219,13 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
               const index = prev.findIndex((p) => p.id === updatedProcessor.id);
               if (index >= 0) {
                 const newProcessors = [...prev];
-                newProcessors[index] = updatedProcessor;
+                newProcessors[index] = {
+                  ...prev[index],
+                  ...updatedProcessor,
+                  ...(!updatedProcessor.inertiaActive
+                    ? { inertiaFastInput: false }
+                    : {}),
+                };
                 return newProcessors;
               } else {
                 return [...prev, updatedProcessor];
@@ -179,7 +241,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     return () => {
       unsubscribe();
     };
-  }, [zmkApp, subsystemIndex]);
+  }, [zmkApp, subsystemIndex, ready]);
 
   const updateProcessorOptimistically = useCallback(
     (id: number, fields: Partial<InputProcessor>) => {
@@ -775,6 +837,74 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     [ready, call, updateProcessorOptimistically],
   );
 
+  const setInertia = useCallback(
+    async (id: number, key: InertiaSetting, value: number | boolean) => {
+      if (!ready || !processors.find((p) => p.id === id)?.inertia)
+        throw new Error("Inertia is not supported by this device");
+      const field = inertiaFields.find((field) => field.key === key);
+      if (
+        field &&
+        (typeof value !== "number" ||
+          !Number.isInteger(value) ||
+          value < field.min ||
+          value > field.max)
+      )
+        throw new Error("Invalid inertia value");
+      setError(null);
+      try {
+        const response = await call(
+          Request.create(inertiaRequest(id, key, value)),
+        );
+        if (!response || response.error)
+          throw new Error(
+            response?.error?.message ?? "No response from device",
+          );
+        setProcessors((prev) =>
+          prev.map((p) =>
+            p.id === id && p.inertia
+              ? { ...p, inertia: { ...p.inertia, [key]: value } }
+              : p,
+          ),
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        throw err;
+      }
+    },
+    [ready, processors, call],
+  );
+
+  const setInertiaNotifications = useCallback(
+    async (id: number, enabled: boolean) => {
+      if (!ready || !processors.find((p) => p.id === id)?.inertia)
+        throw new Error("Inertia is not supported by this device");
+      setError(null);
+      try {
+        const response = await call(
+          Request.create({ setInertiaNotifications: { id, enabled } }),
+        );
+        if (!response || response.error)
+          throw new Error(
+            response?.error?.message ?? "No response from device",
+          );
+        updateProcessorOptimistically(id, {
+          inertiaNotificationsEnabled: enabled,
+          ...(!enabled
+            ? {
+                inertiaActive: false,
+                inertiaFastInput: false,
+                inertiaStopReason: 0,
+              }
+            : {}),
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        throw err;
+      }
+    },
+    [ready, processors, call, updateProcessorOptimistically],
+  );
+
   const loadLayers = useCallback(async () => {
     if (!ready) {
       setError("Not connected to device or subsystem not found");
@@ -825,6 +955,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
   }, [ready, loadProcessors, loadLayers]);
 
   return {
+    setInertia,
+    setInertiaNotifications,
     isAvailable: subsystem !== null,
     processors,
     layers,

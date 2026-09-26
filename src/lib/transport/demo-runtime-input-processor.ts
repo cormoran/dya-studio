@@ -1,3 +1,4 @@
+import { inertiaFields } from "../inputInertia";
 /**
  * Demo Runtime Input Processor Custom Subsystem Handler
  *
@@ -37,6 +38,16 @@ const MOCK_PROCESSORS: ProcessorInfo[] = [
     yInvert: false,
     xyToScrollEnabled: false,
     xySwapEnabled: false,
+    inertiaEnabled: false,
+    inertiaWindowMs: 200,
+    inertiaIntervalMs: 20,
+    inertiaThreshold: 10,
+    inertiaDecayPercent: 8,
+    inertiaNormalMaxOutput: 0,
+    inertiaFastThreshold: 0,
+    inertiaFastOutputPercent: 200,
+    inertiaNotificationsEnabled: false,
+    inertiaActive: false,
   },
 ];
 
@@ -60,6 +71,44 @@ export class RuntimeInputProcessorHandler {
   );
 
   process(request: Request): Response {
+    const inertiaField = inertiaFields.find(
+      (field) => request[field.request] !== undefined,
+    );
+    const inertiaRequest = inertiaField
+      ? request[inertiaField.request]
+      : (request.setInertiaEnabled ?? request.setInertiaNotifications);
+    if (inertiaRequest) {
+      const processor = this.processors.find((p) => p.id === inertiaRequest.id);
+      if (!processor)
+        return {
+          error: { message: `Processor not found: ${inertiaRequest.id}` },
+        };
+      const requestKey =
+        inertiaField?.request ??
+        (request.setInertiaEnabled
+          ? "setInertiaEnabled"
+          : "setInertiaNotifications");
+      const key =
+        inertiaField?.key ??
+        (request.setInertiaEnabled
+          ? "inertiaEnabled"
+          : "inertiaNotificationsEnabled");
+      Object.assign(processor, {
+        [key]: (inertiaRequest as unknown as Record<string, number | boolean>)[
+          inertiaField?.value ?? "enabled"
+        ],
+      });
+      setTimeout(
+        () =>
+          this.callbacks.forEach((cb) =>
+            cb(
+              Notification.encode({ processorChanged: { processor } }).finish(),
+            ),
+          ),
+        50,
+      );
+      return { [requestKey]: {} };
+    }
     if (request.listProcessors !== undefined) {
       // Send processor data via notifications
       setTimeout(() => {

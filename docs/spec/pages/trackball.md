@@ -14,11 +14,13 @@
 
 ## 機能要求
 
-| ID        | できるべきこと                                                                                 | 出典・確度     |
-| --------- | ---------------------------------------------------------------------------------------------- | -------------- |
-| TRACK-R01 | 対象 processor を選び、sensitivity、rotation、layer、axis と座標変換を調整できる               | S1/S2 から推定 |
-| TRACK-R02 | PMW3610 driver が custom settings を報告する時だけ、その section を選択・編集できる            | S1/S4 から推定 |
-| TRACK-R03 | mobile では processor と PMW3610 driver を共通 dropdown から選択し、直下の detail を編集できる | 明示要求       |
+| ID        | できるべきこと                                                                                                                         | 出典・確度         |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| TRACK-R01 | 対象 processor を選び、sensitivity、rotation、layer、axis と座標変換を調整できる                                                       | S1/S2 から推定     |
+| TRACK-R02 | PMW3610 driver が custom settings を報告する時だけ、その section を選択・編集できる                                                    | S1/S4 から推定     |
+| TRACK-R04 | #28 対応 processor の慣性 / Fast input を編集でき、旧デバイスの既存編集を維持する                                                      | 明示要求（本変更） |
+| TRACK-R05 | 開閉できる浮動ウィンドウの有限エリアでスクロール・マウス移動と慣性 / Fast input の状態を確認し、上下・左右スクロールを個別に固定できる | 明示要求（本変更） |
+| TRACK-R03 | mobile では processor と PMW3610 driver を共通 dropdown から選択し、直下の detail を編集できる                                         | 明示要求           |
 
 ## 前提・状態
 
@@ -46,6 +48,24 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 | TRACK-009 | `Versions` から snapshot を選ぶ                                 | diff modal を経て restore の入口                                                                                        | IndexedDB 等の履歴契約は [version history](../modules/version-history.md)。processor firmware default reset は提供しない | S1    |
 | TRACK-010 | mobile dropdown で processor / PMW3610 driver を選ぶ            | menu が閉じ、選択種別と項目名を二段表示して直下の detail を切り替える。driver の未保存 dot は trigger / item に表示する | 選択だけでは書込まない。隣接 Reload は選択中の subsystem だけを再読込する                                                | S1/S4 |
 
+### 慣性と動作確認（2026-09-26 追加）
+
+根拠 S6: [InertiaPreviewGraph](../../../src/components/trackball/InertiaPreviewGraph.tsx)、[inertiaSimulation](../../../src/lib/inertiaSimulation.ts)、[C参照値との比較テスト](../../../src/lib/__tests__/inertiaSimulation.test.ts)。#28 commitのC関数をホストでコンパイルして生成した7ケースの全出力tick列との一致を確認（物理デバイスの検証とは別）。参照値の再生成は[ホストC検証スクリプト](../../../scripts/generate-inertia-simulation-fixtures.py)を参照する。
+
+根拠 S5: [InertiaCard](../../../src/components/trackball/InertiaCard.tsx)、[InputTestCard](../../../src/components/trackball/InputTestCard.tsx)、[inputInertia](../../../src/lib/inputInertia.ts)。プロトコル根拠は [runtime input processor PR #28](https://github.com/cormoran/zmk-module-runtime-input-processor/pull/28) の commit `bcf4e727ce1a1f3b128ead98839c8fed333d979c`。
+
+| ID        | 前提 → 操作                                                                      | 観測できる結果                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 保存範囲・副作用                                                                                                                                                                                                              | 根拠     |
+| --------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| TRACK-011 | processor を選択 → コードマッピング下の `Inertia`                                | 有効な測定期間・出力間隔を報告した processor のみ checkbox と数値を編集できる。旧 firmware は未対応の案内を表示し既存カードは継続動作                                                                                                                                                                                                                                                                                                                                                                                             | 未対応 processor に新 RPC は送らない                                                                                                                                                                                          | S2/S5    |
+| TRACK-012 | `Enable Inertia` / 慣性数値を変更                                                | 慣性とFast inputのサブセクションに分離。カード内のサブタイトルは表示せず、Fast inputの上に境界線と余白を置き、各Enableチェックボックスで区別する。enable は即時、数値は1,500 ms debounce。測定期間/出力間隔1–60000 ms、入力しきい値1–65535、減衰0–100%、通常出力上限0–32767、Fast input しきい値0–65535、Fast出力100–1000%。無効時も値を編集できる。`Queued` → `Saving…` → `Saved`。空欄・不正文字列・範囲外・非整数は入力欄に維持し警告色/aria-invalidにする。その間は待機中の書込みを取消し、有効な値になってからdebounceで反映 | firmware PERSIST (write mode 0)。通常出力上限0は無制限、Fastしきい値0はFast無効。Fast checkbox OFFで0、ONでmax(慣性入力閾値×1.5,20)を切上げて65535以内の整数にする。失敗はページalert・行の失敗表示、再編集またはReloadで復帰 | S2/S5    |
+| TRACK-013 | ヘッダーのVersions左の `Input test` スイッチ → 浮動ウィンドウ エリアでスクロール | 24000×24000 px の有限グリッドが移動。座標と最新ブラウザ入力Δを表示。上下・左右のcheckboxをOFFにすると当該軸の現在スクロール位置を固定し、エリア内wheelは親ページへ伝播しない。`Center`は中央へ戻す                                                                                                                                                                                                                                                                                                                                | ブラウザ画面内のみ、保存なし。wheel deltaModeはpixel/line/page別に換算                                                                                                                                                        | S5       |
+| TRACK-014 | エリアを左クリック → マウス移動 → Escape/左クリック/右クリック                   | Pointer Lock対応環境ではキャプチャ表示と仮想マーカーの移動、Escape・左/右クリックで解除。エリア外クリックで開始しない。未対応/拒否はalert、スクロールテストは継続                                                                                                                                                                                                                                                                                                                                                                 | 実機の設定を書込まず、browser inputのみ。マーカーは有限領域内に制限。processor切替/unmountでキャプチャを解除                                                                                                                  | S5       |
+| TRACK-015 | 対応processorのタブを開く                                                        | 通知を自動で有効化し、成功後、慣性停止/動作/Fast inputを文字と枠色で表示し、停止理由を表示。別processor/driver/タブへ離れると通知OFF。手動OFFボタンなし                                                                                                                                                                                                                                                                                                                                                                           | 診断通知のセッション設定。実際の通知だけを表示し、wheelから慣性を推定・生成しない。ブラウザ入力は全ポインティングデバイスから来るため選択processor専用測定ではない                                                            | S2/S5    |
+| TRACK-016 | 新しい設定をVersionsでcapture/restore                                            | 慣性設定もdiff/restoreの対象。旧snapshotは慣性を変更せず、旧processorへ慣性restoreを送らない                                                                                                                                                                                                                                                                                                                                                                                                                                      | 履歴はブラウザ、restoreはfirmware PERSIST。状態通知・capture・スクロール位置は履歴対象外                                                                                                                                      | S1/S2/S5 |
+
+| TRACK-017 | 慣性カードのグラフを見る | 3.2秒で頂点となり5秒で途中停止する固定放物線入力（20ms周期、想定ピークはスケーリング後40以上かつ両しきい値を越える大きさに調整、raw入力上限32767。スケーリング前ピークをカード内に表示）と、同じ入力に対する通常慣性/Fast inputの合計出力を0–15秒で表示。紫は想定実入力、青実線はFast無効の通常出力、橙破線は設定したFastしきい値/倍率での出力。縦軸は20msあたりの入出力量。表示は実入力＋補助慣性の整数合計出力を200ms区間平均し区間中央の点を直線で結ぶ。想定入力は非量子化の二次曲線で5秒の停止を垂直に描く。合計出力には強制的な落差を入れない。両モードONを仮定。Fastしきい値0ではON操作と同じceil(max(入力閾値×1.5,20))（上限65535）をプレビューだけに使用し、デバイス設定は変更しない。倍率100%かFastしきい値未到達では2線が一致し得る。リアルタイム値は表示しない | 一方向・active layer・既定64測定窓分割/66バケット・同時刻の入力を出力より先に処理する固定シミュレーション。#28の最新バケットから実入力速度を見積もり保持速度から差し引く補助出力、バケット境界では前バケット参照、入力がバケット期間以上途絶えたら差し引き0、Q16整数測定、整数出力、端数繰越、入力区間の減衰スキップ、出力後減衰、通常上限、Fast発動/継続、停止条件を移植。15秒以降の継続出力は省略する。Kconfig差・実機スケジューラー・逆方向/軸/layer変化は対象外。デバイスRPC/保存なし | S5/S6 |
+| TRACK-018 | Input testを開く/ドラッグ/閉じる | ヘッダーでドラッグ可能。×で閉じ、ページ右上Versions左のStreamと同じ枠付きラベル＋スイッチで開閉。×で閉じたときもスイッチはOFF。左に上下入力の時間を縦軸にしたリアルタイムグラフ、下に左右入力の時間を横軸にしたリアルタイムグラフ。直近10秒・最大1000点をブラウザ入力は紫、通知で慣性中は青、Fast中は橙に分類 | 閉じる/他タブ・driverへ離れるとキャプチャ解除。通知はウィンドウ開閉と独立して対象processorタブの間維持。ブラウザのみ、永続化なし | S5 |
+
 ## 代表ユーザーフロー
 
 ### F1: processor tuning（TRACK-001/002/003/007）
@@ -65,6 +85,20 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 
 1. PMW3610 Drivers の `Reload`。unavailable、loading、`No pmw3610 driver settings...`、section list を区別して記録する。
 2. section を選び、dirty dot と custom setting の保存/取消を該当 module の実装で確認する。ここでは flash 成功を推定しない。
+
+### F4: 慣性・有限エリア（TRACK-011–016）
+
+1. Demoの初期値（enable OFF、window 200、interval 20、threshold 10、decay 8、limit 0、fast threshold 0、fast output 200）を記録する。intervalを変更 → debounce完了 → ページのReloadで読戻し → 元値へ復帰 → Reloadで確認する。
+2. inertia OFFでもFast値を編集できることを確認する。旧deviceでは未対応案内と既存Scaling編集が使え、通知RPCを送らない。
+3. エリア内の左右/上下scrollを試し、各checkbox OFF後に当該軸が固定されることを確認する。再度ON、Centerで中央に戻し、端までscrollして有限な端で停止する。
+4. 左クリック→キャプチャ→移動Δ/マーカー→Escape解除。未対応のブラウザでは具体的なalertを記録しcapture成功としない。
+5. タブを開く→実機の慣性/Fast input発動と逆方向停止→表示を比較し別タブへ離れて通知OFFを確認。Demoは設定読戻しまでで、物理入力による状態通知は生成しない。
+
+### F5: 固定シミュレーションとリアルタイム表示（TRACK-017/018）
+
+1. 慣性カードでは想定入力が0から放物線で増減し、まだ正の値がある5秒で突然0になり、合計出力の尾が続くことを確認。ブラウザを動かしても固定グラフは変わらない。
+2. decay 0/100、通常出力上限、Fastしきい値0/有効、intervalを変更し、保存後に固定グラフだけが設定に応じて変わることを確認。Fastしきい値0でも、ON操作と同じしきい値でFastの比較線が出ることを確認（倍率200%、しきい値到達条件）。倍率100%や未到達なら一致し得る。元の値へ復帰しページReloadで確認。
+3. Input testをONにしてキャプチャ/移動すると、floating内の左右/上下グラフだけが流れる。×で閉じ、表示スイッチOFFを確認する。通知購読は別タブへ移動するまで維持される。
 
 ## 不変条件
 
@@ -93,4 +127,5 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 
 ## 未解決・未検証
 
+- #28 firmwareの物理入力による慣性/Fast input通知、USB/BLE実機での設定読戻し、Pointer Lockの全ブラウザ対応は別途検証。Demoは物理慣性をシミュレーションしない。
 - processor RPC の power-cycle persistence、sensor の物理的 tracking 品質、custom settings の flash 境界、遅延 failure rollback は未検証。

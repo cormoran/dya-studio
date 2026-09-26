@@ -1,3 +1,8 @@
+import {
+  inertiaFields,
+  type InertiaSettings,
+  type InertiaSetting,
+} from "../../lib/inputInertia";
 /**
  * Trackball tab version history: every runtime input processor's tuning plus
  * the PMW3610 driver's custom settings.
@@ -28,12 +33,13 @@ import {
 } from "./customSettingsRestore";
 import type { DiffLabeler } from "../../lib/versionHistory";
 
-/** Bump when the payload shape below changes. */
+/** Schema 1 accepts the optional inertia extension; old snapshots remain readable. */
 export const TRACKBALL_SNAPSHOT_SCHEMA_VERSION = 1;
 export const TRACKBALL_TAB_ID = "trackball";
 
 /** The writable half of an input processor, as stored in a snapshot. */
 export type ProcessorSnapshot = {
+  inertia?: InertiaSettings;
   scaleMultiplier: number;
   scaleDivisor: number;
   rotationDegrees: number;
@@ -59,6 +65,7 @@ export type TrackballSnapshot = {
 
 /** Readable names for the processor fields, used by the diff modal. */
 const PROCESSOR_FIELD_LABELS: Record<keyof ProcessorSnapshot, string> = {
+  inertia: "Inertia / Fast input",
   scaleMultiplier: "Sensitivity multiplier",
   scaleDivisor: "Sensitivity divisor",
   rotationDegrees: "Rotation (degrees)",
@@ -78,6 +85,7 @@ const PROCESSOR_FIELD_LABELS: Record<keyof ProcessorSnapshot, string> = {
 
 function toProcessorSnapshot(processor: InputProcessor): ProcessorSnapshot {
   return {
+    ...(processor.inertia ? { inertia: { ...processor.inertia } } : {}),
     scaleMultiplier: processor.scaleMultiplier,
     scaleDivisor: processor.scaleDivisor,
     rotationDegrees: processor.rotationDegrees,
@@ -149,6 +157,16 @@ export function useTrackballVersionHistory({
       // rather than guessed at.
       if (!have) continue;
       const current = toProcessorSnapshot(have);
+      // Older snapshots omit inertia; older devices must never receive new RPCs.
+      if (have.inertia && wanted.inertia) {
+        for (const key of [
+          "inertiaEnabled",
+          ...inertiaFields.map((field) => field.key),
+        ] as InertiaSetting[]) {
+          if (have.inertia[key] !== wanted.inertia[key])
+            await read().setInertia(id, key, wanted.inertia[key]);
+        }
+      }
 
       if (
         current.scaleMultiplier !== wanted.scaleMultiplier ||
@@ -251,7 +269,12 @@ export function useTrackballVersionHistory({
               t("Processor {{id}}", { id: path[1] });
             const field =
               PROCESSOR_FIELD_LABELS[path[2] as keyof ProcessorSnapshot];
-            return field ? `${name} › ${t(field)}` : name;
+            const inertiaField = inertiaFields.find(
+              (field) => field.key === path[3],
+            );
+            return field
+              ? `${name} › ${t(field)}${inertiaField ? ` › ${t(inertiaField.label)}` : ""}`
+              : name;
           },
         },
         customSettingsLabeler(["custom"], t),
