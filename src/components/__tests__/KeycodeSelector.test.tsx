@@ -96,6 +96,49 @@ it("starts with the keyboard layout even after category mode was previously save
   ).toBeInTheDocument();
 });
 
+it("uses the JIS physical layout and JIS key labels in key-layout mode", () => {
+  render(
+    <KeycodeValueSelector
+      compact
+      value={0x70004}
+      onChange={jest.fn()}
+      keyboardLayout="JIS"
+    />,
+  );
+
+  expect(
+    screen.getByRole("button", { name: "Hankaku/Zenkaku" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Muhenkan" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Henkan" })).toBeInTheDocument();
+  const enter = screen.getByRole("button", { name: "Enter" });
+  expect(enter.parentElement).toHaveClass("h-16");
+  expect(enter).toHaveAttribute("data-key-shape", "iso-enter");
+  expect(screen.getByText('2"', { exact: true })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Home" }),
+  ).not.toBeInTheDocument();
+});
+
+it("uses US for JP labels without changing the ANSI key layout", async () => {
+  const user = userEvent.setup();
+  render(
+    <KeycodeValueSelector
+      compact
+      value={0x70004}
+      onChange={jest.fn()}
+      keyboardLayout="US_JP"
+    />,
+  );
+
+  expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Show keycodes by category" }),
+  );
+  await user.click(screen.getByRole("button", { name: "International" }));
+  expect(screen.getByText("変換", { exact: true })).toBeInTheDocument();
+});
+
 it("shows selected modifiers with the purple toggle without listing their names", async () => {
   const user = userEvent.setup();
   const modifier = MODIFIER_FLAGS[0];

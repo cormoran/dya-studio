@@ -159,18 +159,22 @@ const JIS_LAYOUT_MAPPINGS: KeycodeLayoutMapping[] = [
   {
     code: 0x88,
     displayName: "かな/カナ",
+    name: "Kana",
   },
   {
     code: 0x89,
     displayName: "￥",
+    name: "Yen Sign",
   },
   {
     code: 0x8a,
     displayName: "無変換",
+    name: "Muhenkan",
   },
   {
     code: 0x8b,
     displayName: "変換",
+    name: "Henkan",
   },
 ];
 
@@ -186,18 +190,22 @@ const US_FOR_JP_LAYOUT_MAPPINGS: KeycodeLayoutMapping[] = [
   {
     code: 0x88,
     displayName: "かな/カナ",
+    name: "Kana",
   },
   {
     code: 0x89,
     displayName: "￥",
+    name: "Yen Sign",
   },
   {
     code: 0x8a,
     displayName: "無変換",
+    name: "Muhenkan",
   },
   {
     code: 0x8b,
     displayName: "変換",
+    name: "Henkan",
   },
 ];
 
