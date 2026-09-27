@@ -2,7 +2,7 @@
  * Keyboard Abyss login state for the Import/Export tab.
  *
  * The token itself lives in the shared client (`getAbyssClient`), which reads
- * and writes `sessionStorage`; this hook only mirrors it into React state and
+ * and writes `localStorage`; this hook only mirrors it into React state and
  * owns the login/logout actions. Mount it once, at the page, and pass what the
  * sections need down as props — a second instance would issue a second
  * `userinfo()` request for no benefit.

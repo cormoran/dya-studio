@@ -10,7 +10,7 @@
 | S2   | [AbyssCallbackPage](../../../src/pages/AbyssCallbackPage.tsx): `AbyssCallbackPage`, `startedRef`                                |
 | S3   | [OAuth plumbing](../../../src/lib/abyss/abyssOAuth.ts): `startAbyssLogin`, `relayAbyssCallback`, `takeReturnPath`               |
 | S4   | [callback tests](../../../src/pages/__tests__/AbyssCallbackPage.test.tsx), [routing tests](../../../src/__tests__/App.test.tsx) |
-| S5   | [Abyss client](../../../src/lib/abyss/abyssClient.ts): `getAbyssClient`, sessionStorage/transactionStorage configuration        |
+| S5   | [Abyss client](../../../src/lib/abyss/abyssClient.ts): `getAbyssClient`, localStorage/transactionStorage configuration          |
 
 ## 機能要求
 
@@ -33,13 +33,13 @@
 
 ## 現行の機能仕様
 
-| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                      | 根拠        |
-| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- |
-| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                | S1/S4       |
-| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage           | S2/S3/S4    |
-| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token/PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない | S1/S2/S3/S5 |
-| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                | S2/S4       |
-| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `/` を replace                               | S2/S4       |
+| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                                       | 根拠        |
+| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------- |
+| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                                 | S1/S4       |
+| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage                            | S2/S3/S4    |
+| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token は localStorage、PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない | S1/S2/S3/S5 |
+| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                                 | S2/S4       |
+| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `/` を replace                                                | S2/S4       |
 
 ## 代表ユーザーフロー
 
