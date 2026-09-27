@@ -34,7 +34,15 @@ export class AbyssOAuthError extends Error {
   }
 }
 
-export class AbyssClient {}
+export class AbyssClient {
+  getTokenSet() {
+    return null;
+  }
+
+  async refreshToken(): Promise<never> {
+    throw new AbyssOAuthError("No Abyss refresh token is stored");
+  }
+}
 
 // Plain functions rather than jest.fn(): this file is part of the `src`
 // TypeScript project, which has no jest globals. Tests that need client
