@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Move the Stream switch beside the save status in the keymap preview with a more compact appearance.",
+            "ja": "ストリーム切替をキーマッププレビュー内の保存状態の横へ移し、控えめな表示にしました。",
+            "zh": "将输入流开关移至键位预览的保存状态旁，并采用更简洁的样式。"
+          },
+          {
             "en": "Edit key bindings with clearer parameter guidance, refined selectors, and improved floating-editor controls.",
             "ja": "パラメータ説明を分かりやすくし、セレクターとフローティングエディタの操作性を改善しました。",
             "zh": "通过更清晰的参数说明、改进的选择器和更易用的浮动编辑器控件，优化按键绑定编辑。",
