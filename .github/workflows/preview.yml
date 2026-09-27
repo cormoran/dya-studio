@@ -18,6 +18,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     steps:
       - name: Identify the open PR at the built commit
         id: pr
