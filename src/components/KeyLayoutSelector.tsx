@@ -7,6 +7,7 @@
  */
 import {
   KEY_LAYOUT_70,
+  KEY_LAYOUT_70_JIS,
   ROW_UNITS,
   isSpacer,
   type KeyLayoutItem,
@@ -33,6 +34,8 @@ export function KeyLayoutSelector({
   keyboardLayout,
 }: KeyLayoutSelectorProps) {
   const { t } = useLanguage();
+  const keyLayout =
+    keyboardLayout === "JIS" ? KEY_LAYOUT_70_JIS : KEY_LAYOUT_70;
 
   const renderKey = (item: KeyLayoutItem, index: number) => {
     if (isSpacer(item)) {
@@ -46,6 +49,8 @@ export function KeyLayoutSelector({
     }
 
     const w = item.w ?? 1;
+    const h = item.h ?? 1;
+    const isIsoEnter = item.shape === "iso-enter";
     const keycode = getKeycodeByCode(item.code);
     const mapped = keycode ? mapToLayout(keycode, keyboardLayout) : undefined;
     const label = mapped?.displayName ?? `0x${item.code.toString(16)}`;
@@ -55,7 +60,7 @@ export function KeyLayoutSelector({
     return (
       <div
         key={`key-${item.code}`}
-        className="p-[2px]"
+        className={`relative shrink-0 p-[2px] ${h === 2 ? "pointer-events-none z-10 h-16 tablet:h-20" : "h-full"}`}
         style={{ width: widthPercent(w) }}
       >
         <button
@@ -64,13 +69,46 @@ export function KeyLayoutSelector({
           title={`${name} (0x${item.code.toString(16).toUpperCase()})`}
           aria-label={name}
           aria-pressed={isSelected}
-          className={`flex h-8 w-full items-center justify-center overflow-hidden rounded border px-0.5 text-center transition-colors tablet:h-10 ${
-            isSelected
-              ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
-              : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50"
+          data-key-shape={item.shape}
+          style={
+            isIsoEnter
+              ? {
+                  // The 0.25u notch is 1/6 of the 1.5u key. Account for
+                  // the wrapper's 2px padding to keep a 4px gap on both rows.
+                  clipPath:
+                    "polygon(0 0, 100% 0, 100% 100%, calc(100% / 6 + 2px / 3) 100%, calc(100% / 6 + 2px / 3) calc(50% - 2px), 0 calc(50% - 2px))",
+                }
+              : undefined
+          }
+          className={`relative flex h-full w-full items-center justify-center overflow-hidden px-0.5 text-center transition-colors ${isIsoEnter ? "pointer-events-auto group" : "rounded border"} ${
+            isIsoEnter
+              ? isSelected
+                ? "bg-[var(--color-electric)] text-[var(--color-electric)]"
+                : "bg-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-electric)]/50 focus-visible:bg-[var(--color-electric)]"
+              : isSelected
+                ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] text-[var(--color-electric)]"
+                : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50"
           }`}
         >
-          <span className="truncate text-[10px] font-medium leading-tight tablet:text-xs">
+          {isIsoEnter && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-px bg-[var(--color-bg)]"
+              style={{
+                // Inset the entire L-shaped contour by 1px, including the
+                // notch. Clipping a rectangular border loses these two edges.
+                clipPath:
+                  "polygon(0 0, 100% 0, 100% 100%, calc(100% / 6 + 1px) 100%, calc(100% / 6 + 1px) calc(50% - 3px), 0 calc(50% - 3px))",
+              }}
+            >
+              {isSelected && (
+                <span className="absolute inset-0 bg-[var(--color-electric)]/20" />
+              )}
+            </span>
+          )}
+          <span
+            className={`relative truncate text-[10px] font-medium leading-tight tablet:text-xs ${isIsoEnter ? "ml-[16.666667%]" : ""}`}
+          >
             {label}
           </span>
         </button>
@@ -81,8 +119,8 @@ export function KeyLayoutSelector({
   return (
     <div className="flex-1 overflow-auto">
       <div className="mx-auto min-w-[540px] max-w-3xl px-1 py-2">
-        {KEY_LAYOUT_70.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex w-full">
+        {keyLayout.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex h-8 w-full tablet:h-10">
             {row.map((item, index) => renderKey(item, index))}
           </div>
         ))}

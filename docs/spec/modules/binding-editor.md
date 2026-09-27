@@ -37,9 +37,11 @@ BIND-016: modal/floating の parameter タブは、firmware が単一の名前�
 
 BIND-017: floating の header は選択中 behavior の説明を表示する。behavior を変更すれば説明も更新される。操作アイコン群（caller の toolbar、Revert、Close）は右端にまとめる。modal は behavior dropdown の選択表示で説明を示す。説明を持たない未知の behavior には説明を追加しない。根拠はS1/S4、2026-09-23ユーザー要求。
 
-BIND-018: keycode selector は開くたびにキー配列表示から始める。配列下に「その他のキーは右上のカテゴリ別表示ボタンから選択できます」と案内し、右上の表示切替ボタンは通常色にする。修飾キー表示ボタンは選択中の修飾キー名を含めず、修飾キーが一つ以上選択されている場合だけ修飾キートグルと同じ紫で示す。behavior dropdown の「選択したカテゴリを維持」は未設定時 ON で、明示的に OFF にした設定は保持する。根拠はS2/S4/S3/S5、2026-09-23ユーザー要求。
+BIND-018: keycode selector は開くたびにキー配列表示から始める。配列下に「その他のキーは右上のカテゴリ別表示ボタンから選択できます」と案内し、右上の表示切替ボタンは通常色にする。Keymap の OS Layout が JIS のときは同じ browser localStorage の `keyboardLayout` 値から JIS の物理配列（半角/全角、変換/無変換、ISO Enter を含む）と JIS のキー表記を表示し、US (ANSI) for JP のときは ANSI の物理配列のまま US for JP のキー表記を使う。修飾キー表示ボタンは選択中の修飾キー名を含めず、修飾キーが一つ以上選択されている場合だけ修飾キートグルと同じ紫で示す。behavior dropdown の「選択したカテゴリを維持」は未設定時 ON で、明示的に OFF にした設定は保持する。根拠はS2、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、[KeyboardLayoutProvider](../../../src/contexts/KeyboardLayoutProvider.tsx)、2026-09-27ユーザー要求。
 
 BIND-019: `Runtime Macro`、`Trans`、`None` は behavior dropdown の `Key Press` category に表示する。Runtime Macro 対応 keyboard で登録済み macro があれば、各 macro は `Macro` category の個別項目として表示し、選択時は Runtime Macro behavior と slot を `param1` にした binding を caller に渡す。Runtime Macro の param1 候補には `New macro` / `Edit macros` を表示する。根拠はS1/S4、2026-09-24ユーザー要求。
+
+BIND-023: JIS のキー配列表示では Q/A/Z の左端をそれぞれ 1.5u/1.75u/2.25u とし、無変換・Space・変換・かなの順に並べる。Enter は上部 1.5u、下部 1.25u の逆 L 字で、切り欠きにも枠線を表示し、隣の `]` キーと重ならず個別に選択できる。Backspace と Enter の右端、上下矢印の列を揃える。通常・hover・選択状態、狭幅の横スクロールでも輪郭と間隔を保つ。根拠は [keyLayout](../../../src/lib/keyLayout.ts)、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、2026-09-27ユーザー修正要求。binding の適用と保存は既存の caller 契約に従う。
 
 BIND-020: `Edit macros` の modal を変更後に閉じる場合、`Keep editing` または `Discard edits and close` を選べる。discard は queued write を cancel し、進行中 write を待ってから、modal を開いた時点の同じ slot の名前と step に RAM を戻す。開く前からあった他の RAM-only 変更は残し、失敗時は editor を開いたまま error を示す。根拠は [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx)、[restoreMacroMemory](../../../src/components/macroCombo/restoreMacroMemory.ts)。
 
