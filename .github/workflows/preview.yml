@@ -77,7 +77,7 @@ jobs:
       pull-requests: write
       deployments: write
     environment:
-      name: ${{ needs.identify.outputs.trusted == 'true' && 'preview-auto' || 'approval-required' }}
+      name: approval-required
       url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - name: Reject a changed or closed PR after approval
@@ -137,7 +137,12 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
         run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo 'Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the approval-required environment.' >&2
+            exit 1
+          fi
           "$RUNNER_TEMP/preview-tooling/node_modules/.bin/wrangler" versions upload --env dev --assets "$RUNNER_TEMP/preview-assets" | tee "$RUNNER_TEMP/preview-upload.log"
           url=$(sed -n 's/^.*Version Preview URL: *\(https:\/\/[^ ]*\).*$/\1/p' "$RUNNER_TEMP/preview-upload.log" | tail -n 1)
           if [ -z "$url" ]; then

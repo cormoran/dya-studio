@@ -167,3 +167,14 @@ test("post-approval guard rejects closed or updated PR", async () => {
     }
   }
 });
+
+test("preview uses the same secret-bearing environment as the dev deployment", () => {
+  const buildYaml = readFileSync(
+    new URL("../.github/workflows/test.yml", import.meta.url),
+    "utf8",
+  );
+  const deploymentEnvironment = (source) =>
+    source.match(/    environment:\n      name: (.+)/)?.[1];
+  assert.equal(deploymentEnvironment(yaml), "approval-required");
+  assert.equal(deploymentEnvironment(yaml), deploymentEnvironment(buildYaml));
+});
