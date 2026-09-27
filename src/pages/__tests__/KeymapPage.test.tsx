@@ -914,8 +914,8 @@ describe("KeymapPage", () => {
       expect(setActiveLayout).toHaveBeenCalledWith(1);
       expect(within(dialog).getByLabelText("OS Layout")).toBeInTheDocument();
       expect(
-        within(dialog).getByLabelText("Toggle stream mode"),
-      ).toBeInTheDocument();
+        within(dialog).queryByLabelText("Toggle stream mode"),
+      ).not.toBeInTheDocument();
 
       await user.click(within(dialog).getByRole("button", { name: "Close" }));
       expect(

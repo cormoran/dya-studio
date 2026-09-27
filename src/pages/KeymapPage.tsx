@@ -742,24 +742,6 @@ export function KeymapPage() {
           {/* Action Buttons */}
           {connection.isConnected && keymap.keymap && (
             <div className="keymap-actions flex flex-wrap items-center gap-2">
-              {inputStream.isAvailable && (
-                <EditorTooltip content={t("Toggle stream mode")}>
-                  <div className="hidden sm:flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-                    <span className="hidden sm:inline text-xs text-[var(--color-text-muted)]">
-                      {t("Stream")}
-                    </span>
-                    <Switch.Root
-                      checked={inputStream.isEnabled}
-                      onCheckedChange={() => void inputStream.toggleStream()}
-                      disabled={inputStream.isToggling || keymap.isLoading}
-                      aria-label={t("Toggle stream mode")}
-                      className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-                    </Switch.Root>
-                  </div>
-                </EditorTooltip>
-              )}
               {/* Reading is allowed while locked, so Reload sits outside the
                   lock branch below. */}
               <ResponsiveButton
@@ -1165,31 +1147,6 @@ export function KeymapPage() {
                             )}
                           </p>
                         </div>
-
-                        {inputStream.isAvailable && (
-                          <div className="keymap-settings-switch-row">
-                            <label
-                              htmlFor="keymap-mobile-stream"
-                              className="text-sm font-medium"
-                            >
-                              {t("Stream mode")}
-                            </label>
-                            <Switch.Root
-                              id="keymap-mobile-stream"
-                              checked={inputStream.isEnabled}
-                              onCheckedChange={() =>
-                                void inputStream.toggleStream()
-                              }
-                              disabled={
-                                inputStream.isToggling || keymap.isLoading
-                              }
-                              aria-label={t("Toggle stream mode")}
-                              className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-                            </Switch.Root>
-                          </div>
-                        )}
                       </section>
                     </div>
                   </Dialog.Content>
@@ -1537,43 +1494,63 @@ export function KeymapPage() {
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="keymap-preview glass-card p-3 sm:p-6 relative">
-                {/* Status indicator: unsaved edits (neon), saved-but-
+                <div className="mb-2 flex items-center justify-end gap-3">
+                  {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
-                <div
-                  role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  className="flex w-fit ml-auto mb-2 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
-                  title={
-                    !keymap.hasUnsavedChanges &&
-                    keymap.isKeymapChangedFromDefault
-                      ? t("Saved — changed from the default keymap")
-                      : undefined
-                  }
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      keymap.hasUnsavedChanges
-                        ? "bg-[var(--color-neon)]"
-                        : keymap.isKeymapChangedFromDefault
-                          ? "bg-[var(--color-electric)]"
-                          : "bg-[var(--color-text-muted)]"
-                    }`}
-                  />
-                  <span
-                    className={
-                      keymap.hasUnsavedChanges
-                        ? "text-[var(--color-neon)]"
-                        : keymap.isKeymapChangedFromDefault
-                          ? "text-[var(--color-electric)]"
-                          : "text-[var(--color-text-muted)]"
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
+                    title={
+                      !keymap.hasUnsavedChanges &&
+                      keymap.isKeymapChangedFromDefault
+                        ? t("Saved — changed from the default keymap")
+                        : undefined
                     }
                   >
-                    {keymap.hasUnsavedChanges
-                      ? t("Unsaved changes")
-                      : t("Saved")}
-                  </span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        keymap.hasUnsavedChanges
+                          ? "bg-[var(--color-neon)]"
+                          : keymap.isKeymapChangedFromDefault
+                            ? "bg-[var(--color-electric)]"
+                            : "bg-[var(--color-text-muted)]"
+                      }`}
+                    />
+                    <span
+                      className={
+                        keymap.hasUnsavedChanges
+                          ? "text-[var(--color-neon)]"
+                          : keymap.isKeymapChangedFromDefault
+                            ? "text-[var(--color-electric)]"
+                            : "text-[var(--color-text-muted)]"
+                      }
+                    >
+                      {keymap.hasUnsavedChanges
+                        ? t("Unsaved changes")
+                        : t("Saved")}
+                    </span>
+                  </div>
+                  {inputStream.isAvailable && (
+                    <EditorTooltip content={t("Toggle stream mode")}>
+                      <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                        <span>{t("Stream")}</span>
+                        <Switch.Root
+                          checked={inputStream.isEnabled}
+                          onCheckedChange={() =>
+                            void inputStream.toggleStream()
+                          }
+                          disabled={inputStream.isToggling || keymap.isLoading}
+                          aria-label={t("Toggle stream mode")}
+                          className="relative h-4 w-7 shrink-0 rounded-full bg-[var(--color-border)] transition-colors data-[state=checked]:bg-[var(--color-electric)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Switch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-3.5" />
+                        </Switch.Root>
+                      </label>
+                    </EditorTooltip>
+                  )}
                 </div>
                 <KeyboardLayout
                   layout={currentLayout}
