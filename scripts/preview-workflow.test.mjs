@@ -167,3 +167,103 @@ test("post-approval guard rejects closed or updated PR", async () => {
     }
   }
 });
+
+async function runDeploymentScript(index, environment, { id = 42 } = {}) {
+  const previous = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  const calls = [];
+  const outputs = {};
+  try {
+    await new Function(
+      "github",
+      "context",
+      "core",
+      `return (async()=>{${scripts[index]}})()`,
+    )(
+      {
+        rest: {
+          repos: {
+            async createDeployment(params) {
+              calls.push({ method: "deployment", ...params });
+              return { data: { id } };
+            },
+            async createDeploymentStatus(params) {
+              calls.push({ method: "status", ...params });
+            },
+          },
+        },
+      },
+      { repo, serverUrl: "https://github.com", runId: 123 },
+      { setOutput: (key, value) => (outputs[key] = value) },
+    );
+    return { calls, outputs };
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+test("deployment tracks the PR SHA rather than the workflow main SHA", async () => {
+  const { calls, outputs } = await runDeploymentScript(2, {
+    PR_NUMBER: "233",
+    BUILD_SHA: "abc",
+  });
+  assert.equal(calls[0].ref, "abc");
+  assert.equal(calls[0].environment, "preview-pr-233");
+  assert.equal(calls[0].auto_merge, false);
+  assert.deepEqual(calls[0].required_contexts, []);
+  assert.equal(calls[0].transient_environment, true);
+  assert.equal(calls[0].production_environment, false);
+  assert.equal(outputs.id, 42);
+  assert.equal(calls[1].deployment_id, 42);
+  assert.equal(calls[1].state, "in_progress");
+  assert.equal(calls[1].auto_inactive, false);
+  const other = await runDeploymentScript(2, {
+    PR_NUMBER: "234",
+    BUILD_SHA: "def",
+  });
+  assert.notEqual(other.calls[0].environment, calls[0].environment);
+});
+
+test("successful upload records its URL without hiding other previews", async () => {
+  const { calls } = await runDeploymentScript(3, {
+    DEPLOYMENT_ID: "42",
+    UPLOAD_OUTCOME: "success",
+    JOB_STATUS: "success",
+    PREVIEW_URL: "https://preview.example.com",
+  });
+  assert.equal(calls[0].deployment_id, 42);
+  assert.equal(calls[0].state, "success");
+  assert.equal(calls[0].environment_url, "https://preview.example.com");
+  assert.equal(
+    calls[0].log_url,
+    "https://github.com/cormoran/dya-studio/actions/runs/123",
+  );
+  assert.equal(calls[0].auto_inactive, false);
+});
+
+test("failed, skipped, or cancelled uploads do not publish a successful preview", async () => {
+  for (const [outcome, status, expected] of [
+    ["failure", "failure", "failure"],
+    ["skipped", "failure", "failure"],
+    ["cancelled", "cancelled", "error"],
+  ]) {
+    const { calls } = await runDeploymentScript(3, {
+      DEPLOYMENT_ID: "42",
+      UPLOAD_OUTCOME: outcome,
+      JOB_STATUS: status,
+      PREVIEW_URL: "",
+    });
+    assert.equal(calls[0].state, expected);
+    assert.equal(calls[0].environment_url, undefined);
+    assert.equal(calls[0].auto_inactive, false);
+  }
+  assert.match(
+    yaml,
+    /if: \$\{\{ always\(\) && steps\.deployment\.outputs\.id != '' \}\}/,
+  );
+});

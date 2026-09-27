@@ -24,3 +24,9 @@ PR 更新前の run は対象外。承認待ちの間に更新・close された
 `versions upload --env dev` は開発用 Worker の version preview を作り、稼働 version へ deploy しない。main push の dev deploy と release deployment は既存の workflow を維持する。
 
 fork の build には `VITE_ABYSS_CLIENT_ID_DEV` secret も渡されないため、Import/Export tab は引き続き非表示になり得る。これは既存の build 条件であり、この変更では OAuth 設定を変更しない。
+
+## GitHub Deployments への表示
+
+承認と最新 SHA の確認後、Deployments API で PR の head SHA に紐づく `preview-pr-<PR番号>` deployment を作成する。アップロード中は `in_progress`、成功時は preview URL と Actions ログ URL を持つ `success`、失敗・キャンセル時は `failure` / `error` を記録する。PR ごとに Environment を分け、以前の preview は履歴として残す。成功時も他の deployment を自動的に inactive にしない。preview は transient、非 production として登録する。
+
+secrets と承認には引き続き `preview-auto` / `approval-required` を使用する。これらの job Environment が自動作成する deployment は `workflow_run` の実行元である main に紐づくため、PR 用 deployment は別途明示的に登録する。PR 更新・close の検出で upload 前に停止した場合、PR 用 deployment は作成しない。マージ後の次の preview 実行から適用し、過去の deployment は書き換えない。
