@@ -1,0 +1,171 @@
+name: Approved Cloudflare Preview
+
+on:
+  workflow_run:
+    workflows: [Test and Build Web UI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  identify:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      sha: ${{ steps.pr.outputs.sha }}
+      trusted: ${{ steps.pr.outputs.trusted }}
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    steps:
+      - name: Identify the open PR at the built commit
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            if (run.path !== '.github/workflows/test.yml' ||
+                run.repository.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              throw new Error('Unexpected build workflow or repository');
+            }
+            // Fork workflow_run payloads can have an empty pull_requests array.
+            const prs = await github.paginate(github.rest.pulls.list, {
+              ...context.repo, state: 'open',
+              head: `${run.head_repository.owner.login}:${run.head_branch}`,
+            });
+            const pr = prs.find(pr => pr.head.sha === run.head_sha &&
+              pr.head.repo?.full_name === run.head_repository.full_name);
+            if (!pr) {
+              core.notice('No open PR still points to this build; skipping preview.');
+              return;
+            }
+            // Trust the PR author and source repository, never the rerun actor.
+            const trusted = pr.user.login === 'cormoran' &&
+              pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`;
+            if (!trusted) {
+              const { data: environment } = await github.request(
+                'GET /repos/{owner}/{repo}/environments/{environment_name}',
+                { ...context.repo, environment_name: 'approval-required' },
+              );
+              if (!environment.protection_rules?.some(rule =>
+                rule.type === 'required_reviewers' && rule.reviewers?.length > 0)) {
+                throw new Error('Configure Required reviewers on approval-required before deploying previews.');
+              }
+            }
+            core.setOutput('trusted', String(trusted));
+            core.setOutput('number', pr.number);
+            core.setOutput('sha', run.head_sha);
+            await core.summary.addHeading(`Preview approval: PR #${pr.number}`)
+              .addRaw(`Commit: ${run.head_sha}\n\nBuild run: ${run.html_url}`)
+              .write();
+
+  preview:
+    needs: identify
+    if: ${{ needs.identify.outputs.number != '' }}
+    name: Preview PR ${{ needs.identify.outputs.number }} at ${{ needs.identify.outputs.sha }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: cloudflare-preview-${{ needs.identify.outputs.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+      deployments: write
+    environment:
+      name: ${{ needs.identify.outputs.trusted == 'true' && 'preview-auto' || 'approval-required' }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Reject a changed or closed PR after approval
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.identify.outputs.number }}
+          BUILD_SHA: ${{ needs.identify.outputs.sha }}
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: Number(process.env.PR_NUMBER),
+            });
+            if (pr.state !== 'open' || pr.head.sha !== process.env.BUILD_SHA) {
+              throw new Error('PR changed or closed. Approve the build for its latest commit instead.');
+            }
+
+      # Only trusted base-repository configuration is checked out. Never run
+      # PR code, dependencies, or lifecycle scripts in this privileged job.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: wrangler.toml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: ${{ runner.temp }}/preview-assets
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Validate static build artifact
+        env:
+          PREVIEW_ASSETS: ${{ runner.temp }}/preview-assets
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['PREVIEW_ASSETS'])
+          if not (root / 'index.html').is_file():
+              raise SystemExit('Missing dist/index.html')
+          for path in root.rglob('*'):
+              if path.is_symlink() or not (path.is_file() or path.is_dir()):
+                  raise SystemExit(f'Unsupported artifact entry: {path}')
+          PY
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install isolated deployment tooling
+        run: npm install --prefix "$RUNNER_TEMP/preview-tooling" --ignore-scripts --no-audit --no-fund wrangler@4.58.0
+
+      - name: Upload static preview
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          "$RUNNER_TEMP/preview-tooling/node_modules/.bin/wrangler" versions upload --env dev --assets "$RUNNER_TEMP/preview-assets" | tee "$RUNNER_TEMP/preview-upload.log"
+          url=$(sed -n 's/^.*Version Preview URL: *\(https:\/\/[^ ]*\).*$/\1/p' "$RUNNER_TEMP/preview-upload.log" | tail -n 1)
+          if [ -z "$url" ]; then
+            echo 'Wrangler did not return a version preview URL' >&2
+            exit 1
+          fi
+          echo "deployment-url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR with deployment URL
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.identify.outputs.number }}
+          BUILD_SHA: ${{ needs.identify.outputs.sha }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.deployment-url }}
+        with:
+          script: |
+            const issue_number = Number(process.env.PR_NUMBER);
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: issue_number });
+            if (pr.state !== 'open' || pr.head.sha !== process.env.BUILD_SHA) {
+              core.notice('PR changed during upload; not posting an outdated preview.');
+              return;
+            }
+            const body = `## 🚀 Cloudflare Workers Preview\n\n**Preview URL:** ${process.env.PREVIEW_URL}\n\n<sub>Deployed from commit ${process.env.BUILD_SHA}</sub>`;
+            const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number });
+            const existing = comments.find(comment => comment.user.login === 'github-actions[bot]' &&
+              comment.body?.includes('🚀 Cloudflare Workers Preview'));
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            }

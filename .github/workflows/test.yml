@@ -26,6 +26,8 @@ jobs:
         run: npm run lint
       - name: Check product specifications
         run: npm run spec:check
+      - name: Check preview approval guards
+        run: node --test scripts/preview-workflow.test.mjs
       - name: Run tests
         run: npm test
       - name: Build for Cloudflare Workers
@@ -87,70 +89,3 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env dev
           wranglerVersion: "4.58.0"
-
-  preview:
-    needs: build
-    if: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      contents: read
-      pull-requests: write
-      deployments: write
-    environment:
-      name: approval-required
-      url: ${{ steps.deploy.outputs.deployment-url }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-
-      - name: Deploy preview to Cloudflare Workers (dev)
-        id: deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: versions upload --env dev
-          wranglerVersion: "4.58.0"
-
-      - name: Comment PR with deployment URL
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const comment = `## 🚀 Cloudflare Workers Preview
-
-            **Preview URL:** ${{ steps.deploy.outputs.deployment-url }}
-
-            <sub>Deployed from commit ${context.sha.substring(0, 7)}</sub>`;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('🚀 Cloudflare Workers Preview')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: comment
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: comment
-              });
-            }
