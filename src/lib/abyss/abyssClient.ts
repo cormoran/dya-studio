@@ -6,9 +6,8 @@
  * own — two clients would each hold a different token and silently disagree
  * about whether the user is logged in.
  *
- * Tokens live in `sessionStorage`: they survive a reload (which the OAuth
- * redirect fallback needs) but are gone when the tab closes. The library
- * defaults to in-memory storage, which would drop the token on every reload.
+ * Tokens live in `localStorage` so closing the tab or browser preserves login.
+ * PKCE transactions remain in the initiating tab’s `sessionStorage`.
  */
 import {
   createAbyssClient,
@@ -45,17 +44,50 @@ export function getAbyssClient(): AbyssClient | null {
   if (clientBuilt) return client;
   clientBuilt = true;
   if (!isAbyssConfigured()) return null;
+  // Preserve an existing login when upgrading from tab-scoped token storage.
+  const tokenKey = `keyboard-abyss:${ABYSS_CLIENT_ID}:token`;
+  const legacyToken = window.sessionStorage.getItem(tokenKey);
+  if (legacyToken) {
+    if (!window.localStorage.getItem(tokenKey)) {
+      window.localStorage.setItem(tokenKey, legacyToken);
+    }
+    window.sessionStorage.removeItem(tokenKey);
+  }
   client = createAbyssClient({
     clientId: ABYSS_CLIENT_ID,
     redirectUri: `${window.location.origin}${OAUTH_CALLBACK_PATH}`,
     scopes: ABYSS_SCOPES,
-    // Both the token set and the in-flight PKCE transaction are tab-scoped.
+    // Only the in-flight PKCE transaction is tab-scoped.
     // The transaction *must* stay in this tab: the tab that builds the
     // authorization URL is the tab that exchanges the code for a token.
-    storage: window.sessionStorage,
+    storage: window.localStorage,
     transactionStorage: window.sessionStorage,
     ...(ABYSS_BASE_URL ? { abyssBaseUrl: ABYSS_BASE_URL } : {}),
   });
+  // API requests and the background renewal may both encounter expiry.
+  // Share the rotation so they do not spend the same refresh token twice.
+  const sharedClient = client;
+  const refresh = client.refreshToken.bind(client);
+  const rotate = async () => {
+    const previous = sharedClient.getTokenSet()?.refreshToken;
+    if (!navigator.locks) return refresh();
+    return navigator.locks.request(`${tokenKey}:refresh`, async () => {
+      const current = sharedClient.getTokenSet();
+      // Another tab may already have rotated while we waited for the lock.
+      if (current && current.refreshToken !== previous) return current;
+      if (!current) throw new Error("Abyss session was cleared");
+      return refresh();
+    });
+  };
+  let refreshing: ReturnType<AbyssClient["refreshToken"]> | null = null;
+  client.refreshToken = () => {
+    if (!refreshing) {
+      refreshing = rotate().finally(() => {
+        refreshing = null;
+      });
+    }
+    return refreshing;
+  };
   return client;
 }
 

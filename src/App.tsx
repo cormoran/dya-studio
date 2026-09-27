@@ -1,3 +1,4 @@
+import { useAbyssSessionRenewal } from "./hooks/useAbyssSessionRenewal";
 import { useContext, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -132,6 +133,7 @@ function App() {
  * or a connected keyboard.
  */
 function AppRouter() {
+  useAbyssSessionRenewal();
   const { language } = useLanguage();
   const [pathname, setPathname] = useState(() => window.location.pathname);
 

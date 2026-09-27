@@ -25,12 +25,12 @@
 
 通常 tab なので接続中だけ app shell に表示する。`isAbyssTabVisible()` は local development なら client ID なしでも表示し、deployed build は client ID がある時だけ登録する。表示されても `isAbyssConfigured()` が false なら sign-in は設定不足として利用不能である。認証済み後も最初は snapshot `idle` で export/import は `Read keyboard` が完了するまで無効である。
 
-| 状態                                              | 可用性 / 見分け方                                                       | 保存・復帰                                                                                   |
-| ------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| signed out / loading / auth error                 | Account card の sign-in、spinner、`SectionError`。下位 section は非表示 | token/profile は Abyss client の sessionStorage。401 は token を消し再 sign-in を促す        |
-| snapshot reading / resolving / done / error       | `Read keyboard`、Bluetooth では遅い旨、layout matching、error           | read は自動実行しない。最後の成功 snapshot は hook state に残る                              |
-| export new/update                                 | name/visibility または既存 keymap 選択、section selector、preview       | export は keyboard を書かず、Abyss record/version を作成・更新する                           |
-| import loading/preview/blocked/confirming/writing | candidate 選択、filtered diff、preflight、inline confirm                | write 前 Cancel は confirm を閉じるだけ。write は keyboard と adapter の save 経路を変更する |
+| 状態                                              | 可用性 / 見分け方                                                       | 保存・復帰                                                                                            |
+| ------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| signed out / loading / auth error                 | Account card の sign-in、spinner、`SectionError`。下位 section は非表示 | token は Abyss client の localStorage（profile は React state）。401 は token を消し再 sign-in を促す |
+| snapshot reading / resolving / done / error       | `Read keyboard`、Bluetooth では遅い旨、layout matching、error           | read は自動実行しない。最後の成功 snapshot は hook state に残る                                       |
+| export new/update                                 | name/visibility または既存 keymap 選択、section selector、preview       | export は keyboard を書かず、Abyss record/version を作成・更新する                                    |
+| import loading/preview/blocked/confirming/writing | candidate 選択、filtered diff、preflight、inline confirm                | write 前 Cancel は confirm を閉じるだけ。write は keyboard と adapter の save 経路を変更する          |
 
 ## 現行の機能仕様
 
@@ -39,7 +39,7 @@
 | ID     | 前提 → 操作                                                               | 観測できる結果                                                                                   | 保存範囲・副作用                                                                                   | 根拠     |
 | ------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | -------- |
 | IE-001 | local dev または configured deployed build → Import/Export tab            | tab が現れる。未接続では app shell の接続 gate に従う                                            | tab 登録のみ。資格情報の有無と tab 可視性は別                                                      | S1/S3    |
-| IE-002 | signed out → `Sign in with Abyss`                                         | popup を開始し、profile 読取後に account と Export/Import tabs を表示                            | PKCE/token は client の sessionStorage。popup cancel は `Abyss login was cancelled.`               | S2/S4/S6 |
+| IE-002 | signed out → `Sign in with Abyss`                                         | popup を開始し、profile 読取後に account と Export/Import tabs を表示                            | token は localStorage、PKCE は sessionStorage。popup cancel は `Abyss login was cancelled.`        | S2/S4/S6 |
 | IE-003 | authenticated → `Read keyboard` / `Read again`                            | read→layout resolve の進捗、layer/key/combo/macro/module 数と catalog verdict を表示             | keyboard RPC の読取り。export/import は同じ `loaded` snapshot を使う                               | S4/S5    |
 | IE-004 | Export → new                                                              | 非空 name、visibility、選択 section、upload JSON preview を選べる。new は keymap section を強制  | `createKeymap` または catalog 未一致時 `importKeymap`。keyboard への write なし                    | S4/S5    |
 | IE-005 | Export → update → existing keymap                                         | 最新更新 keymap を初期選択し、visual/JSON diff の `Review changes` を開ける                      | merge base を取得し `updateKeymap`。成功時 `Saved to Abyss as version …` と外部 link               | S4/S5    |
@@ -49,6 +49,14 @@
 | IE-009 | authenticated → `Sign out`                                                | profile と Export/Import section を隠し sign-in card に戻る                                      | revoke は best effort 後に token を clear。revoke failure でも local token は残さない              | S4/S5    |
 | IE-010 | authenticated → `Export`/`Import` tab を切替                              | 一度に片方だけ表示する。切替は export/import hook state を破棄しない                             | page-local `direction` state の変更のみ。Abyss/keyboard write はしない                             | S2       |
 
+認証保持はユーザー明示要求（2026-09-27）に基づく。既存 sessionStorage の token は初回 client 構築時に localStorage へ移し、既存の永続 token があればそちらを優先する。Sign out は永続 token も削除する。
+
+| ID     | 前提 → 操作                                                       | 観測できる結果                                        | 保存範囲・副作用                                                                                                                                                  | 根拠                                                             |
+| ------ | ----------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| IE-011 | sign-in 後にタブ/browser を閉じ、同じ origin の Studio を再度開く | Import/Export で profile 読取り後に認証済み表示となる | localStorage の access/refresh token を再利用。Studio 起動・foreground 復帰・表示中5分ごとに期限が近い access token を更新する。keyboard 接続・本タブの訪問は不要 | S4、[renewal hook](../../../src/hooks/useAbyssSessionRenewal.ts) |
+
+更新は Abyss 側の refresh token の有効性に依存し、無期限を保証しない。background 更新の network failure は token を削除せず次回に再試行する。callback document は更新しない。Web Locks 対応 browser では tab 間の更新も直列化する。ストレージ削除・provider 側の失効時は再ログインが必要。
+
 ## 代表ユーザーフロー
 
 1. configured build で接続し Import/Export を開く。sign out では sign-in card だけで `Export`/`Import` section が出ないことを確認する（IE-001/002）。
@@ -56,6 +64,8 @@
 3. Export/new で name と visibility を選び JSON preview を確認して export する。成功 version/link を記録し、keyboard の設定を変更しないことは実機で別途確認する（IE-004）。
 4. Import で別 keymap と対象 sections を選び、preflight、visual diff、`Review changes as JSON` を確認する（IE-006）。`Write to keyboard` 後は `Cancel` して、write を開始しないことを確認する（IE-007）。
 5. 再度 confirm して write し、read 後の結果・error を記録する。途中失敗時は混在状態の可能性があるため再 read して diff を確認する（IE-007）。
+
+6. 認証後にタブを閉じ同じ origin で再度開き、Import/Export で認証済み表示を確認する。Sign out 後に再度開くと sign-in card になる（IE-009/011）。実 provider での長期保持は別途未検証。
 
 ## 不変条件
 
