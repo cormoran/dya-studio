@@ -26,6 +26,8 @@ jobs:
         run: npm run lint
       - name: Check product specifications
         run: npm run spec:check
+      - name: Check preview approval guards
+        run: node --test scripts/preview-workflow.test.mjs
       - name: Run tests
         run: npm test
       - name: Build for Cloudflare Workers

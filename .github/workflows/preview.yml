@@ -15,6 +15,7 @@ jobs:
     outputs:
       number: ${{ steps.pr.outputs.number }}
       sha: ${{ steps.pr.outputs.sha }}
+      trusted: ${{ steps.pr.outputs.trusted }}
     permissions:
       contents: read
       pull-requests: read
@@ -25,14 +26,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: environment } = await github.request(
-              'GET /repos/{owner}/{repo}/environments/{environment_name}',
-              { ...context.repo, environment_name: 'approval-required' },
-            );
-            if (!environment.protection_rules?.some(rule =>
-              rule.type === 'required_reviewers' && rule.reviewers?.length > 0)) {
-              throw new Error('Configure Required reviewers on approval-required before deploying previews.');
-            }
             const run = context.payload.workflow_run;
             if (run.path !== '.github/workflows/test.yml' ||
                 run.repository.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
@@ -49,6 +42,20 @@ jobs:
               core.notice('No open PR still points to this build; skipping preview.');
               return;
             }
+            // Trust the PR author and source repository, never the rerun actor.
+            const trusted = pr.user.login === 'cormoran' &&
+              pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`;
+            if (!trusted) {
+              const { data: environment } = await github.request(
+                'GET /repos/{owner}/{repo}/environments/{environment_name}',
+                { ...context.repo, environment_name: 'approval-required' },
+              );
+              if (!environment.protection_rules?.some(rule =>
+                rule.type === 'required_reviewers' && rule.reviewers?.length > 0)) {
+                throw new Error('Configure Required reviewers on approval-required before deploying previews.');
+              }
+            }
+            core.setOutput('trusted', String(trusted));
             core.setOutput('number', pr.number);
             core.setOutput('sha', run.head_sha);
             await core.summary.addHeading(`Preview approval: PR #${pr.number}`)
@@ -70,7 +77,7 @@ jobs:
       pull-requests: write
       deployments: write
     environment:
-      name: approval-required
+      name: ${{ needs.identify.outputs.trusted == 'true' && 'preview-auto' || 'approval-required' }}
       url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - name: Reject a changed or closed PR after approval

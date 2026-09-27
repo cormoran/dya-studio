@@ -4,10 +4,12 @@ PR の lint/test/build は `Test and Build Web UI` (`test.yml`) が secrets を�
 
 `Approved Cloudflare Preview` (`preview.yml`) は main に workflow が存在する場合、成功した PR build の `workflow_run` から起動する。ビルド元 repository・branch・SHA と一致する open PR を API で確認し、PR 番号と SHA をジョブ名および summary に表示する。関連 PR 配列が空の fork run も API で解決する。
 
+PR 作成者が `cormoran` かつ source branch が本体 repository にある場合は、`preview-auto` Environment を使って手動承認なしで進める。他の PR は `approval-required` を使う。判定は PR 作成者と source repository に基づき、workflow の再実行者には基づかない。
+
 ## 管理者の設定と操作
 
-1. Settings → Environments → `approval-required` に Required reviewers として管理者を登録する。承認なしで実行されないよう、この protection rule を維持する。workflow は Required reviewers が未設定なら失敗してデプロイを止める。必要に応じて Prevent self-review / 管理者の bypass 制限を設定する。
-2. `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を repository secrets またはこの environment の secrets に設定する。token は開発用 Cloudflare account に必要な最小権限とする。production release 用 token は使用しない。
+1. Settings → Environments → `approval-required` に Required reviewers として管理者を登録する。承認なしで実行されないよう、この protection rule を維持する。他の人の PR は Required reviewers が未設定なら workflow が失敗してデプロイを止める。必要に応じて Prevent self-review / 管理者の bypass 制限を設定する。
+2. `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を repository secrets または各 deployment environment の secrets に設定する。token は開発用 Cloudflare account に必要な最小権限とする。production release 用 token は使用しない。`preview-auto` を使う自動 deployment も同じ dev secrets を必要とする。`preview-auto` は reviewer rule を設定しなければ承認不要となる。
 3. PR の差分と build run の SHA を確認する。Actions → `Approved Cloudflare Preview` → Review deployments で `approval-required` を選び Approve and deploy を実行する。
 4. 承認後に PR が open で同じ SHA であることを再確認し、該当 build run の artifact だけをアップロードする。成功後、PR に preview URL と完全な SHA をコメントする。
 
