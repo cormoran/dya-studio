@@ -19,7 +19,7 @@ PR 更新前の run は対象外。承認待ちの間に更新・close された
 
 ## secrets と成果物の境界
 
-デプロイ側は実行中の trusted workflow commit の `wrangler.toml` だけを checkout し、PR の source/config/package.json を checkout しない。静的 `dist` をダウンロードし、symlink/特殊ファイルを拒否する。Wrangler は runner の一時ディレクトリに固定バージョンで `--ignore-scripts` インストールする。Cloudflare secrets は upload step のみへ渡し、PR の build/dependency/lifecycle script を実行しない。preview の内容自体はレビュー対象の PR が作成したものである。
+デプロイ側は実行中の trusted workflow commit の `wrangler.toml` だけを checkout し、PR の source/config/package.json を checkout しない。静的 `dist` を checkout/tooling と別の `${{ runner.temp }}/preview-assets` にダウンロードし、symlink/特殊ファイルを拒否する。Wrangler には `--assets` でこの静的ディレクトリを明示する。Wrangler は runner の一時ディレクトリに固定バージョンで `--ignore-scripts` インストールする。Cloudflare secrets は upload step のみへ渡し、PR の build/dependency/lifecycle script を実行しない。preview の内容自体はレビュー対象の PR が作成したものである。
 
 `versions upload --env dev` は開発用 Worker の version preview を作り、稼働 version へ deploy しない。main push の dev deploy と release deployment は既存の workflow を維持する。
 

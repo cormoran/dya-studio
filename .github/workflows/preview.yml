@@ -106,15 +106,18 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dist
-          path: dist
+          path: ${{ runner.temp }}/preview-assets
           github-token: ${{ github.token }}
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Validate static build artifact
+        env:
+          PREVIEW_ASSETS: ${{ runner.temp }}/preview-assets
         run: |
           python3 - <<'PY'
+          import os
           from pathlib import Path
-          root = Path('dist')
+          root = Path(os.environ['PREVIEW_ASSETS'])
           if not (root / 'index.html').is_file():
               raise SystemExit('Missing dist/index.html')
           for path in root.rglob('*'):
@@ -135,7 +138,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          "$RUNNER_TEMP/preview-tooling/node_modules/.bin/wrangler" versions upload --env dev | tee "$RUNNER_TEMP/preview-upload.log"
+          "$RUNNER_TEMP/preview-tooling/node_modules/.bin/wrangler" versions upload --env dev --assets "$RUNNER_TEMP/preview-assets" | tee "$RUNNER_TEMP/preview-upload.log"
           url=$(sed -n 's/^.*Version Preview URL: *\(https:\/\/[^ ]*\).*$/\1/p' "$RUNNER_TEMP/preview-upload.log" | tail -n 1)
           if [ -z "$url" ]; then
             echo 'Wrangler did not return a version preview URL' >&2
