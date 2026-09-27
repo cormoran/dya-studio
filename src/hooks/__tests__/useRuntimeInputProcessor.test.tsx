@@ -201,6 +201,9 @@ describe("useRuntimeInputProcessor", () => {
 
       expect(result.current.processors).toHaveLength(1);
       expect(result.current.processors[0]).toEqual({
+        inertia: undefined,
+        inertiaActive: false,
+        inertiaNotificationsEnabled: false,
         id: 0,
         name: "trackpad",
         scaleMultiplier: 1,
@@ -476,5 +479,156 @@ describe("useRuntimeInputProcessor", () => {
 
       expect(result.current.error).toBe("Test error");
     });
+  });
+});
+
+describe("inertia protocol compatibility", () => {
+  let notify: (notification: { payload: Uint8Array }) => void;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockCallRPC.mockResolvedValue(
+      Response.encode({ listProcessors: {} }).finish(),
+    );
+    mockOnNotification.mockImplementation(({ callback }) => {
+      notify = callback;
+      return () => {};
+    });
+  });
+  afterEach(() => jest.useRealTimers());
+  function setup() {
+    return renderHook(() => useRuntimeInputProcessor(), {
+      wrapper: createWrapper({
+        state: {
+          connection: { isConnected: true },
+          customSubsystems: [{ index: 0, identifier: "cormoran_rip" }],
+        },
+        findSubsystem: () => ({ index: 0, identifier: "cormoran_rip" }),
+        onNotification: mockOnNotification,
+      }),
+    });
+  }
+  function processor(modern: boolean, id = 0) {
+    act(() =>
+      notify({
+        payload: Notification.encode(
+          Notification.create({
+            processorChanged: {
+              processor: {
+                id,
+                name: "scroll",
+                scaleMultiplier: 1,
+                scaleDivisor: 1,
+                ...(modern
+                  ? {
+                      inertiaIntervalMs: 20,
+                      inertiaWindowMs: 200,
+                      inertiaThreshold: 10,
+                      inertiaDecayPercent: 8,
+                      inertiaFastOutputPercent: 200,
+                      inertiaEnabled: false,
+                    }
+                  : {}),
+              },
+            },
+          }),
+        ).finish(),
+      }),
+    );
+  }
+  it("keeps legacy processors editable and sends no new RPC to them", async () => {
+    const { result } = setup();
+    processor(false);
+    expect(result.current.processors[0].inertia).toBeUndefined();
+    mockCallRPC.mockClear();
+    await expect(
+      result.current.setInertia(0, "inertiaEnabled", true),
+    ).rejects.toThrow("not supported");
+    await expect(
+      result.current.setInertiaNotifications(0, true),
+    ).rejects.toThrow("not supported");
+    expect(mockCallRPC).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.setRotation(0, 45);
+    });
+    expect(result.current.processors[0].rotationDegrees).toBe(45);
+    expect(Request.decode(mockCallRPC.mock.calls[0][0]).setRotation).toEqual({
+      id: 0,
+      value: 45,
+    });
+  });
+  it("writes modern settings with upstream tags and persist mode, even while inertia is disabled", async () => {
+    const { result } = setup();
+    processor(true);
+    processor(true, 1);
+    mockCallRPC.mockResolvedValue(
+      Response.encode({ setInertiaFastThreshold: {} }).finish(),
+    );
+    await act(async () => {
+      await result.current.setInertia(0, "inertiaFastThreshold", 100);
+    });
+    const request = Request.decode(mockCallRPC.mock.calls.at(-1)[0]);
+    expect(request.setInertiaFastThreshold).toEqual({
+      id: 0,
+      threshold: 100,
+      writeMode: 0,
+    });
+    expect(mockCallRPC.mock.calls.at(-1)[0][0]).toBe(242); // field 30, wire type 2
+    expect(result.current.processors[0].inertia?.inertiaFastThreshold).toBe(
+      100,
+    );
+    expect(result.current.processors[1].inertia?.inertiaFastThreshold).toBe(0);
+  });
+  it("handles firmware activity, Fast input and stop reason separately from settings", () => {
+    const { result } = setup();
+    processor(true);
+    act(() =>
+      notify({
+        payload: Notification.encode({
+          inertiaStateChanged: { id: 0, active: true, stopReason: 0 },
+        }).finish(),
+      }),
+    );
+    act(() =>
+      notify({
+        payload: Notification.encode({
+          inertiaFastInputChanged: { id: 0, fastInput: true },
+        }).finish(),
+      }),
+    );
+    expect(result.current.processors[0].inertiaFastInput).toBe(true);
+    act(() =>
+      notify({
+        payload: Notification.encode({
+          inertiaStateChanged: { id: 0, active: false, stopReason: 3 },
+        }).finish(),
+      }),
+    );
+    expect(result.current.processors[0]).toMatchObject({
+      inertiaActive: false,
+      inertiaFastInput: false,
+      inertiaStopReason: 3,
+    });
+    processor(false); // a legacy report clears inferred support
+    expect(result.current.processors[0].inertia).toBeUndefined();
+  });
+  it("rejects invalid values and leaves device values intact on firmware error", async () => {
+    const { result } = setup();
+    processor(true);
+    mockCallRPC.mockClear();
+    await expect(
+      result.current.setInertia(0, "inertiaIntervalMs", 0),
+    ).rejects.toThrow("Invalid");
+    expect(mockCallRPC).not.toHaveBeenCalled();
+    mockCallRPC.mockResolvedValue(
+      Response.encode({ error: { message: "Firmware rejected" } }).finish(),
+    );
+    await act(async () => {
+      await expect(
+        result.current.setInertia(0, "inertiaThreshold", 30),
+      ).rejects.toThrow("Firmware rejected");
+    });
+    expect(result.current.error).toBe("Firmware rejected");
+    expect(result.current.processors[0].inertia?.inertiaThreshold).toBe(10);
   });
 });

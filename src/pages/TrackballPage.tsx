@@ -1,4 +1,16 @@
-import { useMemo, useState, useRef } from "react";
+import { InertiaPreviewGraph } from "../components/trackball/InertiaPreviewGraph";
+import { TabActiveContext } from "../contexts/TabActiveContext";
+import { type InputSample } from "../components/trackball/InputGraph";
+import { InertiaCard } from "../components/trackball/InertiaCard";
+import { InputTestCard } from "../components/trackball/InputTestCard";
+import {
+  useMemo,
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import {
   IconAlertTriangleFilled,
   IconChevronLeft,
@@ -28,6 +40,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useTrackballVersionHistory } from "../hooks/versionHistory/useTrackballVersionHistory";
+import { EditorTooltip } from "../components/EditorTooltip";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import { MobileTrackballMenu } from "../components/trackball/MobileTrackballMenu";
 
@@ -164,6 +177,8 @@ export function TrackballPage() {
     isLoading,
     error,
     loadProcessors,
+    setInertia,
+    setInertiaNotifications,
     setScaling,
     setRotation,
     setTempLayerEnabled,
@@ -281,6 +296,81 @@ export function TrackballPage() {
 
   // Get the selected processor
   const processor = processors[selectedProcessorIndex] || null;
+  const tabActive = useContext(TabActiveContext);
+  const [testOpen, setTestOpen] = useState(false);
+  const [samples, setSamples] = useState<InputSample[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  const activityId =
+    tabActive && rightView.kind === "processor" && processor?.inertia
+      ? processor.id
+      : null;
+  const notificationsWriter = useRef(setInertiaNotifications);
+  useEffect(() => {
+    notificationsWriter.current = setInertiaNotifications;
+  }, [setInertiaNotifications]);
+  const notificationsQueue = useRef(Promise.resolve());
+  useEffect(() => {
+    if (activityId === null) return;
+    notificationsQueue.current = notificationsQueue.current
+      .then(() => notificationsWriter.current(activityId, true))
+      .catch(() => {});
+    return () => {
+      notificationsQueue.current = notificationsQueue.current
+        .then(() => notificationsWriter.current(activityId, false))
+        .catch(() => {});
+    };
+  }, [activityId]);
+  useEffect(() => {
+    if (!tabActive || !testOpen || rightView.kind !== "processor") return;
+    const timer = window.setInterval(() => {
+      const time = Date.now();
+      setNow(time);
+      setSamples((previous) => [
+        ...previous.filter((s) => time - s.time <= 10000).slice(-999),
+        {
+          time,
+          x: 0,
+          y: 0,
+          mode:
+            processor?.inertiaNotificationsEnabled && processor.inertiaFastInput
+              ? "fast"
+              : processor?.inertiaNotificationsEnabled &&
+                  processor.inertiaActive
+                ? "inertia"
+                : "input",
+        },
+      ]);
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [
+    tabActive,
+    testOpen,
+    rightView.kind,
+    processor?.inertiaNotificationsEnabled,
+    processor?.inertiaFastInput,
+    processor?.inertiaActive,
+  ]);
+  const [sampleProcessorId, setSampleProcessorId] = useState(processor?.id);
+  if (sampleProcessorId !== processor?.id) {
+    setSampleProcessorId(processor?.id);
+    setSamples([]);
+  }
+  const recordInput = useCallback(
+    (x: number, y: number) => {
+      const time = Date.now();
+      const mode =
+        processor?.inertiaNotificationsEnabled && processor.inertiaFastInput
+          ? "fast"
+          : processor?.inertiaNotificationsEnabled && processor.inertiaActive
+            ? "inertia"
+            : "input";
+      setSamples((previous) => [
+        ...previous.filter((s) => time - s.time <= 10000).slice(-999),
+        { time, x, y, mode },
+      ]);
+    },
+    [processor],
+  );
 
   // Reset pending state when processor changes
   const currentProcessorName = processor?.name || null;
@@ -587,6 +677,23 @@ export function TrackballPage() {
                 <IconRefresh size={16} />
               )}
             </ResponsiveButton>
+            {processor && rightView.kind === "processor" && (
+              <EditorTooltip content={t("Toggle input test")}>
+                <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    {t("Input test")}
+                  </span>
+                  <Switch.Root
+                    checked={testOpen}
+                    onCheckedChange={setTestOpen}
+                    aria-label={t("Input test")}
+                    className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                  </Switch.Root>
+                </div>
+              </EditorTooltip>
+            )}
             {isAvailable && (
               <ResetVersionMenu
                 label={t("Versions")}
@@ -1526,6 +1633,22 @@ export function TrackballPage() {
                         </div>
                       </div>
                     </div>
+                    <InertiaCard
+                      key={`inertia-${processor.id}`}
+                      processor={processor}
+                      setInertia={setInertia}
+                      graph={<InertiaPreviewGraph processor={processor} />}
+                    />
+                    {testOpen && tabActive && (
+                      <InputTestCard
+                        key={`test-${processor.id}`}
+                        processor={processor}
+                        samples={samples}
+                        now={now}
+                        onInput={recordInput}
+                        onClose={() => setTestOpen(false)}
+                      />
+                    )}
                   </div>
                 )}
               </>
