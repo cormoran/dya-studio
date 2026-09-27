@@ -21,6 +21,7 @@ import {
   createMockZMKApp,
 } from "@cormoran/zmk-studio-react-hook/testing";
 import { INPUT_STREAM_IDENTIFIER } from "../../hooks/useInputStream";
+import * as cheatsheetSvg from "../../lib/cheatsheetSvg";
 
 // Mock ResizeObserver for tests
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
@@ -557,6 +558,154 @@ describe("KeymapPage", () => {
       await user.click(screen.getByRole("button", { name: "Lower" }));
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(setBinding).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("SVG cheat sheet export", () => {
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    let click: jest.SpyInstance;
+    let generate: jest.SpyInstance;
+    beforeEach(() => {
+      jest.useFakeTimers();
+      URL.createObjectURL = jest.fn(() => "blob:cheatsheet");
+      URL.revokeObjectURL = jest.fn();
+      click = jest
+        .spyOn(HTMLAnchorElement.prototype, "click")
+        .mockImplementation(() => {});
+      generate = jest.spyOn(cheatsheetSvg, "buildKeymapCheatsheetSvg");
+    });
+    afterEach(() => {
+      act(() => jest.runOnlyPendingTimers());
+      jest.useRealTimers();
+      click.mockRestore();
+      generate.mockRestore();
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
+    });
+
+    it("downloads current unsaved layers and active geometry while locked, without writing or saving", () => {
+      mockUseStudioLockState.mockReturnValue({
+        locked: true,
+        lockState: "locked",
+      });
+      const currentKeymap = {
+        ...mockKeymap,
+        layers: [
+          { ...mockKeymap.layers[0], name: "Edited & current" },
+          mockKeymap.layers[1],
+        ],
+      };
+      const activeLayout = {
+        ...mockPhysicalLayouts.layouts[0],
+        name: "Second physical layout",
+      };
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: currentKeymap,
+          behaviors: mockBehaviors,
+          physicalLayouts: {
+            layouts: [mockPhysicalLayouts.layouts[0], activeLayout],
+            activeLayoutIndex: 1,
+          },
+          isFullyLoaded: true,
+          hasUnsavedChanges: true,
+        },
+      );
+      expect(screen.getByRole("button", { name: "Export SVG" })).toBeEnabled();
+      act(() => screen.getByRole("button", { name: "Export SVG" }).click());
+      expect(generate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          layout: activeLayout,
+          layers: currentKeymap.layers,
+          behaviors: mockBehaviors,
+          keyboardLayout: "US",
+        }),
+      );
+      const blob = jest.mocked(URL.createObjectURL).mock.calls[0][0] as Blob;
+      expect(blob.type).toBe("image/svg+xml;charset=utf-8");
+      expect(blob.size).toBeGreaterThan(0);
+      const anchor = click.mock.instances[0] as HTMLAnchorElement;
+      expect(anchor.download).toBe("dya-keymap-cheatsheet.svg");
+      expect(anchor.href).toBe("blob:cheatsheet");
+      expect(document.body.contains(anchor)).toBe(false);
+      expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+      act(() => jest.advanceTimersByTime(1000));
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:cheatsheet");
+      for (const action of [
+        "setBinding",
+        "saveChanges",
+        "discardChanges",
+        "resetToDefault",
+        "setActiveLayout",
+      ] as const) {
+        expect(mockUseKeymap()[action]).not.toHaveBeenCalled();
+      }
+      expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    });
+
+    it.each([
+      { isFullyLoaded: false },
+      { isLoading: true },
+      { error: "Load failed" },
+      { physicalLayouts: null },
+      {
+        physicalLayouts: {
+          activeLayoutIndex: 0,
+          layouts: [{ name: "Empty", keys: [] }],
+        },
+      },
+      { keymap: { ...mockKeymap, layers: [] } },
+    ])("disables incomplete or unavailable exports: %j", (override) => {
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          isFullyLoaded: true,
+          ...override,
+        },
+      );
+      const button = screen.getByRole("button", { name: "Export SVG" });
+      expect(button).toBeDisabled();
+      act(() => button.click());
+      expect(URL.createObjectURL).not.toHaveBeenCalled();
+    });
+
+    it("shows a local error and lets a retry succeed while preserving dirty state", () => {
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          isFullyLoaded: true,
+          hasUnsavedChanges: true,
+        },
+      );
+      jest.mocked(URL.createObjectURL).mockImplementationOnce(() => {
+        throw new Error("Download unavailable");
+      });
+      act(() => screen.getByRole("button", { name: "Export SVG" }).click());
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Could not export the keymap SVG. Try again.",
+      );
+      expect(
+        document.querySelector('a[download="dya-keymap-cheatsheet.svg"]'),
+      ).toBeNull();
+      act(() => screen.getByRole("button", { name: "Export SVG" }).click());
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(mockUseKeymap().saveChanges).not.toHaveBeenCalled();
+      expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    });
+
+    it("hides the export when disconnected", () => {
+      renderComponent({ isConnected: false }, { keymap: mockKeymap });
+      expect(
+        screen.queryByRole("button", { name: "Export SVG" }),
+      ).not.toBeInTheDocument();
     });
   });
 

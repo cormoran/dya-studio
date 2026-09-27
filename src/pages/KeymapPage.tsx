@@ -30,6 +30,7 @@ import {
   IconSettings,
   IconX,
   IconLink,
+  IconDownload,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -65,6 +66,7 @@ import type { BehaviorBinding } from "../hooks/useKeymap";
 import { useStudioUnlock } from "../hooks/useStudioUnlock";
 import { useLanguage } from "../hooks/useLanguage";
 import { formatBehaviorBinding } from "../lib/behaviorMetadata";
+import { buildKeymapCheatsheetSvg } from "../lib/cheatsheetSvg";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
@@ -153,6 +155,7 @@ export function KeymapPage() {
   const [macroEditorSlot, setMacroEditorSlot] = useState<number | undefined>();
   const [macroEditorSession, setMacroEditorSession] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [exportError, setExportError] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
@@ -222,6 +225,53 @@ export function KeymapPage() {
     const index = keymap.physicalLayouts.activeLayoutIndex;
     return keymap.physicalLayouts.layouts[index] ?? null;
   }, [keymap.physicalLayouts]);
+
+  const canExportSvg = Boolean(
+    connection.isConnected &&
+    keymap.isFullyLoaded &&
+    !keymap.isLoading &&
+    !keymap.error &&
+    keymap.keymap?.layers.length &&
+    currentLayout?.keys.length &&
+    !isApplyingBinding &&
+    !isSaving &&
+    !isDiscarding &&
+    !isResetting &&
+    !isRenaming,
+  );
+  const handleExportSvg = () => {
+    if (!canExportSvg || !currentLayout || !keymap.keymap) return;
+    setExportError(false);
+    let url: string | undefined;
+    const link = document.createElement("a");
+    try {
+      const svg = buildKeymapCheatsheetSvg({
+        layout: currentLayout,
+        layers: keymap.keymap.layers,
+        behaviors: keymap.behaviors,
+        keyboardLayout: keyboardLayoutContext.layout,
+        runtimeMacros: runtimeMacro.macros,
+        title: t("Keymap cheat sheet"),
+        layerName: (layer) => layer.name || t("Layer {{id}}", { id: layer.id }),
+      });
+      url = URL.createObjectURL(
+        new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+      );
+      link.href = url;
+      link.download = "dya-keymap-cheatsheet.svg";
+      document.body.appendChild(link);
+      link.click();
+    } catch {
+      setExportError(true);
+    } finally {
+      link.remove();
+      // Allow the browser to start reading the blob before releasing it.
+      if (url) {
+        const downloadUrl = url;
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      }
+    }
+  };
 
   // Layers for the selector
   const layersForSelector = useMemo(() => {
@@ -774,6 +824,17 @@ export function KeymapPage() {
                   className={keymap.isLoading ? "animate-spin" : undefined}
                 />
               </ResponsiveButton>
+              <ResponsiveButton
+                label={t("Export SVG")}
+                title={t(
+                  "Download all current keymap layers as a printable SVG, including unsaved bindings.",
+                )}
+                className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
+                onClick={handleExportSvg}
+                disabled={!canExportSvg}
+              >
+                <IconDownload size={16} />
+              </ResponsiveButton>
               {/* When Studio is locked, editing is disabled — show a lock badge
                   (click to unlock) instead of the Save / Reset controls. */}
               {locked ? (
@@ -1209,6 +1270,14 @@ export function KeymapPage() {
         )}
 
         {/* Error State (unlock errors are handled by the shared unlock modal) */}
+        {exportError && (
+          <div
+            role="alert"
+            className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 text-sm text-red-400"
+          >
+            {t("Could not export the keymap SVG. Try again.")}
+          </div>
+        )}
         {keymap.error && (
           <div
             role="alert"

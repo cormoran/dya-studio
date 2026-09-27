@@ -19,6 +19,8 @@
 | S7   | [useRuntimeCombo](../../../src/hooks/useRuntimeCombo.ts)、[useComboEditor](../../../src/components/macroCombo/useComboEditor.ts)、[ComboEditorCard](../../../src/components/macroCombo/ComboEditorCard.tsx) | combo の読込・編集・RAM/flash 保存 |
 | S8   | [comboPreview](../../../src/components/comboPreview.ts)、S5                                                                                                                                                 | combo の隣接判定・preview・tooltip |
 
+SVG 出力の追加根拠 S9: [cheatsheetSvg](../../../src/lib/cheatsheetSvg.ts) の `buildCheatsheetSvg` / `buildKeymapCheatsheetSvg`、[generator tests](../../../src/lib/cheatsheetSvg.test.ts)、S1 の `handleExportSvg` と S4。2026-09-27 のユーザー明示要求「すでに試作ができている SVG チートシートに関しては PR 作ろう」に基づく。fork-scout のローカル試作を製品 PR として提案する範囲を記述する。ブラウザ・実機・印刷の実測は未実施。
+
 ## 機能要求
 
 | ID     | できるべきこと                                                                  | 出典・確度                                                         |
@@ -28,6 +30,8 @@
 | KM-R03 | 連続編集で別キーへの誤適用や意図しないレイヤー移動を起こさない                  | S1/S4 から推定                                                     |
 | KM-R04 | editor 内でも layer、0始まりの物理位置、開始時 binding を確認できる             | [#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求 |
 | KM-R05 | Keymap で combo の一覧・追加・編集を行い、preview 上で combo と割当を識別できる | 2026-09-23 ユーザー明示要求                                        |
+
+KM-R06: 現在の物理配列と全 active layer の現在 binding を、印刷可能な単独 SVG へ出力できる（2026-09-27 ユーザー明示要求による試作の PR 化、S9）。
 
 ## 前提・状態
 
@@ -68,6 +72,10 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 | KM-021 | preview の combo 表示を確認する                                 | 有効で現在 layer 対象の combo のうち、辺で隣接する２キーは境界中央に通常背景の0.5U四方の不透明な combo button（番号なし）を重ねて表示する。中央には combo の割当ラベルを表示し、小型 link icon は左上に絶対配置してラベルと干渉させない。hover/focus でも背景は不透明のまま、combo 名と割当の tooltip を表示する。その他は対象キー上部に link icon と slot順の 1 始まり番号を表示し、対象キー tooltip の key binding の下に combo 名と割当を表示する。無効/他 layer の combo は出さない                                            | button/badge/tooltip の閲覧だけでは書き込まない                                                                                                                                                                  | S5/S8、2026-09-24ユーザー要求                                                               |
 | KM-022 | preview 内の combo control を選び、behavior を変更する          | 対象 combo の `KeycodeSelector` が Combo Editor より前面に開き、右上の link icon で selector を閉じて同じ combo の Combo Editor を開ける。`Floating mode` / `Dialog mode` で表示形式を切替できる。combo と通常キーの selector は同じ floating anchor に表示し、どちらかを開くともう一方は閉じる。floating をドラッグした後に切替えても同じ位置を引き継ぎ、両方を閉じると既定位置へ戻す。適用した割当が preview/card に反映される。通常の key binding は変更しない                                                                  | combo RAM に書く。header Save で combo flash 保存。header Discard で combo の保存済み値へ復元                                                                                                                    | S1/S7/S8、2026-09-24ユーザー要求                                                            |
 | KM-023 | Runtime Macro の param1 から `New macro` / `Edit macros` を選ぶ | key selector を保ったまま caller-owned macro editor を開く。作成前の入力と Close は device を変更せず、作成・編集後は候補を更新する。編集終了時は開いた時点の同 slot RAM 値へ戻す確認を表示する                                                                                                                                                                                                                                                                                                                                    | macro の作成・編集・取消は Runtime Macro subsystem の RAM を対象とし、keymap header Save とは別                                                                                                                  | S1/S3/BIND-019〜021、2026-09-24ユーザー要求                                                 |
+
+KM-024: 接続中に keymap データがあると header の Reload の隣に `Export SVG` を表示する。全 keymap 読込（背景 layer/behavior 読込を含む）が完了し、読込エラーがなく、active physical layout にキーがあり、active layer が一つ以上ある場合に有効。binding 適用、Save/Discard/Reset/Rename 中は無効。locked 中も同じ読込条件で有効で、unlock は要求しない。狭幅時は既存 ResponsiveButton の icon・accessible name・tooltip を使う。出力開始時の現在 active physical layout を全 active layer に使い、現在の layer 順序・名前・position ごとの binding を書く。未保存 binding を含み、保存済み値/default へ置き換えない。OS Layout・layer・読込済み runtime macro の表示 context は preview と同じ formatter を使い、不明 binding/behavior は `—`。空 layer 名は `Layer {{id}}`。出力は `dya-keymap-cheatsheet.svg` のローカルダウンロードで、device RAM/flash・browser 設定・dirty 表示を変更せず、追加 RPC は送らない（S1/S4/S9）。
+
+KM-025: SVG は白背景、全 active layer の見出しとキーを縦に配置する。キーの位置・大きさ・回転角・回転中心を保持し、回転後の四隅から全レイヤー共通の bounds を計算する。title・layer 名・binding は XML escape し、XML 1.0 で無効な文字を除去する。長い名前・binding は省略せず表示幅へ圧縮するため、非常に長い文字列は小さくなる。theme、hover、stream、combo overlay、sensor/module 表示、macro 内容は出力対象外。印刷倍率・用紙分割の自動設定はない。表示には外部 CSS・画像・network を必要としない（S9）。
 
 ## 代表ユーザーフロー
 
@@ -116,6 +124,13 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 1. Runtime Macro 対応時、key selector の `New macro` を開く。入力だけで device 値が変わらないことを確認し、作成後に param1 と `Macro` category の候補へ反映されることを確認する。
 2. `Edit macros` で変更して Close を選び、discard 確認から `Keep editing` / `Discard edits and close` の双方を確認する。検証で作った macro は削除せず残存値を記録する。
 
+### F7: 印刷用 SVG 出力（KM-024/025）
+
+1. Demo → Keymap。読込完了後に `Export SVG` が有効になることを確認し、現在の physical layout と全 layer の名前・キー割当を記録する。
+2. 出力して `dya-keymap-cheatsheet.svg` を開き、全 layer の順序・キー label・physical geometry を確認する。XML 記号を含む layer 名、回転 layout、OS Layout の変更も別条件で確認する。
+3. binding を変更し `Unsaved changes` のまま出力する。SVG に現在 binding が入り、dirty と Save の有効状態が維持されることを確認する。出力自体では Save を押さない。試験編集は元値へ復帰または Discard する。
+4. locked でも読込完了時に出力できる条件と、loading/empty で無効の条件を分ける。実機が必要なら未実施とする。出力失敗時は page alert を確認して再試行する。実際のダウンロード・SVG 表示・印刷は DOM unit test の成功とは別の証拠にする。
+
 ## 不変条件
 
 - KM-I01: 別の layer/position に binding を誤適用しない。前後 2 キーと別 layer を比較（KM-R01、S1）。
@@ -134,6 +149,8 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 - physical module preview 読込失敗は黄色の警告。Stream error は別 alert、Dismiss で消せる。実機/RPC error 注入は今回の通常 Demo 手順外。
 - combo RPC error は `Combos` card の alert に表示する。無効 draft は editor の validation error に表示して書かず、修正して header Save を再試行できる。keymap reset と combo reset/save は transaction ではないので、途中失敗時は部分変更を想定して Reload と dirty/alert を確認する（S7）。
 
+- SVG 生成/ダウンロード開始失敗はページの `role=alert` に `Could not export the keymap SVG. Try again.`。入力/dirty は保持し、自動消去しない。次の Export SVG 操作開始で消し、失敗時は再表示する。ブラウザがダウンロードを無通知で拒否した場合は検知できない。生成した object URL はダウンロード開始後に解放する（S1/S4/S9）。
+
 ## 探索の観点
 
 1. modal/floating を繰り返し切替し、選択・draft・保存を混同しないか。
@@ -151,3 +168,5 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 ## 未解決・未検証
 
 実機 flash 永続化、lock と失敗後復帰、遅延競合、sensor rotation の詳細、履歴復元の詳細は通常 Demo のキーマップ pilot で未検証。combo preview の全配置・実機 persistence は未検証。共有 selector / history / connection の詳細はモジュール仕様の展開時にリンクする。Rename 失敗後の dialog 閉鎖と default reset の部分変更はコード上の注意点で、承認済み不具合ではない。
+
+SVG の実ブラウザダウンロード、狭幅での操作、全フォントの描画、実機 locked 状態、実際の用紙への印刷は未検証（KM-024/025）。

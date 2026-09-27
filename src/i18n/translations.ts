@@ -9,6 +9,12 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Export SVG": "SVG を出力",
+  "Keymap cheat sheet": "キーマップ早見表",
+  "Download all current keymap layers as a printable SVG, including unsaved bindings.":
+    "現在の全レイヤーを印刷用 SVG としてダウンロードします。未保存の割り当ても含みます。",
+  "Could not export the keymap SVG. Try again.":
+    "キーマップの SVG を出力できませんでした。再試行してください。",
   "Search behaviors...": "ビヘイビアを検索...",
   "Keep the selected behavior category": "選択したビヘイビアカテゴリを維持",
   "Reset the behavior category when reopening":
@@ -1496,6 +1502,11 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Export SVG": "导出 SVG",
+  "Keymap cheat sheet": "键位速查表",
+  "Download all current keymap layers as a printable SVG, including unsaved bindings.":
+    "将当前所有层下载为可打印的 SVG，包括尚未保存的绑定。",
+  "Could not export the keymap SVG. Try again.": "无法导出键位 SVG，请重试。",
   "Search behaviors...": "搜索行为...",
   "Keep the selected behavior category": "保留所选行为类别",
   "Reset the behavior category when reopening": "重新打开时重置行为类别",
