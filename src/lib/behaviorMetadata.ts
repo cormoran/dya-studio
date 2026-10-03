@@ -21,7 +21,6 @@ import {
   MOUSE_SCROLLS,
   dropModifierFlags,
   decodeMouseMove,
-  formatKeycodeWithModifiers,
 } from "./keycodes";
 import { getLayoutDisplayName } from "./keyboardLayouts";
 import type { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
@@ -77,6 +76,11 @@ export interface FormatContext {
   runtimeMacros?: Array<{ slot: number; name?: string }>;
 }
 
+/** Modifier flag bit for each shift key, used to special-case shift-only combos below. */
+const SHIFT_MODIFIER_BITS: number[] = MODIFIER_FLAGS.filter(
+  (mod) => mod.label === "LShift" || mod.label === "RShift",
+).map((mod) => mod.value);
+
 /**
  * Format a keycode (HID usage) with modifiers for display.
  * Returns a human-readable string representation.
@@ -109,20 +113,33 @@ function formatKeycode(
     }
   }
 
-  // Format with modifiers
+  // Punctuation keys are conventionally labeled "<unshifted><shifted>" (e.g.
+  // ",<" for Comma). Show only the character this specific keycode actually
+  // produces: the first when unmodified, the second under a lone Shift
+  // (rather than wrapping the whole pair in "LS(,<)").
+  if (displayName.length === 2) {
+    if (modifiers === 0) {
+      return displayName[0];
+    }
+    if (SHIFT_MODIFIER_BITS.includes(modifiers)) {
+      return displayName[1];
+    }
+  }
+
   if (modifiers === 0) {
     return displayName;
   }
 
-  // Build modifier prefix
+  // A modifier+key combo (e.g. Cmd+A): join with "+" using each modifier's
+  // full label (e.g. "LGui") so the UI can render every part — modifiers and
+  // base key alike — as its own keycap chip, instead of "LG(A)" plain text.
   const modParts: string[] = [];
   MODIFIER_FLAGS.forEach((mod) => {
     if (modifiers & mod.value) {
-      modParts.push(mod.shortLabel);
+      modParts.push(mod.label);
     }
   });
-  const modPrefix = modParts.join("+");
-  return `${modPrefix}(${displayName})`;
+  return [...modParts, displayName].join("+");
 }
 
 /**
@@ -207,48 +224,39 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // ============================================================================
   {
     category: "layer",
-    displayNameVariants: ["Momentary Layer", "mo", "momentary"],
+    displayNameVariants: ["Momentary Layer", "mo", "momentary", "momentary_layer"],
     shortCode: "MO",
     param1Type: "layer",
     param1Description: "Layer active while held",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
-      if (!context.shortFormat && context.layers && context.layers[layerNum]) {
-        return `MO ${context.layers[layerNum].name || layerNum}`;
-      }
-      return `MO ${layerNum}`;
+      return `${context.layers?.[layerNum]?.name || layerNum}`;
     },
     description: "Activate layer while held",
   },
 
   {
     category: "layer",
-    displayNameVariants: ["To Layer", "to"],
+    displayNameVariants: ["To Layer", "to", "to_layer"],
     shortCode: "TO",
     param1Type: "layer",
     param1Description: "Layer to switch to",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
-      if (!context.shortFormat && context.layers && context.layers[layerNum]) {
-        return `TO ${context.layers[layerNum].name || layerNum}`;
-      }
-      return `TO ${layerNum}`;
+      return `${context.layers?.[layerNum]?.name || layerNum}`;
     },
     description: "Switch to layer",
   },
 
   {
     category: "layer",
-    displayNameVariants: ["Toggle Layer", "tog", "toggle"],
+    displayNameVariants: ["Toggle Layer", "tog", "toggle", "toggle_layer"],
     shortCode: "TG",
     param1Type: "layer",
     param1Description: "Layer to toggle",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
-      if (!context.shortFormat && context.layers && context.layers[layerNum]) {
-        return `TG ${context.layers[layerNum].name || layerNum}`;
-      }
-      return `TG ${layerNum}`;
+      return `${context.layers?.[layerNum]?.name || layerNum}`;
     },
     description: "Toggle layer on/off",
   },
@@ -263,11 +271,9 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     param2Description: "Key sent on tap",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
-      const layerName = context.shortFormat
-        ? layerNum
-        : context.layers?.[layerNum]?.name || layerNum;
+      const layerName = context.layers?.[layerNum]?.name || layerNum;
       const keyName = formatKeycode(binding.param2, context.keyboardLayout);
-      return `LT ${layerName} ${keyName}`;
+      return `${layerName} ${keyName}`;
     },
     description: "Layer on hold, key on tap",
   },
@@ -276,7 +282,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // ============================================================================
   {
     category: "keypress",
-    displayNameVariants: ["Trans", "Transparent"],
+    displayNameVariants: ["Trans", "Transparent", "trans"],
     shortCode: "▽",
     getDisplayText: (_binding, context) =>
       context.shortFormat ? "▽" : "Trans",
@@ -285,7 +291,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
 
   {
     category: "keypress",
-    displayNameVariants: ["None"],
+    displayNameVariants: ["None", "none"],
     shortCode: "✕",
     getDisplayText: (_binding, context) => (context.shortFormat ? "✕" : "None"),
     description: "No operation",
@@ -304,7 +310,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     getDisplayText: (binding, context) => {
       const param1 = formatKeycode(binding.param1, context.keyboardLayout);
       const param2 = formatKeycode(binding.param2, context.keyboardLayout);
-      return `MT ${param1} ${param2}`;
+      return `${param1} ${param2}`;
     },
     description: "Modifier on hold, key on tap",
     param1Description: "Select a keycode, usually modifier",
@@ -324,7 +330,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
       const macro = context.runtimeMacros?.find(
         (item) => item.slot === binding.param1,
       );
-      return `Macro ${macro?.name || binding.param1}`;
+      return `${macro?.name || binding.param1}`;
     },
     formatParam: (param1, _param2, paramNumber, context) => {
       if (paramNumber !== 1) return "";
@@ -344,7 +350,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     param1Description: "Key to toggle",
     getDisplayText: (binding, context) => {
       const keyName = formatKeycode(binding.param1, context.keyboardLayout);
-      return `KT ${keyName}`;
+      return `${keyName}`;
     },
     description: "Toggle key on/off with each press",
   },
@@ -356,7 +362,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     param1Description: "Key held until the next key press",
     getDisplayText: (binding, context) => {
       const keyName = formatKeycode(binding.param1, context.keyboardLayout);
-      return `SK ${keyName}`;
+      return `${keyName}`;
     },
     description: "A sticky key stays pressed until another key is pressed.",
   },
@@ -368,10 +374,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     param1Description: "Layer active until the next key press",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
-      if (!context.shortFormat && context.layers && context.layers[layerNum]) {
-        return `SL ${context.layers[layerNum].name || layerNum}`;
-      }
-      return `SL ${layerNum}`;
+      return `${context.layers?.[layerNum]?.name || layerNum}`;
     },
     description: "A sticky layer stays pressed until another key is pressed",
   },
@@ -391,17 +394,22 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // Skip sensor and sensor rotation
   {
     category: "mouse",
-    displayNameVariants: ["Mouse Key Press", "mkp", "mouse key press"],
+    displayNameVariants: [
+      "Mouse Key Press",
+      "mkp",
+      "mouse key press",
+      "mouse_key_press",
+    ],
     shortCode: "MKP",
     param1Type: "mouse_keycode",
     getDisplayText: (binding, context) => {
       const mouseKey = MOUSE_KEYCODES.find((mk) => mk.value === binding.param1);
       if (mouseKey) {
         return context.shortFormat
-          ? mouseKey.shortLabel || `MKP ${binding.param1}`
-          : `MKP ${mouseKey.label}`;
+          ? mouseKey.shortLabel || `${binding.param1}`
+          : mouseKey.label;
       }
-      return `MKP ${binding.param1}`;
+      return `${binding.param1}`;
     },
     formatParam: (param1, _param2, paramNumber) => {
       if (paramNumber === 1) {
@@ -424,13 +432,11 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
         (mm) => mm.value === binding.param1,
       );
       if (movement) {
-        return context.shortFormat
-          ? `MMV ${movement.shortLabel}`
-          : `MMV ${movement.label}`;
+        return context.shortFormat ? movement.shortLabel : movement.label;
       }
       // Otherwise, decode and show X/Y values
       const { x, y } = decodeMouseMove(binding.param1);
-      return `MMV X${x} Y${y}`;
+      return `X${x} Y${y}`;
     },
     formatParam: (param1, _param2, paramNumber) => {
       if (paramNumber === 1) {
@@ -457,13 +463,11 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
       // Check if it matches a preset
       const scroll = MOUSE_SCROLLS.find((ms) => ms.value === binding.param1);
       if (scroll) {
-        return context.shortFormat
-          ? `MSC ${scroll.shortLabel}`
-          : `MSC ${scroll.label}`;
+        return context.shortFormat ? scroll.shortLabel : scroll.label;
       }
       // Otherwise, decode and show X/Y values
       const { x, y } = decodeMouseMove(binding.param1);
-      return `MSC X${x} Y${y}`;
+      return `X${x} Y${y}`;
     },
     formatParam: (param1, _param2, paramNumber) => {
       if (paramNumber === 1) {
@@ -515,9 +519,9 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
         metadata.param1ValueMap?.[binding.param1] || binding.param1.toString();
       if (context.shortFormat && cmd) {
         if (cmd === "SEL" || cmd === "DISC") {
-          return `BT ${cmd} ${binding.param2}`;
+          return `${cmd} ${binding.param2}`;
         }
-        return `BT ${cmd}`;
+        return cmd;
       }
       return null;
     },
@@ -542,7 +546,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
       const cmd =
         metadata.param1ValueMap?.[binding.param1] || binding.param1.toString();
       if (context.shortFormat && cmd) {
-        return `OUT ${cmd}`;
+        return cmd;
       }
       return null;
     },
@@ -680,6 +684,50 @@ export function findBehaviorByPredicate(
 }
 
 /**
+ * Abbreviate a firmware-provided behavior name (e.g. "HOMEROW_MODS_LEFT")
+ * into its ZMK binding mnemonic (e.g. "&hml") by taking the first letter of
+ * each word, mirroring how such behaviors are conventionally named after
+ * their ZMK binding (&hml, &hmr, ...).
+ */
+function abbreviateCustomBehaviorName(displayName: string): string {
+  const words = displayName.split(/[\s_-]+/).filter(Boolean);
+  const short =
+    words.length > 1
+      ? words.map((word) => word[0]).join("")
+      : displayName;
+  return `&${short.toLowerCase()}`;
+}
+
+/**
+ * The behavior's ZMK binding tag (e.g. "&kp", "&hml"), for display as a
+ * small label separate from the binding's content (its params). For a
+ * registered behavior this is its shortest all-lowercase/underscore name
+ * variant, which is normally its actual ZMK binding name (e.g. "kp" out of
+ * ["Key Press", "kp", "key_press"]). For an unregistered/custom behavior
+ * it's an abbreviation of the firmware-provided name.
+ */
+export function getBehaviorTag(
+  behavior: BehaviorDefinition | null | undefined,
+): string {
+  if (!behavior) {
+    return "";
+  }
+  const metadata = getBehaviorMetadata(behavior.displayName);
+  if (metadata) {
+    const codeVariants = metadata.displayNameVariants.filter((variant) =>
+      /^[a-z0-9_]+$/.test(variant),
+    );
+    if (codeVariants.length > 0) {
+      const shortest = codeVariants.reduce((a, b) =>
+        b.length < a.length ? b : a,
+      );
+      return `&${shortest}`;
+    }
+  }
+  return abbreviateCustomBehaviorName(behavior.displayName);
+}
+
+/**
  * Format a behavior binding for display
  * Returns a human-readable string representation
  */
@@ -701,7 +749,12 @@ export function formatBehaviorBinding(
     }
   }
 
-  // Fallback: use behavior display name with params if present
+  // Fallback for behaviors without a registered formatter (custom/unknown
+  // ones, e.g. a firmware-defined "&hml"/"&ltq"-style behavior): format just
+  // the param values, generically, per their firmware-declared type
+  // (keycode/layer/constant/range). The behavior's tag (e.g. "&hml") is
+  // shown separately by the caller via getBehaviorTag, so it's deliberately
+  // left out of this content string.
   if (binding.param1 !== 0) {
     const param1 = formatBehaviorParam(
       behavior,
@@ -718,18 +771,11 @@ export function formatBehaviorBinding(
         2,
         context,
       );
-      return `${behavior.displayName} ${param1} ${param2}`;
+      return `${param1} ${param2}`;
     }
-    return `${behavior.displayName} ${param1}`;
+    return param1;
   } else if (binding.param2 !== 0) {
-    const param2 = formatBehaviorParam(
-      behavior,
-      binding.param1,
-      binding.param2,
-      2,
-      context,
-    );
-    return `${behavior.displayName} ${param2}`;
+    return formatBehaviorParam(behavior, binding.param1, binding.param2, 2, context);
   }
 
   return behavior.displayName;
@@ -782,7 +828,7 @@ export function formatBehaviorParam(
     } else if (firstMatch?.range != undefined) {
       return param1.toString();
     } else if (firstMatch?.hidUsage != undefined) {
-      return formatKeycodeWithModifiers(param1, context.keyboardLayout).display;
+      return formatKeycode(param1, context.keyboardLayout);
     } else if (firstMatch?.layerId != undefined) {
       const layerNum = param1;
       if (context.layers && context.layers[layerNum]) {
