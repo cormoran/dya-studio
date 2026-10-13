@@ -191,7 +191,7 @@ describe.each([MacroComboPage, KeymapPage])(
       jest.mocked(useMacroEditor).mockReturnValue({
         selectedSlot: null,
         globalModifiedFields: new Set(),
-        flushPendingWrites: jest.fn(),
+        flushPendingWrites: jest.fn().mockResolvedValue(true),
         cancelPendingWrites: jest.fn(),
         reloadLoadedMacro: jest.fn(),
         clearGlobalModified: jest.fn(),
