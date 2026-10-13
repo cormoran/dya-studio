@@ -68,6 +68,7 @@ export function useMacroEditor({
 }: UseMacroEditorArgs) {
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [loadedMacro, setLoadedMacro] = useState<MacroDetail | null>(null);
+  const failedWritesRef = useRef(new Set<string>());
   const loadingSlotRef = useRef<number | null>(null);
   const loadedMacroRef = useRef<MacroDetail | null>(null);
   loadedMacroRef.current = loadedMacro;
@@ -242,13 +243,12 @@ export function useMacroEditor({
 
   const commitRename = useCallback(
     async (nextName = renameDraft) => {
-      if (isCreateDraft) return;
-      if (!requireUnlocked()) return;
-      if (!loadedMacro) return;
+      if (isCreateDraft) return true;
+      if (!requireUnlocked() || !loadedMacro) return false;
       const trimmedName = nextName.slice(0, runtimeMacro.maxNameLength).trim();
       if (!trimmedName || trimmedName === loadedMacro.name) {
         setRenameDraft(loadedMacro.name);
-        return;
+        return true;
       }
       const ok = await runtimeMacro.renameMacro(loadedMacro.name, trimmedName);
       if (ok) {
@@ -257,6 +257,7 @@ export function useMacroEditor({
       } else {
         setRenameDraft(loadedMacro.name);
       }
+      return ok;
     },
     [isCreateDraft, loadedMacro, renameDraft, runtimeMacro, requireUnlocked],
   );
@@ -414,9 +415,10 @@ export function useMacroEditor({
   );
 
   const commitStringChange = useCallback(async () => {
-    if (!loadedMacro || stringConversionError) return;
+    if (!loadedMacro || stringConversionError) return false;
     const ok = await commitSteps(loadedMacro.steps);
     if (ok) setStringDraft(null);
+    return ok;
   }, [commitSteps, loadedMacro, stringConversionError]);
 
   const handleDelayChange = useCallback(
@@ -432,51 +434,55 @@ export function useMacroEditor({
     [loadedMacro],
   );
 
-  const commitDelay = useCallback(
-    async (stepIndex: number) => {
-      if (!loadedMacro) return;
-      await updateStep(stepIndex, loadedMacro.steps[stepIndex]);
-    },
-    [loadedMacro, updateStep],
-  );
+  const commitDelay = useCallback(async () => {
+    if (!loadedMacro) return false;
+    return commitSteps(loadedMacro.steps);
+  }, [loadedMacro, commitSteps]);
 
   // Debounced memory writes for free-text/number edits: typing auto-writes to
   // keyboard memory after a quiet period (flushed on blur / before Save).
   // Discrete dropdown selections keep committing immediately (see updateStep).
+  const trackWrite = useCallback(
+    async (field: string, write: () => Promise<boolean>) => {
+      // Keep a failed edit unsavable until that field succeeds or is discarded.
+      failedWritesRef.current.add(field);
+      if (await write()) failedWritesRef.current.delete(field);
+    },
+    [],
+  );
+
   const renameDebounce = useDebouncedMemoryWrite<string>(
     useCallback(
       async (name: string) => {
-        await commitRename(name);
+        await trackWrite("rename", () => commitRename(name));
       },
-      [commitRename],
+      [commitRename, trackWrite],
     ),
   );
 
   const delayDebounce = useDebouncedMemoryWrite<number>(
-    useCallback(
-      async (stepIndex: number) => {
-        await commitDelay(stepIndex);
-      },
-      [commitDelay],
-    ),
+    useCallback(async () => {
+      await trackWrite("delay", commitDelay);
+    }, [commitDelay, trackWrite]),
   );
 
   const stringDebounce = useDebouncedMemoryWrite<void>(
     useCallback(async () => {
-      await commitStringChange();
-    }, [commitStringChange]),
+      await trackWrite("string", commitStringChange);
+    }, [commitStringChange, trackWrite]),
   );
 
   const tapMsDebounce = useDebouncedMemoryWrite<number>(
     useCallback(
       async (tapMs: number) => {
-        if (!requireUnlocked()) return;
-        const ok = await runtimeMacro.setTapMs(clampUInt32(tapMs));
-        if (ok) {
-          setGlobalModifiedFields((prev) => new Set(prev).add("tapMs"));
-        }
+        await trackWrite("tapMs", async () => {
+          if (!requireUnlocked()) return false;
+          const ok = await runtimeMacro.setTapMs(clampUInt32(tapMs));
+          if (ok) setGlobalModifiedFields((prev) => new Set(prev).add("tapMs"));
+          return ok;
+        });
       },
-      [requireUnlocked, runtimeMacro],
+      [requireUnlocked, runtimeMacro, trackWrite],
     ),
   );
 
@@ -682,6 +688,7 @@ export function useMacroEditor({
     await tapMsDebounce.flush();
     await delayDebounce.flush();
     await stringDebounce.flush();
+    return failedWritesRef.current.size === 0;
   }, [delayDebounce, renameDebounce, stringDebounce, tapMsDebounce]);
 
   /** Drop queued edits — discard restores the persisted values. */
@@ -690,6 +697,7 @@ export function useMacroEditor({
     tapMsDebounce.cancel();
     delayDebounce.cancel();
     stringDebounce.cancel();
+    failedWritesRef.current.clear();
   }, [delayDebounce, renameDebounce, stringDebounce, tapMsDebounce]);
 
   const isMemoryWritePending =

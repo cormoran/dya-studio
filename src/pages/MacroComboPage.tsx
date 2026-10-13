@@ -72,6 +72,7 @@ export function MacroComboPage() {
   // fail→modal→retry path is handled inside the feature hooks via runWithUnlock.
   const { requireUnlock: requireUnlocked } = useStudioUnlock();
   const [rightView, setRightView] = useState<RightView>(null);
+  const savingRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -80,8 +81,6 @@ export function MacroComboPage() {
   const comboAvailable = runtimeCombo.isAvailable;
   const anyAvailable = macroAvailable || comboAvailable;
   const anyLoading = runtimeMacro.isLoading || runtimeCombo.isLoading;
-  const hasPendingChanges =
-    runtimeMacro.hasUnsavedChanges || runtimeCombo.hasPendingChanges;
 
   // Version history capture point. Every macro/combo edit toggles the hooks'
   // `isLoading` too, so "the tab finished reading the keyboard" can't be read
@@ -141,6 +140,16 @@ export function MacroComboPage() {
     t,
     onComboSelected,
   });
+
+  const hasPendingChanges =
+    runtimeMacro.hasUnsavedChanges ||
+    runtimeCombo.hasPendingChanges ||
+    macroEditor.isMemoryWritePending;
+  // Macro input blur starts RAM writes before click. Save owns the flush barrier,
+  // so those tracked writes must not disable the click that persists them.
+  const saveBlockedByLoading =
+    runtimeCombo.isLoading ||
+    (runtimeMacro.isLoading && !macroEditor.isMemoryWritePending);
 
   // The macro/combo list RPCs require unlock. Proactively open the shared
   // unlock modal whenever this tab is viewed while locked, so the user is
@@ -272,30 +281,41 @@ export function MacroComboPage() {
   ]);
 
   const handleSave = useCallback(async () => {
-    if (!requireUnlocked()) return;
+    if (
+      savingRef.current ||
+      isDiscarding ||
+      isResetting ||
+      saveBlockedByLoading ||
+      !hasPendingChanges ||
+      macroEditor.encodedSizeError ||
+      macroEditor.stringConversionError ||
+      !requireUnlocked()
+    )
+      return;
+    savingRef.current = true;
     setIsSaving(true);
     try {
       // Flush any queued debounced edits so they are part of this persist.
-      await macroEditor.flushPendingWrites();
+      if (!(await macroEditor.flushPendingWrites())) return;
       await comboEditor.flushPendingWrites();
       if (macroAvailable) {
-        await runtimeMacro.saveMacros();
+        if (!(await runtimeMacro.saveMacros())) return;
         macroEditor.clearGlobalModified();
       }
       if (comboAvailable) {
         const status = await runtimeCombo.saveChanges();
-        if (status) {
-          comboEditor.clearModified();
-          comboEditor.setStatusMessage(
-            t("Saved {{count}} runtime combo changes.", {
-              count: status.affectedCount,
-            }),
-          );
-        }
+        if (!status) return;
+        comboEditor.clearModified();
+        comboEditor.setStatusMessage(
+          t("Saved {{count}} runtime combo changes.", {
+            count: status.affectedCount,
+          }),
+        );
       }
       // What is now on the keyboard is worth keeping as a version.
       await versionHistory.capture();
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   }, [
@@ -308,6 +328,10 @@ export function MacroComboPage() {
     runtimeMacro,
     t,
     versionHistory,
+    isDiscarding,
+    isResetting,
+    saveBlockedByLoading,
+    hasPendingChanges,
   ]);
 
   const handleDiscard = useCallback(async () => {
@@ -510,9 +534,12 @@ export function MacroComboPage() {
                     onClick={handleSave}
                     disabled={
                       isSaving ||
-                      anyLoading ||
+                      isDiscarding ||
+                      isResetting ||
+                      saveBlockedByLoading ||
                       !hasPendingChanges ||
-                      Boolean(macroEditor.encodedSizeError)
+                      Boolean(macroEditor.encodedSizeError) ||
+                      Boolean(macroEditor.stringConversionError)
                     }
                   >
                     {isSaving ? (
