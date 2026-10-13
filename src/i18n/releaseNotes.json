@@ -31,7 +31,13 @@
             "pr": [220, 225]
           }
         ],
-        "patch": []
+        "patch": [
+          {
+            "en": "Deleting a reordered keymap layer now removes the selected layer.",
+            "ja": "並べ替えたキーマップレイヤーを、選択したレイヤーとして正しく削除できるようになりました。",
+            "zh": "现在可以正确删除重新排序后的键位图图层。"
+          }
+        ]
       }
     },
     {
