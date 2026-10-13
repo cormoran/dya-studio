@@ -24,6 +24,8 @@ jobs:
         run: npm ci
       - name: Run lint
         run: npm run lint
+      - name: Check AI issue queue safety
+        run: python3 -m unittest discover -s .agents/skills/issue-queue/scripts -p 'test_*.py'
       - name: Check product specifications
         run: npm run spec:check
       - name: Check preview approval guards
