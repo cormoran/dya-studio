@@ -116,9 +116,33 @@ class QueueTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Incompatible"):
             q.field_map(current, required=False)
 
+    def test_existing_view_is_verified_without_mutation(self):
+        view = {"name": q.VIEW_NAME, "number": 2, "layout": "TABLE_LAYOUT", "filter": q.VIEW_FILTER,
+                "fields": {"pageInfo": {"hasNextPage": False}, "nodes": [{"name": x} for x in q.VIEW_FIELDS]},
+                "sortByFields": {"pageInfo": {"hasNextPage": False}, "nodes": [{"direction": "ASC", "field": {"name": "AI Rank"}}]}}
+        with patch.object(q, "project_views", return_value=[view]), patch.object(q, "gh") as api:
+            self.assertTrue(q.setup_view().endswith("/views/2"))
+            api.assert_not_called()
+
+    def test_human_modified_sort_is_preserved(self):
+        view = {"name": q.VIEW_NAME, "number": 2, "layout": "TABLE_LAYOUT", "filter": q.VIEW_FILTER,
+                "fields": {"pageInfo": {"hasNextPage": False}, "nodes": [{"name": x} for x in q.VIEW_FIELDS]},
+                "sortByFields": {"pageInfo": {"hasNextPage": False}, "nodes": [{"direction": "DESC", "field": {"name": "AI Rank"}}]}}
+        with patch.object(q, "project_views", return_value=[view]), patch.object(q, "gh") as api:
+            with self.assertRaisesRegex(RuntimeError, "preserve human"):
+                q.setup_view()
+            api.assert_not_called()
+
+    def test_failed_view_readback_does_not_retry_create(self):
+        fields = [{"name": name, "id": n} for n, name in enumerate(q.VIEW_FIELDS, 1)]
+        with patch.object(q, "project_views", side_effect=[[], []]), patch.object(q, "pages", return_value=fields), patch.object(q, "gh") as api:
+            with self.assertRaisesRegex(RuntimeError, "readback failed"):
+                q.setup_view()
+            self.assertEqual(api.call_count, 1)
+
     def test_setup_repeated_has_no_mutations(self):
         labels = [{"name": x} for x in q.LABELS]
-        with patch.object(q, "pages", return_value=labels), patch.object(q, "project_info", return_value=info()), patch.object(q, "gh") as api:
+        with patch.object(q, "pages", return_value=labels), patch.object(q, "project_info", return_value=info()), patch.object(q, "setup_view", return_value="view-url"), patch.object(q, "gh") as api:
             q.setup(False)
             q.setup(False)
             api.assert_not_called()

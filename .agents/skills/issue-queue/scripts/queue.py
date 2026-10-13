@@ -20,6 +20,10 @@ LABELS = {
 }
 FIELDS = {"AI Priority": "SINGLE_SELECT", "AI Rank": "NUMBER", "AI Rationale": "TEXT"}
 PRIORITIES = {"P0", "P1", "P2", "P3"}
+VIEW_NAME = "AI implementation queue"
+VIEW_FILTER = ("repo:cormoran/dya-studio is:issue is:open label:ai:implement "
+               "-label:ai:unsafe -label:ai:not-ready -label:ai:blocked")
+VIEW_FIELDS = {"Title", "Status", "Labels", "Linked pull requests", *FIELDS}
 VETO = {"ai:unsafe", "ai:not-ready", "ai:in-progress", "ai:blocked"}
 REQUIRED = {"ai:triaged", "ai:implement"}
 
@@ -172,6 +176,59 @@ def issues():
     return [x for x in pages(f"repos/{REPO}/issues?state=open&per_page=100") if "pull_request" not in x]
 
 
+def project_views():
+    connection = graphql('''query { user(login:"cormoran") { projectV2(number:3) {
+      views(first:100) { pageInfo { hasNextPage } nodes { name number layout filter
+        fields(first:100) { pageInfo { hasNextPage } nodes {
+          ... on ProjectV2Field { name }
+          ... on ProjectV2SingleSelectField { name }
+          ... on ProjectV2IterationField { name }
+        } }
+        sortByFields(first:100) { pageInfo { hasNextPage } nodes { direction field {
+          ... on ProjectV2Field { name }
+          ... on ProjectV2SingleSelectField { name }
+          ... on ProjectV2IterationField { name }
+        } } }
+      } }
+    } } }''')["user"]["projectV2"]["views"]
+    if connection["pageInfo"]["hasNextPage"]:
+        raise RuntimeError("View inventory incomplete; no view mutations")
+    return connection["nodes"]
+
+
+def verify_view(view):
+    if view["fields"]["pageInfo"]["hasNextPage"] or view["sortByFields"]["pageInfo"]["hasNextPage"]:
+        raise RuntimeError("View field/sort inventory incomplete")
+    expected_sort = [{"direction": "ASC", "field": {"name": "AI Rank"}}]
+    if (view["layout"] != "TABLE_LAYOUT" or view["filter"] != VIEW_FILTER
+            or {x["name"] for x in view["fields"]["nodes"]} != VIEW_FIELDS
+            or view["sortByFields"]["nodes"] != expected_sort):
+        raise RuntimeError("Existing AI view differs; preserve human configuration and resolve explicitly")
+    return f"https://github.com/users/{OWNER}/projects/{PROJECT}/views/{view['number']}"
+
+
+def setup_view():
+    matches = [x for x in project_views() if x["name"] == VIEW_NAME]
+    if len(matches) > 1:
+        raise RuntimeError("Ambiguous AI queue views; no view mutations")
+    if matches:
+        return verify_view(matches[0])
+    # REST create supports sorting, unlike the GraphQL view mutation. On the live
+    # API the user path accepts login; field IDs here are REST integers, not node IDs.
+    fields = pages(f"users/{OWNER}/projectsV2/{PROJECT}/fields?per_page=100")
+    by_name = {x["name"]: x["id"] for x in fields}
+    if not VIEW_FIELDS.issubset(by_name):
+        raise RuntimeError("Missing visible view fields")
+    gh("api", f"users/{OWNER}/projectsV2/{PROJECT}/views", "--method", "POST", "--input", "-",
+       payload={"name": VIEW_NAME, "layout": "table", "filter": VIEW_FILTER,
+                "visible_fields": [by_name[x] for x in sorted(VIEW_FIELDS)],
+                "sort_by": [[by_name["AI Rank"], "asc"]]})
+    matches = [x for x in project_views() if x["name"] == VIEW_NAME]
+    if len(matches) != 1:
+        raise RuntimeError("View creation readback failed; reconcile before retry")
+    return verify_view(matches[0])
+
+
 def setup(labels_only):
     existing = {x["name"] for x in pages(f"repos/{REPO}/labels?per_page=100")}
     for name, (color, description) in LABELS.items():
@@ -194,7 +251,7 @@ def setup(labels_only):
     info = project_info()
     field_map(info)
     return {"labels": sorted(LABELS), "project": info["url"], "fields": list(FIELDS),
-            "views_and_workflows": "unchanged; configure table view separately"}
+            "queue_view": setup_view(), "existing_views_and_workflows": "unchanged"}
 
 
 def prioritize(number, priority, rank, reason):
