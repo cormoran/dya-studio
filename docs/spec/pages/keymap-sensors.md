@@ -19,7 +19,7 @@
 
 ## 前提・状態
 
-runtime sensor rotation 対応 device と current layer が必要。非対応は親で警告、対応かつ sensor 0 件では section 内のカードが空。sensor ごとに ID/name と選択 layer を名前に持つ fieldset 内で 2 方向を表示し、各 binding button と tap time input も sensor/layer/方向を含む accessible name を持つ。初期読込は全 sensor の layer bindings を取得。未接続は親の接続 gate。独立した Save/dirty 状態はない。UI は選択時リアルタイム保存と説明するが、flash 永続化の firmware 契約はこの frontend だけでは断定しない。
+runtime sensor rotation 対応 device と current layer が必要。Discard/Reload などによる一覧の更新後は、親の KM-008/011 に従って補正した current layer の ID/name を表示する。layer 一覧が空なら親が section を表示せず、layer が戻ると先頭 layer の設定を表示する。非対応は親で警告、対応かつ sensor 0 件では section 内のカードが空。sensor ごとに ID/name と選択 layer を名前に持つ fieldset 内で 2 方向を表示し、各 binding button と tap time input も sensor/layer/方向を含む accessible name を持つ。初期読込は全 sensor の layer bindings を取得。未接続は親の接続 gate。独立した Save/dirty 状態はない。UI は選択時リアルタイム保存と説明するが、flash 永続化の firmware 契約はこの frontend だけでは断定しない。
 
 ## 現行の機能仕様
 
