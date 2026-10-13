@@ -142,6 +142,13 @@ export function KeymapPage() {
 
   // Local UI state
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
+  // Discard, Reload and history restoration can replace the layer list without
+  // going through a layer handler. Reconcile before committing the preview and
+  // controls; an empty list resets selection for the next successful load.
+  const lastLayerIndex = Math.max(0, (keymap.keymap?.layers.length ?? 0) - 1);
+  if (selectedLayerIndex > lastLayerIndex) {
+    setSelectedLayerIndex(lastLayerIndex);
+  }
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
@@ -910,7 +917,9 @@ export function KeymapPage() {
                               onClick={() =>
                                 handleMobileLayerAction(handleMoveLayerUp)
                               }
-                              disabled={selectedLayerIndex <= 0}
+                              disabled={
+                                !currentLayer || selectedLayerIndex <= 0
+                              }
                             >
                               <IconChevronUp size={19} />
                             </button>
@@ -926,8 +935,9 @@ export function KeymapPage() {
                                 handleMobileLayerAction(handleMoveLayerDown)
                               }
                               disabled={
+                                !currentLayer ||
                                 selectedLayerIndex >=
-                                keymap.keymap.layers.length - 1
+                                  keymap.keymap.layers.length - 1
                               }
                             >
                               <IconChevronDown size={19} />
@@ -938,6 +948,7 @@ export function KeymapPage() {
                               type="button"
                               className="keymap-settings-action"
                               aria-label={t("Rename current layer")}
+                              disabled={!currentLayer}
                               onClick={() =>
                                 handleMobileLayerAction(handleOpenRenameDialog)
                               }
@@ -1244,7 +1255,7 @@ export function KeymapPage() {
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleMoveLayerUp}
-                      disabled={selectedLayerIndex <= 0}
+                      disabled={!currentLayer || selectedLayerIndex <= 0}
                       aria-label={t("Move layer up (higher priority)")}
                     >
                       <IconChevronUp
@@ -1262,6 +1273,7 @@ export function KeymapPage() {
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleMoveLayerDown}
                       disabled={
+                        !currentLayer ||
                         selectedLayerIndex >= keymap.keymap.layers.length - 1
                       }
                       aria-label={t("Move layer down (lower priority)")}
@@ -1281,6 +1293,7 @@ export function KeymapPage() {
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleOpenRenameDialog}
+                      disabled={!currentLayer}
                       aria-label={t("Rename current layer")}
                     >
                       <IconPencil

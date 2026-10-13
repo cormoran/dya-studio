@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
+            "ja": "変更の破棄やレイヤーの再読み込み後も、有効なキーマップレイヤーの選択を維持するようにしました。",
+            "zh": "丢弃更改或重新加载层后，保持选中有效的键位图层。"
+          },
+          {
             "en": "Move the Stream switch beside the save status in the keymap preview with a more compact appearance.",
             "ja": "ストリーム切替をキーマッププレビュー内の保存状態の横へ移し、控えめな表示にしました。",
             "zh": "将输入流开关移至键位预览的保存状态旁，并采用更简洁的样式。"
