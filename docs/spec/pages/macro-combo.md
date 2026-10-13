@@ -110,5 +110,6 @@
 
 - actual firmware slot capacity、flash 保存後の電源断耐性、遅延 RPC の競合は未検証。mobile の長い item 名と macro-only / combo-only 構成は UI 未実測。
 - non-split DYA2 Renode の空 macro を `Create macro` → `Save` すると、list entry は残る一方、再選択の `GetMacro` は `No macro bound to that slot`、`Delete` は `No macro with that name` になる事例を [CI #36151779631](https://github.com/cormoran/dya-studio/actions/runs/36151779631) で 2 回観測した。empty body の flash 保存・Renode NVS・firmware keyspace のどの層が原因かは未確定。UI の Delete 再試行で解消したとは扱わない。
+- 既定の 0 ms delay を追加した macro でも [CI #38438539495](https://github.com/cormoran/dya-studio/actions/runs/38438539495) の 2 試行で同じ stale list / `No macro with that name` を観測した。[既存 main の scheduled CI #38430933223](https://github.com/cormoran/dya-studio/actions/runs/38430933223) も同じ削除 assertion で失敗し、[#274](https://github.com/cormoran/dya-studio/issues/274) に記録されている。原因や 0 ms 自体の不具合を確定したものではない。通常の非空 round-trip 用 [Renode fixture](../../../e2e/renode/tests/dya2/macro-combo.spec.ts) は UI から 25 ms を設定し、Save 前後の明示再選択で値を読む。fixture の改善は product/firmware の修正ではなく、空/0 ms 条件の解消や #274 の修正済み判定を意味しない。
 - Delete の確認がない現行挙動はコードで確認したが、意図的な受容根拠は確認できない。
 - default reset / save の部分成功に対する user-visible transaction 要件は不明。
