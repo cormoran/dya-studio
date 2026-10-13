@@ -1,0 +1,4 @@
+interface:
+  display_name: "DYA Studio Issue Queue"
+  short_description: "Triage, prioritize and implement ready DYA Studio issues"
+  default_prompt: "Use $issue-queue to triage DYA Studio issues, prioritize them in Project 3, and implement up to five ready issues with subagents."

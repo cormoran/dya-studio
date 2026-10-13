@@ -1,12 +1,17 @@
-import { useState, useEffect, useCallback, useContext } from "react";
-import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
-import { useCustomSubsystem, useLockAwareCall } from "./useCustomSubsystem";
 import {
-  Request,
-  Response,
-  Notification,
-  ActivitySettings,
-} from "../proto/zmk/settings/core";
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  useContext,
+} from "react";
+import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
+import { useCustomSubsystem } from "./useCustomSubsystem";
+import { Request, Response, Notification } from "../proto/zmk/settings/core";
+
+import { studioLockErrorText } from "../lib/studioUnlock";
 
 // Subsystem identifier for ZMK settings RPC
 export const SETTINGS_SUBSYSTEM_IDENTIFIER = "zmk__settings";
@@ -28,6 +33,8 @@ export interface DeviceActivitySettings {
 }
 
 export interface UseSettingsReturn {
+  /** Changes when the connection, readiness or subsystem index changes. */
+  sessionKey: object;
   isAvailable: boolean;
   devices: DeviceActivitySettings[];
   isLoading: boolean;
@@ -44,107 +51,144 @@ export function useSettings(): UseSettingsReturn {
     ready,
     call: gatedCall,
   } = useCustomSubsystem(SUBSYSTEM_IDENTIFIER, CODEC);
-  const [devices, setDevices] = useState<DeviceActivitySettings[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Map a lock/cancel rejection from the gate to the shared "device is locked"
-  // message (rendered via t()); other outcomes pass through unchanged.
-  const call = useLockAwareCall(gatedCall, setError);
-
-  // Extract subsystem index as a stable primitive value for dependencies
+  const connection = zmkApp?.state.connection;
   const subsystemIndex = subsystem?.index;
+  const onNotification = zmkApp?.onNotification;
+  const sessionKey = useMemo(
+    () => ({ connection, ready, subsystemIndex }),
+    [connection, ready, subsystemIndex],
+  );
+  const activeSession = useRef<object | null>(null);
+  const readRef = useRef<{ cancel: () => void } | null>(null);
+  const [state, setState] = useState<{
+    sessionKey: object;
+    devices: DeviceActivitySettings[];
+    isLoading: boolean;
+    error: string | null;
+  }>({ sessionKey, devices: [], isLoading: false, error: null });
+
+  // Invalidate before passive effects or any old async completion can run.
+  useLayoutEffect(() => {
+    activeSession.current = sessionKey;
+    return () => {
+      activeSession.current = null;
+      readRef.current?.cancel();
+      readRef.current = null;
+    };
+  }, [sessionKey]);
+
+  const isCurrent = useCallback(
+    () => activeSession.current === sessionKey,
+    [sessionKey],
+  );
+  const update = useCallback(
+    (patch: Partial<Omit<typeof state, "sessionKey">>) => {
+      if (!isCurrent()) return;
+      setState((previous) => ({
+        ...(previous.sessionKey === sessionKey
+          ? previous
+          : { devices: [], isLoading: false, error: null }),
+        sessionKey,
+        ...patch,
+      }));
+    },
+    [sessionKey, isCurrent],
+  );
 
   const loadAllSettings = useCallback(async (): Promise<
     DeviceActivitySettings[]
   > => {
-    if (!ready || !zmkApp || subsystemIndex === undefined) {
-      setError("Not connected to device or subsystem not found");
+    if (!isCurrent()) return [];
+    if (
+      !ready ||
+      !connection ||
+      !onNotification ||
+      subsystemIndex === undefined
+    ) {
       return [];
     }
 
-    setIsLoading(true);
-    setError(null);
+    readRef.current?.cancel();
+    const deviceMap = new Map<number, DeviceActivitySettings>();
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let finishCollection: (() => void) | undefined;
+    const read = {
+      cancel: () => {
+        cancelled = true;
+        unsubscribe?.();
+        unsubscribe = undefined;
+        if (timer !== undefined) clearTimeout(timer);
+        finishCollection?.();
+      },
+    };
+    readRef.current = read;
+    const currentRead = () =>
+      !cancelled && isCurrent() && readRef.current === read;
+    update({ isLoading: true, error: null });
 
     try {
-      // Map to store settings by source ID
-      const deviceMap = new Map<number, DeviceActivitySettings>();
-
-      // Set up notification listener for activity settings
-      const notificationHandler = (settings: ActivitySettings) => {
-        try {
-          const sourceId = settings.source;
-          const deviceName =
-            sourceId === 0 ? "Central" : `Peripheral ${sourceId}`;
-
-          deviceMap.set(sourceId, {
-            sourceId,
-            deviceName,
-            idleMs: settings.idleMs,
-            sleepMs: settings.sleepMs,
-          });
-
-          // Update state with all collected devices
-          setDevices(Array.from(deviceMap.values()));
-        } catch (err) {
-          console.error(
-            "Failed to process activity settings notification:",
-            err,
-          );
-        }
-      };
-
-      // Subscribe to notifications using zmkApp's onNotification
-      const unsubscribe = zmkApp.onNotification({
+      unsubscribe = onNotification({
         type: "custom",
         subsystemIndex,
         callback: (customNotification) => {
-          // Decode the payload
+          if (!currentRead()) return;
           try {
-            const notification = Notification.decode(
-              customNotification.payload,
-            );
-            if (notification.activitySettings?.settings) {
-              notificationHandler(notification.activitySettings.settings);
-            }
+            const settings = Notification.decode(customNotification.payload)
+              .activitySettings?.settings;
+            if (!settings) return;
+            const sourceId = settings.source;
+            deviceMap.set(sourceId, {
+              sourceId,
+              deviceName: sourceId === 0 ? "Central" : `Peripheral ${sourceId}`,
+              idleMs: settings.idleMs,
+              sleepMs: settings.sleepMs,
+            });
+            update({ devices: Array.from(deviceMap.values()) });
           } catch (err) {
             console.error("Failed to decode settings notification:", err);
           }
         },
       });
-
-      try {
-        // Send request to get all activity settings
-        const resp = await call(Request.create({ getAllActivitySettings: {} }));
-        if (resp?.error) {
-          setError(resp.error.message);
-        }
-        // Note: The actual data comes via notifications, not the response
-      } finally {
-        // Wait for all notifications to arrive from devices
-        await new Promise((resolve) =>
-          setTimeout(resolve, NOTIFICATION_COLLECTION_TIMEOUT_MS),
-        );
-        unsubscribe();
-      }
-      return Array.from(deviceMap.values());
-    } catch (err) {
-      console.error("Failed to load settings:", err);
-      setError(
-        `Failed to load settings: ${err instanceof Error ? err.message : "Unknown error"}`,
+      const response = await gatedCall(
+        Request.create({ getAllActivitySettings: {} }),
       );
+      if (!currentRead()) return [];
+      if (response?.error) update({ error: response.error.message });
+      await new Promise<void>((resolve) => {
+        finishCollection = resolve;
+        timer = setTimeout(resolve, NOTIFICATION_COLLECTION_TIMEOUT_MS);
+      });
+      return currentRead() ? Array.from(deviceMap.values()) : [];
+    } catch (err) {
+      if (currentRead()) {
+        update({
+          error:
+            studioLockErrorText(err) ??
+            `Failed to load settings: ${err instanceof Error ? err.message : "Unknown error"}`,
+        });
+      }
       return [];
     } finally {
-      setIsLoading(false);
+      if (currentRead()) update({ isLoading: false });
+      read.cancel();
+      if (readRef.current === read) readRef.current = null;
     }
-  }, [zmkApp, ready, subsystemIndex, call]);
+  }, [
+    connection,
+    ready,
+    subsystemIndex,
+    onNotification,
+    gatedCall,
+    isCurrent,
+    update,
+  ]);
 
   const setActivitySettings = useCallback(
     async (idleMs: number, sleepMs: number): Promise<boolean> => {
-      if (!ready) {
-        setError("Not connected to device or subsystem not found");
+      if (!isCurrent() || !ready || !connection || subsystemIndex === undefined)
         return false;
-      }
-
       if (
         !Number.isSafeInteger(idleMs) ||
         !Number.isSafeInteger(sleepMs) ||
@@ -153,51 +197,51 @@ export function useSettings(): UseSettingsReturn {
         idleMs > 0xffffffff ||
         sleepMs > 0xffffffff
       ) {
-        setError(
-          "Activity timeouts must be whole milliseconds from 0 to 4294967295",
-        );
+        update({
+          error:
+            "Activity timeouts must be whole milliseconds from 0 to 4294967295",
+        });
         return false;
       }
-
-      setIsLoading(true);
-      setError(null);
-
+      update({ isLoading: true, error: null });
       try {
-        const resp = await call(
+        const response = await gatedCall(
           Request.create({
-            setActivitySettings: {
-              settings: {
-                idleMs,
-                sleepMs,
-                source: 0, // Not used for set operation
-              },
-            },
+            setActivitySettings: { settings: { idleMs, sleepMs, source: 0 } },
           }),
         );
-
-        if (resp) {
-          if (resp.error) {
-            setError(resp.error.message);
-            return false;
-          } else if (resp.setActivitySettings?.success) {
-            // Successfully set, reload settings
-            await loadAllSettings();
-            return true;
-          }
+        if (!isCurrent()) return false;
+        if (response?.error) {
+          update({ error: response.error.message });
+          return false;
         }
-        setError("Failed to update activity settings");
+        if (response?.setActivitySettings?.success) {
+          await loadAllSettings();
+          return isCurrent();
+        }
+        update({ error: "Failed to update activity settings" });
         return false;
       } catch (err) {
-        console.error("Failed to set activity settings:", err);
-        setError(
-          `Failed to set activity settings: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
+        if (isCurrent())
+          update({
+            error:
+              studioLockErrorText(err) ??
+              `Failed to set activity settings: ${err instanceof Error ? err.message : "Unknown error"}`,
+          });
         return false;
       } finally {
-        setIsLoading(false);
+        if (isCurrent()) update({ isLoading: false });
       }
     },
-    [ready, call, loadAllSettings],
+    [
+      connection,
+      ready,
+      subsystemIndex,
+      gatedCall,
+      loadAllSettings,
+      isCurrent,
+      update,
+    ],
   );
 
   const resetToDefaults = useCallback(async () => {
@@ -215,10 +259,12 @@ export function useSettings(): UseSettingsReturn {
   }, [ready, loadAllSettings]);
 
   return {
-    isAvailable: subsystem !== null,
-    devices,
-    isLoading,
-    error,
+    sessionKey,
+    isAvailable: ready && !!connection && subsystemIndex !== undefined,
+    devices: state.sessionKey === sessionKey && ready ? state.devices : [],
+    isLoading:
+      state.sessionKey === sessionKey && ready ? state.isLoading : false,
+    error: state.sessionKey === sessionKey && ready ? state.error : null,
     loadAllSettings,
     setActivitySettings,
     resetToDefaults,

@@ -141,6 +141,7 @@ import { ErrorConditions } from "@zmkfirmware/zmk-studio-ts-client/meta";
 import { KEYBOARD_KEYCODES } from "../keycodes";
 import { BEHAVIORS } from "./behaviors";
 import {
+  RemoveLayerErrorCode,
   MoveLayerErrorCode,
   RestoreLayerErrorCode,
   type Layer,
@@ -441,19 +442,24 @@ class Keyboard {
         },
       };
     } else if (req.keymap?.removeLayer) {
-      const layerId = req.keymap.removeLayer.layerIndex;
-      this.deletedLayers.push(
-        this.data.keymap.layers.find((l) => l.id === layerId)!,
-      );
-      this.data.keymap.layers = this.data.keymap.layers.filter(
-        (l) => l.id !== layerId,
-      );
-      this.dirty = true;
-      rr.keymap = {
-        removeLayer: {
-          ok: true,
-        },
-      };
+      const { layerIndex } = req.keymap.removeLayer;
+      const layer = this.data.keymap.layers[layerIndex];
+      if (layer) {
+        this.deletedLayers.push(layer);
+        this.data.keymap.layers.splice(layerIndex, 1);
+        this.dirty = true;
+        rr.keymap = {
+          removeLayer: {
+            ok: {},
+          },
+        };
+      } else {
+        rr.keymap = {
+          removeLayer: {
+            err: RemoveLayerErrorCode.REMOVE_LAYER_ERR_INVALID_INDEX,
+          },
+        };
+      }
     } else if (req.keymap?.restoreLayer) {
       const layer = this.deletedLayers.find(
         (l) => l.id === req.keymap?.restoreLayer?.layerId,

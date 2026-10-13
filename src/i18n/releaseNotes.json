@@ -31,12 +31,23 @@
             "pr": [220, 225]
           },
           {
+            "en": "Clear stale power settings and cancel pending edits when reconnecting, while keeping factory reset available on unsupported keyboards.",
+            "ja": "再接続時に古い電源設定と未送信の編集を消去し、設定非対応のキーボードでも初期化操作を利用できるようにしました。",
+            "zh": "重新连接时清除过期的电源设置并取消待发送的编辑，同时在不支持设置的键盘上保留恢复出厂设置操作。"
+          },
+          {
             "en": "Prevent saving while a selected combo draft is invalid, and show that the input has not been applied or saved in Macro & Combo and Keymap.",
             "ja": "マクロ&コンボとキーマップで、選択中コンボの入力が不正な間は保存を止め、未反映・未保存であることを表示するようにしました。",
             "zh": "宏与组合键和键位图现在会在所选组合键草稿无效时阻止保存，并提示输入尚未应用或保存。"
           }
         ],
-        "patch": []
+        "patch": [
+          {
+            "en": "In Demo, deleting a reordered keymap layer now removes the selected layer.",
+            "ja": "Demoでは、並べ替えたキーマップレイヤーを選択どおりに削除できます。",
+            "zh": "在 Demo 模式下，删除重新排序后的键位图图层时会正确删除所选图层。"
+          }
+        ]
       }
     },
     {
