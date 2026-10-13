@@ -272,6 +272,7 @@ export function MacroComboPage() {
   ]);
 
   const handleSave = useCallback(async () => {
+    if (comboEditor.validationError) return;
     if (!requireUnlocked()) return;
     setIsSaving(true);
     try {
@@ -512,6 +513,7 @@ export function MacroComboPage() {
                       isSaving ||
                       anyLoading ||
                       !hasPendingChanges ||
+                      Boolean(comboEditor.validationError) ||
                       Boolean(macroEditor.encodedSizeError)
                     }
                   >
