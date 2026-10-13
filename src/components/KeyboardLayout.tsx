@@ -364,6 +364,9 @@ export function KeyboardLayout({
             ...key,
             x: key.x + (rawBounds.offsetX / BASE_UNIT_SIZE) * 100,
             y: key.y + (rawBounds.offsetY / BASE_UNIT_SIZE) * 100,
+            // The pivot is in layout coordinates, so translate it with the key.
+            rx: key.rx + (rawBounds.offsetX / BASE_UNIT_SIZE) * 100,
+            ry: key.ry + (rawBounds.offsetY / BASE_UNIT_SIZE) * 100,
           };
 
           return (
