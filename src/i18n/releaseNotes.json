@@ -31,12 +31,23 @@
             "pr": [220, 225]
           },
           {
+            "en": "Clear stale power settings and cancel pending edits when reconnecting, while keeping factory reset available on unsupported keyboards.",
+            "ja": "再接続時に古い電源設定と未送信の編集を消去し、設定非対応のキーボードでも初期化操作を利用できるようにしました。",
+            "zh": "重新连接时清除过期的电源设置并取消待发送的编辑，同时在不支持设置的键盘上保留恢复出厂设置操作。"
+          },
+          {
             "en": "Save the latest macro string on the first click immediately after typing.",
             "ja": "マクロの文字列入力直後でも、最初の保存クリックで最新の入力を保存できるようになりました。",
             "zh": "输入宏字符串后立即点击保存，现在首次点击即可保存最新输入。"
           }
         ],
-        "patch": []
+        "patch": [
+          {
+            "en": "In Demo, deleting a reordered keymap layer now removes the selected layer.",
+            "ja": "Demoでは、並べ替えたキーマップレイヤーを選択どおりに削除できます。",
+            "zh": "在 Demo 模式下，删除重新排序后的键位图图层时会正确删除所选图层。"
+          }
+        ]
       }
     },
     {

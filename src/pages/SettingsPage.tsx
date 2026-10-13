@@ -21,7 +21,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { AdvancedSettingsSection } from "../components/AdvancedSettingsSection";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { ConnectionContext } from "../contexts/DeviceConnectionContext";
-import { useSettings } from "../hooks/useSettings";
+import { useSettings, type UseSettingsReturn } from "../hooks/useSettings";
 import { useResetSettings } from "../hooks/useResetSettings";
 import { useDebouncedMemoryWrite } from "../hooks/useDebouncedMemoryWrite";
 import { useLanguage } from "../hooks/useLanguage";
@@ -267,9 +267,22 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
 }
 
 export function SettingsPage() {
+  const settings = useSettings();
+  const [session, setSession] = useState({
+    key: settings.sessionKey,
+    revision: 0,
+  });
+  // Reset editors, portals, debounce timers and success feedback together.
+  // A tab switch preserves this key; a new connection or capability does not.
+  if (session.key !== settings.sessionKey) {
+    setSession({ key: settings.sessionKey, revision: session.revision + 1 });
+  }
+  return <SettingsSessionPage key={session.revision} settings={settings} />;
+}
+
+function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
-  const settings = useSettings();
   const {
     isAvailable,
     devices,
@@ -292,7 +305,7 @@ export function SettingsPage() {
   // eagerly — Advanced Settings loads lazily and keeps its own controls).
   const versionHistory = useSettingsVersionHistory({
     settings,
-    isLoaded: !isLoading && devices.length > 0,
+    isLoaded: isAvailable && !isLoading && devices.length > 0,
     t,
   });
 
@@ -313,8 +326,8 @@ export function SettingsPage() {
 
   // Get central device settings (source 0)
   const centralSettings = useMemo(
-    () => devices.find((d) => d.sourceId === 0),
-    [devices],
+    () => (isAvailable ? devices.find((d) => d.sourceId === 0) : undefined),
+    [devices, isAvailable],
   );
 
   // Optimistic pending value shown while a debounced write is in flight. This
@@ -530,7 +543,7 @@ export function SettingsPage() {
           )}
         </div>
 
-        {!isAvailable && !isLoading && !error && (
+        {connection.isConnected && !isAvailable && (
           <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
             <div className="p-2">
               <IconAlertTriangleFilled size={24} className="text-red-500" />
@@ -649,7 +662,7 @@ export function SettingsPage() {
             <AdvancedSettingsSection />
           </div>
         ) : (
-          !isLoading && (
+          !connection.isConnected && (
             <div className="glass-card p-6">
               <p className="text-sm text-[var(--color-text-muted)]">
                 {t("Waiting for device connection...")}
