@@ -1,5 +1,11 @@
 import { serialize, deserialize } from "node:v8";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MacroComboPage } from "../MacroComboPage";
 import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
@@ -263,15 +269,13 @@ it.each(["invalid string", "oversized string", "combo loading"])(
   async (condition) => {
     const user = await openPage();
     if (condition === "combo loading") mockCombo.isLoading = true;
-    await user.clear(screen.getByDisplayValue("aa"));
-    await user.type(
-      screen.getAllByRole("textbox")[1],
-      condition === "invalid string"
-        ? "😀"
-        : condition === "oversized string"
-          ? "a".repeat(255)
-          : "latest",
-    );
+    const input = screen.getAllByRole("textbox")[1];
+    if (condition === "oversized string") {
+      fireEvent.change(input, { target: { value: "a".repeat(255) } });
+    } else {
+      await user.clear(screen.getByDisplayValue("aa"));
+      await user.type(input, condition === "invalid string" ? "😀" : "latest");
+    }
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     expect(saveCalls()).toHaveLength(0);
   },
