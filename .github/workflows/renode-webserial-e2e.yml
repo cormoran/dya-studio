@@ -325,6 +325,9 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
 
+      - name: Check Renode startup orchestration
+        run: python3 -m unittest discover -s e2e/renode/tests/harness -p 'test_*.py'
+
       # Single-boot DUTs (official): run all of `specs` in ONE Renode boot.
       # run-local.sh forwards its extra args to `playwright test`, so the DUT's
       # `specs` dirs select exactly the specs valid for this DUT in one boot
@@ -420,8 +423,8 @@ jobs:
           DYA2_PERIPHERAL_ELF: ${{ matrix.dut.peripheral_build != '' && format('{0}/fw-peripheral/zmk.elf', github.workspace) || '' }}
         run: bash run-local.sh "${{ github.workspace }}/fw/zmk.elf" ${{ matrix.dut.destructive_specs }}
 
-      - name: Upload Playwright artifacts on failure
-        if: failure()
+      - name: Upload Playwright and Renode startup artifacts
+        if: ${{ !cancelled() && (failure() || hashFiles('e2e/renode/startup-results/**') != '') }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts-${{ matrix.dut.id }}
@@ -429,6 +432,8 @@ jobs:
             e2e/renode/playwright-report
             e2e/renode/test-results
             e2e/renode/failure-results
+            e2e/renode/startup-results
+            e2e/renode/renode_serve.out
             e2e/renode/renode_serve.err
             e2e/renode/bridge.out
           if-no-files-found: ignore

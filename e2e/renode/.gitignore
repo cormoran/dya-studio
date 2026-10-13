@@ -1,6 +1,7 @@
 node_modules/
 __pycache__/
 test-results/
+startup-results/
 playwright-report/
 *.out
 *.err

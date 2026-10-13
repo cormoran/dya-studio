@@ -77,6 +77,24 @@ DEVICE_NAME=Renode \
 E2E_DEBUG=1 ...   # verbose page/shim/bridge byte logging
 ```
 
+## Startup readiness and recovery
+
+`run-local.sh` requires both `RPC_PORT` and `RENODE_READY` before it starts the
+bridge or Playwright. If the Renode service exits before readiness (for example,
+an internal UART socket connection times out), it boots a fresh service once.
+Readiness timeouts while the service is alive and bridge/test failures remain
+failures; this startup retry does not replay browser actions. Failed startup
+stdout/stderr are preserved in separate `startup-results/attempt-*` directories,
+and CI uploads them even when the second startup succeeds. A second early exit
+fails the run. The exact cause of the intermittent UART refusal in
+[issue #235](https://github.com/cormoran/dya-studio/issues/235) remains undetermined.
+
+The startup orchestration regression checks run without Renode or a browser:
+
+```bash
+python3 -m unittest discover -s e2e/renode/tests/harness -p 'test_*.py'
+```
+
 ## Explore interactively against Renode
 
 Build the app once, then keep the Renode services running in one terminal. Use

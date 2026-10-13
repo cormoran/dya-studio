@@ -36,9 +36,6 @@ cleanup() {
 trap cleanup EXIT
 
 echo ">>> [1/3] booting Renode with $ELF (real image; Studio over USB CDC)"
-python3 renode_serve.py "$ELF" > renode_serve.out 2> renode_serve.err &
-renode_pid=$!
-pids+=("$renode_pid")
 
 # Booting the real image, enumerating USB and wiring the CDC bridge is slower
 # than a bare UART boot -- and Renode's mono cold-start can take ~20s on a loaded
@@ -52,17 +49,41 @@ else
   default_ready_timeout=180
 fi
 RPC_PORT=""
-for _ in $(seq 1 "${RENODE_READY_TIMEOUT:-$default_ready_timeout}"); do
-  if ! kill -0 "$renode_pid" 2>/dev/null; then
-    echo "!! Renode service exited before it became ready" >&2
-    cat renode_serve.err >&2
+renode_ready=0
+for attempt in 1 2; do
+  python3 renode_serve.py "$ELF" > renode_serve.out 2> renode_serve.err &
+  renode_pid=$!
+  pids+=("$renode_pid")
+  RPC_PORT=""
+  for _ in $(seq 1 "${RENODE_READY_TIMEOUT:-$default_ready_timeout}"); do
+    if ! kill -0 "$renode_pid" 2>/dev/null; then
+      break
+    fi
+    RPC_PORT="$(sed -n 's/^RPC_PORT=//p' renode_serve.out | head -1)"
+    if [ -n "$RPC_PORT" ] && grep -qx RENODE_READY renode_serve.out; then
+      renode_ready=1
+      break
+    fi
+    sleep 1
+  done
+  [ "$renode_ready" = 1 ] && break
+
+  # Keep evidence before the next invocation truncates the live logs. Each
+  # run-local invocation gets its own directory, including per-spec CI retries.
+  mkdir -p startup-results
+  startup_result=$(mktemp -d "startup-results/attempt-${attempt}-XXXXXX")
+  cp renode_serve.out renode_serve.err "$startup_result/"
+  cat renode_serve.err >&2
+  if kill -0 "$renode_pid" 2>/dev/null; then
+    echo "!! Renode never reported both RPC_PORT and RENODE_READY" >&2
     exit 1
   fi
-  RPC_PORT="$(sed -n 's/^RPC_PORT=//p' renode_serve.out | head -1)"
-  [ -n "$RPC_PORT" ] && grep -q RENODE_READY renode_serve.out && break
-  sleep 1
+  wait "$renode_pid" || true
+  # The boot helpers stop their Renode session on failure. Retry only an early
+  # service exit, before a bridge/browser connection or any device edit exists.
+  echo "!! Renode service exited before it became ready (attempt $attempt)" >&2
 done
-[ -n "$RPC_PORT" ] || { echo "!! Renode never reported RPC_PORT"; cat renode_serve.err; exit 1; }
+[ "$renode_ready" = 1 ] || exit 1
 echo ">>> Renode Studio USB CDC relayed on TCP :$RPC_PORT"
 
 echo ">>> [2/3] starting WS bridge on $WS_URL"
