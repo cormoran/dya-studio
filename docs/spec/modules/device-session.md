@@ -77,6 +77,7 @@
 - SESSION-I03: auto reconnect は mount ごとの一回試行で、port なし・transport null・failure 時に connected UI を表示しない（S1/S2）。
 - SESSION-I04: unlock Cancel は parked request と proactive pending action を再送しない。unlock success 前の Retry も action を失わせない（S5/S6）。
 - SESSION-I05: capability は current connection の advertised list に基づき、Demo toggle だけで既存 session の機能状態を更新したと扱わない（S2、[Subsystems](../pages/subsystems.md)）。
+- SESSION-I06: core activity settings は connection / ready / subsystem index の変更で旧データ・読取り subscription・未送信編集を無効化する。遅延通知・応答は現 session に反映せず、対応復帰で再読取りする。Settings の unavailable と disconnected、core Danger Zone の独立性は [SET-001](../pages/settings.md) に従う。共有 consumer は SettingsPage とその version history / WebMCP power tools（[useSettings](../../../src/hooks/useSettings.ts)）。
 
 ## エラーと復帰
 
