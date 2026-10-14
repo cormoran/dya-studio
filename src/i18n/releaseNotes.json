@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Distinguish keycodes, modifiers, and parameters when previewing keymap history before restoring.",
+            "ja": "キーマップ履歴の復元前プレビューで、キーコード・修飾キー・パラメータの違いを確認できるようにしました。",
+            "zh": "恢复键位图历史前的预览现在可区分键码、修饰键和参数。"
+          },
+          {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
             "ja": "変更の破棄やレイヤーの再読み込み後も、有効なキーマップレイヤーの選択を維持するようにしました。",
             "zh": "丢弃更改或重新加载层后，保持选中有效的键位图层。"
