@@ -4,13 +4,14 @@
 
 利用者: [キーマップ](../pages/keymap.md)、sensor rotation、macro/combo、入力処理の binding 選択。コード確認 2026-09-20 `db09841`。UI 実測は validation の各 report を参照。
 
-| 根拠 | ソース / symbol                                                                                                                                                        |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleOpenChange`, `handleBehaviorSelect`, `handleParam1Change`, `handleParam2Change`, `handleRevert` |
-| S2   | [KeycodeValueSelector](../../../src/components/KeycodeValueSelector.tsx): search, modifiers, viewMode                                                                  |
-| S3   | [selector tests](../../../src/components/__tests__/KeycodeSelector.test.tsx)                                                                                           |
-| S4   | [BehaviorDropdown](../../../src/components/BehaviorDropdown.tsx): behavior search, selected label, quick selects                                                       |
-| S5   | [behavior dropdown tests](../../../src/components/__tests__/BehaviorDropdown.test.tsx)                                                                                 |
+| 根拠 | ソース / symbol                                                                                                                                                                                             |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1   | [KeycodeSelector](../../../src/components/KeycodeSelector.tsx): `handleOpenChange`, `handleBehaviorSelect`, `handleParam1Change`, `handleParam2Change`, `handleRevert`                                      |
+| S2   | [KeycodeValueSelector](../../../src/components/KeycodeValueSelector.tsx): search, modifiers, viewMode                                                                                                       |
+| S3   | [selector tests](../../../src/components/__tests__/KeycodeSelector.test.tsx)                                                                                                                                |
+| S4   | [BehaviorDropdown](../../../src/components/BehaviorDropdown.tsx): behavior search, selected label, quick selects                                                                                            |
+| S6   | [behaviorMetadata](../../../src/lib/behaviorMetadata.ts): `formatBehaviorBinding` / `formatBehaviorParam`、[keycodes](../../../src/lib/keycodes.ts): `getKeycodeDisplayName` / `formatKeycodeWithModifiers` |
+| S5   | [behavior dropdown tests](../../../src/components/__tests__/BehaviorDropdown.test.tsx)                                                                                                                      |
 
 ## 機能要求
 
@@ -48,6 +49,8 @@ BIND-020: `Edit macros` の modal を変更後に閉じる場合、`Keep editing
 BIND-021: `Edit macros` の step 追加・削除は、同じ macro への待機中または進行中の文字列・delay write を先に完了してから RAM に構造変更を適用し、古い step 一式の後続 write による上書きを防ぐ。根拠は [useMacroEditor](../../../src/components/macroCombo/useMacroEditor.ts) の `flushStepWrites`。
 
 BIND-022: caller が modal 内から selector を開く場合、selector の overlay と content は caller modal より前面に表示する。Combo Editor の Behavior 選択では selector を背後に隠さず操作でき、右上の link icon は selector を閉じて Combo Editor を表示する。Keymap preview の combo control から開く selector も同じ icon で Combo Editor を開ける。この selector は重なり順を維持したまま modal/floating を切替でき、通常キー selector と同時に開かず同じ floating anchor とドラッグ済み位置を共有する。どちらも閉じた後は次回を既定位置から開始する。通常の caller は既存の overlay 順を使う。根拠はS1、2026-09-24ユーザー要求。
+
+BIND-024: keycode の名前は HID usage page と usage code の組合せで解決する。keyboard page（0x07）と legacy page-zero だけに keyboard 名と OS Layout の JIS/US/US for JP 表記を適用する。consumer brightness `0xC006F` / `0xC0070` は `☀+` / `☀-`（selector の Brightness Up / Brightness Down）、keyboard `0x7006F` / `0x70070` または legacy `0x6F` / `0x70` は `F20` / `F21` と区別する。modifier は `LC(☀+)` 等の prefix に保持し、未知 usage は modifier を除いた page を含む16進数で表示する（例 `0x1006F`、`LC(0x1006F)`）。parameter の詳細表示は元の完全な数値も併記する。Keymap preview/header、sensor の可視/accessible name、macro step、combo binding は同じ名前解決を使い、表示だけでは binding/RPC/保存状態を変更しない。根拠はS6、[#259](https://github.com/cormoran/dya-studio/issues/259) 明示要求。
 
 | ID       | 前提 → 操作                                                   | 観測できる結果                                                                                                                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
 | -------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |

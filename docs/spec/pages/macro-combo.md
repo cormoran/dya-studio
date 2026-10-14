@@ -18,6 +18,8 @@
 | S6   | [MacroEditorCard](../../../src/components/macroCombo/MacroEditorCard.tsx)、[ComboEditorCard](../../../src/components/macroCombo/ComboEditorCard.tsx)、[GlobalSettingsCards](../../../src/components/macroCombo/GlobalSettingsCards.tsx)                | 観測可能な label と controls                                  |
 | S7   | [macro editor tests](../../../src/components/macroCombo/__tests__/useMacroEditor.test.tsx)、[runtime macro tests](../../../src/hooks/__tests__/useRuntimeMacro.test.tsx)、[runtime combo tests](../../../src/hooks/__tests__/useRuntimeCombo.test.tsx) | hook の選択、失敗、保存境界の回帰根拠                         |
 
+macro step と combo behavior の keycode 表示は [binding editor BIND-024](../modules/binding-editor.md) に従う。consumer brightness と keyboard F20/F21 を区別し、modifier と未知 page の数値を保持する。表示の解決だけでは RAM/flash に書き込まない。根拠は S4 の `getStepDisplayName` と [comboUtils](../../../src/components/macroCombo/comboUtils.ts) の `formatComboBehavior`。
+
 ## 機能要求
 
 | ID        | できるべきこと                                                                                                                | 出典・確度                                                                                                 |
