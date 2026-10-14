@@ -16,8 +16,8 @@ import { connectDya2 } from "./dya2.helpers";
 // emulated USB-CDC device->host path stalls, so each test is meant to run in
 // its own boot (Playwright `-g` selects one).
 //
-// The runtime-macro test uses a real step: an empty macro can appear in the
-// firmware list but lose its slot/name binding after Save in Renode. That
+// The runtime-macro test uses a nonzero delay: an empty/zero-delay macro can
+// appear in the firmware list but lose its slot/name binding after Save in Renode. That
 // emulator/firmware failure is separate from the normal macro edit round trip.
 // The runtime-combo test is implemented but marked `fixme` (skipped) because it
 // is not reliably green on this emulator (see the note above that test).
@@ -78,19 +78,42 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
     .filter({ has: page.getByText(newMacro!, { exact: true }) });
   await expect(macroButton).toBeVisible();
 
-  // Exercise a real body write before persisting. Saving an empty macro on the
-  // Renode DUT can leave a stale list entry that GetMacro and DeleteMacro both
-  // reject. The representative user flow adds a step before Save as well.
+  // The default Step is a zero-ms delay. Use a nonzero body for this normal
+  // round trip; empty/zero-delay firmware persistence remains a separate issue.
   await expect(page.getByText("No steps in this macro")).toBeVisible();
   await page.getByRole("button", { name: "Step", exact: true }).click();
   await expect(page.getByRole("button", { name: "Remove step 1" })).toBeVisible(
     { timeout: 90_000 },
   );
+  const refresh = page.getByRole("button", { name: "Refresh", exact: true });
+  await page.getByRole("combobox").selectOption("delay");
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  const delay = page.getByRole("spinbutton");
+  await delay.fill("25");
+  await delay.press("Tab"); // Normal blur flushes the queued RAM write.
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+
+  // Explicit selection clears the local detail and calls GetMacro. This
+  // assertion reads actual RAM rather than accepting the optimistic input.
+  await macroButton.click();
+  await expect(page.getByRole("combobox")).toHaveValue("delay");
+  await expect(delay).toHaveValue("25", { timeout: 90_000 });
 
   // PERSIST to flash (save_macros). Save disables once nothing is pending.
   await expect(save).toBeEnabled();
   await save.click();
   await expect(save).toBeDisabled({ timeout: 120_000 });
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  // Refresh re-lists from the device; reselecting then reads the saved body.
+  await refresh.click();
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  await expect(macroButton).toBeVisible({ timeout: 90_000 });
+  await macroButton.click();
+  await expect(page.getByRole("button", { name: "Remove step 1" })).toBeVisible(
+    { timeout: 90_000 },
+  );
+  await expect(page.getByRole("combobox")).toHaveValue("delay");
+  await expect(delay).toHaveValue("25", { timeout: 90_000 });
 
   // REVERT: select + delete it (delete_macro re-lists). Selecting reads the
   // slot back, which can transiently fail right after create ("No macro bound
@@ -117,6 +140,11 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
     await save.click();
     await expect(save).toBeDisabled({ timeout: 120_000 });
   }
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  await refresh.click();
+  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  await expect(macroButton).toHaveCount(0);
+  await expect(items).toHaveCount(before.length);
 });
 
 // NOTE: covered by an implemented test but marked `fixme` (skipped) because it
