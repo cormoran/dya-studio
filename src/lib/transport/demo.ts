@@ -144,6 +144,7 @@ import {
   RemoveLayerErrorCode,
   MoveLayerErrorCode,
   RestoreLayerErrorCode,
+  SetLayerPropsResponse,
   type Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
@@ -408,6 +409,36 @@ class Keyboard {
         rr.keymap = { setLayerBinding: 0 };
       } else {
         rr.keymap = { setLayerBinding: 1 };
+      }
+    } else if (req.keymap?.setLayerProps) {
+      const { layerId, name } = req.keymap.setLayerProps;
+      const layer = this.data.keymap.layers.find(
+        (layer) => layer.id === layerId,
+      );
+      // An empty name is an acknowledged no-op in the official protocol.
+      if (!name) {
+        rr.keymap = {
+          setLayerProps: SetLayerPropsResponse.SET_LAYER_PROPS_RESP_OK,
+        };
+      } else if (!layer) {
+        rr.keymap = {
+          setLayerProps:
+            SetLayerPropsResponse.SET_LAYER_PROPS_RESP_ERR_INVALID_ID,
+        };
+      } else if (
+        new TextEncoder().encode(name).length >=
+        this.data.keymap.maxLayerNameLength
+      ) {
+        // The firmware limit includes the terminating NUL byte.
+        rr.keymap = {
+          setLayerProps: SetLayerPropsResponse.SET_LAYER_PROPS_RESP_ERR_GENERIC,
+        };
+      } else {
+        layer.name = name;
+        this.dirty = true;
+        rr.keymap = {
+          setLayerProps: SetLayerPropsResponse.SET_LAYER_PROPS_RESP_OK,
+        };
       }
     } else if (req.keymap?.saveChanges !== undefined) {
       this.persistent = JSON.parse(JSON.stringify(this.data));

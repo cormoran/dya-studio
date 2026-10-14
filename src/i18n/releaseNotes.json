@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Rename keymap layers in Demo and retry failed renames without losing your input.",
+            "ja": "Demoでキーマップレイヤー名を変更でき、失敗しても入力を保持したまま再試行できるようになりました。",
+            "zh": "现在可在 Demo 模式下重命名键位图层，并在失败后保留输入以重试。"
+          },
+          {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
             "ja": "変更の破棄やレイヤーの再読み込み後も、有効なキーマップレイヤーの選択を維持するようにしました。",
             "zh": "丢弃更改或重新加载层后，保持选中有效的键位图层。"

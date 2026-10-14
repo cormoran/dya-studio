@@ -181,6 +181,8 @@ describe("KeymapPage", () => {
       restoreLayer: jest
         .fn()
         .mockResolvedValue({ id: 0, name: "Restored", bindings: [] }),
+      setLayerName: jest.fn().mockResolvedValue(true),
+      maxLayerNameLength: 32,
       availableLayers: 4,
       removedLayerIds: [],
       saveChanges: jest.fn().mockResolvedValue(true),
@@ -997,6 +999,124 @@ describe("KeymapPage", () => {
       expect(
         screen.queryByRole("menu", { name: "Other deleted layers" }),
       ).not.toBeInTheDocument();
+    });
+
+    describe("layer rename", () => {
+      const openRename = async (
+        setLayerName = jest.fn().mockResolvedValue(true),
+      ) => {
+        const user = userEvent.setup();
+        renderComponent(
+          { isConnected: true },
+          {
+            keymap: mockKeymap,
+            physicalLayouts: mockPhysicalLayouts,
+            behaviors: mockBehaviors,
+            setLayerName,
+          },
+        );
+        await user.click(
+          screen.getAllByRole("button", { name: "Rename current layer" })[0],
+        );
+        const dialog = screen.getByRole("dialog", { name: "Rename Layer" });
+        const input = within(dialog).getByRole("textbox");
+        expect(input).toHaveValue("Base");
+        await user.clear(input);
+        await user.type(input, "Primary");
+        return { user, dialog, input, setLayerName };
+      };
+
+      it.each(["button", "Enter"])(
+        "closes only after successful rename via %s",
+        async (method) => {
+          const { user, dialog, input, setLayerName } = await openRename();
+          if (method === "button")
+            await user.click(
+              within(dialog).getByRole("button", { name: "Rename" }),
+            );
+          else await user.type(input, "{Enter}");
+          expect(setLayerName).toHaveBeenCalledWith(0, "Primary");
+          expect(
+            screen.queryByRole("dialog", { name: "Rename Layer" }),
+          ).not.toBeInTheDocument();
+        },
+      );
+
+      it.each(["Cancel", "Escape"])("does not mutate on %s", async (method) => {
+        const { user, dialog, input, setLayerName } = await openRename();
+        if (method === "Cancel")
+          await user.click(
+            within(dialog).getByRole("button", { name: "Cancel" }),
+          );
+        else await user.type(input, "{Escape}");
+        expect(setLayerName).not.toHaveBeenCalled();
+        expect(
+          screen.queryByRole("dialog", { name: "Rename Layer" }),
+        ).not.toBeInTheDocument();
+        expect(mockKeymap.layers[0].name).toBe("Base");
+      });
+
+      it.each(["false", "rejection"])(
+        "keeps failed input and permits retry after %s",
+        async (failure) => {
+          const setLayerName = jest.fn().mockResolvedValue(true);
+          if (failure === "false") setLayerName.mockResolvedValueOnce(false);
+          else setLayerName.mockRejectedValueOnce(new Error("RPC failed"));
+          const { user, dialog, input } = await openRename(setLayerName);
+          await user.click(
+            within(dialog).getByRole("button", { name: "Rename" }),
+          );
+          expect(within(dialog).getByRole("alert")).toHaveTextContent(
+            "Failed to rename layer. Please try again.",
+          );
+          expect(input).toHaveValue("Primary");
+          expect(
+            within(dialog).getByRole("button", { name: "Rename" }),
+          ).toBeEnabled();
+          await user.type(input, "{Enter}");
+          expect(setLayerName).toHaveBeenCalledTimes(2);
+          expect(setLayerName).toHaveBeenLastCalledWith(0, "Primary");
+          expect(
+            screen.queryByRole("dialog", { name: "Rename Layer" }),
+          ).not.toBeInTheDocument();
+        },
+      );
+
+      it("prevents duplicate requests and dismissal during a pending rename", async () => {
+        let finish!: (ok: boolean) => void;
+        const setLayerName = jest.fn(
+          () =>
+            new Promise<boolean>((resolve) => {
+              finish = resolve;
+            }),
+        );
+        const { user, dialog, input } = await openRename(setLayerName);
+        await user.type(input, "{Enter}{Enter}");
+        expect(setLayerName).toHaveBeenCalledTimes(1);
+        expect(input).toBeDisabled();
+        expect(
+          within(dialog).getByRole("button", { name: "Rename" }),
+        ).toBeDisabled();
+        expect(
+          within(dialog).getByRole("button", { name: "Cancel" }),
+        ).toBeDisabled();
+        await user.keyboard("{Escape}");
+        expect(dialog).toBeInTheDocument();
+        await act(async () => finish(false));
+        expect(input).toHaveValue("Primary");
+        expect(within(dialog).getByRole("alert")).toBeInTheDocument();
+      });
+
+      it("does not send the protocol's empty-name no-op as a successful rename", async () => {
+        const { user, dialog, input, setLayerName } = await openRename();
+        await user.clear(input);
+        expect(
+          within(dialog).getByRole("button", { name: "Rename" }),
+        ).toBeDisabled();
+        await user.type(input, "{Enter}");
+        expect(setLayerName).not.toHaveBeenCalled();
+        expect(dialog).toBeInTheDocument();
+      });
     });
 
     it("keeps the rename confirmation label visible after opening it from mobile settings", async () => {

@@ -281,6 +281,8 @@ const ja: Record<string, string> = {
   "Move layer up (higher priority)": "レイヤーを上へ移動（優先度を上げる）",
   "Move layer down (lower priority)": "レイヤーを下へ移動（優先度を下げる）",
   "Rename current layer": "現在のレイヤー名を変更",
+  "Failed to rename layer. Please try again.":
+    "レイヤー名の変更に失敗しました。もう一度お試しください。",
   "Add new layer": "新しいレイヤーを追加",
   "Delete current layer": "現在のレイヤーを削除",
   "Restore deleted layer": "削除したレイヤーを復元",
@@ -1808,6 +1810,7 @@ const zh: Record<string, string> = {
   "Move layer up (higher priority)": "将层上移（更高优先级）",
   "Move layer down (lower priority)": "将层下移（更低优先级）",
   "Rename current layer": "重命名当前层",
+  "Failed to rename layer. Please try again.": "重命名层失败，请重试。",
   "Add new layer": "添加新层",
   "Delete current layer": "删除当前层",
   "Restore deleted layer": "恢复已删除的层",

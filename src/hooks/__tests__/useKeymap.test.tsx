@@ -4,7 +4,7 @@
  * This test suite verifies the keymap state management,
  * including loading, modifying, and saving keymaps.
  */
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useKeymap } from "../useKeymap";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { STUDIO_LOCKED_MESSAGE } from "../../lib/studioUnlock";
@@ -234,6 +234,45 @@ describe("useKeymap", () => {
 
       expect(result.current.keymap).toEqual(mockKeymap);
       expect(result.current.hasUnsavedChanges).toBe(false);
+    });
+  });
+
+  describe("Layer rename", () => {
+    it("updates names and dirty state only after a successful protocol response", async () => {
+      const connection = { label: "test" };
+      const zmkApp = {
+        state: { connection },
+        onNotification: jest.fn(() => jest.fn()),
+      };
+      mockCallRpc.mockImplementation(loadRpc);
+      const { result } = renderHook(() => useKeymap(), {
+        wrapper: createWrapper(zmkApp),
+      });
+      await waitFor(() => expect(result.current.isFullyLoaded).toBe(true));
+
+      for (const response of [1, 2, undefined]) {
+        mockCallRpc.mockResolvedValueOnce({
+          keymap: { setLayerProps: response },
+        });
+        await act(async () => {
+          expect(await result.current.setLayerName(0, "Primary")).toBe(false);
+        });
+        expect(result.current.keymap?.layers[0].name).toBe("Base");
+        expect(result.current.hasUnsavedChanges).toBe(false);
+        expect(result.current.error).toMatch(/Failed to rename layer/);
+      }
+
+      mockCallRpc.mockResolvedValueOnce({ keymap: { setLayerProps: 0 } });
+      await act(async () => {
+        expect(await result.current.setLayerName(0, "Primary")).toBe(true);
+      });
+      expect(mockCallRpc).toHaveBeenLastCalledWith(connection, {
+        keymap: { setLayerProps: { layerId: 0, name: "Primary" } },
+      });
+      expect(result.current.keymap?.layers[0].name).toBe("Primary");
+      expect(result.current.keymap?.layers[1]).toEqual(mockKeymap.layers[1]);
+      expect(result.current.hasUnsavedChanges).toBe(true);
+      expect(result.current.error).toBeNull();
     });
   });
 
