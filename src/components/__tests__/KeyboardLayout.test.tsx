@@ -76,3 +76,48 @@ describe("KeyboardLayout combo controls", () => {
     jest.useRealTimers();
   });
 });
+
+test("renders consumer brightness and keyboard F20/F21 as distinct keys", () => {
+  const values = [0xc006f, 0xc0070, 0x7006f, 0x70070];
+  render(
+    <KeyboardLayout
+      layout={{
+        name: "Test",
+        keys: values.map((_, i) => ({
+          width: 100,
+          height: 100,
+          x: i * 100,
+          y: 0,
+          r: 0,
+          rx: 0,
+          ry: 0,
+        })),
+      }}
+      layer={{
+        id: 0,
+        name: "Base",
+        bindings: values.map((param1) => ({
+          behaviorId: 1,
+          param1,
+          param2: 0,
+        })),
+      }}
+      layers={[]}
+      behaviors={
+        new Map([[1, { id: 1, displayName: "Key Press", metadata: [] }]])
+      }
+      keyboardLayout="JIS"
+      selectedKey={null}
+      onKeyClick={jest.fn()}
+      onKeyReset={jest.fn()}
+      isBindingModified={jest.fn().mockReturnValue(false)}
+      getOriginalBinding={jest.fn().mockReturnValue(null)}
+    />,
+  );
+  for (const [position, label] of ["☀+", "☀-", "F20", "F21"].entries()) {
+    const key = screen.getByRole("button", {
+      name: `Key position ${position}: ${label}`,
+    });
+    expect(key).toHaveAttribute("data-binding-label", label);
+  }
+});

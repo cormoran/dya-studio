@@ -20,9 +20,9 @@
         ],
         "minor": [
           {
-            "en": "Distinguish failed watchdog reads from a healthy empty history and clear outdated statistics when changing sources.",
-            "ja": "ウォッチドッグの読み取り失敗と正常な空の履歴を区別し、ソース切替時に古い統計を消去するようにしました。",
-            "zh": "区分看门狗读取失败与正常的空历史记录，并在切换来源时清除过期统计。"
+            "en": "Show encoder brightness bindings correctly and keep consumer keys distinct from keyboard keys throughout binding displays.",
+            "ja": "エンコーダーの明るさ割り当てを正しく表示し、割り当て表示全体でconsumerキーとキーボードキーを区別するようにしました。",
+            "zh": "正确显示编码器的亮度绑定，并在所有绑定显示中区分消费控制键和键盘按键。"
           },
           {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
