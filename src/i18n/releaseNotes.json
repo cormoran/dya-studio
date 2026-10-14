@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Show encoder brightness bindings correctly and keep consumer keys distinct from keyboard keys throughout binding displays.",
+            "ja": "エンコーダーの明るさ割り当てを正しく表示し、割り当て表示全体でconsumerキーとキーボードキーを区別するようにしました。",
+            "zh": "正确显示编码器的亮度绑定，并在所有绑定显示中区分消费控制键和键盘按键。"
+          },
+          {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
             "ja": "変更の破棄やレイヤーの再読み込み後も、有効なキーマップレイヤーの選択を維持するようにしました。",
             "zh": "丢弃更改或重新加载层后，保持选中有效的键位图层。"
