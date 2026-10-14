@@ -49,11 +49,6 @@
             "en": "Save the latest macro string on the first click immediately after typing.",
             "ja": "マクロの文字列入力直後でも、最初の保存クリックで最新の入力を保存できるようになりました。",
             "zh": "输入宏字符串后立即点击保存，现在首次点击即可保存最新输入。"
-          },
-          {
-            "en": "Prevent saving while a selected combo draft is invalid, and show that the input has not been applied or saved in Macro & Combo and Keymap.",
-            "ja": "マクロ&コンボとキーマップで、選択中コンボの入力が不正な間は保存を止め、未反映・未保存であることを表示するようにしました。",
-            "zh": "宏与组合键和键位图现在会在所选组合键草稿无效时阻止保存，并提示输入尚未应用或保存。"
           }
         ],
         "patch": [
