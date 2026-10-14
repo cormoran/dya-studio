@@ -53,11 +53,6 @@
         ],
         "patch": [
           {
-            "en": "Give runtime processor switches localized accessible names that identify the selected processor.",
-            "ja": "ランタイムプロセッサーの各スイッチに、選択中のプロセッサーが分かるローカライズ済みの読み上げ名を付けました。",
-            "zh": "为运行时处理器开关添加本地化的无障碍名称，以标识当前处理器。"
-          },
-          {
             "en": "In Demo, deleting a reordered keymap layer now removes the selected layer.",
             "ja": "Demoでは、並べ替えたキーマップレイヤーを選択どおりに削除できます。",
             "zh": "在 Demo 模式下，删除重新排序后的键位图图层时会正确删除所选图层。"
