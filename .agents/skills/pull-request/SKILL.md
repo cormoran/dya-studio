@@ -9,9 +9,9 @@ Help a reviewer seeing the change for the first time quickly understand what cha
 
 ## Review the template and changes
 
-- For both creation and editing, read the [PR template](../../../.github/pull_request_template.md) and use its headings, release notes checkbox, and CLA. Do not replace the template with a custom body.
+- For both creation and editing, read the [PR template](../../../.github/pull_request_template.md) and use its headings, release notes policy checkbox, and CLA. Do not replace the template with a custom body.
 - Read the full diff against the target base and align the title and description with the final changes. When editing an existing PR, also review its current body and CI results.
-- Follow the delivery and specification requirements in [AGENTS.md](../../../AGENTS.md). Check the release notes checkbox only after verifying the actual diff; do not claim a missing entry was added.
+- Follow the delivery and specification requirements in [AGENTS.md](../../../AGENTS.md). Do not update `src/i18n/releaseNotes.json` in feature or fix PRs or run the release-notes skill during their creation. Describe user-visible outcomes in the PR for the pre-release review. Check the release notes policy checkbox only after verifying that the diff follows this policy; a dedicated pre-release notes PR is the exception.
 
 ## Lead with the important points
 

@@ -67,7 +67,7 @@ Provide a self-contained brief:
 - Owned isolated checkout/files, dependency boundaries, observable acceptance. Ask coordinator on unresolved decisions.
 - AGENTS/spec README/AUTHORING/affected specs. Update observable behavior (errors/persistence/availability/shared consumers); internal changes cite reviewed IDs and no observable change rationale.
 - Meaningful tests, lint/format (commit fixes), spec:check/build as appropriate. UI follows EXPLORATORY_TESTING; use exploratory-ui-test skill when warranted. Separate Demo/hardware/unexecuted evidence.
-- One focused branch/PR, Closes #number only when full accepted scope is addressed. Use pull-request template skill, release-notes for user-visible changes, no merge/release. Check/recover existing PR before publish.
+- One focused branch/PR, Closes #number only when full accepted scope is addressed. Use the pull-request template skill and describe user-visible outcomes in the PR; do not edit releaseNotes.json or run the release-notes skill for individual feature/fix PRs. Notes are curated once before release. No merge/release. Check/recover existing PR before publish.
 - Monitor fresh-head CI, fix failures/conflicts in same PR, confirm head unchanged. No checks/queued/skipped != all passing. Two substantive remediation rounds, then genuine blocker report; pending work stays pending.
 - Return files/specs/tests/limitations/PR/head/checks/mergeability/next action using live preamble's worker_done contract. Explicit failed outcome on blockers.
 
