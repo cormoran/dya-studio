@@ -4,8 +4,10 @@ import { TabActiveContext } from "../../contexts/TabActiveContext";
  */
 import { render, screen, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { LanguageContext } from "../../contexts/language";
 import { TrackballPage } from "../TrackballPage";
 import { useRuntimeInputProcessor } from "../../hooks/useRuntimeInputProcessor";
+import { translate, type Language } from "../../i18n/translations";
 
 // Mock the useRuntimeInputProcessor hook
 jest.mock("../../hooks/useRuntimeInputProcessor");
@@ -194,6 +196,67 @@ describe("TrackballPage", () => {
     expect(screen.getByText("Active on Layers")).toBeInTheDocument();
     expect(screen.getByText("Scaling")).toBeInTheDocument();
   });
+
+  it.each(["en", "ja"] as const)(
+    "gives each processor switch a localized name and processor context in %s",
+    (language: Language) => {
+      mockUseRuntimeInputProcessor.mockReturnValue(
+        createMockHookReturn({
+          processors: [
+            createMockProcessor({
+              name: "trackpad",
+              activeLayers: 1,
+              rotationDegrees: 90,
+              tempLayerEnabled: true,
+              axisSnapMode: 1,
+              xInvert: true,
+              xyToScrollEnabled: true,
+            }),
+          ],
+        }),
+      );
+
+      const { unmount } = render(
+        <LanguageContext.Provider
+          value={{
+            language,
+            setLanguage: jest.fn(),
+            toggleLanguage: jest.fn(),
+            t: (key, params) => translate(language, key, params),
+          }}
+        >
+          <TrackballPage />
+        </LanguageContext.Provider>,
+      );
+
+      const settings = [
+        ["Active on Layers", true],
+        ["Sensor Rotation", true],
+        ["Temporary Layer", true],
+        ["Axis Snapping", true],
+        ["Invert X Axis", true],
+        ["Invert Y Axis", false],
+        ["XY-to-Scroll", true],
+        ["XY-Swap", false],
+      ] as const;
+      for (const [setting, checked] of settings) {
+        const name = translate(
+          language,
+          "{{setting}} ({{processor}}: {{name}})",
+          {
+            setting: translate(language, setting),
+            processor: translate(language, "Processor"),
+            name: "trackpad",
+          },
+        );
+        const control = screen.getByRole("switch", { name });
+        expect(control).toHaveAccessibleName(name);
+        expect(control).toHaveAttribute("aria-checked", String(checked));
+      }
+
+      unmount();
+    },
+  );
 
   it("switches processors from the mobile selector", async () => {
     const user = userEvent.setup();

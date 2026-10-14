@@ -33,6 +33,8 @@
 | INPUT-003 | rotation/temp layer/active layer/axis snap/invert/scroll/swap を ID 指定で更新 | 対象 processor の表示を先に更新し、response error を error にする | 各 request は write-through RPC。flash/RAM の区別は protocol 実装外で未確認                                        | S2   |
 | INPUT-004 | custom processor notification を受信                                           | 同 ID の processor を notification 値に置換                       | caller の pending UI と競合する場合の優先規則は hook 単独にない                                                    | S1   |
 
+INPUT-003 の Trackball UI consumer は、各 processor switch の accessible name に現在言語の設定名と選択中 processor 名を含める。`checked` はその processor の表示値を示す。これは consumer の表示契約であり、hook の RPC 契約とは区別する。
+
 ### #28 拡張プロトコル
 
 | ID        | 前提 → 操作                                  | 観測できる結果                                                                                                                     | 保存範囲・副作用                                                                         | 根拠  |
@@ -47,8 +49,9 @@
 ## 代表ユーザーフロー
 
 1. Trackball を開き processor list が届くまで待つ（INPUT-001）。0 件の場合は firmware support と notification 到達を分けて記録する。
-2. 一つの processor の rotation を変更し、同 ID の表示だけが更新することを確認する（INPUT-003）。
-3. Refresh の直後に firmware notification を発生させられる環境では、最新 notification が processor row に反映されることを確認する（INPUT-004）。通常 Demo では未実施。
+2. 一つの processor を表示し、Active on Layers / Sensor Rotation / Temporary Layer / Axis Snapping / Invert X Axis / Invert Y Axis / XY-to-Scroll / XY-Swap の各 switch が可視ラベルと processor 名を含む現在言語の accessible name を持ち、`checked` が表示中の processor 値と一致することを確認する（TRACK-003〜007、INPUT-003）。
+3. Rotation を OFF に切替え、1,500 ms debounce 後に write-through が完了したら `Reload processors` で読み戻す。Rotation が OFF/0° として表示されることを確認した後、元の値へ戻し、同じ待機・再読み込みで復帰を確認する（TRACK-003、INPUT-003）。Demo の読み戻しは実機 flash / 電源断の証拠にはしない。
+4. Refresh の直後に firmware notification を発生させられる環境では、最新 notification が processor row に反映されることを確認する（INPUT-004）。通常 Demo では未実施。
 
 ## 不変条件
 

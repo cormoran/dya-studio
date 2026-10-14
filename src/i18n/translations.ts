@@ -320,6 +320,8 @@ const ja: Record<string, string> = {
   "Loading trackball settings...": "トラックボール設定を読み込み中...",
   "No runtime input processor found. Make sure your firmware has the runtime input processor module enabled.":
     "ランタイム入力プロセッサーが見つかりません。ファームウェアでランタイム入力プロセッサーモジュールが有効になっていることを確認してください。",
+  "{{setting}} ({{processor}}: {{name}})":
+    "{{setting}}（{{processor}}: {{name}}）",
   "Advanced (PMW3610 Sensor Driver)": "詳細設定（PMW3610 センサードライバー）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 ドライバーのカスタム Studio RPC が公開するセンサーレベルの調整項目です",
@@ -1847,6 +1849,8 @@ const zh: Record<string, string> = {
   "Loading trackball settings...": "正在加载轨迹球设置...",
   "No runtime input processor found. Make sure your firmware has the runtime input processor module enabled.":
     "未找到运行时输入处理器。请确保您的固件已启用运行时输入处理器模块。",
+  "{{setting}} ({{processor}}: {{name}})":
+    "{{setting}}（{{processor}}：{{name}}）",
   "Advanced (PMW3610 Sensor Driver)": "高级（PMW3610 传感器驱动）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 驱动通过自定义 Studio RPC 公开的传感器级调整",

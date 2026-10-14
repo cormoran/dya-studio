@@ -296,6 +296,14 @@ export function TrackballPage() {
 
   // Get the selected processor
   const processor = processors[selectedProcessorIndex] || null;
+  const processorSwitchName = (setting: string) =>
+    processor
+      ? t("{{setting}} ({{processor}}: {{name}})", {
+          setting: t(setting),
+          processor: t("Processor"),
+          name: processor.name,
+        })
+      : t(setting);
   const tabActive = useContext(TabActiveContext);
   const [testOpen, setTestOpen] = useState(false);
   const [samples, setSamples] = useState<InputSample[]>([]);
@@ -998,6 +1006,7 @@ export function TrackballPage() {
                                 checked ? "specific" : "all",
                               )
                             }
+                            aria-label={processorSwitchName("Active on Layers")}
                             className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                           >
                             <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1136,6 +1145,9 @@ export function TrackballPage() {
                             <Switch.Root
                               checked={rotationEnabled}
                               onCheckedChange={handleRotationEnabledChange}
+                              aria-label={processorSwitchName(
+                                "Sensor Rotation",
+                              )}
                               className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                             >
                               <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1228,6 +1240,7 @@ export function TrackballPage() {
                           <Switch.Root
                             checked={displayTempLayerEnabled}
                             onCheckedChange={handleTempLayerEnabledChange}
+                            aria-label={processorSwitchName("Temporary Layer")}
                             className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                           >
                             <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1379,6 +1392,7 @@ export function TrackballPage() {
                               AxisSnapMode.AXIS_SNAP_MODE_NONE
                             }
                             onCheckedChange={handleAxisSnapEnabledChange}
+                            aria-label={processorSwitchName("Axis Snapping")}
                             className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                           >
                             <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1544,6 +1558,7 @@ export function TrackballPage() {
                             <Switch.Root
                               checked={displayXInvert}
                               onCheckedChange={handleXInvertChange}
+                              aria-label={processorSwitchName("Invert X Axis")}
                               className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                             >
                               <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1565,6 +1580,7 @@ export function TrackballPage() {
                             <Switch.Root
                               checked={displayYInvert}
                               onCheckedChange={handleYInvertChange}
+                              aria-label={processorSwitchName("Invert Y Axis")}
                               className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                             >
                               <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1604,6 +1620,7 @@ export function TrackballPage() {
                             <Switch.Root
                               checked={displayXyToScrollEnabled}
                               onCheckedChange={handleXyToScrollEnabledChange}
+                              aria-label={processorSwitchName("XY-to-Scroll")}
                               className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                             >
                               <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
@@ -1625,6 +1642,7 @@ export function TrackballPage() {
                             <Switch.Root
                               checked={displayXySwapEnabled}
                               onCheckedChange={handleXySwapEnabledChange}
+                              aria-label={processorSwitchName("XY-Swap")}
                               className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
                             >
                               <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
