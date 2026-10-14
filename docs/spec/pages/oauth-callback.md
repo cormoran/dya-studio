@@ -71,4 +71,4 @@ relay failure は 1.5 秒後 full-page mode と区別できないため callback
 
 provider 実環境での relay、COOP/third-party storage 制約、popup blocker の実 browser 挙動は未検証。ack timeout 後に遅延した opener が code を交換する race の望ましい扱いはコードからは保証できない。
 
-- 2026-10-15、`4545a15`、local DEV / Orca 組込みブラウザで `/oauth/callback` を query なしで開くと、client 未設定の error と `Back to DYA Studio` を表示した。戻る button の click 成功応答後も同 route / error が残り、fresh snapshot と `location.href` の読戻しで遷移を確認できなかった。worker と coordinator の各 1 回で観測し、coordinator は focus → Enter でも確認した。期待は OAUTH-005 の callback 終了だが、Orca の入力・navigation とアプリのどちらが原因かは未確定。別ブラウザでの確認は未実行で、戻る操作を pass または受け入れ済み不具合と扱わない。復帰は対象 tab を閉じ、必要なら `/` を直接開いて Demo へ接続する。
+- 2026-10-15、`4545a15` の local DEV / Orca 組込みブラウザでは client 未設定 error の戻る操作後も callback route が残った。追加確認では `b3f0ea5` の Chrome で同じ query なし route → error → `Back to DYA Studio` を実行し、`/import-export` の接続画面への遷移と、その後の Demo 接続を実測した（OAUTH-005）。Orca の先行観測をアプリ共通の戻る不具合と断定しない。実認証・provider error・popup relay の browser 比較は未実行。

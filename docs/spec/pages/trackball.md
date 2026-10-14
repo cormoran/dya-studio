@@ -131,3 +131,5 @@ TRACK-003〜007 の processor switch は、表示中の設定名と選択中 pro
 
 - #28 firmwareの物理入力による慣性/Fast input通知、USB/BLE実機での設定読戻し、Pointer Lockの全ブラウザ対応は別途検証。Demoは物理慣性をシミュレーションしない。
 - processor RPC の power-cycle persistence、sensor の物理的 tracking 品質、custom settings の flash 境界、遅延 failure rollback は未検証。
+
+- 2026-10-15、`b3f0ea5`、Demo の `trackpad` / inertia `Input threshold` で、基準値 `10` → `-1` または空欄 → debounce より長い 2 秒待機 → `Reload processors` の後も local draft と `aria-invalid=true` が残った。Orca で両条件、Chrome で `-1` を観測した。`InertiaNumber` は不正入力時に queued write を取消し、読戻し値が前と同じなら local draft を消さない（S5）。TRACK-001 のデバイス再取得と TRACK-012 の不正入力保持は別で、Reload が無効 draft を破棄するべきかは要求が未確定。RPC の失敗や不正値の device 保存と断定せず、復帰仕様の不足として残す。実測した復帰は有効な `10` の再入力 → 2 秒待機 → Reload → `10` / `aria-invalid=false`。実機条件は未実行。
