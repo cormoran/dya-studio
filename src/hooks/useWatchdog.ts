@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { useCustomSubsystem } from "./useCustomSubsystem";
 import {
@@ -41,34 +48,56 @@ export interface UseWatchdogReturn {
 export function useWatchdog(): UseWatchdogReturn {
   const zmkApp = useContext(ZMKAppContext);
   // Passive/background watchdog subsystem: opt out of the unlock modal so it
-  // never pops on its own; lock-required just yields a no-op here.
+  // never pops on its own; locked reads surface as a section error.
   const { subsystem, ready, call } = useCustomSubsystem(
     WATCHDOG_SUBSYSTEM_IDENTIFIER,
     CODEC,
     { unlockGate: false },
   );
-  const [source, setSource] = useState(0);
-  const [status, setStatus] = useState<StatusResponse | null>(null);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const [source, setSourceValue] = useState(0);
   const subsystemIndex = subsystem?.index;
+  const connection = zmkApp?.state.connection;
+  const context = useMemo(
+    () => ({ connection, ready, subsystemIndex, source, zmkApp, call }),
+    [connection, ready, subsystemIndex, source, zmkApp, call],
+  );
+  const [state, setState] = useState<{
+    context: object;
+    status: StatusResponse | null;
+    incidents: Incident[];
+    isLoading: boolean;
+    error: string | null;
+  }>({ context, status: null, incidents: [], isLoading: false, error: null });
+  const generation = useRef(0);
+  const activeContext = useRef<object | null>(context);
+  const pendingRelays = useRef(new Set<() => void>());
 
-  const callRpc = useCallback(
-    async (request: Request): Promise<Response | null> => {
-      if (!ready) return null;
-      return call(request);
+  const invalidate = useCallback(() => {
+    generation.current++;
+    for (const cancel of pendingRelays.current) cancel();
+    pendingRelays.current.clear();
+  }, []);
+
+  const setSource = useCallback(
+    (next: number) => {
+      if (next === source) return;
+      invalidate();
+      setState({
+        context,
+        status: null,
+        incidents: [],
+        isLoading: false,
+        error: null,
+      });
+      setSourceValue(next);
     },
-    [ready, call],
+    [source, context, invalidate],
   );
 
-  // Awaits the real Response for a request that came back as a
-  // DeferredResponse (source > 0): the answer arrives later as a
-  // PeripheralResponse custom notification, or null after RELAY_TIMEOUT_MS.
+  // These helpers never publish state: only the current, complete read may do so.
   const awaitPeripheralResponse = useCallback(
-    (requestId: number): Promise<Response | null> => {
-      return new Promise((resolve) => {
+    (requestId: number): Promise<Response | null> =>
+      new Promise((resolve) => {
         if (!zmkApp || subsystemIndex === undefined) {
           resolve(null);
           return;
@@ -79,8 +108,10 @@ export function useWatchdog(): UseWatchdogReturn {
           settled = true;
           clearTimeout(timer);
           unsubscribe();
+          pendingRelays.current.delete(cancel);
           resolve(value);
         };
+        const cancel = () => finish(null);
         const unsubscribe = zmkApp.onNotification({
           type: "custom",
           subsystemIndex,
@@ -92,159 +123,161 @@ export function useWatchdog(): UseWatchdogReturn {
               return;
             }
             const pr = notification.peripheralResponse;
-            if (pr && pr.requestId === requestId) {
-              finish(pr.response ?? null);
-            }
+            if (pr && pr.requestId === requestId) finish(pr.response ?? null);
           },
         });
         const timer = setTimeout(() => finish(null), RELAY_TIMEOUT_MS);
-      });
-    },
+        pendingRelays.current.add(cancel);
+      }),
     [zmkApp, subsystemIndex],
   );
 
-  // Calls the RPC and, when the firmware relayed it to a split peripheral
-  // (DeferredResponse), waits for the real answer instead.
-  const callRpcAwaitingRelay = useCallback(
-    async (request: Request): Promise<Response | null> => {
-      const resp = await callRpc(request);
-      if (!resp?.deferred) return resp;
-      const relayed = await awaitPeripheralResponse(resp.deferred.requestId);
-      if (!relayed) {
-        setError(
-          `Peripheral did not respond (timed out after ${RELAY_TIMEOUT_MS}ms). It may be disconnected.`,
+  const load = useCallback(
+    async (deletion?: { ids: number[]; all: boolean }) => {
+      if (!ready || activeContext.current !== context) return;
+      invalidate();
+      const requestGeneration = generation.current;
+      const isCurrent = () =>
+        activeContext.current === context &&
+        generation.current === requestGeneration;
+      setState({
+        context,
+        status: null,
+        incidents: [],
+        isLoading: true,
+        error: null,
+      });
+      const request = async (req: Request): Promise<Response> => {
+        if (!isCurrent()) throw new Error("Obsolete watchdog read");
+        let response = await call(req);
+        if (!isCurrent()) throw new Error("Obsolete watchdog read");
+        if (response?.deferred) {
+          response = await awaitPeripheralResponse(response.deferred.requestId);
+          if (!response)
+            throw new Error(
+              `Peripheral did not respond (timed out after ${RELAY_TIMEOUT_MS}ms). It may be disconnected.`,
+            );
+        }
+        if (!isCurrent()) throw new Error("Obsolete watchdog read");
+        if (!response) throw new Error("No response from watchdog");
+        if (response.error)
+          throw new Error(response.error.message || "Watchdog request failed");
+        return response;
+      };
+      try {
+        if (deletion) {
+          const response = await request(
+            Request.create({ deleteIncidents: { ...deletion, source } }),
+          );
+          if (!response.deleteResult)
+            throw new Error("Invalid watchdog deletion response");
+        }
+        const response = await request(
+          Request.create({ getStatus: { source } }),
         );
+        if (!response.status)
+          throw new Error("Invalid watchdog status response");
+        const collected: Incident[] = [];
+        let complete = false;
+        for (let guard = 0; guard < MAX_PAGES; guard++) {
+          const startIndex = collected.length;
+          const response = await request(
+            Request.create({ listIncidents: { startIndex, source } }),
+          );
+          const page = response.incidentPage;
+          if (!page || page.startIndex !== startIndex)
+            throw new Error("Invalid watchdog incident page");
+          collected.push(...page.incidents);
+          if (collected.length > page.total)
+            throw new Error("Invalid watchdog incident total");
+          if (collected.length >= page.total) {
+            complete = true;
+            break;
+          }
+          if (!page.incidents.length)
+            throw new Error("Incomplete watchdog incident list");
+        }
+        if (!complete) throw new Error("Incomplete watchdog incident list");
+        if (isCurrent())
+          setState({
+            context,
+            status: response.status,
+            incidents: collected,
+            isLoading: false,
+            error: null,
+          });
+      } catch (err) {
+        if (isCurrent())
+          setState({
+            context,
+            status: null,
+            incidents: [],
+            isLoading: false,
+            error:
+              err instanceof Error ? err.message : "Failed to load incidents",
+          });
       }
-      return relayed;
     },
-    [callRpc, awaitPeripheralResponse],
+    [ready, context, invalidate, call, source, awaitPeripheralResponse],
   );
 
-  const refreshStatus = useCallback(async () => {
-    const resp = await callRpcAwaitingRelay(
-      Request.create({ getStatus: { source } }),
-    );
-    if (resp?.status) {
-      setStatus(resp.status);
-    } else if (resp?.error) {
-      setError(resp.error.message);
-    }
-  }, [callRpcAwaitingRelay, source]);
+  const refresh = useCallback(() => load(), [load]);
 
-  const refreshIncidents = useCallback(async () => {
-    const collected: Incident[] = [];
-    let startIndex = 0;
-    // Pages hold at most 4 incidents; loop until `total` collected.
-    for (let guard = 0; guard < MAX_PAGES; guard++) {
-      const resp = await callRpcAwaitingRelay(
-        Request.create({ listIncidents: { startIndex, source } }),
-      );
-      if (!resp?.incidentPage) {
-        if (resp?.error) {
-          setError(resp.error.message);
-        }
-        break;
-      }
-      collected.push(...resp.incidentPage.incidents);
-      startIndex += resp.incidentPage.incidents.length;
-      if (
-        resp.incidentPage.incidents.length === 0 ||
-        startIndex >= resp.incidentPage.total
-      ) {
-        break;
-      }
-    }
-    setIncidents(collected);
-  }, [callRpcAwaitingRelay, source]);
-
-  const refresh = useCallback(async () => {
-    if (!ready) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      await refreshStatus();
-      await refreshIncidents();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load incidents");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [ready, refreshStatus, refreshIncidents]);
-
-  // Auto-load when the subsystem becomes available or the source changes.
   useEffect(() => {
-    if (ready) {
-      void refresh();
-    }
-  }, [ready, source, refresh]);
+    activeContext.current = context;
+    if (ready) void refresh();
+    return () => {
+      activeContext.current = null;
+      invalidate();
+    };
+  }, [context, ready, refresh, invalidate]);
 
-  // Live incident push: firmware notifies whenever a new incident is
-  // persisted on the local (central) store.
+  // Central notifications trigger a complete read, with the same invalidation
+  // rules as manual refreshes; peripheral notifications cannot alter this view.
   useEffect(() => {
-    if (!zmkApp || subsystemIndex === undefined) return;
+    if (!ready || !zmkApp || subsystemIndex === undefined || source !== 0)
+      return;
     return zmkApp.onNotification({
       type: "custom",
       subsystemIndex,
       callback: (customNotification) => {
-        let notification: Notification;
+        if (activeContext.current !== context) return;
         try {
-          notification = Notification.decode(customNotification.payload);
+          if (
+            Notification.decode(customNotification.payload).incidentRecorded
+              ?.incident
+          )
+            void refresh();
         } catch {
-          return;
-        }
-        const incident = notification.incidentRecorded?.incident;
-        if (incident && source === 0) {
-          setIncidents((prev) => [
-            incident,
-            ...prev.filter((i) => i.id !== incident.id),
-          ]);
-          void refreshStatus();
+          /* Ignore unrelated/malformed notifications. */
         }
       },
     });
-  }, [zmkApp, subsystemIndex, source, refreshStatus]);
-
-  const deleteIncidents = useCallback(
-    async (ids: number[], all: boolean) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const resp = await callRpcAwaitingRelay(
-          Request.create({ deleteIncidents: { ids, all, source } }),
-        );
-        if (resp?.error) {
-          setError(resp.error.message);
-        }
-        await refreshStatus();
-        await refreshIncidents();
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to delete incidents",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [callRpcAwaitingRelay, source, refreshStatus, refreshIncidents],
-  );
+  }, [ready, zmkApp, subsystemIndex, source, context, refresh]);
 
   const deleteOne = useCallback(
-    (id: number) => deleteIncidents([id], false),
-    [deleteIncidents],
+    (id: number) => load({ ids: [id], all: false }),
+    [load],
   );
-  const deleteAll = useCallback(
-    () => deleteIncidents([], true),
-    [deleteIncidents],
-  );
+  const deleteAll = useCallback(() => load({ ids: [], all: true }), [load]);
+  const currentState =
+    state.context === context && ready
+      ? state
+      : {
+          status: null,
+          incidents: [],
+          isLoading: ready,
+          error: null,
+        };
 
   return {
     isAvailable: subsystem !== null,
     source,
     setSource,
-    status,
-    incidents,
-    isLoading,
-    error,
+    status: currentState.status,
+    incidents: currentState.incidents,
+    isLoading: currentState.isLoading,
+    error: currentState.error,
     refresh,
     deleteOne,
     deleteAll,

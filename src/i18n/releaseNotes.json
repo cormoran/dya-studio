@@ -20,6 +20,11 @@
         ],
         "minor": [
           {
+            "en": "Distinguish failed watchdog reads from a healthy empty history and clear outdated statistics when changing sources.",
+            "ja": "ウォッチドッグの読み取り失敗と正常な空の履歴を区別し、ソース切替時に古い統計を消去するようにしました。",
+            "zh": "区分看门狗读取失败与正常的空历史记录，并在切换来源时清除过期统计。"
+          },
+          {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",
             "ja": "変更の破棄やレイヤーの再読み込み後も、有効なキーマップレイヤーの選択を維持するようにしました。",
             "zh": "丢弃更改或重新加载层后，保持选中有效的键位图层。"
