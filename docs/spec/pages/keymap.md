@@ -6,6 +6,8 @@
 
 共通契約: [binding editor](../modules/binding-editor.md)。モード固有の終了/適用条件、検索、modifier はこのモジュール仕様を参照する。
 
+共有表示: keycode の HID page、modifier、未知 usage と OS Layout 表記は BIND-024 に従う。preview の key/combo と editor header は consumer brightness を keyboard F20/F21 と区別する。表示の変更は書込みを伴わない。
+
 子仕様: [rotary encoder](keymap-sensors.md)。キー編集と sensor 設定では適用・保存の経路が異なる。
 
 | 根拠 | ソースと symbol                                                                                                                                                                                             |
