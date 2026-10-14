@@ -20,9 +20,9 @@
         ],
         "minor": [
           {
-            "en": "Rename keymap layers in Demo and retry failed renames without losing your input.",
-            "ja": "Demoでキーマップレイヤー名を変更でき、失敗しても入力を保持したまま再試行できるようになりました。",
-            "zh": "现在可在 Demo 模式下重命名键位图层，并在失败后保留输入以重试。"
+            "en": "Show encoder brightness bindings correctly and keep consumer keys distinct from keyboard keys throughout binding displays.",
+            "ja": "エンコーダーの明るさ割り当てを正しく表示し、割り当て表示全体でconsumerキーとキーボードキーを区別するようにしました。",
+            "zh": "正确显示编码器的亮度绑定，并在所有绑定显示中区分消费控制键和键盘按键。"
           },
           {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",

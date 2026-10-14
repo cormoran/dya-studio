@@ -912,6 +912,26 @@ export function getKeycodeByCode(code: number): KeycodeDefinition | undefined {
   return keycodeByCode.get(code);
 }
 
+/** Resolve a HID usage name without allowing another page to alias a keyboard key. */
+export function getKeycodeDisplayName(
+  hidUsage: number,
+  keyboardLayout?: KeyboardLayoutType,
+): string {
+  const page = getHidUsagePage(hidUsage);
+  const usage = dropModifierFlags(hidUsage);
+  const isKeyboard = page === 0 || page === HID_USAGE_PAGE_KEYBOARD;
+  const code = isKeyboard ? getHidUsageCode(usage) : usage;
+  const layoutName =
+    isKeyboard && keyboardLayout
+      ? getLayoutDisplayName(code, keyboardLayout)
+      : undefined;
+  return (
+    layoutName ||
+    getKeycodeByCode(code)?.displayName ||
+    `0x${usage.toString(16).toUpperCase()}`
+  );
+}
+
 /**
  * Get keycode definition by name or alias
  */
@@ -1068,28 +1088,7 @@ export function formatKeycodeWithModifiers(
     };
   }
   const modifiers = extractModifierFlags(hidUsage);
-  const baseCode = extractBaseKeycode(hidUsage);
-  const hidUsageWithoutMods = dropModifierFlags(hidUsage);
-
-  // Try to find the keycode definition
-  // First check if it's a full HID usage (consumer page, etc.)
-  let keycode = getKeycodeByCode(hidUsageWithoutMods); // Mask out modifiers
-  if (!keycode) {
-    // Try keyboard page code
-    keycode = getKeycodeByCode(baseCode);
-  }
-
-  // Check for layout-specific override
-  let baseName =
-    keycode?.displayName || `0x${baseCode.toString(16).toUpperCase()}`;
-
-  if (keyboardLayout) {
-    const layoutDisplayName = getLayoutDisplayName(baseCode, keyboardLayout);
-
-    if (layoutDisplayName) {
-      baseName = layoutDisplayName;
-    }
-  }
+  const baseName = getKeycodeDisplayName(hidUsage, keyboardLayout);
 
   const rawCodeHex = `0x${(hidUsage >>> 0).toString(16).toUpperCase()}`;
 
