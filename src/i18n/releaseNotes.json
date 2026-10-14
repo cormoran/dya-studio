@@ -20,9 +20,9 @@
         ],
         "minor": [
           {
-            "en": "Distinguish keycodes, modifiers, and parameters when previewing keymap history before restoring.",
-            "ja": "キーマップ履歴の復元前プレビューで、キーコード・修飾キー・パラメータの違いを確認できるようにしました。",
-            "zh": "恢复键位图历史前的预览现在可区分键码、修饰键和参数。"
+            "en": "Show encoder brightness bindings correctly and keep consumer keys distinct from keyboard keys throughout binding displays.",
+            "ja": "エンコーダーの明るさ割り当てを正しく表示し、割り当て表示全体でconsumerキーとキーボードキーを区別するようにしました。",
+            "zh": "正确显示编码器的亮度绑定，并在所有绑定显示中区分消费控制键和键盘按键。"
           },
           {
             "en": "Keep a valid keymap layer selected after discarding changes or reloading layers.",

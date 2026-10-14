@@ -1,4 +1,8 @@
-import { comboEditStatus, formatLayerScope } from "../comboUtils";
+import {
+  comboEditStatus,
+  formatLayerScope,
+  formatComboBehavior,
+} from "../comboUtils";
 import { ComboSource } from "../../../proto/cormoran/runtime_combo/runtime_combo";
 
 describe("comboEditStatus", () => {
@@ -35,4 +39,26 @@ describe("formatLayerScope", () => {
   it("keeps the all-layers label for an unrestricted combo", () => {
     expect(formatLayerScope(0, t)).toBe("All layers");
   });
+});
+
+test("formats consumer combo bindings without keyboard aliases", () => {
+  const behaviors = new Map([
+    [1, { id: 1, displayName: "Key Press", metadata: [] }],
+  ]);
+  for (const [param1, expected] of [
+    [0xc006f, "☀+"],
+    [0xc0070, "☀-"],
+    [0x7006f, "F20"],
+  ] as const) {
+    expect(
+      formatComboBehavior(
+        { behaviorId: 1, param1, param2: 0 },
+        behaviors,
+        [],
+        "JIS",
+        [],
+        (key) => key,
+      ),
+    ).toBe(expected);
+  }
 });

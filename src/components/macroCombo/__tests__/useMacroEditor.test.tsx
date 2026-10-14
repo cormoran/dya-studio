@@ -47,6 +47,41 @@ function renderEditor(getMacro: UseRuntimeMacroReturn["getMacro"]) {
 }
 
 describe("useMacroEditor", () => {
+  it("formats consumer macro steps without keyboard aliases", () => {
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        runtimeMacro: makeRuntimeMacro(jest.fn()),
+        keymap: {
+          ...keymap,
+          behaviors: new Map([
+            [1, { id: 1, displayName: "Key Press", metadata: [] }],
+          ]),
+        },
+        layers: [],
+        keyboardLayout: "JIS",
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    expect(
+      result.current.getStepDisplayName({
+        tap: { behaviorId: 1, param1: 0xc006f, param2: 0 },
+      }),
+    ).toBe("☀+");
+    expect(
+      result.current.getStepDisplayName({
+        down: { behaviorId: 1, param1: 0xc0070, param2: 0 },
+      }),
+    ).toBe("☀-");
+    expect(
+      result.current.getStepDisplayName({
+        up: { behaviorId: 1, param1: 0x70070, param2: 0 },
+      }),
+    ).toBe("F21");
+  });
+
   it("keeps the Macro & Combo page's immediate-create action", async () => {
     const createMacro = jest.fn().mockResolvedValue(true);
     const runtimeMacro = { ...makeRuntimeMacro(jest.fn()), createMacro };

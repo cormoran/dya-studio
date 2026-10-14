@@ -35,8 +35,7 @@ describe("SensorRotationConfig", () => {
       {
         id: 1,
         displayName: "Key Press",
-        param1Display: "keycode",
-        param2Display: null,
+        metadata: [],
       },
     ],
   ]);
@@ -114,9 +113,52 @@ describe("SensorRotationConfig", () => {
     });
   }
 
+  test("keeps both brightness directions distinct in visible and accessible names", async () => {
+    const setLayerCwBindings = jest.fn();
+    const setLayerCcwBindings = jest.fn();
+    mockUseRuntimeSensorRotate.mockReturnValue(
+      createMockReturn({
+        isAvailable: true,
+        sensors: [{ index: 1, name: "Right Encoder" }],
+        getAllLayerBindings: jest.fn().mockResolvedValue([
+          {
+            layer: 0,
+            cwBinding: { behaviorId: 1, param1: 0xc006f, param2: 0, tapMs: 5 },
+            ccwBinding: { behaviorId: 1, param1: 0xc0070, param2: 0, tapMs: 5 },
+          },
+        ]),
+        setLayerCwBindings,
+        setLayerCcwBindings,
+      }),
+    );
+    render(
+      <SensorRotationConfig
+        selectedLayerId={0}
+        behaviors={mockBehaviors}
+        layers={mockLayers}
+        keyboardLayout="JIS"
+      />,
+    );
+    const up = await screen.findByRole("button", {
+      name: "Right Encoder · Sensor 1 · Layer 0: Default · Clockwise: ☀+",
+    });
+    const down = screen.getByRole("button", {
+      name: "Right Encoder · Sensor 1 · Layer 0: Default · Counter-clockwise: ☀-",
+    });
+    expect(up).toHaveTextContent("☀+");
+    expect(down).toHaveTextContent("☀-");
+    expect(screen.queryByText("F20")).not.toBeInTheDocument();
+    expect(screen.queryByText("F21")).not.toBeInTheDocument();
+    expect(setLayerCwBindings).not.toHaveBeenCalled();
+    expect(setLayerCcwBindings).not.toHaveBeenCalled();
+  });
+
   describe("Tap Time Debouncing", () => {
     test("names each sensor group, direction binding, and tap-time input", async () => {
       await setupSensors(2);
+      await screen.findByRole("button", {
+        name: "Encoder 1 · Sensor 0 · Layer 0: Default · Clockwise: A",
+      });
 
       const firstSensor = screen.getByRole("group", {
         name: "Encoder 1 · Sensor 0 · Layer 0: Default",
@@ -128,12 +170,12 @@ describe("SensorRotationConfig", () => {
       ).toBeInTheDocument();
       expect(
         screen.getByRole("button", {
-          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Counter-clockwise: Trans",
+          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Counter-clockwise: B",
         }),
       ).toBeInTheDocument();
       expect(
         screen.getByRole("button", {
-          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Clockwise: Trans",
+          name: "Encoder 1 · Sensor 0 · Layer 0: Default · Clockwise: A",
         }),
       ).toBeInTheDocument();
       expect(
