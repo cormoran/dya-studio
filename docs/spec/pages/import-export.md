@@ -71,7 +71,7 @@ IE-001〜IE-012 は旧独立ページの契約として廃止。認証保持は 
 
 ## エラーと復帰
 
-auth/list/read/export/import のエラーは alert に残る。menu は Refresh または同じ操作で再試行、modal は Cancel 後に再確認できる。read error で過去の snapshot を書込みに流用しない。401 は再 login が必要。新規作成成功後の metadata/list error は record 作成を再実行せず menu に残す。identity setter の成功 acknowledgement と get readback がない場合は注意する。
+auth/list/read/export/import のエラーは alert に残る。menu は Refresh または同じ操作で再試行、modal は Cancel で既存 preview へ戻る。更新競合の場合は preview 自体を閉じ、行の Preview で新しい snapshot を取得してから再確認する。エラーにも preview を閉じて開き直す手順を示す。read error で過去の snapshot を書込みに流用しない。401 は再 login が必要。新規作成成功後の metadata/list error は record 作成を再実行せず menu に残す。identity setter の成功 acknowledgement と get readback がない場合は注意する。
 
 adapter は逐次書込みし原子的 rollback はない。途中失敗は混在状態になり得るので再読取してから再確認する。Confirm 前の検査と実際の書込間の外部変更を server-side CAS で防ぐ契約はない。
 

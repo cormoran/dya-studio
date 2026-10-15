@@ -364,7 +364,7 @@ export function useKeymapSharing(
         !isEmptyDiff(compare(expectedDevice, documentOf(fresh.loaded)))
       )
         throw new Error(
-          "The keyboard changed. Cancel and review the changes again.",
+          "The keyboard changed. Close this preview and open it again.",
         );
       if (pending.kind === "save") {
         const client = getAbyssClient();
@@ -378,7 +378,7 @@ export function useKeymapSharing(
           )
         )
           throw new Error(
-            "The Abyss keymap changed. Cancel and review the changes again.",
+            "The Abyss keymap changed. Close this preview and open it again.",
           );
         await client.updateKeymap(pending.record.id, {
           data: pending.after as AbyssKeymapData,

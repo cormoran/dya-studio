@@ -73,10 +73,10 @@ const ja: Record<string, string> = {
     "キーマップは保存されましたが、識別情報を保存できませんでした。更新してキーボードの状態を確認してください。",
   "The keymap identity could not be verified. Refresh to check the keyboard.":
     "キーマップの識別情報を確認できませんでした。更新してキーボードの状態を確認してください。",
-  "The keyboard changed. Cancel and review the changes again.":
-    "キーボードの内容が変わりました。キャンセルして差分を確認し直してください。",
-  "The Abyss keymap changed. Cancel and review the changes again.":
-    "Abyss のキーマップが変わりました。キャンセルして差分を確認し直してください。",
+  "The keyboard changed. Close this preview and open it again.":
+    "キーボードの内容が変わりました。プレビューを閉じ、開き直して差分を確認してください。",
+  "The Abyss keymap changed. Close this preview and open it again.":
+    "Abyss のキーマップが変わりました。プレビューを閉じ、開き直して差分を確認してください。",
   "The keyboard does not yet match this keymap. Review and try again.":
     "キーボードの内容がキーマップと一致していません。状態を確認して再試行してください。",
 
