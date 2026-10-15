@@ -15,10 +15,11 @@
 
 ## 機能要求
 
-| ID        | できるべきこと                                                           | 出典・確度        |
-| --------- | ------------------------------------------------------------------------ | ----------------- |
-| SHELL-R01 | route・tab・ブラウザ履歴が整合し、訪問済みページの編集を不用意に失わない | S1/S2/S3 から推定 |
-| SHELL-R02 | 接続なしで説明資料を読み、接続中は device と編集画面を識別できる         | S1/S4 から推定    |
+| ID        | できるべきこと                                                           | 出典・確度                 |
+| --------- | ------------------------------------------------------------------------ | -------------------------- |
+| SHELL-R01 | route・tab・ブラウザ履歴が整合し、訪問済みページの編集を不用意に失わない | S1/S2/S3 から推定          |
+| SHELL-R02 | 接続なしで説明資料を読み、接続中は device と編集画面を識別できる         | S1/S4 から推定             |
+| SHELL-R03 | ヘッダー右端の GitHub アイコンからプロジェクトのリポジトリを開ける       | ユーザー要求（2026-10-16） |
 
 ## 前提・状態
 
@@ -39,16 +40,17 @@
 
 検証: 320/390pxとデスクトップで同じページを比較し、ページ幅・scrollWidth、個別横スクロール領域、icon-onlyのaccessible nameを確認する。通常タップ/長押し/指を動かす操作を区別し、長押しで保存や削除が実行されないことを確認する。実機touch検証と合成イベントの自動テストは別の証拠として記録する。
 
-| ID        | 前提 → 操作                                  | 観測できる結果                                                                                         | 保存範囲・副作用                                                                             | 根拠     |
-| --------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------- |
-| SHELL-001 | tab 選択                                     | 選択タブと pathname が対応。Home は `/`、他は `/<id>`。狭幅ではアイコン中心でも accessible name を持つ | history pushState。初回のみ page を mount                                                    | S1/S2/S3 |
-| SHELL-002 | 訪問済み tab へ戻る                          | component は維持され、選択/編集中 state が残る。非選択 tab は hidden                                   | 自動的な再接続や device 再読込ではない。stream 等の停止はページが処理                        | S3       |
-| SHELL-003 | browser Back/Forward                         | popstate で route と active tab を更新                                                                 | device の Save/Discard は実行しない                                                          | S2       |
-| SHELL-004 | 未登録パス                                   | 通常ルートでは Home を選び `/` へ replace。standalone routes は別扱い                                  | query を持つ OAuth callback を Home に書換えない                                             | S1       |
-| SHELL-005 | header の theme toggle                       | light/dark を切替、html class とラベルが次の操作を表す                                                 | `dya-studio-theme` localStorage。初回は保存値、なければ OS light 指定、その他 dark           | S4/S5    |
-| SHELL-006 | Language toggle                              | en→ja→zh→en。html lang と翻訳ラベルを更新                                                              | `dya-studio-language` localStorage。初回は有効保存値、なければ navigator の ja/zh、その他 en | S5       |
-| SHELL-007 | 接続 header / Disconnect                     | deviceName（なければ Connected）と切断操作。切断で通常 tab を離れる                                    | 接続の解除は DeviceConnectionProvider の責務                                                 | S1/S4    |
-| SHELL-008 | 接続かつ devtool subsystem 対応 → Debug Tool | floating の診断 window を toggle                                                                       | devtool の詳細は診断仕様で管理                                                               | S1       |
+| ID        | 前提 → 操作                                      | 観測できる結果                                                                                                                     | 保存範囲・副作用                                                                                    | 根拠     |
+| --------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
+| SHELL-001 | tab 選択                                         | 選択タブと pathname が対応。Home は `/`、他は `/<id>`。狭幅ではアイコン中心でも accessible name を持つ                             | history pushState。初回のみ page を mount                                                           | S1/S2/S3 |
+| SHELL-002 | 訪問済み tab へ戻る                              | component は維持され、選択/編集中 state が残る。非選択 tab は hidden                                                               | 自動的な再接続や device 再読込ではない。stream 等の停止はページが処理                               | S3       |
+| SHELL-003 | browser Back/Forward                             | popstate で route と active tab を更新                                                                                             | device の Save/Discard は実行しない                                                                 | S2       |
+| SHELL-004 | 未登録パス                                       | 通常ルートでは Home を選び `/` へ replace。standalone routes は別扱い                                                              | query を持つ OAuth callback を Home に書換えない                                                    | S1       |
+| SHELL-005 | header の theme toggle                           | light/dark を切替、html class とラベルが次の操作を表す                                                                             | `dya-studio-theme` localStorage。初回は保存値、なければ OS light 指定、その他 dark                  | S4/S5    |
+| SHELL-006 | Language toggle                                  | en→ja→zh→en。html lang と翻訳ラベルを更新                                                                                          | `dya-studio-language` localStorage。初回は有効保存値、なければ navigator の ja/zh、その他 en        | S5       |
+| SHELL-007 | 接続 header / Disconnect                         | deviceName（なければ Connected）と切断操作。切断で通常 tab を離れる                                                                | 接続の解除は DeviceConnectionProvider の責務                                                        | S1/S4    |
+| SHELL-008 | 接続かつ devtool subsystem 対応 → Debug Tool     | floating の診断 window を toggle                                                                                                   | devtool の詳細は診断仕様で管理                                                                      | S1       |
+| SHELL-015 | AppLayout のヘッダー右端の GitHub アイコンを選択 | `https://github.com/cormoran/dya-studio` を新しいタブで開く。accessible name は `GitHub`。モバイルでも表示し、タッチ領域は44px以上 | device/browser 設定への書込みなし。外部サイトの読込失敗はブラウザ側で扱い、元の画面から再試行できる | S4       |
 
 ## 代表ユーザーフロー
 
@@ -56,6 +58,7 @@
 2. layer を変更、Settings へ行って戻る。元の layer 選択が残る（SHELL-002）。保存成功の証明にはしない。
 3. browser Back/Forward。履歴に対応した tab を確認（SHELL-003）。
 4. 元の theme/language を記録して切替し、ラベルと表示の変化を確認。元に戻す（SHELL-005/006）。他 worker とは別 origin を使用。
+5. AppLayout を表示し、デスクトップと狭幅でヘッダー右端の GitHub リンクを選択。新しいタブのリポジトリ URL と元の画面の維持を確認し、外部タブを閉じる（SHELL-015）。
 
 ## 不変条件
 

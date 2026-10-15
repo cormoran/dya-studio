@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import { IconSun, IconMoon, IconPlugConnectedX } from "@tabler/icons-react";
+import {
+  IconSun,
+  IconMoon,
+  IconPlugConnectedX,
+  IconBrandGithub,
+} from "@tabler/icons-react";
 import DyaLogo from "../assets/dya.svg?react";
 import { useTheme } from "../hooks/useTheme";
 import { useLanguage } from "../hooks/useLanguage";
@@ -113,6 +118,16 @@ export function AppLayout({
               )}
             </button>
           </div>
+          <a
+            href="https://github.com/cormoran/dya-studio"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            title="GitHub"
+            className="theme-toggle flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+          >
+            <IconBrandGithub size={20} aria-hidden="true" />
+          </a>
         </div>
       </header>
 
