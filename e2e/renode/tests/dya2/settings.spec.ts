@@ -24,9 +24,14 @@ function idleDropdown(page: Page): Locator {
   return page.getByRole("button", { name: /^Idle Timeout(?:\s|$)/ });
 }
 
-// The TimeDropdown renders its open menu into a body portal (`div.fixed.w-48`).
+// The Idle/Sleep option groups stay mounted in a portal while closed.
+// Keep this field-specific group addressable for the post-submit hidden check.
 function dropdownMenu(page: Page): Locator {
-  return page.locator("div.fixed.w-48");
+  return page.getByRole("group", {
+    name: "Idle Timeout options",
+    exact: true,
+    includeHidden: true,
+  });
 }
 
 // Map the dropdown's display label to a minutes value. Presets: "Never" (0),
