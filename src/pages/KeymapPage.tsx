@@ -1,3 +1,4 @@
+import { KeymapSharingMenu } from "../components/importExport/KeymapSharingMenu";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
   useState,
@@ -822,6 +823,22 @@ export function KeymapPage() {
                       }}
                     />
                   </div>
+                  <KeymapSharingMenu
+                    beforeRead={comboEditor.flushPendingWrites}
+                    disabled={
+                      keymap.isLoading ||
+                      isSaving ||
+                      isResetting ||
+                      isDiscarding
+                    }
+                    onApplied={async () => {
+                      await keymap.loadKeymapData();
+                      if (isComboAvailable) {
+                        await runtimeCombo.reload();
+                        comboEditor.clearModified();
+                      }
+                    }}
+                  />
                   <ResponsiveButton
                     label={t("Save")}
                     className="btn-electric text-sm flex items-center gap-1.5"

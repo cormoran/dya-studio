@@ -1,91 +1,80 @@
-# Import/Export
+# キーマップ共有（Keyboard Abyss / JSON）
 
 ## 範囲・根拠
 
-`/import-export` の Keyboard Abyss 連携（認証、接続中 keyboard の明示 read、アップロード、書込み前 preview/confirm）を対象にする。tab と standalone route の接続 gate は[共通画面](../modules/app-shell.md)、キー binding の編集は[共通 binding editor](../modules/binding-editor.md)の契約であり、本ページはそれらを再定義しない。コード確認: 2026-09-20、`8627e4d`。UI 実測は未実施。
+入口は `/keymap` の Save 左の `Keymap sharing`（キーマップ共有）ドロップダウン。2026-10-16 のユーザー明示要求に基づく。独立 Import/Export タブは廃止し、旧 `/import-export` は Keymap として扱う。以下はコード根拠であり実サービス・実機の検証済みを意味しない。
 
-| 根拠 | ソース / symbol                                                                                                                                                                                                                                                                                                        |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1   | [App](../../../src/App.tsx): `getTabs`, `AppContent`                                                                                                                                                                                                                                                                   |
-| S2   | [ImportExportPage](../../../src/pages/ImportExportPage.tsx): `ImportExportPage`, `IMPORT_EXPORT_TAB_ID`                                                                                                                                                                                                                |
-| S3   | [Abyss config](../../../src/lib/abyss/abyssConfig.ts): `isAbyssTabVisible`, `isAbyssConfigured`                                                                                                                                                                                                                        |
-| S4   | [auth/device/export/import hooks](../../../src/hooks/useAbyssAuth.ts), [useAbyssDevice](../../../src/hooks/useAbyssDevice.ts), [useAbyssExport](../../../src/hooks/useAbyssExport.ts), [useAbyssImport](../../../src/hooks/useAbyssImport.ts), [Abyss client](../../../src/lib/abyss/abyssClient.ts): `getAbyssClient` |
-| S5   | [section UI](../../../src/components/importExport/ExportSection.tsx), [ImportSection](../../../src/components/importExport/ImportSection.tsx), [DeviceSnapshotCard](../../../src/components/importExport/DeviceSnapshotCard.tsx)                                                                                       |
-| S6   | [page/hook tests](../../../src/pages/__tests__/ImportExportPage.test.tsx), [export tests](../../../src/hooks/__tests__/useAbyssExport.test.tsx), [import tests](../../../src/hooks/__tests__/useAbyssImport.test.tsx)                                                                                                  |
+| 根拠 | ソースと symbol                                                                                                                                                                                     |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1   | [KeymapPage](../../../src/pages/KeymapPage.tsx): `KeymapSharingMenu`、[App](../../../src/App.tsx): `getTabs`、[useUrlTab](../../../src/hooks/useUrlTab.ts): `tabIdFromPathname`                     |
+| S2   | [共有メニュー](../../../src/components/importExport/KeymapSharingMenu.tsx): `KeymapSharingMenu`、[差分モーダル](../../../src/components/importExport/JsonDiffModal.tsx): `JsonDiffModal`            |
+| S3   | [共有 hook](../../../src/hooks/useKeymapSharing.ts): `capture`, `refreshList`, `prepare`, `confirm`, `associate`, `create`, `saveFile`                                                              |
+| S4   | [identity](../../../src/lib/abyss/keymapIdentity.ts): `keymapIdentifier`, `rememberKeymap`、[RPC](../../../proto/cormoran/fast_keymap/fast_keymap.proto)                                            |
+| S5   | [payload](../../../src/lib/abyss/keymapSharing.ts): `parseSharedKeymap`, `buildApplyTarget`、[preflight](../../../src/lib/abyss/abyssPreflight.ts): `runPreflight`                                  |
+| S6   | [auth](../../../src/hooks/useAbyssAuth.ts)、[client](../../../src/lib/abyss/abyssClient.ts)、[renewal](../../../src/hooks/useAbyssSessionRenewal.ts)、[OAuth](../../../src/lib/abyss/abyssOAuth.ts) |
+| S7   | [hook tests](../../../src/hooks/__tests__/useKeymapSharing.test.tsx)                                                                                                                                |
+| S8   | 旧 [ImportExportPage](../../../src/pages/ImportExportPage.tsx) と旧 hooks/components は残るが、通常の route/tab には登録しない                                                                      |
 
 ## 機能要求
 
-| ID     | できるべきこと                                                                                      | 出典・確度     |
-| ------ | --------------------------------------------------------------------------------------------------- | -------------- |
-| IE-R01 | 認証済み利用者が、接続 keyboard の明示的 read に基づき、Abyss へ必要な section だけを export できる | S2/S4 から推定 |
-| IE-R02 | keyboard を変える import は、対象・差分・互換性検査を確認してから明示確認で実行できる               | S4/S5 から推定 |
-| IE-R03 | OAuth、一覧、read、書込みの失敗または取消を成功・永続化済みと誤認しない                             | S4/S5 から推定 |
+| ID     | できるべきこと                                                                                                                                   | 出典・確度                                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| IE-R01 | 廃止: 旧ページの部分 export。後継は IE-R04                                                                                                       | 2026-10-16 明示要求                                                        |
+| IE-R02 | keyboard を変える import は対象・差分・互換性を確認して実行する                                                                                  | 継続要件                                                                   |
+| IE-R03 | 認証・read・書込みの失敗を成功・永続化済みと誤認しない                                                                                           | 継続要件                                                                   |
+| IE-R04 | Save 左の短い名称のメニューで、現在・所有キーマップの適用/保存、検索、新規保存、JSON の出し入れを行う。未認証では login/search/file だけ表示する | 2026-10-16 ユーザー明示要求                                                |
+| IE-R05 | fast-keymap PR #5 の識別子で現在のキーマップを判定し、未対応機では判定不能の注意を表示する                                                       | 同上、[RPC PR](https://github.com/cormoran/zmk-feature-fast-keymap/pull/5) |
 
 ## 前提・状態
 
-通常 tab なので接続中だけ app shell に表示する。`isAbyssTabVisible()` は local development なら client ID なしでも表示し、deployed build は client ID がある時だけ登録する。表示されても `isAbyssConfigured()` が false なら sign-in は設定不足として利用不能である。認証済み後も最初は snapshot `idle` で export/import は `Read keyboard` が完了するまで無効である。
+接続済みまたは Demo の Keymap が対象。Keymap 読込・Save/Reset/Discard 中は入口を無効化する。Studio locked 時は既存の unlock 操作を優先し、Save と共有メニューを隠す。メニューは画面幅内に収まり、長い一覧はスクロールする。狭い画面の入口はアイコンと accessible name を維持する。
 
-| 状態                                              | 可用性 / 見分け方                                                                                                 | 保存・復帰                                                                                            |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| signed out / loading / auth error                 | configured build の Account card は sign-in（loading 中 spinner/disabled）、`SectionError`。下位 section は非表示 | token は Abyss client の localStorage（profile は React state）。401 は token を消し再 sign-in を促す |
-| OAuth unconfigured                                | Account card に設定不足の説明を表示し sign-in は disabled。popup/redirect は試行しない。下位 section は非表示     | 認証や storage を変更しない。local dev では tab は表示可能、deployed build では tab 自体を隠す        |
-| snapshot reading / resolving / done / error       | `Read keyboard`、Bluetooth では遅い旨、layout matching、error                                                     | read は自動実行しない。最後の成功 snapshot は hook state に残る                                       |
-| export new/update                                 | name/visibility または既存 keymap 選択、section selector、preview                                                 | export は keyboard を書かず、Abyss record/version を作成・更新する                                    |
-| import loading/preview/blocked/confirming/writing | candidate 選択、filtered diff、preflight、inline confirm                                                          | write 前 Cancel は confirm を閉じるだけ。write は keyboard と adapter の save 経路を変更する          |
+未認証・認証読込中はアカウント/現在/所有一覧/新規保存を出さない。OAuth client 未設定では login を無効化し理由を表示するが、file/search は利用可能。認証後メニューを開くと keyboard snapshot、layout resolve、一覧、識別子を読取り、`Loading...` 中は書込み系操作を無効化する。空一覧とエラーを区別する。
 
 ## 現行の機能仕様
 
-モバイル幅のページ表示・共通操作・説明は[共通画面 SHELL-009/010/011](../modules/app-shell.md)に従う。下記の可用性・保存・エラー契約は画面幅で変わらない。
+IE-001〜IE-012 は旧独立ページの契約として廃止。認証保持は IE-023 へ、その他は以下へ移転する。番号は再利用しない。
 
-| ID     | 前提 → 操作                                                               | 観測できる結果                                                                                   | 保存範囲・副作用                                                                                   | 根拠     |
-| ------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | -------- |
-| IE-001 | local dev または configured deployed build → Import/Export tab            | tab が現れる。未接続では app shell の接続 gate に従う                                            | tab 登録のみ。資格情報の有無と tab 可視性は別                                                      | S1/S3    |
-| IE-002 | OAuth configured、signed out、not loading → enabled `Sign in with Abyss`  | popup を開始し、profile 読取後に account と Export/Import tabs を表示                            | token は localStorage、PKCE は sessionStorage。popup cancel は `Abyss login was cancelled.`        | S2/S4/S6 |
-| IE-003 | authenticated → `Read keyboard` / `Read again`                            | read→layout resolve の進捗、layer/key/combo/macro/module 数と catalog verdict を表示             | keyboard RPC の読取り。export/import は同じ `loaded` snapshot を使う                               | S4/S5    |
-| IE-004 | Export → new                                                              | 非空 name、visibility、選択 section、upload JSON preview を選べる。new は keymap section を強制  | `createKeymap` または catalog 未一致時 `importKeymap`。keyboard への write なし                    | S4/S5    |
-| IE-005 | Export → update → existing keymap                                         | 最新更新 keymap を初期選択し、visual/JSON diff の `Review changes` を開ける                      | merge base を取得し `updateKeymap`。成功時 `Saved to Abyss as version …` と外部 link               | S4/S5    |
-| IE-006 | Import → keymap 選択 → section を絞る                                     | full record を取得し、keyboard current→Abyss target の filtered diff、JSON/visual preview を表示 | 選択自体は keyboard を書かない。選択変更は以前の成功表示/error を初期化                            | S4/S5    |
-| IE-007 | import diff があり blocked preflight なし → `Write to keyboard` → confirm | 変更数と不可逆警告を表示。`Cancel` は confirm を閉じ、`Write to keyboard` だけが write を呼ぶ    | adapter が差分を書き、完了後 read。`didWrite` は「再 read を呼んだ」ことを示し空 diff の再判定は別 | S4/S5    |
-| IE-008 | import target と filtered diff が同一                                     | `The keyboard already matches this keymap.`。primary write は無効                                | keyboard/Abyss とも変更しない                                                                      | S4/S5    |
-| IE-009 | authenticated → `Sign out`                                                | profile と Export/Import section を隠し sign-in card に戻る                                      | revoke は best effort 後に token を clear。revoke failure でも local token は残さない              | S4/S5    |
-| IE-010 | authenticated → `Export`/`Import` tab を切替                              | 一度に片方だけ表示する。切替は export/import hook state を破棄しない                             | page-local `direction` state の変更のみ。Abyss/keyboard write はしない                             | S2       |
-
-認証保持はユーザー明示要求（2026-09-27）に基づく。既存 sessionStorage の token は初回 client 構築時に localStorage へ移し、既存の永続 token があればそちらを優先する。Sign out は永続 token も削除する。
-
-| ID     | 前提 → 操作                                                       | 観測できる結果                                                                                                                                             | 保存範囲・副作用                                                                                                                                                  | 根拠                                                             |
-| ------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| IE-011 | sign-in 後にタブ/browser を閉じ、同じ origin の Studio を再度開く | Import/Export で profile 読取り後に認証済み表示となる                                                                                                      | localStorage の access/refresh token を再利用。Studio 起動・foreground 復帰・表示中5分ごとに期限が近い access token を更新する。keyboard 接続・本タブの訪問は不要 | S4、[renewal hook](../../../src/hooks/useAbyssSessionRenewal.ts) |
-| IE-012 | OAuth client ID がなく Import/Export tab を開く                   | local dev では説明「Abyss sign-in is unavailable because this build has no OAuth client configuration.」と disabled sign-in を表示。popup 説明は表示しない | login/popup/redirect は実行しない。タブ可視性は IE-001 の環境条件に従い、auth state/token は変更しない                                                            | S2/S3/S4/S6                                                      |
-
-更新は Abyss 側の refresh token の有効性に依存し、無期限を保証しない。background 更新の network failure は token を削除せず次回に再試行する。callback document は更新しない。Web Locks 対応 browser では tab 間の更新も直列化する。ストレージ削除・provider 側の失効時は再ログインが必要。
+| ID     | 前提 → 操作                                         | 観測できる結果 / 保存範囲・副作用                                                                                                                                                                                                                                                                                                                                                 | 根拠        |
+| ------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| IE-013 | Keymap → `Keymap sharing`                           | Save の左のメニューを開く。閉じる/Escape/外側クリックは操作実行を伴わない。旧 Import/Export タブはない                                                                                                                                                                                                                                                                            | S1/S2       |
+| IE-014 | 未認証 → `Sign in with Abyss`                       | popup OAuth。成功後は avatar（なければ cloud）、表示名、`@username`、小さい `Sign out`。search/file は認証に依存しない                                                                                                                                                                                                                                                            | S2/S6       |
+| IE-015 | 認証済み → menu を開く / `Refresh`                  | 対応 layout の自分のキーマップ一覧。未一致 layout や広域 fallback の結果は一覧に出さない。先頭は identifier に一致する現在のキーマップ。差分なしなら `In sync`、ありなら Apply/Save                                                                                                                                                                                               | S2/S3/S4    |
+| IE-016 | current/所有行 → `Save`                             | 最新 keyboard と Abyss record を読んで確認 modal。左は Abyss、右は保存予定。Confirm の `Save to Abyss` で当該 record を更新。行の Save は Apply より小さく暗い。keyboard binding は書かない。成功後 identity metadata を保存する                                                                                                                                                  | S2/S3       |
+| IE-017 | current/所有行 → `Apply`                            | 差分 modal の左は現在の keyboard、右は適用予定。preflight の blocked は confirm 無効。`Apply to keyboard` だけが adapter 経由で即時書込み・保存し、再読取一致確認、identity 保存、Keymap/Combo 再読込を行う                                                                                                                                                                       | S1/S2/S3/S5 |
+| IE-018 | `Find on Abyss`                                     | build の Abyss base URL の `/keymaps` を新しいタブで開く。未ログインでも表示                                                                                                                                                                                                                                                                                                      | S2          |
+| IE-019 | 認証済み → `Save new to Abyss`                      | dialog で非空 name と private/public（初期 private）を入力。`Save to Abyss` で操作時点の keyboard を新規保存。成功した record の識別子も keyboard に保存。binding の変更はない。record 作成後の metadata/list エラーは新規作成失敗として再試行を促さない                                                                                                                          | S2/S3/S4    |
+| IE-020 | `Save to file`                                      | 操作時点で keyboard を読取、schema URL を含む KeyboardHub JSON `keymap.json` を download。Abyss 通信・login は不要                                                                                                                                                                                                                                                                | S3/S5       |
+| IE-021 | `Apply from file` → JSON 選択                       | 5 MB 以下、KeyboardHub schema で検証。無効 JSON は alert、書込なし。有効なら IE-017 と同じ差分・確認・readback。任意 section が未記載なら既存値を保持、明示 `[]` は削除を要求。余分な既存 layer/キー位置は保持した結果を preview する。成功時は Abyss identity を clear（対応機のみ）                                                                                             | S2/S3/S5    |
+| IE-022 | confirm 前の Cancel / Close / Escape / 外側クリック | modal を閉じ、書込なし。処理中は閉じる要求を無視し confirm を無効化。新規 dialog の入力は処理中無効。失敗は dialog 内 alert と入力/差分を残して再試行可能                                                                                                                                                                                                                         | S2/S3       |
+| IE-023 | browser 再起動 / `Sign out`                         | token は localStorage、PKCE は initiating tab の sessionStorage。起動・foreground・表示中5分ごとに near-expiry token 更新。sign out は best effort revoke 後 clear、cloud section 非表示。401 は token clear と logout。OAuth fallback の戻り先は `/keymap`                                                                                                                       | S6/S3       |
+| IE-024 | identity RPC 非対応/空/未解決                       | 非対応なら専用の注意、空なら未保存、対応する record 不明なら判定不能。file/cloud 操作は引き続き使える。identifier の source は `abyss:<origin>/keymaps/<id>` の UTF-8、SHA-256 の先頭3 byteを4文字の padding なし Base64url にする。編集で変えない。元 id は origin ごとの browser localStorage と所有一覧から復元する。hash 衝突/別 browser の未所有 record は解決不能になり得る | S3/S4       |
+| IE-025 | 確認中の変更/接続変更                               | Confirm 前に keyboard を再読取、cloud 保存なら record も再取得し、review の基準と変わっていればエラーで中止。接続/認証変更時に review/list を無効化し、古い非同期結果から書込みを開始しない                                                                                                                                                                                       | S3/S7       |
 
 ## 代表ユーザーフロー
 
-1. configured build で接続し Import/Export を開く。sign out では sign-in card だけで `Export`/`Import` section が出ないことを確認する（IE-001/002）。
-2. sign-in 後 `Read keyboard` を一度だけ押し、reading/resolving の文言が完了して snapshot 数値と layout verdict が出るまで待つ（IE-003）。
-3. Export/new で name と visibility を選び JSON preview を確認して export する。成功 version/link を記録し、keyboard の設定を変更しないことは実機で別途確認する（IE-004）。
-4. Import で別 keymap と対象 sections を選び、preflight、visual diff、`Review changes as JSON` を確認する（IE-006）。`Write to keyboard` 後は `Cancel` して、write を開始しないことを確認する（IE-007）。
-5. 再度 confirm して write し、read 後の結果・error を記録する。途中失敗時は混在状態の可能性があるため再 read して diff を確認する（IE-007）。
-
-6. 認証後にタブを閉じ同じ origin で再度開き、Import/Export で認証済み表示を確認する。Sign out 後に再度開くと sign-in card になる（IE-009/011）。実 provider での長期保持は別途未検証。
+1. Demo の Keymap でメニューを開き、未認証では login/search/file のみ、閉じる→開くが可能なことを確認（IE-013/014）。
+2. ファイル保存→JSON を別名で保持→キーを編集→ファイルから反映→diff で変更先を確認→Cancel、編集が残ることを確認。再度反映を確定し、ページ内 Reload 後に元の値が戻ることを確認（IE-017/020/021/022）。Demo は実機 flash の証拠ではない。
+3. 認証環境で menu を開き current/所有一覧を確認。別 record の Save→Cancel、再確認→Save で Abyss の同 record を再取得し内容を確認（IE-015/016）。
+4. 新規保存で private/public を選び保存、一覧更新/record 再取得、sign out 後 cloud section 非表示を確認（IE-019/023）。外部サービス書込みは検証用アカウントでのみ実施。
+5. identity RPC の新旧 firmware を比較。対応機は適用後 identifier の get readback、編集後も同一、再接続後の判定、file 反映後 empty を確認。未対応機は注意表示と file/cloud 機能の継続を確認（IE-024）。
 
 ## 不変条件
 
-- IE-I01: read 前、または read 中に export/import は開始できない（S4/S5）。
-- IE-I02: export は keyboard write API を呼ばない。Abyss 側の新 version 作成は keyboard の flash 保存成功を意味しない（S4）。
-- IE-I03: import の Cancel、preview dialog close、section selector は write を呼ばない（S5）。
-- IE-I04: import の blocked preflight は confirm button を有効化しない（S4/S5）。
+- IE-I01: 読込中・保存中・blocked preflight では二重書込みを開始しない（S3）。
+- IE-I02: cloud/file 保存は keyboard binding を書かない。cloud 保存後の identity metadata 書込みは別の副作用（S3/S4）。
+- IE-I03: Cancel・preview・ファイル選択だけでは設定を書かない（S2/S3）。
+- IE-I04: 書込み成功ラベルには keyboard 再読取一致を必要とする。device の power-cycle 永続性は実機で別途検証する（S3）。
 
 ## エラーと復帰
 
-auth/profile/list/read/export/import の hook error は `SectionError` に残り、同じ read・選択・export・write 操作で再試行できる。401 は token を clear するため次回は再認証が必要。locked device は unlock wrapper を通すが、adapter が一部書込後に失敗した場合の原子 rollback はない。full actual write の device flash/RAM 境界は外部 adapter の実装も必要で、本仕様では完了表示を flash 永続化の証拠にしない。
+auth/list/read/export/import のエラーは alert に残る。menu は Refresh または同じ操作で再試行、modal は Cancel 後に再確認できる。read error で過去の snapshot を書込みに流用しない。401 は再 login が必要。新規作成成功後の metadata/list error は record 作成を再実行せず menu に残す。identity setter の成功 acknowledgement と get readback がない場合は注意する。
+
+adapter は逐次書込みし原子的 rollback はない。途中失敗は混在状態になり得るので再読取してから再確認する。Confirm 前の検査と実際の書込間の外部変更を server-side CAS で防ぐ契約はない。
 
 ## 探索の観点
 
-- dev credentialなし、deployed credentialなし、configured build を比較し tab/sign-in の差を確認する。
-- popup block、popup を閉じる、401、network failure、Abyss keymap list empty/error を分ける。
-- BLE と USB で read を連打し、共有 `inFlight` が二重 read を作らないか確認する。
-- section の部分 export/import、layout/key/layer count mismatch、write の途中 disconnect を確認する。
+未設定 OAuth / 未認証 / 認証、空一覧 / read-list error、identity 非対応 / 空 / unknown / matched、同一 diff / 異なる diff、JSON 構文・schema・容量不正、Cancel と連打、確認中の接続変更、狭い画面のスクロールとタッチ到達性を区別する。
 
 ## 既知の受け入れ済み不具合
 
@@ -93,4 +82,4 @@ auth/profile/list/read/export/import の hook error は `SectionError` に残り
 
 ## 未解決・未検証
 
-OAuth provider の実接続、Abyss catalog/adapter の server-side version retention、popup blocker fallback、実機の preflight と途中 failure は UI 実測していない。`didWrite` のコメントと異なり実装は read 成功後に diff が空であることを再確認していないため、成功ラベルを完全同期の証明にはしない。
+RPC PR #5 は実装後に再確認し、`575411d` に同期。4文字 Base64url と unlock-required error を反映した。firmware get/set 実装も PR に追加されているが本作業の実機確認は未実施。OAuth 実サービスの一覧/更新/作成、実機 adapter の途中失敗/flash、identifier の電源断保持は自動テスト・Demo と区別して報告する。24-bit hash は衝突ゼロを保証しない。別 browser で未所有の record の source を復元する API は現 contract にない。

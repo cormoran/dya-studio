@@ -9,7 +9,7 @@
  * thousands of characters, and diffing two of them on every parent render would
  * be paid by everyone who never opens it.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconX } from "@tabler/icons-react";
 import { Diff, Hunk, type FileData } from "react-diff-view";
@@ -83,6 +83,7 @@ export function JsonDiffModal({
   description,
   before,
   after,
+  footer,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -91,6 +92,7 @@ export function JsonDiffModal({
   description: string;
   before: unknown;
   after: unknown;
+  footer?: ReactNode;
 }) {
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
@@ -172,6 +174,11 @@ export function JsonDiffModal({
               <DiffBody files={files} viewMode={viewMode} />
             )}
           </div>
+          {footer && (
+            <div className="shrink-0 p-3 border-t border-[var(--color-border)]">
+              {footer}
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

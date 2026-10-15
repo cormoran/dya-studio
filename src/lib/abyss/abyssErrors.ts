@@ -83,7 +83,7 @@ export function abyssErrorMessageKey(error: unknown): string {
     case "cancelled":
       return "Abyss login was cancelled.";
     case "oauth":
-      return "Abyss sign-in could not be completed. Please start again from the Import/Export tab.";
+      return "Abyss sign-in could not be completed. Please start again from Keymap sharing.";
     default:
       return "Something went wrong talking to Abyss.";
   }

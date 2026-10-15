@@ -14,6 +14,8 @@ export const ErrorCode = {
   ERR_INVALID_LAYER: 1,
   ERR_INVALID_BEHAVIOR: 2,
   ERR_INVALID_LAYOUT: 3,
+  ERR_INVALID_IDENTIFIER: 4,
+  ERR_UNLOCK_REQUIRED: 5,
   UNRECOGNIZED: -1,
 } as const;
 
@@ -24,6 +26,8 @@ export namespace ErrorCode {
   export type ERR_INVALID_LAYER = typeof ErrorCode.ERR_INVALID_LAYER;
   export type ERR_INVALID_BEHAVIOR = typeof ErrorCode.ERR_INVALID_BEHAVIOR;
   export type ERR_INVALID_LAYOUT = typeof ErrorCode.ERR_INVALID_LAYOUT;
+  export type ERR_INVALID_IDENTIFIER = typeof ErrorCode.ERR_INVALID_IDENTIFIER;
+  export type ERR_UNLOCK_REQUIRED = typeof ErrorCode.ERR_UNLOCK_REQUIRED;
   export type UNRECOGNIZED = typeof ErrorCode.UNRECOGNIZED;
 }
 
@@ -97,8 +101,10 @@ export interface Request {
     | GetPhysicalLayoutRequest
     | undefined;
   /** batch current/effective (cold load) */
-  getLayers?:
-    | GetLayersRequest
+  getLayers?: GetLayersRequest | undefined;
+  getKeymapIdentifier?: boolean | undefined;
+  setKeymapIdentifier?:
+    | SetKeymapIdentifierRequest
     | undefined;
   /** all layers' unsaved (pending) positions */
   getPending?: boolean | undefined;
@@ -116,6 +122,8 @@ export interface Response {
   getPhysicalLayout?: PhysicalLayoutResponse | undefined;
   getLayers?: GetLayersResponse | undefined;
   getPending?: PendingResponse | undefined;
+  keymapIdentifier?: KeymapIdentifierResponse | undefined;
+  setKeymapIdentifier?: SetKeymapIdentifierResponse | undefined;
 }
 
 export interface GetLayerRequest {
@@ -135,6 +143,22 @@ export interface GetLayersRequest {
 
 export interface GetLayersResponse {
   layers: Layer[];
+}
+
+/**
+ * Contract from zmk-feature-fast-keymap PR #5 (575411d).
+ * Identifier: first 3 SHA-256 bytes of an exact UTF-8 source, 4 Base64url characters.
+ * Empty clears it; metadata is stable across binding edits and persisted by set.
+ */
+export interface SetKeymapIdentifierRequest {
+  identifier: string;
+}
+
+export interface KeymapIdentifierResponse {
+  identifier: string;
+}
+
+export interface SetKeymapIdentifierResponse {
 }
 
 export interface ErrorResponse {
@@ -379,6 +403,8 @@ function createBaseRequest(): Request {
     getPhysicalLayouts: undefined,
     getPhysicalLayout: undefined,
     getLayers: undefined,
+    getKeymapIdentifier: undefined,
+    setKeymapIdentifier: undefined,
     getPending: undefined,
   };
 }
@@ -411,6 +437,12 @@ export const Request: MessageFns<Request> = {
     }
     if (message.getLayers !== undefined) {
       GetLayersRequest.encode(message.getLayers, writer.uint32(74).fork()).join();
+    }
+    if (message.getKeymapIdentifier !== undefined) {
+      writer.uint32(88).bool(message.getKeymapIdentifier);
+    }
+    if (message.setKeymapIdentifier !== undefined) {
+      SetKeymapIdentifierRequest.encode(message.setKeymapIdentifier, writer.uint32(98).fork()).join();
     }
     if (message.getPending !== undefined) {
       writer.uint32(80).bool(message.getPending);
@@ -497,6 +529,22 @@ export const Request: MessageFns<Request> = {
           message.getLayers = GetLayersRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.getKeymapIdentifier = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.setKeymapIdentifier = SetKeymapIdentifierRequest.decode(reader, reader.uint32());
+          continue;
+        }
         case 10: {
           if (tag !== 80) {
             break;
@@ -544,6 +592,10 @@ export const Request: MessageFns<Request> = {
     message.getLayers = (object.getLayers !== undefined && object.getLayers !== null)
       ? GetLayersRequest.fromPartial(object.getLayers)
       : undefined;
+    message.getKeymapIdentifier = object.getKeymapIdentifier ?? undefined;
+    message.setKeymapIdentifier = (object.setKeymapIdentifier !== undefined && object.setKeymapIdentifier !== null)
+      ? SetKeymapIdentifierRequest.fromPartial(object.setKeymapIdentifier)
+      : undefined;
     message.getPending = object.getPending ?? undefined;
     return message;
   },
@@ -562,6 +614,8 @@ function createBaseResponse(): Response {
     getPhysicalLayout: undefined,
     getLayers: undefined,
     getPending: undefined,
+    keymapIdentifier: undefined,
+    setKeymapIdentifier: undefined,
   };
 }
 
@@ -599,6 +653,12 @@ export const Response: MessageFns<Response> = {
     }
     if (message.getPending !== undefined) {
       PendingResponse.encode(message.getPending, writer.uint32(90).fork()).join();
+    }
+    if (message.keymapIdentifier !== undefined) {
+      KeymapIdentifierResponse.encode(message.keymapIdentifier, writer.uint32(98).fork()).join();
+    }
+    if (message.setKeymapIdentifier !== undefined) {
+      SetKeymapIdentifierResponse.encode(message.setKeymapIdentifier, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -698,6 +758,22 @@ export const Response: MessageFns<Response> = {
           message.getPending = PendingResponse.decode(reader, reader.uint32());
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.keymapIdentifier = KeymapIdentifierResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.setKeymapIdentifier = SetKeymapIdentifierResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -744,6 +820,12 @@ export const Response: MessageFns<Response> = {
       : undefined;
     message.getPending = (object.getPending !== undefined && object.getPending !== null)
       ? PendingResponse.fromPartial(object.getPending)
+      : undefined;
+    message.keymapIdentifier = (object.keymapIdentifier !== undefined && object.keymapIdentifier !== null)
+      ? KeymapIdentifierResponse.fromPartial(object.keymapIdentifier)
+      : undefined;
+    message.setKeymapIdentifier = (object.setKeymapIdentifier !== undefined && object.setKeymapIdentifier !== null)
+      ? SetKeymapIdentifierResponse.fromPartial(object.setKeymapIdentifier)
       : undefined;
     return message;
   },
@@ -895,6 +977,132 @@ export const GetLayersResponse: MessageFns<GetLayersResponse> = {
   fromPartial(object: DeepPartial<GetLayersResponse>): GetLayersResponse {
     const message = createBaseGetLayersResponse();
     message.layers = object.layers?.map((e) => Layer.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSetKeymapIdentifierRequest(): SetKeymapIdentifierRequest {
+  return { identifier: "" };
+}
+
+export const SetKeymapIdentifierRequest: MessageFns<SetKeymapIdentifierRequest> = {
+  encode(message: SetKeymapIdentifierRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetKeymapIdentifierRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetKeymapIdentifierRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.identifier = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetKeymapIdentifierRequest>): SetKeymapIdentifierRequest {
+    return SetKeymapIdentifierRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetKeymapIdentifierRequest>): SetKeymapIdentifierRequest {
+    const message = createBaseSetKeymapIdentifierRequest();
+    message.identifier = object.identifier ?? "";
+    return message;
+  },
+};
+
+function createBaseKeymapIdentifierResponse(): KeymapIdentifierResponse {
+  return { identifier: "" };
+}
+
+export const KeymapIdentifierResponse: MessageFns<KeymapIdentifierResponse> = {
+  encode(message: KeymapIdentifierResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): KeymapIdentifierResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseKeymapIdentifierResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.identifier = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<KeymapIdentifierResponse>): KeymapIdentifierResponse {
+    return KeymapIdentifierResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<KeymapIdentifierResponse>): KeymapIdentifierResponse {
+    const message = createBaseKeymapIdentifierResponse();
+    message.identifier = object.identifier ?? "";
+    return message;
+  },
+};
+
+function createBaseSetKeymapIdentifierResponse(): SetKeymapIdentifierResponse {
+  return {};
+}
+
+export const SetKeymapIdentifierResponse: MessageFns<SetKeymapIdentifierResponse> = {
+  encode(_: SetKeymapIdentifierResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetKeymapIdentifierResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetKeymapIdentifierResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetKeymapIdentifierResponse>): SetKeymapIdentifierResponse {
+    return SetKeymapIdentifierResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetKeymapIdentifierResponse>): SetKeymapIdentifierResponse {
+    const message = createBaseSetKeymapIdentifierResponse();
     return message;
   },
 };

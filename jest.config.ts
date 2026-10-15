@@ -6,6 +6,8 @@ const config: Config = {
   roots: ["<rootDir>/src"],
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
   moduleNameMapper: {
+    "^@keyboard-hub/schema$":
+      "<rootDir>/node_modules/@keyboard-hub/schema/src/index.ts",
     // Map the base paths first
     "^@zmkfirmware/zmk-studio-ts-client$":
       "<rootDir>/node_modules/@zmkfirmware/zmk-studio-ts-client/lib/index.js",
@@ -70,6 +72,9 @@ const config: Config = {
       "ts-jest",
       {
         tsconfig: {
+          // Compile the real ESM-only KeyboardHub schema for input-validation tests.
+          module: "CommonJS",
+          isolatedModules: true,
           jsx: "react-jsx",
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,

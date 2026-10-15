@@ -2,8 +2,9 @@ syntax = "proto3";
 
 package cormoran.fast_keymap;
 
-// A read-only, fast-loading alternative to ZMK's official `zmk.keymap` /
-// `zmk.behaviors` Studio subsystems. See DESIGN.md for the full rationale.
+// A fast-loading alternative to ZMK's official `zmk.keymap` /
+// `zmk.behaviors` Studio subsystems. Bindings are read-only; keymap identity
+// metadata is writable (PR #5). See DESIGN.md for the full rationale.
 //
 // Vendored from cormoran/zmk-feature-fast-keymap
 // (proto/cormoran/fast-keymap/fast_keymap.proto) so dya-studio can talk to the
@@ -30,6 +31,8 @@ message Request {
         GetPhysicalLayoutsRequest get_physical_layouts = 7; // slim summary (+ optional geometry)
         GetPhysicalLayoutRequest get_physical_layout = 8;   // one layout's geometry
         GetLayersRequest get_layers = 9;                    // batch current/effective (cold load)
+        bool get_keymap_identifier = 11;
+        SetKeymapIdentifierRequest set_keymap_identifier = 12;
         bool get_pending = 10;                              // all layers' unsaved (pending) positions
     }
 }
@@ -47,6 +50,8 @@ message Response {
         PhysicalLayoutResponse get_physical_layout = 9;
         GetLayersResponse get_layers = 10;
         PendingResponse get_pending = 11;
+        KeymapIdentifierResponse keymap_identifier = 12;
+        SetKeymapIdentifierResponse set_keymap_identifier = 13;
     }
 }
 
@@ -63,11 +68,20 @@ message GetLayersRequest {
 
 message GetLayersResponse { repeated Layer layers = 1; }
 
+// Contract from zmk-feature-fast-keymap PR #5 (575411d).
+// Identifier: first 3 SHA-256 bytes of an exact UTF-8 source, 4 Base64url characters.
+// Empty clears it; metadata is stable across binding edits and persisted by set.
+message SetKeymapIdentifierRequest { string identifier = 1; }
+message KeymapIdentifierResponse { string identifier = 1; }
+message SetKeymapIdentifierResponse {}
+
 enum ErrorCode {
     ERR_GENERIC = 0;
     ERR_INVALID_LAYER = 1;
     ERR_INVALID_BEHAVIOR = 2;
     ERR_INVALID_LAYOUT = 3;
+    ERR_INVALID_IDENTIFIER = 4;
+    ERR_UNLOCK_REQUIRED = 5;
 }
 
 message ErrorResponse { ErrorCode code = 1; }

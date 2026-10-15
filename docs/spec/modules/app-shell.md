@@ -22,7 +22,7 @@
 
 ## 前提・状態
 
-通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。Developer Guide は keyboard providers の外、Release Notes/OAuth callback は接続 gate より前に分岐する。Import/Export の登録は環境条件による。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
+通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。Developer Guide は keyboard providers の外、Release Notes/OAuth callback は接続 gate より前に分岐する。独立 Import/Export タブは廃止し、Keymap 内の共有メニューへ移転。旧 `/import-export` は `/keymap` に正規化する。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
 
 ## 現行の機能仕様
 
@@ -31,7 +31,7 @@
 2026-09-20 のユーザー要求（メインコンテンツの横スクロール防止、アイコン中心の操作、タッチでの説明表示）に基づく。根拠: [共通CSS](../../../src/index.css) の `app-page` / `responsive-action`、[ResponsiveButton](../../../src/components/ResponsiveButton.tsx)、[EditorTooltip](../../../src/components/EditorTooltip.tsx)、[InfoTip](../../../src/components/InfoTip.tsx)、[DocTip](../../../src/components/DocTip.tsx)。
 
 - SHELL-009: 通常の全9タブはページ単位で縦スクロールし、メインコンテンツ全体は横スクロールしない。長い説明・識別子は折り返す。タブ列、キーボード、表、コード等の必要な内部要素は個別に横スクロールできる。320px 幅でも操作を単に画面外へ隠して解決したことにしない。
-- SHELL-010: `ResponsiveButton` の操作（Keymap / Macro&Combo / Settings / Connection / Troubleshooting の主操作、履歴、詳細設定の Save/Discard/Reset、Subsystems の再接続、Import/Export の読取り）は640px未満でラベルを隠し、アイコンと accessible name を維持する。対象ボタンは最小44pxのタッチ領域。640px以上では文字も表示。確認ダイアログの文字だけの操作や本文リンクは文字を維持する。表示変更による書込み・保存範囲の変更はない。
+- SHELL-010: `ResponsiveButton` の操作（Keymap / Macro&Combo / Settings / Connection / Troubleshooting の主操作、履歴、詳細設定の Save/Discard/Reset、Subsystems の再接続、Keymap sharing の入口）は640px未満でラベルを隠し、アイコンと accessible name を維持する。対象ボタンは最小44pxのタッチ領域。640px以上では文字も表示。確認ダイアログの文字だけの操作や本文リンクは文字を維持する。表示変更による書込み・保存範囲の変更はない。
 - SHELL-011: 共通説明付き操作はマウスhover・キーボードfocusに加え、タッチの500ms長押しで説明を表示する。長押し終了時のclickでは操作を実行せず、次の通常タップは実行する。10px超の移動・pointercancelで長押しを取消し、外側タップ・ページscroll・Escapeで説明を閉じる。無効なボタンも説明を表示できるが実行はできない。InfoTip/DocTip の情報アイコンは通常クリック/タップでも説明を開く。説明表示だけでdevice/browserの設定を書き換えない。タブ列のnative titleや個別キーの説明はこの長押し契約の対象外。
 - SHELL-012: AppLayout のヘッダーは640px未満で言語・テーマの個別ボタンを一つの「表示設定」アイコン（44px以上）に置き換える。タップでモーダルを開き、言語（English / 日本語 / 中文）とテーマ（ライト / ダーク）を選べる。変更は即時反映し SHELL-005/006 と同じ localStorage に保存する。閉じる・外側クリック・Escape は変更を取り消さず、モーダルだけ閉じてトリガーへフォーカスを戻す。640px以上のヘッダーは従来の個別ボタンを維持する。接続・端末設定には書込まない。根拠: ユーザー要求（2026-09-20）、S4、[MobileDisplaySettings](../../../src/components/MobileDisplaySettings.tsx)。SplashScreen や独立ページのヘッダーは対象外。
 - SHELL-013: viewport が横向きかつ幅1023px以下・高さ500px以下のとき、固定高shell内のpage単位縦scrollを解除し、header・tab列・main contentを含むdocument全体を縦scrollする。これにより低いモバイル横画面でheaderを画面外へ移動し、main contentへ高さを使える。条件外では動的viewport高にshellを収め、header/tab列を固定したまま各pageが縦scrollし、tabごとのscroll位置を維持する。特に縦画面では、ブラウザーUIによる `vh` と表示領域の差をdocument全体の余分なscrollとして露出させない。横overflow、保存、tab保持の契約は変更しない。根拠: ユーザー要求（2026-09-20）、S1/S3/S4、[共通CSS](../../../src/index.css)。

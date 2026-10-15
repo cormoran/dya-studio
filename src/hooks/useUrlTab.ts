@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export function tabIdFromPathname(pathname: string): string {
   const segment = pathname.replace(/^\/+/, "").split("/")[0];
-  return segment || "home";
+  return segment === "import-export" ? "keymap" : segment || "home";
 }
 
 export function pathnameFromTabId(tabId: string): string {

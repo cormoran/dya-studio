@@ -2,7 +2,6 @@ import { useAbyssSessionRenewal } from "./hooks/useAbyssSessionRenewal";
 import { useContext, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  IconCloudUpload,
   IconHome,
   IconKeyboard,
   IconPlugConnected,
@@ -33,12 +32,7 @@ import { MacroComboPage } from "./pages/MacroComboPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { CustomSubsystemsPage } from "./pages/CustomSubsystemsPage";
 import { TroubleshootingPage } from "./pages/TroubleshootingPage";
-import {
-  ImportExportPage,
-  IMPORT_EXPORT_TAB_ID,
-} from "./pages/ImportExportPage";
 import { AbyssCallbackPage } from "./pages/AbyssCallbackPage";
-import { isAbyssTabVisible } from "./lib/abyss/abyssConfig";
 import { OAUTH_CALLBACK_PATH } from "./lib/abyss/abyssOAuth";
 import { useLanguage } from "./hooks/useLanguage";
 import { useUrlTab, pathnameFromTabId } from "./hooks/useUrlTab";
@@ -102,18 +96,6 @@ function getTabs(t: (key: string) => string): TabItem[] {
       icon: <IconPuzzle size={18} />,
       content: <CustomSubsystemsPage />,
     },
-    // A local Vite server keeps this available for UI development without
-    // credentials. Deployed builds require a real Abyss OAuth client id.
-    ...(isAbyssTabVisible()
-      ? [
-          {
-            id: IMPORT_EXPORT_TAB_ID,
-            label: t("Import/Export"),
-            icon: <IconCloudUpload size={18} />,
-            content: <ImportExportPage />,
-          },
-        ]
-      : []),
   ];
 }
 

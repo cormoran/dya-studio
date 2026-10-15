@@ -9,6 +9,54 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  // Keymap sharing
+  "Keymap sharing": "キーマップ共有",
+  "Apply {{name}}": "{{name}} を適用",
+  "Save to {{name}}": "{{name}} に保存",
+  "Current keymap": "現在のキーマップ",
+  "Your keymaps": "自分のキーマップ",
+  "In sync": "同期済み",
+  "This keyboard cannot identify its current keymap. Keymap identity RPC is not supported.":
+    "このキーボードはキーマップ識別 RPC に未対応のため、現在のキーマップを判定できません。",
+  "No keymap identity is stored on this keyboard.":
+    "このキーボードにはキーマップの識別情報が保存されていません。",
+  "The current keymap could not be identified.":
+    "現在のキーマップを判定できませんでした。",
+  "No keymaps for this keyboard.": "このキーボードのキーマップはありません。",
+  "Find on Abyss": "Abyss で探す",
+  "Save new to Abyss": "Abyss に新規保存",
+  "Save to file": "ファイルに保存",
+  "Apply from file": "ファイルから反映",
+  "Apply keymap": "キーマップを適用",
+  "Left: what is on the keyboard now. Right: the keymap to apply.":
+    "左：現在のキーボードの内容。右：適用するキーマップ。",
+  "Applying writes and saves to the keyboard immediately. Partial failures may leave mixed settings.":
+    "適用すると、キーボードに直ちに書き込み・保存します。途中で失敗した場合、設定が一部だけ反映されることがあります。",
+  "Save to Abyss": "Abyss に保存",
+  "Apply to keyboard": "キーボードに適用",
+  "Save the keyboard's current settings as a new Abyss keymap.":
+    "現在のキーボードの設定を、新しいキーマップとして Abyss に保存します。",
+  "The keymap file is too large (maximum 5 MB).":
+    "キーマップファイルが大きすぎます（最大 5 MB）。",
+  "This file is not a valid KeyboardHub keymap.":
+    "有効な KeyboardHub 形式のキーマップではありません。",
+  "Saved to Abyss.": "Abyss に保存しました。",
+  "Applied to keyboard.": "キーボードに適用しました。",
+  "The keyboard or account changed. Reopen Keymap sharing.":
+    "キーボードまたはアカウントが変わりました。キーマップ共有を開き直してください。",
+  "No keyboard connected.": "キーボードが接続されていません。",
+  "Keymap data unavailable": "キーマップデータを取得できません。",
+  "The keymap was saved, but its identity could not be stored. Refresh to check the keyboard.":
+    "キーマップは保存されましたが、識別情報を保存できませんでした。更新してキーボードの状態を確認してください。",
+  "The keymap identity could not be verified. Refresh to check the keyboard.":
+    "キーマップの識別情報を確認できませんでした。更新してキーボードの状態を確認してください。",
+  "The keyboard changed. Cancel and review the changes again.":
+    "キーボードの内容が変わりました。キャンセルして差分を確認し直してください。",
+  "The Abyss keymap changed. Cancel and review the changes again.":
+    "Abyss のキーマップが変わりました。キャンセルして差分を確認し直してください。",
+  "The keyboard does not yet match this keymap. Review and try again.":
+    "キーボードの内容がキーマップと一致していません。状態を確認して再試行してください。",
+
   "Inertia simulation": "慣性シミュレーション",
   "Five-second input and simulated output": "5秒の入力とシミュレーション出力",
   "Example input peak before scaling": "スケーリング前の想定入力の最大値",
@@ -1574,8 +1622,8 @@ const ja: Record<string, string> = {
   "The keyboard is locked. Unlock it and try again.":
     "キーボードがロックされています。ロックを解除して再試行してください。",
   "Abyss login was cancelled.": "Abyss のサインインがキャンセルされました。",
-  "Abyss sign-in could not be completed. Please start again from the Import/Export tab.":
-    "Abyss のサインインを完了できませんでした。インポート／エクスポートタブからやり直してください。",
+  "Abyss sign-in could not be completed. Please start again from Keymap sharing.":
+    "Abyss のサインインを完了できませんでした。キーマップページからやり直してください。",
   "Something went wrong talking to Abyss.":
     "Abyss との通信で問題が発生しました。",
   "Abyss is not configured for this build.":
@@ -3047,7 +3095,7 @@ const zh: Record<string, string> = {
   "The keyboard is locked. Unlock it and try again.":
     "键盘已锁定。请解锁后重试。",
   "Abyss login was cancelled.": "Abyss 登录已取消。",
-  "Abyss sign-in could not be completed. Please start again from the Import/Export tab.":
+  "Abyss sign-in could not be completed. Please start again from Keymap sharing.":
     "无法完成 Abyss 登录。请从导入/导出选项卡重新开始。",
   "Something went wrong talking to Abyss.": "与 Abyss 通信时出现问题。",
   "Abyss is not configured for this build.": "此构建未配置 Abyss。",
