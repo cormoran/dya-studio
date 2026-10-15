@@ -35,13 +35,23 @@ export function TroubleshootingPage() {
   const elfAnalysis = useElfAnalysis();
   const stackUsage = useDevtoolStackUsage();
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyAttemptRef = useRef(0);
   const isTabActive = useIsTabActive();
 
   // The page stays mounted while another tab is showing, so stop the stack-usage
   // polling on the way out — nobody is watching those numbers, and every tick is
   // a device round-trip.
   const { isPolling: isStackPolling, setPolling: setStackPolling } = stackUsage;
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isTabActive && isStackPolling) {
       setStackPolling(false);
@@ -57,6 +67,14 @@ export function TroubleshootingPage() {
   };
 
   const copySupportReport = async () => {
+    const copyAttempt = ++copyAttemptRef.current;
+    setCopied(false);
+    setCopyError(false);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = null;
+    }
+
     // Resolve PC/LR for all fatal incidents when an ELF is loaded
     const elfResolved = elfAnalysis.hasElf
       ? watchdog.incidents
@@ -110,13 +128,20 @@ export function TroubleshootingPage() {
         error: pmw3610.error,
       },
     });
-    await navigator.clipboard.writeText(report);
-    setCopied(true);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(
-      () => setCopied(false),
-      COPIED_FEEDBACK_MS,
-    );
+    try {
+      const writeText = navigator.clipboard?.writeText;
+      if (!writeText) throw new Error("Clipboard API unavailable");
+
+      await writeText.call(navigator.clipboard, report);
+      if (copyAttempt !== copyAttemptRef.current) return;
+      setCopied(true);
+      copiedTimer.current = setTimeout(
+        () => setCopied(false),
+        COPIED_FEEDBACK_MS,
+      );
+    } catch {
+      if (copyAttempt === copyAttemptRef.current) setCopyError(true);
+    }
   };
 
   return (
@@ -163,6 +188,13 @@ export function TroubleshootingPage() {
             </ResponsiveButton>
           </div>
         </div>
+        {copyError && (
+          <p className="mb-4 text-sm text-red-500" role="alert">
+            {t(
+              "Could not copy the support report. Check clipboard access and try again.",
+            )}
+          </p>
+        )}
 
         {/* Guidance */}
         <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">

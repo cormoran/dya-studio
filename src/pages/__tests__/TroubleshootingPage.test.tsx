@@ -88,6 +88,11 @@ function mockAllUnavailable() {
 describe("TroubleshootingPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    writeTextMock.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    });
     mockAllUnavailable();
   });
 
@@ -238,6 +243,74 @@ describe("TroubleshootingPage", () => {
     const reportText = writeTextMock.mock.calls[0][0] as string;
     expect(reportText).toContain("# DYA Studio Support Report");
     expect(reportText).toContain("## Device Info (zmk__device_info)");
+    expect(
+      await screen.findByRole("button", { name: "Copy Support Report" }),
+    ).toHaveTextContent("Copied!");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows an accessible failure when the clipboard write is rejected", async () => {
+    writeTextMock.mockRejectedValueOnce(new Error("Permission denied"));
+    render(<TroubleshootingPage />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy Support Report" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not copy the support report. Check clipboard access and try again.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Copy Support Report" }),
+    ).not.toHaveTextContent("Copied!");
+  });
+
+  it("shows a failure when the clipboard API is missing", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      configurable: true,
+    });
+    render(<TroubleshootingPage />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy Support Report" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not copy the support report. Check clipboard access and try again.",
+    );
+    expect(writeTextMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Copy Support Report" }),
+    ).not.toHaveTextContent("Copied!");
+  });
+
+  it("clears stale success feedback on failure and lets the user retry", async () => {
+    render(<TroubleshootingPage />);
+    const copyButton = screen.getByRole("button", {
+      name: "Copy Support Report",
+    });
+
+    fireEvent.click(copyButton);
+    expect(
+      await screen.findByRole("button", { name: "Copy Support Report" }),
+    ).toHaveTextContent("Copied!");
+
+    writeTextMock.mockRejectedValueOnce(new Error("Permission denied"));
+    fireEvent.click(copyButton);
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy Support Report" }),
+    ).not.toHaveTextContent("Copied!");
+
+    writeTextMock.mockResolvedValueOnce(undefined);
+    fireEvent.click(copyButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Copy Support Report" }),
+      ).toHaveTextContent("Copied!");
+    });
   });
 
   it("has a Refresh All button", () => {

@@ -999,6 +999,8 @@ const ja: Record<string, string> = {
   "Refresh All": "すべて更新",
   "Refresh all sections": "すべてのセクションを更新",
   "Copied!": "コピーしました！",
+  "Could not copy the support report. Check clipboard access and try again.":
+    "サポートレポートをコピーできませんでした。クリップボードへのアクセスを確認して、もう一度お試しください。",
   "If your keyboard misbehaves, review the sections below. Use 'Copy Support Report' and paste the result when contacting your keyboard's seller.":
     "キーボードの動作がおかしい場合は、以下のセクションを確認してください。「サポートレポートをコピー」を使用し、キーボードの販売元に問い合わせる際にその内容を貼り付けてください。",
   "If a section is not available, it shows which firmware module enables it.":
@@ -2491,6 +2493,8 @@ const zh: Record<string, string> = {
   "Refresh All": "全部刷新",
   "Refresh all sections": "刷新所有小节",
   "Copied!": "已复制！",
+  "Could not copy the support report. Check clipboard access and try again.":
+    "无法复制支持报告。请检查剪贴板访问权限，然后重试。",
   "If your keyboard misbehaves, review the sections below. Use 'Copy Support Report' and paste the result when contacting your keyboard's seller.":
     "如果您的键盘工作异常，请查看以下小节。使用“复制支持报告”并将结果粘贴到与键盘卖家联系时使用。",
   "If a section is not available, it shows which firmware module enables it.":
