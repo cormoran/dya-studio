@@ -110,7 +110,9 @@ test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (
   ).toBeVisible({ timeout: 120_000 });
 
   // Read the ORIGINAL idle value once the device state has loaded.
-  const originalLabel = (await idle.innerText()).trim();
+  // Match toContainText's textContent representation, including the field label.
+  const originalLabel = (await idle.textContent())?.trim() ?? "";
+  expect(originalLabel).not.toBe("");
   const originalMinutes = displayToMinutes(originalLabel);
 
   // 2) Choose a NEW idle value: a preset that differs from the current one, so
