@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
-import {
-  IconSun,
-  IconMoon,
-  IconPlugConnectedX,
-  IconBrandGithub,
-} from "@tabler/icons-react";
+import { IconSun, IconMoon, IconPlugConnectedX } from "@tabler/icons-react";
+import githubBlack from "../assets/github-invertocat-black.svg";
+import githubWhite from "../assets/github-invertocat-white.svg";
 import DyaLogo from "../assets/dya.svg?react";
 import { useTheme } from "../hooks/useTheme";
 import { useLanguage } from "../hooks/useLanguage";
@@ -124,9 +121,15 @@ export function AppLayout({
             rel="noopener noreferrer"
             aria-label="GitHub"
             title="GitHub"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
           >
-            <IconBrandGithub size={20} aria-hidden="true" />
+            <img
+              src={theme === "dark" ? githubWhite : githubBlack}
+              alt=""
+              width={20}
+              height={20}
+              className="h-5 w-5 object-contain"
+            />
           </a>
         </div>
       </header>
