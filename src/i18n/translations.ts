@@ -588,6 +588,9 @@ const ja: Record<string, string> = {
   "Global settings are pending.": "グローバル設定の変更が保留中です。",
   "Saved {{count}} runtime combo changes.":
     "ランタイムコンボの変更を {{count}} 件保存しました。",
+  "Saved runtime macro changes.": "ランタイムマクロの変更を保存しました。",
+  "Saved runtime macros and {{count}} runtime combo changes.":
+    "ランタイムマクロの変更とランタイムコンボの変更 {{count}} 件を保存しました。",
   "Discarded {{count}} runtime combo changes.":
     "ランタイムコンボの変更を {{count}} 件破棄しました。",
   "● Pending changes": "● 保留中の変更",
@@ -2101,6 +2104,9 @@ const zh: Record<string, string> = {
   "Global settings are pending.": "全局设置待处理。",
   "Saved {{count}} runtime combo changes.":
     "已保存 {{count}} 项运行时组合键更改。",
+  "Saved runtime macro changes.": "已保存运行时宏更改。",
+  "Saved runtime macros and {{count}} runtime combo changes.":
+    "已保存运行时宏更改和 {{count}} 项运行时组合键更改。",
   "Discarded {{count}} runtime combo changes.":
     "已放弃 {{count}} 项运行时组合键更改。",
   "● Pending changes": "● 待处理的更改",
