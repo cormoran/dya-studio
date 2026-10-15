@@ -18,9 +18,10 @@ import { connectDya2 } from "./dya2.helpers";
 // wipes keymap + all custom settings) nor the Sleep Timeout — only the Idle
 // Timeout is edited and restored.
 
-// Use the control's accessible name so styling changes cannot break this E2E.
+// SET-002 / SET-I06: the accessible name includes the field and current value.
+// Keep the field boundary anchored; this also accepts the earlier field-only name.
 function idleDropdown(page: Page): Locator {
-  return page.getByRole("button", { name: "Idle Timeout", exact: true });
+  return page.getByRole("button", { name: /^Idle Timeout(?:\s|$)/ });
 }
 
 // The TimeDropdown renders its open menu into a body portal (`div.fixed.w-48`).

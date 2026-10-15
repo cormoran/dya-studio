@@ -295,15 +295,26 @@ export function ConnectionPage() {
 
         {/* Output Priority Section */}
         {isAvailable && connection.isConnected && (
-          <div className="glass-card p-4 mb-6">
+          <div
+            className="glass-card p-4 mb-6"
+            role="group"
+            aria-labelledby="output-priority-label"
+            aria-describedby="output-priority-description"
+          >
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-medium text-[var(--color-text)]">
+                  <h3
+                    id="output-priority-label"
+                    className="text-sm font-medium text-[var(--color-text)]"
+                  >
                     {t("Output Priority")}
                   </h3>
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)]">
+                <p
+                  id="output-priority-description"
+                  className="text-xs text-[var(--color-text-muted)]"
+                >
                   {t(
                     "Choose whether USB or Bluetooth is used for keystrokes when both are connected.",
                   )}
@@ -316,6 +327,9 @@ export function ConnectionPage() {
                       ? "bg-[var(--color-electric)]/20 border border-[var(--color-electric)]/40"
                       : "bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)]"
                   }`}
+                  aria-pressed={
+                    outputPriority === OutputPriority.OUTPUT_PRIORITY_USB
+                  }
                   onClick={() =>
                     handleOutputPriorityChange(
                       OutputPriority.OUTPUT_PRIORITY_USB,
@@ -350,6 +364,9 @@ export function ConnectionPage() {
                       ? "bg-[var(--color-cyber)]/20 border border-[var(--color-cyber)]/40"
                       : "bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)]"
                   }`}
+                  aria-pressed={
+                    outputPriority === OutputPriority.OUTPUT_PRIORITY_BLE
+                  }
                   onClick={() =>
                     handleOutputPriorityChange(
                       OutputPriority.OUTPUT_PRIORITY_BLE,

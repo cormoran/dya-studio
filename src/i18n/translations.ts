@@ -479,6 +479,7 @@ const ja: Record<string, string> = {
   "Loading settings...": "設定を読み込み中...",
   "Power Management": "電源管理",
   "Idle Timeout": "アイドルタイムアウト",
+  "{{label}} options": "{{label}}の選択肢",
   "Time before keyboard enters idle mode":
     "キーボードがアイドルモードに入るまでの時間",
   "Sleep Timeout": "スリープタイムアウト",
@@ -1401,6 +1402,8 @@ const ja: Record<string, string> = {
     "サインインするとキーマップのインポート／エクスポートができます。",
   "Sign in with Abyss": "Abyss でサインイン",
   "Sign out": "サインアウト",
+  "Abyss sign-in is unavailable because this build has no OAuth client configuration.":
+    "このビルドには OAuth クライアント設定がないため、Abyss にサインインできません。",
   "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.":
     "{{host}} のサインイン画面が開きます。セッションはこのタブを閉じるまで有効です。",
   Export: "エクスポート",
@@ -2002,6 +2005,7 @@ const zh: Record<string, string> = {
   "Loading settings...": "正在加载设置...",
   "Power Management": "电源管理",
   "Idle Timeout": "空闲超时",
+  "{{label}} options": "{{label}}选项",
   "Time before keyboard enters idle mode": "键盘进入空闲模式前的时间",
   "Sleep Timeout": "睡眠超时",
   "Time before entering deep sleep": "进入深度睡眠前的时间",
@@ -2885,6 +2889,8 @@ const zh: Record<string, string> = {
   "Sign in to import and export keymaps.": "登录后可导入和导出键位。",
   "Sign in with Abyss": "使用 Abyss 登录",
   "Sign out": "退出登录",
+  "Abyss sign-in is unavailable because this build has no OAuth client configuration.":
+    "此构建缺少 OAuth 客户端配置，无法登录 Abyss。",
   "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.":
     "登录窗口将在 {{host}} 打开。会话在此选项卡关闭前一直有效。",
   Export: "导出",

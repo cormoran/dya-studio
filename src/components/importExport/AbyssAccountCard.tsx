@@ -12,7 +12,15 @@ import { abyssHost } from "../../lib/abyss/abyssConfig";
 
 export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
   const { t } = useLanguage();
-  const { isAuthenticated, user, isLoading, error, login, logout } = auth;
+  const {
+    isConfigured,
+    isAuthenticated,
+    user,
+    isLoading,
+    error,
+    login,
+    logout,
+  } = auth;
 
   return (
     <div className="glass-card p-4 sm:p-6">
@@ -57,7 +65,7 @@ export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
             <button
               className="btn-electric flex items-center gap-2 text-sm"
               onClick={() => void login()}
-              disabled={isLoading}
+              disabled={!isConfigured || isLoading}
             >
               {isLoading ? (
                 <IconLoader2 size={16} className="animate-spin" />
@@ -78,10 +86,14 @@ export function AbyssAccountCard({ auth }: { auth: UseAbyssAuthReturn }) {
 
       {!isAuthenticated && (
         <p className="mt-4 text-xs text-[var(--color-text-muted)]">
-          {t(
-            "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.",
-            { host: abyssHost() },
-          )}
+          {isConfigured
+            ? t(
+                "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.",
+                { host: abyssHost() },
+              )
+            : t(
+                "Abyss sign-in is unavailable because this build has no OAuth client configuration.",
+              )}
         </p>
       )}
     </div>
