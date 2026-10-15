@@ -6,7 +6,13 @@
  * error rendering can be asserted independently, following BatteryPage's
  * hook-mocking test convention.
  */
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { TroubleshootingPage } from "../TroubleshootingPage";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { useWatchdog } from "../../hooks/useWatchdog";
@@ -311,6 +317,32 @@ describe("TroubleshootingPage", () => {
         screen.getByRole("button", { name: "Copy Support Report" }),
       ).toHaveTextContent("Copied!");
     });
+  });
+
+  it("does not let an older success overwrite a newer failed attempt", async () => {
+    let resolveOlderWrite!: () => void;
+    const olderWrite = new Promise<void>((resolve) => {
+      resolveOlderWrite = resolve;
+    });
+    writeTextMock
+      .mockReturnValueOnce(olderWrite)
+      .mockRejectedValueOnce(new Error("Permission denied"));
+    render(<TroubleshootingPage />);
+    const copyButton = screen.getByRole("button", {
+      name: "Copy Support Report",
+    });
+
+    fireEvent.click(copyButton);
+    fireEvent.click(copyButton);
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveOlderWrite();
+      await olderWrite;
+    });
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(copyButton).not.toHaveTextContent("Copied!");
   });
 
   it("has a Refresh All button", () => {
