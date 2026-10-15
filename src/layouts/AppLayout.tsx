@@ -124,7 +124,7 @@ export function AppLayout({
             rel="noopener noreferrer"
             aria-label="GitHub"
             title="GitHub"
-            className="theme-toggle flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
           >
             <IconBrandGithub size={20} aria-hidden="true" />
           </a>
