@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { KeymapSharingMenu } from "../KeymapSharingMenu";
 import { LanguageProvider } from "../../../contexts/LanguageContext";
-import { EMPTY_DIFF } from "../../../lib/abyss/abyssDiff";
 jest.mock("../../../hooks/useAbyssAuth", () => ({
   useAbyssAuth: () => mockAuth,
 }));
@@ -33,6 +32,7 @@ const mockSharing = {
   saveFile: jest.fn(),
   fileError: jest.fn(),
   setReview: jest.fn(),
+  selectDirection: jest.fn(),
 };
 const record = { id: "one", name: "My layout" };
 function show() {
@@ -41,7 +41,7 @@ function show() {
       <KeymapSharingMenu onApplied={jest.fn()} />
     </LanguageProvider>,
   );
-  fireEvent.click(screen.getByRole("button", { name: "Keymap sharing" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save/share keymap" }));
 }
 beforeEach(() => {
   jest.clearAllMocks();
@@ -60,13 +60,21 @@ it("shows login, search and file actions while signed out", () => {
   ).toBeEnabled();
   expect(screen.getByRole("link", { name: /Find on Abyss/ })).toHaveAttribute(
     "href",
-    expect.stringMatching(/\/keymaps$/),
+    expect.stringMatching(/\/discover$/),
   );
   expect(screen.getByRole("button", { name: "Save to file" })).toBeEnabled();
   expect(screen.queryByRole("region", { name: "Your keymaps" })).toBeNull();
   expect(
     screen.queryByRole("button", { name: "Save new to Abyss" }),
   ).toBeNull();
+  expect(
+    screen.getByText(/Keyboard Abyss is a keymap sharing service/),
+  ).toBeInTheDocument();
+  expect(
+    screen
+      .getByRole("button", { name: "Sign in with Abyss" })
+      .querySelector("img"),
+  ).toBeTruthy();
   expect(mockSharing.refresh).not.toHaveBeenCalled();
 });
 it("shows the account and unsupported notice without hiding owned maps", () => {
@@ -82,8 +90,8 @@ it("shows the account and unsupported notice without hiding owned maps", () => {
   expect(
     screen.getByText(/Keymap identity RPC is not supported/),
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Save to My layout" }));
-  expect(mockSharing.prepare).toHaveBeenCalledWith("save", record);
+  fireEvent.click(screen.getByRole("button", { name: "Preview My layout" }));
+  expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
   expect(mockSharing.confirm).not.toHaveBeenCalled();
   expect(mockSharing.refresh).toHaveBeenCalledTimes(1);
 });
@@ -93,7 +101,7 @@ it("shows current map actions only when it differs", () => {
   mockSharing.current = record;
   mockSharing.changed = true;
   show();
-  fireEvent.click(screen.getByRole("button", { name: "Apply My layout" }));
+  fireEvent.click(screen.getByRole("button", { name: "Preview My layout" }));
   expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
 });
 it("new keymaps default to private and require a nonempty name", async () => {
@@ -116,23 +124,17 @@ it("new keymaps default to private and require a nonempty name", async () => {
     expect(mockSharing.create).toHaveBeenCalledWith("New layout", "public"),
   );
 });
-it("renders a confirmation diff and cancel does not commit", () => {
-  mockSharing.review = {
-    kind: "save",
-    record,
-    before: { name: "before" },
-    after: { name: "after" },
-    checks: [],
-    diff: { ...EMPTY_DIFF, bindingChanges: [{ keyIndex: 0 }] },
-  };
-  render(
-    <LanguageProvider>
-      <KeymapSharingMenu onApplied={jest.fn()} />
-    </LanguageProvider>,
-  );
-  expect(screen.getByRole("dialog")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Save to Abyss" })).toBeEnabled();
-  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(mockSharing.setReview).toHaveBeenCalledWith(null);
-  expect(mockSharing.confirm).not.toHaveBeenCalled();
+it("shows a preview for the current map even when it is in sync", () => {
+  mockAuth.isAuthenticated = true;
+  mockAuth.user = { username: "tester" };
+  mockSharing.current = record;
+  show();
+  expect(screen.getByText("In sync")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Preview My layout" }),
+  ).toBeEnabled();
+  expect(
+    screen.getByRole("button", { name: "Refresh your keymaps" }),
+  ).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "Refresh" })).toBeNull();
 });

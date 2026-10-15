@@ -5,16 +5,16 @@ import {
   IconChevronDown,
   IconCloud,
   IconLogout,
+  IconRefresh,
   IconX,
 } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { useAbyssAuth } from "../../hooks/useAbyssAuth";
 import { useKeymapSharing } from "../../hooks/useKeymapSharing";
-import { abyssBaseUrl } from "../../lib/abyss/abyssConfig";
-import { isBlocked } from "../../lib/abyss/abyssPreflight";
-import { isEmptyDiff } from "../../lib/abyss/abyssDiff";
+import { useAbyssBrowseUrl } from "../../hooks/useAbyssBrowseUrl";
+import { KeymapSharingPreview } from "./KeymapSharingPreview";
 import type { AbyssKeymapSummary } from "@keyboard-hub/abyss-client";
-import { JsonDiffModal } from "./JsonDiffModal";
+import abyssIcon from "../../assets/keyboard-abyss.svg";
 import { ResponsiveButton } from "../ResponsiveButton";
 
 export function KeymapSharingMenu({
@@ -35,6 +35,7 @@ export function KeymapSharingMenu({
     beforeRead,
   );
   const [open, setOpen] = useState(false);
+  const browseUrl = useAbyssBrowseUrl(open);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<"private" | "public">("private");
@@ -48,32 +49,19 @@ export function KeymapSharingMenu({
   useEffect(() => {
     if (open && auth.isAuthenticated) refreshOnOpen();
   }, [open, auth.isAuthenticated]);
-  function actions(record: AbyssKeymapSummary, prominent = false) {
+  function actions(record: AbyssKeymapSummary) {
     return (
-      <div className="flex shrink-0 items-center gap-1">
-        <button
-          className="btn-ghost text-sm"
-          disabled={busy}
-          onClick={() => void sharing.prepare("apply", record)}
-          aria-label={t("Apply {{name}}", { name: record.name })}
-        >
-          {t("Apply")}
-        </button>
-        <button
-          className={
-            prominent
-              ? "btn-electric text-sm"
-              : "btn-ghost text-xs text-[var(--color-text-muted)] opacity-75"
-          }
-          disabled={busy}
-          onClick={() => void sharing.prepare("save", record)}
-          aria-label={t("Save to {{name}}", { name: record.name })}
-        >
-          {t("Save")}
-        </button>
-      </div>
+      <button
+        className="btn-ghost text-sm shrink-0"
+        disabled={busy}
+        onClick={() => void sharing.prepare("apply", record)}
+        aria-label={t("Preview {{name}}", { name: record.name })}
+      >
+        {t("Preview")}
+      </button>
     );
   }
+
   return (
     <>
       <Popover.Root
@@ -84,12 +72,12 @@ export function KeymapSharingMenu({
       >
         <Popover.Trigger asChild>
           <ResponsiveButton
-            label={t("Keymap sharing")}
+            label={t("Save/share keymap")}
             className="btn-ghost border border-[var(--color-border)] text-sm flex items-center gap-1.5"
             disabled={disabled}
+            trailingIcon={<IconChevronDown size={12} />}
           >
             <IconCloud size={16} />
-            <IconChevronDown size={12} />
           </ResponsiveButton>
         </Popover.Trigger>
         <Popover.Portal>
@@ -97,7 +85,7 @@ export function KeymapSharingMenu({
             align="end"
             sideOffset={8}
             className="z-40 glass-card w-[min(25rem,calc(100vw-1rem))] max-h-[min(38rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3 space-y-3 shadow-xl text-[var(--color-text)]"
-            aria-label={t("Keymap sharing")}
+            aria-label={t("Save/share keymap")}
           >
             {auth.isAuthenticated ? (
               <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-3">
@@ -131,12 +119,18 @@ export function KeymapSharingMenu({
             ) : (
               <div>
                 <button
-                  className="btn-electric w-full text-sm"
+                  className="btn-electric w-full text-sm flex items-center justify-center gap-2"
                   disabled={!auth.isConfigured || auth.isLoading}
                   onClick={() => void auth.login()}
                 >
+                  <img src={abyssIcon} alt="" className="h-5 w-5" />
                   {t("Sign in with Abyss")}
                 </button>
+                <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                  {t(
+                    "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.",
+                  )}
+                </p>
                 {!auth.isConfigured && (
                   <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                     {t(
@@ -157,13 +151,12 @@ export function KeymapSharingMenu({
                       <span className="text-sm break-words min-w-0">
                         {sharing.current.name}
                       </span>
-                      {sharing.changed ? (
-                        actions(sharing.current, true)
-                      ) : (
+                      {!sharing.changed && (
                         <span className="text-xs text-[var(--color-text-muted)]">
                           {t("In sync")}
                         </span>
                       )}
+                      {actions(sharing.current)}
                     </div>
                   ) : (
                     <p className="text-xs text-[var(--color-text-muted)]">
@@ -186,11 +179,16 @@ export function KeymapSharingMenu({
                       {t("Your keymaps")}
                     </h3>
                     <button
-                      className="btn-ghost text-xs"
+                      className="btn-ghost p-1.5"
+                      aria-label={t("Refresh your keymaps")}
+                      title={t("Refresh your keymaps")}
                       disabled={busy}
                       onClick={() => void sharing.refresh()}
                     >
-                      {t("Refresh")}
+                      <IconRefresh
+                        size={15}
+                        className={sharing.busy ? "animate-spin" : undefined}
+                      />
                     </button>
                   </div>
                   {sharing.keymaps.length === 0 && !sharing.busy && (
@@ -219,7 +217,7 @@ export function KeymapSharingMenu({
             <div className="border-t border-[var(--color-border)] pt-2 space-y-1">
               <a
                 className="btn-ghost block text-sm"
-                href={`${abyssBaseUrl()}/keymaps`}
+                href={browseUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -298,73 +296,20 @@ export function KeymapSharingMenu({
             );
         }}
       />
-      <JsonDiffModal
-        open={Boolean(review)}
-        onOpenChange={(value) => {
-          if (!value && !sharing.busy) sharing.setReview(null);
-        }}
-        title={
-          review?.kind === "save"
-            ? t("Save to {{name}}", { name: review.record?.name ?? "Abyss" })
-            : t("Apply keymap")
-        }
-        description={
-          review?.kind === "save"
-            ? t(
-                "Left: the keymap currently on Abyss. Right: what this export would save.",
-              )
-            : t(
-                "Left: what is on the keyboard now. Right: the keymap to apply.",
-              )
-        }
-        before={review?.before}
-        after={review?.after}
-        footer={
-          <div className="space-y-2">
-            {review?.kind === "apply" && (
-              <p className="text-xs text-[var(--color-text-muted)]">
-                {t(
-                  "Applying writes and saves to the keyboard immediately. Partial failures may leave mixed settings.",
-                )}
-              </p>
-            )}
-            {review?.checks.map((check) => (
-              <p key={check.id} className="text-xs text-[var(--color-warning)]">
-                {t(check.message, check.params)}
-              </p>
-            ))}
-            {error && (
-              <p role="alert" className="text-xs text-[var(--color-danger)]">
-                {t(error)}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn-ghost"
-                disabled={sharing.busy}
-                onClick={() => sharing.setReview(null)}
-              >
-                {t("Cancel")}
-              </button>
-              <button
-                className="btn-electric"
-                disabled={
-                  busy ||
-                  !review ||
-                  isBlocked(review.checks) ||
-                  (isEmptyDiff(review.diff) &&
-                    (review.kind === "save" || !review.record))
-                }
-                onClick={() => void sharing.confirm()}
-              >
-                {review?.kind === "save"
-                  ? t("Save to Abyss")
-                  : t("Apply to keyboard")}
-              </button>
-            </div>
-          </div>
-        }
-      />
+      {review && (
+        <KeymapSharingPreview
+          review={review}
+          busy={busy}
+          error={error}
+          canSave={
+            auth.isAuthenticated &&
+            sharing.keymaps.some((item) => item.id === review.record?.id)
+          }
+          onClose={() => sharing.setReview(null)}
+          onDirectionChange={sharing.selectDirection}
+          onConfirm={sharing.confirm}
+        />
+      )}
       <Dialog.Root
         open={creating && auth.isAuthenticated}
         onOpenChange={(value) => {

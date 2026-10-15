@@ -27,7 +27,7 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 | `/settings`                        | [設定](pages/settings.md)                                                 | 接続 + 機能別 capability                       |
 | `/troubleshooting`                 | [診断](pages/troubleshooting.md)                                          | 接続 + 診断 capability                         |
 | `/subsystems`                      | [Subsystems](pages/subsystems.md)                                         | 接続                                           |
-| `/keymap` の Keymap sharing        | [キーマップ共有](pages/import-export.md)                                  | 接続または Demo、file/search は Abyss 認証不要 |
+| `/keymap` の Save/share keymap     | [キーマップ共有](pages/import-export.md)                                  | 接続または Demo、file/search は Abyss 認証不要 |
 | `/oauth/callback`                  | [OAuth callback](pages/oauth-callback.md)                                 | keyboard 接続不要、認証フローの状態は別途必要  |
 | `/release-notes`                   | [リリースノート](pages/release-notes.md)                                  | 不要                                           |
 | `/developer-guide` と配下 10 route | [開発者ガイド・全 route 一覧](pages/developer-guide.md)                   | 不要                                           |

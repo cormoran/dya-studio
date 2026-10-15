@@ -8,7 +8,7 @@
 
 共有表示: keycode の HID page、modifier、未知 usage と OS Layout 表記は BIND-024 に従う。preview の key/combo と editor header は consumer brightness を keyboard F20/F21 と区別する。表示の変更は書込みを伴わない。
 
-子仕様: [rotary encoder](keymap-sensors.md)、[キーマップ共有](import-export.md)（Save 左の Abyss/JSON メニュー、IE-013〜025）。キー編集と sensor 設定では適用・保存の経路が異なる。
+子仕様: [rotary encoder](keymap-sensors.md)、[キーマップ共有](import-export.md)（Save 左のキーマップ保存/共有メニュー、IE-013〜027）。キー編集と sensor 設定では適用・保存の経路が異なる。
 
 | 根拠 | ソースと symbol                                                                                                                                                                                             |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |

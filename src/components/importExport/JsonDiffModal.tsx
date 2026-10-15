@@ -76,6 +76,70 @@ function DiffBody({
   );
 }
 
+/** Embeddable code diff for both the legacy dialog and the sharing preview tab. */
+export function JsonDiffPanel({
+  before,
+  after,
+  active = true,
+}: {
+  before: unknown;
+  after: unknown;
+  active?: boolean;
+}) {
+  const { t } = useLanguage();
+  const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
+  const [showEntireFile, setShowEntireFile] = useState(false);
+
+  const diff = useMemo(() => {
+    if (!active) return null;
+    return buildJsonDiff(toDiffJson(before), toDiffJson(after));
+  }, [active, before, after]);
+
+  const files = diff
+    ? showEntireFile
+      ? diff.expandedFiles
+      : diff.collapsedFiles
+    : [];
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 min-w-0">
+      <div className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 tablet:gap-3 tablet:px-4 tablet:py-3 border-b border-[var(--color-border)]">
+        <SegmentedControl
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: "unified", label: t("Inline") },
+            { value: "split", label: t("Side by side") },
+          ]}
+        />
+        {diff?.hasHiddenContext && (
+          <SegmentedControl
+            value={showEntireFile ? "all" : "around"}
+            onChange={(value) => setShowEntireFile(value === "all")}
+            options={[
+              { value: "around", label: t("Around changes") },
+              { value: "all", label: t("Entire file") },
+            ]}
+          />
+        )}
+      </div>
+      {/* `min-h-0`/`min-w-0` are load-bearing: a flex child defaults to
+              `min-height: auto`, so without them a long diff refuses to shrink
+              and pushes the dialog past the bottom of the screen instead of
+              scrolling inside it. Same story horizontally for a wide table. */}
+      <div className="flex-1 min-h-0 min-w-0 overflow-auto p-2 tablet:p-4 text-xs abyss-diff">
+        {diff && !diff.hasChanges ? (
+          <p className="text-sm text-[var(--color-text-muted)]">
+            {t("No differences.")}
+          </p>
+        ) : (
+          <DiffBody files={files} viewMode={viewMode} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function JsonDiffModal({
   open,
   onOpenChange,
@@ -95,20 +159,6 @@ export function JsonDiffModal({
   footer?: ReactNode;
 }) {
   const { t } = useLanguage();
-  const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
-  const [showEntireFile, setShowEntireFile] = useState(false);
-
-  const diff = useMemo(() => {
-    if (!open) return null;
-    return buildJsonDiff(toDiffJson(before), toDiffJson(after));
-  }, [open, before, after]);
-
-  const files = diff
-    ? showEntireFile
-      ? diff.expandedFiles
-      : diff.collapsedFiles
-    : [];
-
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -140,40 +190,7 @@ export function JsonDiffModal({
             </Dialog.Close>
           </div>
 
-          <div className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 tablet:gap-3 tablet:px-4 tablet:py-3 border-b border-[var(--color-border)]">
-            <SegmentedControl
-              value={viewMode}
-              onChange={setViewMode}
-              options={[
-                { value: "unified", label: t("Inline") },
-                { value: "split", label: t("Side by side") },
-              ]}
-            />
-            {diff?.hasHiddenContext && (
-              <SegmentedControl
-                value={showEntireFile ? "all" : "around"}
-                onChange={(value) => setShowEntireFile(value === "all")}
-                options={[
-                  { value: "around", label: t("Around changes") },
-                  { value: "all", label: t("Entire file") },
-                ]}
-              />
-            )}
-          </div>
-
-          {/* `min-h-0`/`min-w-0` are load-bearing: a flex child defaults to
-              `min-height: auto`, so without them a long diff refuses to shrink
-              and pushes the dialog past the bottom of the screen instead of
-              scrolling inside it. Same story horizontally for a wide table. */}
-          <div className="flex-1 min-h-0 min-w-0 overflow-auto p-2 tablet:p-4 text-xs abyss-diff">
-            {diff && !diff.hasChanges ? (
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {t("No differences.")}
-              </p>
-            ) : (
-              <DiffBody files={files} viewMode={viewMode} />
-            )}
-          </div>
+          <JsonDiffPanel before={before} after={after} active={open} />
           {footer && (
             <div className="shrink-0 p-3 border-t border-[var(--color-border)]">
               {footer}

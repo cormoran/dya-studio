@@ -272,3 +272,24 @@ it("resolves the stored identifier to an owned map even when its bindings differ
     expect.objectContaining({ layoutId: "layout-one", visibility: "all" }),
   );
 });
+
+it("previews both write directions from one captured snapshot without writing or rereading", async () => {
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  const captures = mockLoad.mock.calls.length;
+  const reads = client.getKeymap.mock.calls.length;
+  act(() => result.current.selectDirection("save"));
+  expect(result.current.review?.kind).toBe("save");
+  expect(result.current.review?.before).toEqual(target);
+  expect(result.current.review?.after.layers).toEqual(device.layers);
+  act(() => result.current.selectDirection("apply"));
+  expect(result.current.review?.before).toEqual(device);
+  expect(mockLoad).toHaveBeenCalledTimes(captures);
+  expect(client.getKeymap).toHaveBeenCalledTimes(reads);
+  expect(mockWrite).not.toHaveBeenCalled();
+  expect(client.updateKeymap).not.toHaveBeenCalled();
+});

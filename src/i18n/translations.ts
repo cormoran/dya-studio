@@ -9,6 +9,29 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  // Keymap sharing preview
+  "Save/share keymap": "キーマップ保存/共有",
+  "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.":
+    "Keyboard Abyss は、DYA Studio 開発者の @cormoran707 が開発しているキーマップ共有サービスです。",
+  "Refresh your keymaps": "自分のキーマップを更新",
+  "Preview {{name}}": "{{name}} をプレビュー",
+  "Preview format": "プレビュー形式",
+  "Keymap preview": "キーマッププレビュー",
+  "Code diff": "コード差分",
+  "Preview direction": "比較の方向",
+  "Abyss → Keyboard": "Abyss → キーボード",
+  "Keyboard → Abyss": "キーボード → Abyss",
+  Changes: "変更一覧",
+  "Filter changes by layer": "変更をレイヤーで絞り込む",
+  "Compare the Abyss keymap with the keyboard settings to save.":
+    "Abyss のキーマップと、保存するキーボードの設定を比較します。",
+  "Compare the current keyboard with the keymap to apply.":
+    "現在のキーボードと、適用するキーマップを比較します。",
+  "Replace the keyboard settings with this keymap and save them to the keyboard.":
+    "このキーマップをキーボードに適用し、キーボード本体に保存します。",
+  "Update this Abyss keymap with the keyboard's current settings as a new version.":
+    "現在のキーボードの設定で、この Abyss キーマップを新しいバージョンとして更新します。",
+
   // Keymap sharing
   "Keymap sharing": "キーマップ共有",
   "Apply {{name}}": "{{name}} を適用",
@@ -43,7 +66,7 @@ const ja: Record<string, string> = {
   "Saved to Abyss.": "Abyss に保存しました。",
   "Applied to keyboard.": "キーボードに適用しました。",
   "The keyboard or account changed. Reopen Keymap sharing.":
-    "キーボードまたはアカウントが変わりました。キーマップ共有を開き直してください。",
+    "キーボードまたはアカウントが変わりました。キーマップ保存/共有を開き直してください。",
   "No keyboard connected.": "キーボードが接続されていません。",
   "Keymap data unavailable": "キーマップデータを取得できません。",
   "The keymap was saved, but its identity could not be stored. Refresh to check the keyboard.":
@@ -1631,6 +1654,29 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  // Keymap sharing preview
+  "Save/share keymap": "保存/分享键位",
+  "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.":
+    "Keyboard Abyss 是由 DYA Studio 开发者 @cormoran707 开发的键位分享服务。",
+  "Refresh your keymaps": "刷新我的键位",
+  "Preview {{name}}": "预览 {{name}}",
+  "Preview format": "预览格式",
+  "Keymap preview": "键位预览",
+  "Code diff": "代码差异",
+  "Preview direction": "比较方向",
+  "Abyss → Keyboard": "Abyss → 键盘",
+  "Keyboard → Abyss": "键盘 → Abyss",
+  Changes: "更改列表",
+  "Filter changes by layer": "按层筛选更改",
+  "Compare the Abyss keymap with the keyboard settings to save.":
+    "比较 Abyss 键位与要保存的键盘设置。",
+  "Compare the current keyboard with the keymap to apply.":
+    "比较当前键盘与要应用的键位。",
+  "Replace the keyboard settings with this keymap and save them to the keyboard.":
+    "将此键位应用到键盘并保存到键盘。",
+  "Update this Abyss keymap with the keyboard's current settings as a new version.":
+    "使用键盘的当前设置将此 Abyss 键位更新为新版本。",
+
   "Inertia simulation": "惯性模拟",
   "Five-second input and simulated output": "5秒输入及模拟输出",
   "Example input peak before scaling": "缩放前的示例输入峰值",

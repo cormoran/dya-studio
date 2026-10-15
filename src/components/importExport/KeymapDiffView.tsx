@@ -53,7 +53,13 @@ function BindingRow({
   );
 }
 
-function LayerCard({ layer }: { layer: LayerDiff }) {
+function LayerCard({
+  layer,
+  defaultExpanded,
+}: {
+  layer: LayerDiff;
+  defaultExpanded: boolean;
+}) {
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
   const changeCount =
@@ -66,6 +72,7 @@ function LayerCard({ layer }: { layer: LayerDiff }) {
 
   return (
     <SectionCard
+      defaultOpen={defaultExpanded}
       icon={
         <span className="text-xs text-[var(--color-text-muted)] tabular-nums">
           L{layer.layerIndex}
@@ -156,7 +163,13 @@ function CollectionList({
   );
 }
 
-export function KeymapDiffView({ diff }: { diff: KeymapDiff }) {
+export function KeymapDiffView({
+  diff,
+  defaultExpanded = false,
+}: {
+  diff: KeymapDiff;
+  defaultExpanded?: boolean;
+}) {
   const { t } = useLanguage();
   const [showLargeDiff, setShowLargeDiff] = useState(false);
   const counts = countDiff(diff);
@@ -164,7 +177,8 @@ export function KeymapDiffView({ diff }: { diff: KeymapDiff }) {
   const globals = globalModuleChanges(diff);
   // A full keymap replacement is several hundred rows; rendering them all is
   // slow and tells the user nothing they cannot get from the counts.
-  const isLarge = counts.bindings > BINDING_ROW_LIMIT && !showLargeDiff;
+  const isLarge =
+    counts.bindings > BINDING_ROW_LIMIT && !showLargeDiff && !defaultExpanded;
 
   return (
     <div className="space-y-4">
@@ -193,7 +207,11 @@ export function KeymapDiffView({ diff }: { diff: KeymapDiff }) {
         </div>
       ) : (
         layers.map((layer) => (
-          <LayerCard key={layer.layerIndex} layer={layer} />
+          <LayerCard
+            key={layer.layerIndex}
+            layer={layer}
+            defaultExpanded={defaultExpanded}
+          />
         ))
       )}
 

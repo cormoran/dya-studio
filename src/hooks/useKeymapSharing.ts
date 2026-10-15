@@ -57,6 +57,7 @@ const codec = {
 };
 export type ShareReview = {
   kind: "apply" | "save";
+  remote: KeymapDocument;
   record?: AbyssKeymapSummary;
   loaded: ZmkLoadedConnection;
   resolved: AbyssLayoutResolveResult | null;
@@ -72,6 +73,53 @@ const compare = (target: KeymapDocument, current: KeymapDocument) =>
     target as never,
     current as never,
   ) as unknown as KeymapDiff;
+
+function buildReview(
+  kind: ShareReview["kind"],
+  loaded: ZmkLoadedConnection,
+  remote: KeymapDocument,
+  record?: AbyssKeymapSummary,
+  resolved: AbyssLayoutResolveResult | null = null,
+): ShareReview {
+  const device = documentOf(loaded);
+  const before = kind === "save" ? remote : device;
+  const after =
+    kind === "save"
+      ? {
+          ...buildExportData(device, remote, ALL_SECTIONS),
+          layers: device.layers,
+        }
+      : buildApplyTarget(device, remote);
+  const diff = compare(after, before);
+  const checks =
+    kind === "apply"
+      ? runPreflight({
+          diff,
+          deviceKeyCount: Math.max(
+            0,
+            ...device.layers.map((l) => l.bindings.length),
+          ),
+          targetKeyCount: Math.max(
+            0,
+            ...after.layers.map((l) => l.bindings.length),
+          ),
+          deviceLayerCount: device.layers.length,
+          deviceLayoutName: loaded.state.detectedLayout?.name,
+          targetLayoutName: record?.layout?.name,
+        })
+      : [];
+  return {
+    kind,
+    remote,
+    record,
+    loaded,
+    resolved,
+    before,
+    after,
+    diff,
+    checks,
+  };
+}
 
 export function useKeymapSharing(
   authenticated: boolean,
@@ -278,7 +326,7 @@ export function useKeymapSharing(
   ) =>
     operation(async (valid) => {
       setReview(null);
-      const { loaded, resolved } = await capture(valid, kind === "save");
+      const { loaded, resolved } = await capture(valid);
       const client = getAbyssClient();
       const target =
         file ??
@@ -286,44 +334,22 @@ export function useKeymapSharing(
       valid();
       if (!target) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
-      const device = documentOf(loaded);
-      const before = kind === "save" ? remote : device;
-      const after =
-        kind === "save"
-          ? {
-              ...buildExportData(device, remote, ALL_SECTIONS),
-              layers: device.layers,
-            }
-          : buildApplyTarget(device, remote);
-      const diff = compare(after, before);
-      const checks =
-        kind === "apply"
-          ? runPreflight({
-              diff,
-              deviceKeyCount: Math.max(
-                0,
-                ...device.layers.map((l) => l.bindings.length),
-              ),
-              targetKeyCount: Math.max(
-                0,
-                ...after.layers.map((l) => l.bindings.length),
-              ),
-              deviceLayerCount: device.layers.length,
-              deviceLayoutName: loaded.state.detectedLayout?.name,
-              targetLayoutName: record?.layout?.name,
-            })
-          : [];
-      setReview({
-        kind,
-        record,
-        loaded,
-        resolved,
-        before,
-        after,
-        diff,
-        checks,
-      });
+      setReview(buildReview(kind, loaded, remote, record, resolved));
     });
+
+  const selectDirection = (kind: ShareReview["kind"]) => {
+    if (busyRef.current || !review || (kind === "save" && !review.record))
+      return;
+    setReview(
+      buildReview(
+        kind,
+        review.loaded,
+        review.remote,
+        review.record,
+        review.resolved,
+      ),
+    );
+  };
 
   const confirm = () =>
     operation(async (valid) => {
@@ -450,6 +476,7 @@ export function useKeymapSharing(
     identity,
     review,
     setReview,
+    selectDirection,
     refresh,
     prepare,
     confirm,
