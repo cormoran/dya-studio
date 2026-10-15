@@ -2,7 +2,7 @@
 
 ## 範囲・根拠
 
-`/oauth/callback` の popup relay と full-page OAuth code exchange を対象にする。接続 gate を迂回する route 判定は[共通画面](../modules/app-shell.md)を参照する。コード確認: 2026-09-20、`8627e4d`。外部認証・browser 実測はしていない。
+`/oauth/callback` の popup relay と full-page OAuth code exchange を対象にする。接続 gate を迂回する route 判定は[共通画面](../modules/app-shell.md)を参照する。コード確認: 2026-09-20、`8627e4d`。エラー時の戻り先を 2026-10-15、`b3f0ea5` の S1/S2/S3 で再確認。local DEV の client 未設定エラー表示は 2026-10-15、`4545a15`、Orca 組込みブラウザで実測した。外部認証は未実測。
 
 | 根拠 | ソース / symbol                                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,28 +24,28 @@
 
 この route は `DeviceConnectionProvider` 等を mount した後に、接続 UI gate より前で render される（guide と違い provider 自体の外ではない）。正常 popup は initiating tab が sessionStorage 内 PKCE transaction を使い code を交換する。callback window は BroadcastChannel を主、同 origin `window.opener.postMessage` を補助に relay し、ack を 1.5 秒待つ。full-page fallback は callback document 自身が exchange し、return path（なければ `/import-export`）を sessionStorage から consume して history replace で戻る。
 
-| 状態              | 表示                                                    | 副作用 / 終了                                   |
-| ----------------- | ------------------------------------------------------- | ----------------------------------------------- |
-| working           | `Completing Abyss sign-in...`                           | relay または client exchange 中                 |
-| relayed popup     | `Signed in to Abyss` / `You can close this window.`     | callback は exchange せず close を試行          |
-| full-page success | callback UI を残さず onDone                             | token exchange 後、spent code の URL を replace |
-| error             | `Abyss sign-in failed` と message、`Back to DYA Studio` | code は再利用せず、button で `/` に replace     |
+| 状態              | 表示                                                    | 副作用 / 終了                                                     |
+| ----------------- | ------------------------------------------------------- | ----------------------------------------------------------------- |
+| working           | `Completing Abyss sign-in...`                           | relay または client exchange 中                                   |
+| relayed popup     | `Signed in to Abyss` / `You can close this window.`     | callback は exchange せず close を試行                            |
+| full-page success | callback UI を残さず onDone                             | token exchange 後、spent code の URL を replace                   |
+| error             | `Abyss sign-in failed` と message、`Back to DYA Studio` | code は再利用せず、button で `/import-export` への replace を要求 |
 
 ## 現行の機能仕様
 
-| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                                       | 根拠        |
-| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------- |
-| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                                 | S1/S4       |
-| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage                            | S2/S3/S4    |
-| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token は localStorage、PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない | S1/S2/S3/S5 |
-| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                                 | S2/S4       |
-| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `/` を replace                                                | S2/S4       |
+| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                                                                              | 根拠        |
+| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                                                                        | S1/S4       |
+| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage                                                                   | S2/S3/S4    |
+| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token は localStorage、PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない                                        | S1/S2/S3/S5 |
+| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                                                                        | S2/S4       |
+| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `IMPORT_EXPORT_PATH`（`/import-export`）を history replace。接続 gate・tab 可用性は app-shell に従う | S2/S4       |
 
 ## 代表ユーザーフロー
 
 1. initiating tab の Import/Export から login を始める。popup callback は relay 後に close message となり、callback 自身が exchange しないことを test または network log で確認する（OAUTH-002）。
 2. popup blocker で full-page redirect にし、callback の success が `/import-export`（保存失敗時は既定 path）に replace することを確認する（OAUTH-003）。
-3. provider error/state 欠落/client 未設定で error を確認し、`Back to DYA Studio` で Home へ戻る（OAUTH-005）。
+3. provider error/state 欠落/client 未設定で error を確認し、`Back to DYA Studio` で Import/Export への遷移を要求し、未接続なら接続 gate を表示する（OAUTH-005）。callback の code URL が履歴に残らないことは別に確認する。
 
 ## 不変条件
 
@@ -70,3 +70,5 @@ relay failure は 1.5 秒後 full-page mode と区別できないため callback
 ## 未解決・未検証
 
 provider 実環境での relay、COOP/third-party storage 制約、popup blocker の実 browser 挙動は未検証。ack timeout 後に遅延した opener が code を交換する race の望ましい扱いはコードからは保証できない。
+
+- 2026-10-15、`4545a15` の local DEV / Orca 組込みブラウザでは client 未設定 error の戻る操作後も callback route が残った。追加確認では `b3f0ea5` の Chrome で同じ query なし route → error → `Back to DYA Studio` を実行し、`/import-export` の接続画面への遷移と、その後の Demo 接続を実測した（OAUTH-005）。Orca の先行観測をアプリ共通の戻る不具合と断定しない。実認証・provider error・popup relay の browser 比較は未実行。
