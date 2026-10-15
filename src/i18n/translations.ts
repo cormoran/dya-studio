@@ -479,6 +479,7 @@ const ja: Record<string, string> = {
   "Loading settings...": "設定を読み込み中...",
   "Power Management": "電源管理",
   "Idle Timeout": "アイドルタイムアウト",
+  "{{label}} options": "{{label}}の選択肢",
   "Time before keyboard enters idle mode":
     "キーボードがアイドルモードに入るまでの時間",
   "Sleep Timeout": "スリープタイムアウト",
@@ -1998,6 +1999,7 @@ const zh: Record<string, string> = {
   "Loading settings...": "正在加载设置...",
   "Power Management": "电源管理",
   "Idle Timeout": "空闲超时",
+  "{{label}} options": "{{label}}选项",
   "Time before keyboard enters idle mode": "键盘进入空闲模式前的时间",
   "Sleep Timeout": "睡眠超时",
   "Time before entering deep sleep": "进入深度睡眠前的时间",

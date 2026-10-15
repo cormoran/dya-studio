@@ -28,6 +28,7 @@ import {
   createMockZMKApp,
 } from "@cormoran/zmk-studio-react-hook/testing";
 import { Os } from "../../proto/cormoran/os_detection/os_detection";
+import { OutputPriority } from "../../proto/zmk/ble_management/ble_management";
 
 jest.mock("../../hooks/useBLEProfiles");
 jest.mock("../../hooks/useOsDetection");
@@ -602,6 +603,99 @@ describe("ConnectionPage", () => {
           "Choose whether USB or Bluetooth is used for keystrokes when both are connected.",
         ),
       ).toBeInTheDocument();
+    });
+
+    it("names the priority group and keeps selection unchanged when its warning is canceled", () => {
+      const setOutputPriority = jest.fn();
+      renderComponent(
+        { isConnected: true },
+        {
+          profiles: mockProfiles,
+          outputPriority: OutputPriority.OUTPUT_PRIORITY_USB,
+          setOutputPriority,
+        },
+      );
+
+      const group = screen.getByRole("group", { name: "Output Priority" });
+      const usb = within(group).getByRole("button", { name: "USB" });
+      const ble = within(group).getByRole("button", { name: "BLE" });
+      expect(usb).toHaveAttribute("aria-pressed", "true");
+      expect(ble).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(ble);
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(setOutputPriority).not.toHaveBeenCalled();
+      expect(usb).toHaveAttribute("aria-pressed", "true");
+      expect(ble).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("keeps the rendered selection until the hook value reflects the update", async () => {
+      const setOutputPriority = jest.fn().mockResolvedValue(undefined);
+      const firstRender = renderComponent(
+        { isConnected: true },
+        {
+          profiles: mockProfiles,
+          outputPriority: OutputPriority.OUTPUT_PRIORITY_USB,
+          setOutputPriority,
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "BLE" }));
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      await waitFor(() =>
+        expect(setOutputPriority).toHaveBeenCalledWith(
+          OutputPriority.OUTPUT_PRIORITY_BLE,
+        ),
+      );
+      expect(
+        within(
+          screen.getByRole("group", { name: "Output Priority" }),
+        ).getByRole("button", { name: "USB" }),
+      ).toHaveAttribute("aria-pressed", "true");
+
+      firstRender.unmount();
+      renderComponent(
+        { isConnected: true },
+        {
+          profiles: mockProfiles,
+          outputPriority: OutputPriority.OUTPUT_PRIORITY_BLE,
+          setOutputPriority,
+        },
+      );
+      const group = screen.getByRole("group", { name: "Output Priority" });
+      expect(
+        within(group).getByRole("button", { name: "USB" }),
+      ).toHaveAttribute("aria-pressed", "false");
+      expect(
+        within(group).getByRole("button", { name: "BLE" }),
+      ).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("keeps the prior selection visible when the hook exposes an error", async () => {
+      const setOutputPriority = jest.fn().mockResolvedValue(undefined);
+      renderComponent(
+        { isConnected: true },
+        {
+          profiles: mockProfiles,
+          outputPriority: OutputPriority.OUTPUT_PRIORITY_USB,
+          error: "Failed to set output priority",
+          setOutputPriority,
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "BLE" }));
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      await waitFor(() => expect(setOutputPriority).toHaveBeenCalledTimes(1));
+
+      expect(screen.getByText(/Failed to set output priority/)).toBeVisible();
+      const group = screen.getByRole("group", { name: "Output Priority" });
+      expect(
+        within(group).getByRole("button", { name: "USB" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        within(group).getByRole("button", { name: "BLE" }),
+      ).toHaveAttribute("aria-pressed", "false");
     });
   });
 

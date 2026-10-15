@@ -16,11 +16,12 @@
 
 ## 機能要求
 
-| ID       | できるべきこと                                                                  | 出典・確度     |
-| -------- | ------------------------------------------------------------------------------- | -------------- |
-| CONN-R01 | 利用可能な接続 target ごとに profile と default layer を区別して管理できる      | S1–S3 から推定 |
-| CONN-R02 | OS detection が不確かな場合も、検出値と BLE override を混同せず確認・変更できる | S1/S4 から推定 |
-| CONN-R03 | 接続断を招き得る output priority や unpair を明示確認の上で実行できる           | S1/S2 から推定 |
+| ID       | できるべきこと                                                                   | 出典・確度     |
+| -------- | -------------------------------------------------------------------------------- | -------------- |
+| CONN-R01 | 利用可能な接続 target ごとに profile と default layer を区別して管理できる       | S1–S3 から推定 |
+| CONN-R02 | OS detection が不確かな場合も、検出値と BLE override を混同せず確認・変更できる  | S1/S4 から推定 |
+| CONN-R03 | 接続断を招き得る output priority や unpair を明示確認の上で実行できる            | S1/S2 から推定 |
+| CONN-R04 | Output Priority を名前付きグループとして公開し、USB / BLE の選択状態を一意に示す | issue #215     |
 
 ## 前提・状態
 
@@ -34,18 +35,18 @@
 
 モバイル幅のページ表示・共通操作・説明は[共通画面 SHELL-009/010/011](../modules/app-shell.md)に従う。下記の可用性・保存・エラー契約は画面幅で変わらない。
 
-| ID       | 前提 → 操作                                                                     | 観測できる結果                                                                                                                                      | 保存範囲・副作用                                                            | 根拠                 |
-| -------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------- |
-| CONN-001 | 接続済み → `Refresh`                                                            | profile、priority、OS、default-layer、layer name を並列に再取得し、取得後 version を capture する                                                   | 読込み。未保存変更を破棄するかは各 firmware RPC の契約で未確認              | S1 `reload`          |
-| CONN-002 | BLE management 対応 → `USB` / `BLE` output priority を選ぶ → warning で Confirm | `Changing the output priority may disconnect...` を確認後に set RPC、成功時に priority を再読込                                                     | デバイス側設定。接続断時は手動 reconnect が必要と表示する                   | S1/S2                |
-| CONN-003 | pair 済み BLE profile → edit icon → 名を入力 → Save                             | 最大 31 文字の名前編集を送信し、成功時 profiles を再読込                                                                                            | デバイス側 profile 名。Cancel は入力 state を捨てて RPC を送らない          | S1/S2                |
-| CONN-004 | pair 済み BLE profile → `Unpair` → native confirm を承認                        | profile unpair RPC を送る。Cancel なら RPC を送らない                                                                                               | bond を消す破壊的操作。失敗時は上部 alert と再試行可能な card を残す        | S1 `handleUnpair`/S2 |
-| CONN-005 | 非 active BLE profile → `Switch`                                                | 対象 profile を active にする RPC を送る。active profile の Switch は無効                                                                           | デバイス接続先を変える。再接続・表示反映の時点は firmware 依存              | S1/S2                |
-| CONN-006 | default layer 対応 → USB / BLE target の `Default Layer` を選ぶ                 | endpoint value を更新した state が返れば select と Resolved Default Layer が更新される。`Follow OS detection` も選べる                              | デバイス default-layer subsystem。flash/RAM の詳細はこの hook から未確認    | S1/S3                |
-| CONN-007 | OS detection 対応 → BLE `OS override` を選ぶ                                    | auto / Windows / macOS / Linux / iOS / Android の override を送信後、全 state を再取得                                                              | デバイス OS-detection subsystem。USB は検出 badge のみで override UI はない | S1/S4                |
-| CONN-008 | default layer 対応 → Per-OS Default Layers の OS ごと select を選ぶ             | 選んだ OS の layer state を更新。endpoint が Follow OS detection のときに使う旨を表示                                                               | デバイス default-layer subsystem                                            | S1/S3                |
-| CONN-009 | OS detection 対応のまま待つ                                                     | `getState` を重複実行せず約 5 秒ごとに再取得する                                                                                                    | poll のみ。検出の揺れは自動補正しない                                       | S4                   |
-| CONN-010 | Per-OS Default Layers をモバイル幅で表示する                                    | OS 名とアイコンは縮小・途中改行せず、各行の選択欄を同じ位置に揃える。選択欄は残り幅に収まり、高さは 44px 以上。デスクトップは従来の横並びを維持する | 表示のみ。CONN-008 の可用性・書込み契約は不変                               | S1                   |
+| ID       | 前提 → 操作                                                                     | 観測できる結果                                                                                                                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                 |
+| -------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------- |
+| CONN-001 | 接続済み → `Refresh`                                                            | profile、priority、OS、default-layer、layer name を並列に再取得し、取得後 version を capture する                                                                                                                                              | 読込み。未保存変更を破棄するかは各 firmware RPC の契約で未確認              | S1 `reload`          |
+| CONN-002 | BLE management 対応 → `USB` / `BLE` output priority を選ぶ → warning で Confirm | Output Priority は名前付き group、各選択肢は `aria-pressed` で現在値を示す。Cancel は現在値を維持し RPC を送らない。Confirm は set RPC の成功後に hook が再読込した値だけを選択済み表示へ反映し、失敗時は以前の選択を維持して alert を表示する | デバイス側設定。接続断時は手動 reconnect が必要と表示する                   | S1/S2                |
+| CONN-003 | pair 済み BLE profile → edit icon → 名を入力 → Save                             | 最大 31 文字の名前編集を送信し、成功時 profiles を再読込                                                                                                                                                                                       | デバイス側 profile 名。Cancel は入力 state を捨てて RPC を送らない          | S1/S2                |
+| CONN-004 | pair 済み BLE profile → `Unpair` → native confirm を承認                        | profile unpair RPC を送る。Cancel なら RPC を送らない                                                                                                                                                                                          | bond を消す破壊的操作。失敗時は上部 alert と再試行可能な card を残す        | S1 `handleUnpair`/S2 |
+| CONN-005 | 非 active BLE profile → `Switch`                                                | 対象 profile を active にする RPC を送る。active profile の Switch は無効                                                                                                                                                                      | デバイス接続先を変える。再接続・表示反映の時点は firmware 依存              | S1/S2                |
+| CONN-006 | default layer 対応 → USB / BLE target の `Default Layer` を選ぶ                 | endpoint value を更新した state が返れば select と Resolved Default Layer が更新される。`Follow OS detection` も選べる                                                                                                                         | デバイス default-layer subsystem。flash/RAM の詳細はこの hook から未確認    | S1/S3                |
+| CONN-007 | OS detection 対応 → BLE `OS override` を選ぶ                                    | auto / Windows / macOS / Linux / iOS / Android の override を送信後、全 state を再取得                                                                                                                                                         | デバイス OS-detection subsystem。USB は検出 badge のみで override UI はない | S1/S4                |
+| CONN-008 | default layer 対応 → Per-OS Default Layers の OS ごと select を選ぶ             | 選んだ OS の layer state を更新。endpoint が Follow OS detection のときに使う旨を表示                                                                                                                                                          | デバイス default-layer subsystem                                            | S1/S3                |
+| CONN-009 | OS detection 対応のまま待つ                                                     | `getState` を重複実行せず約 5 秒ごとに再取得する                                                                                                                                                                                               | poll のみ。検出の揺れは自動補正しない                                       | S4                   |
+| CONN-010 | Per-OS Default Layers をモバイル幅で表示する                                    | OS 名とアイコンは縮小・途中改行せず、各行の選択欄を同じ位置に揃える。選択欄は残り幅に収まり、高さは 44px 以上。デスクトップは従来の横並びを維持する                                                                                            | 表示のみ。CONN-008 の可用性・書込み契約は不変                               | S1                   |
 
 ## 代表ユーザーフロー
 
@@ -73,10 +74,12 @@
 - CONN-I02: Unpair と output priority は Cancel だけでデバイス RPC を送らない（S1）。
 - CONN-I03: OS detection は heuristic で、短時間の BLE 状態変動を OS の確定・接続成功と扱わない（S1/S4）。
 - CONN-I04: 画面に表示される `Saved` 相当の更新だけで flash 永続化を推定しない。各 subsystem の保存契約は未確認（S2–S4）。
+- CONN-I05: Output Priority group では既知の USB / BLE priority のどちらか一つだけを `aria-pressed=true` にする。warning の Cancel は選択状態を変更せず、Confirm 後も hook の成功 readback 前に新しい値を楽観表示しない（issue #215、S1/S2）。
 
 ## エラーと復帰
 
 - BLE RPC 失敗は page 上部の alert に hook error を表示し、Refresh または同じ操作で再試行できる。入力名は `saveProfileName` が finally で閉じるため、失敗後に残る保証はない。
+- output priority の失敗は同じ上部 alert に表示し、最後に読み取れた priority を選択中のまま保つ。Confirm 後の UI は成功 response 後に取得した `getOutputPriority` の値で更新する（S1/S2）。
 - default-layer / OS-detection の失敗は hook 内 state error になるが、この page は個別 alert を render しない。Refresh で再読込し、select / badge の実値を比較する。
 - output priority の Confirm 後に Studio が切断され得る。復帰は session の通常 connect 手順であり、自動再接続を保証しない。
 

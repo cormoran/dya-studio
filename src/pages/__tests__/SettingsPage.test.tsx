@@ -1,11 +1,18 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { SettingsPage } from "../SettingsPage";
 import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import { useSettings, type UseSettingsReturn } from "../../hooks/useSettings";
 
 jest.mock("../../hooks/useSettings");
 jest.mock("../../hooks/useLanguage", () => ({
-  useLanguage: () => ({ t: (text: string) => text }),
+  useLanguage: () => ({
+    t: (text: string, params?: Record<string, number | string>) =>
+      Object.entries(params ?? {}).reduce(
+        (result, [key, value]) => result.replace(`{{${key}}}`, String(value)),
+        text,
+      ),
+  }),
 }));
 jest.mock("../../hooks/useResetSettings", () => ({
   useResetSettings: () => ({
@@ -67,9 +74,89 @@ beforeEach(() => {
 });
 afterEach(() => jest.useRealTimers());
 
+it("exposes timeout values, preset state, and the controlled disclosure to keyboard users", async () => {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  render(<Page />);
+
+  const idleTimeout = screen.getByRole("button", {
+    name: "Idle Timeout 5 minutes",
+  });
+  expect(idleTimeout).toHaveAttribute("aria-expanded", "false");
+  const optionsId = idleTimeout.getAttribute("aria-controls");
+  expect(optionsId).toBeTruthy();
+  expect(document.getElementById(optionsId!)).toHaveAttribute("hidden");
+
+  idleTimeout.focus();
+  await user.keyboard("{Enter}");
+
+  expect(idleTimeout).toHaveAttribute("aria-expanded", "true");
+  const options = screen.getByRole("group", { name: "Idle Timeout options" });
+  expect(options).toHaveAttribute("id", optionsId);
+  expect(
+    within(options).getByRole("button", { name: "5 minutes" }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  expect(within(options).getByRole("button", { name: "Never" })).toHaveFocus();
+  await user.keyboard("{Enter}");
+  expect(idleTimeout).toHaveAttribute("aria-expanded", "false");
+});
+
+it("identifies a custom timeout value and submits it with the labeled form", async () => {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  settings.devices[0].sleepMs = 15000;
+  render(<Page />);
+
+  const sleepTimeout = screen.getByRole("button", {
+    name: "Sleep Timeout 0.25 min",
+  });
+  await user.click(sleepTimeout);
+  expect(
+    screen.getByRole("button", { name: "Custom value..." }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await user.click(screen.getByRole("button", { name: "Custom value..." }));
+  expect(
+    screen.getByRole("button", { name: "Custom value..." }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  const input = screen.getByRole("spinbutton", {
+    name: "Sleep Timeout (min)",
+  });
+  await user.type(input, "0.25");
+  await user.keyboard("{Enter}");
+
+  expect(
+    screen.getByRole("button", { name: "Sleep Timeout 0.25 min" }),
+  ).toBeVisible();
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(1500);
+  });
+  expect(settings.setActivitySettings).toHaveBeenCalledWith(300000, 15000);
+});
+
+it("returns keyboard focus to the custom option when its form is canceled", async () => {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  render(<Page />);
+
+  await user.click(
+    screen.getByRole("button", { name: "Idle Timeout 5 minutes" }),
+  );
+  const customOption = screen.getByRole("button", { name: "Custom value..." });
+  await user.click(customOption);
+  expect(
+    screen.getByRole("spinbutton", { name: "Idle Timeout (min)" }),
+  ).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(customOption).toHaveFocus();
+  expect(
+    screen.queryByRole("spinbutton", { name: "Idle Timeout (min)" }),
+  ).not.toBeInTheDocument();
+});
+
 it("removes stale values, timeout portals and editors on unsupported reconnect but keeps Danger Zone", () => {
   const { rerender } = render(<Page />);
-  fireEvent.click(screen.getByRole("button", { name: "Idle Timeout" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Idle Timeout/ }));
   expect(screen.getByRole("button", { name: "Custom value..." })).toBeVisible();
   // Defensive UI gate even if a caller still has stale data.
   session({ isAvailable: false });
@@ -81,7 +168,7 @@ it("removes stale values, timeout portals and editors on unsupported reconnect b
     ),
   ).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: "Idle Timeout" }),
+    screen.queryByRole("button", { name: /^Idle Timeout/ }),
   ).not.toBeInTheDocument();
   expect(
     screen.queryByText("Current Settings by Device", { exact: false }),
@@ -119,7 +206,7 @@ it.each([false, true])(
     const oldWrite = settings.setActivitySettings;
     const newWrite = jest.fn().mockResolvedValue(true);
     const { rerender } = render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Idle Timeout" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Idle Timeout/ }));
     fireEvent.click(screen.getByRole("button", { name: "10 minutes" }));
     session({
       isAvailable: supported,
@@ -156,7 +243,7 @@ it.each([false, true])(
       rerender(<Page />);
     }
     expect(
-      screen.getByRole("button", { name: "Idle Timeout" }),
+      screen.getByRole("button", { name: /^Idle Timeout/ }),
     ).toHaveTextContent("1 minute");
     expect(screen.queryByText("Saved")).not.toBeInTheDocument();
   },
@@ -171,20 +258,20 @@ it("late write completion cannot clear a new session edit or show Saved", async 
       }),
   );
   const { rerender } = render(<Page />);
-  fireEvent.click(screen.getByRole("button", { name: "Idle Timeout" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Idle Timeout/ }));
   fireEvent.click(screen.getByRole("button", { name: "10 minutes" }));
   await act(async () => {
     await jest.advanceTimersByTimeAsync(1500);
   });
   session({ setActivitySettings: jest.fn().mockResolvedValue(true) });
   rerender(<Page />);
-  fireEvent.click(screen.getByRole("button", { name: "Idle Timeout" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Idle Timeout/ }));
   fireEvent.click(screen.getByRole("button", { name: "1 minute" }));
   await act(async () => {
     resolve(true);
   });
   expect(
-    screen.getByRole("button", { name: "Idle Timeout" }),
+    screen.getByRole("button", { name: /^Idle Timeout/ }),
   ).toHaveTextContent("1 minute");
   expect(screen.queryByText("Saved")).not.toBeInTheDocument();
   expect(screen.getByText("Saving...")).toBeVisible();
