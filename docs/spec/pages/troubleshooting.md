@@ -9,7 +9,7 @@
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | S1   | [TroubleshootingPage](../../../src/pages/TroubleshootingPage.tsx): `refreshAll`, `copySupportReport`, tab-active effect                                                                                                                                                            | 共通 refresh/report/poll stop          |
 | S2   | [DeviceInfoSection](../../../src/components/troubleshooting/DeviceInfoSection.tsx): `DeviceInfoSection`                                                                                                                                                                            | build/hardware/Zephyr device status    |
-| S3   | [WatchdogSection](../../../src/components/troubleshooting/WatchdogSection.tsx): `ElfUploadBar`, `handleDeleteAll`, `WatchdogSection`                                                                                                                                               | incidents、ELF、destructive paths      |
+| S3   | [WatchdogSection](../../../src/components/troubleshooting/WatchdogSection.tsx): `ElfUploadBar`, `handleDeleteAll`, `WatchdogSection`、[useWatchdog](../../../src/hooks/useWatchdog.ts): `load`, `setSource`                                                                        | incidents、ELF、destructive paths      |
 | S4   | [KscanDiagnosticsSection](../../../src/components/troubleshooting/KscanDiagnosticsSection.tsx): `handleResetStats`, `handleExpand`                                                                                                                                                 | matrix stats/pin/layout/reset          |
 | S5   | [Pmw3610Section](../../../src/components/troubleshooting/Pmw3610Section.tsx)、[Pmw3610FrameViewer](../../../src/components/troubleshooting/Pmw3610FrameViewer.tsx)                                                                                                                 | sensor health/diagnostics/frame stream |
 | S6   | [DevtoolStackUsageSection](../../../src/components/troubleshooting/DevtoolStackUsageSection.tsx)、[useDevtoolStackUsage](../../../src/hooks/useDevtoolStackUsage.ts): `refresh`, `setPolling`                                                                                      | stack RPC and polling                  |
@@ -17,11 +17,11 @@
 
 ## 機能要求
 
-| ID       | できるべきこと                                                                                  | 出典・確度     |
-| -------- | ----------------------------------------------------------------------------------------------- | -------------- |
-| DIAG-R01 | firmware が提供する診断だけを section ごとに読み、unsupported と error/empty を区別して示せる   | S1–S6 から推定 |
-| DIAG-R02 | support に渡す report を clipboard へ生成でき、fatal incident は任意の ELF で symbol 解決できる | S1/S3 から推定 |
-| DIAG-R03 | incident/statistics/log-like data の削除、polling、frame streaming を意図して制御できる         | S3–S6 から推定 |
+| ID       | できるべきこと                                                                                                  | 出典・確度     |
+| -------- | --------------------------------------------------------------------------------------------------------------- | -------------- |
+| DIAG-R01 | firmware が提供する診断だけを section ごとに読み、unsupported・loading・error と成功した empty を区別して示せる | S1–S6 から推定 |
+| DIAG-R02 | support に渡す report を clipboard へ生成でき、fatal incident は任意の ELF で symbol 解決できる                 | S1/S3 から推定 |
+| DIAG-R03 | incident/statistics/log-like data の削除、polling、frame streaming を意図して制御できる                         | S3–S6 から推定 |
 
 ## 前提・状態
 
@@ -35,17 +35,17 @@
 
 各診断sectionのRefreshも640px未満ではアイコンだけを表示し、section固有のaccessible name・無効条件・RPCは維持する。
 
-| ID       | 前提 → 操作                                                              | 観測できる結果                                                                                                       | 保存範囲・副作用                                                                   | 根拠                                                                                         |
-| -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| DIAG-001 | `Refresh All`                                                            | 各 available section が refresh。section ごとの spinner/error                                                        | read RPC。ELF、frame、clipboard は変更しない                                       | S1                                                                                           |
-| DIAG-002 | `Copy Support Report`                                                    | 成功後 2 秒 `Copied!`。device/browser/app URL と section availability/data/error を text 化                          | `navigator.clipboard.writeText`。clipboard 拒否は page 内で catch/display されない | S1、[troubleshootingReport](../../../src/lib/troubleshootingReport.ts): `buildSupportReport` |
-| DIAG-003 | Device Info を refresh                                                   | build/hardware/ZMK config と named Zephyr devices。空名 device は非表示、literal `empty` は not-ready badge から除外 | read only                                                                          | S2                                                                                           |
-| DIAG-004 | Watchdog source Central/Peripheral 1 を選び Refresh                      | capacity/stored/dropped、freeze/crash/reset incident table                                                           | read RPC。source 切替は delete/report の保存先ではない                             | S3                                                                                           |
-| DIAG-005 | crash あり → ELF upload / Change ELF / Remove ELF                        | PC/LR を function+offset+file:line に追加表示（解決できる時）                                                        | selected File を browser memory で parse。firmware/clipboardへ upload しない       | S3、[useElfAnalysis](../../../src/hooks/useElfAnalysis.ts): `loadFile`, `resolve`, `clear`   |
-| DIAG-006 | incident one-row Delete / `Delete all` → confirm                         | row delete は直ちに RPC。all は native-style confirm card の Cancel/`Delete all`                                     | incident store を firmware RPC で mutate。recording paused は削除で resume し得る  | S3                                                                                           |
-| DIAG-007 | KScan の expand/Refresh、pin/keyboard view、`Reset statistics` → confirm | driver、matrix stats、position/pin activity。Cancel は stats 不変                                                    | stats reset RPC。layout/pin の表示だけは write しない                              | S4                                                                                           |
-| DIAG-008 | PMW3610 `Read surface diagnostics`、frame side/capture/start/stop        | ready/product/revision/init, SQUAL/shutter/pixels、SQUAL health 文言、frame viewer                                   | diagnostics/frame RPC。stream の開始/停止は sensor setting の保存ではない          | S5                                                                                           |
-| DIAG-009 | Stack Usage `Auto-refresh` と 1/3/5/10 s                                 | stack high-water table と 60/80/90% color/badge                                                                      | browser state の poll timer。非 active tab になると polling OFF                    | S1/S6                                                                                        |
+| ID       | 前提 → 操作                                                              | 観測できる結果                                                                                                                                                                                                                                                                  | 保存範囲・副作用                                                                                                                | 根拠                                                                                         |
+| -------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| DIAG-001 | `Refresh All`                                                            | 各 available section が refresh。section ごとの spinner/error                                                                                                                                                                                                                   | read RPC。ELF、frame、clipboard は変更しない                                                                                    | S1                                                                                           |
+| DIAG-002 | `Copy Support Report`                                                    | 成功後 2 秒 `Copied!`。device/browser/app URL と section availability/data/error を text 化                                                                                                                                                                                     | `navigator.clipboard.writeText`。clipboard 拒否は page 内で catch/display されない                                              | S1、[troubleshootingReport](../../../src/lib/troubleshootingReport.ts): `buildSupportReport` |
+| DIAG-003 | Device Info を refresh                                                   | build/hardware/ZMK config と named Zephyr devices。空名 device は非表示、literal `empty` は not-ready badge から除外                                                                                                                                                            | read only                                                                                                                       | S2                                                                                           |
+| DIAG-004 | Watchdog source Central/Peripheral 1 を選び Refresh                      | 現在の source の status と全 incident page が成功した後だけ capacity/stored/dropped と table を表示。成功した空一覧だけ `No incidents` / `No incidents recorded — your keyboard looks stable.`。読取り中は Loading、失敗は red error とし、旧統計・部分一覧・正常表示を残さない | read RPC。source 切替は read/delete の対象を変更し、browser 内の旧表示と未完了読取りを無効化。firmware の保存先自体は変更しない | S3                                                                                           |
+| DIAG-005 | crash あり → ELF upload / Change ELF / Remove ELF                        | PC/LR を function+offset+file:line に追加表示（解決できる時）                                                                                                                                                                                                                   | selected File を browser memory で parse。firmware/clipboardへ upload しない                                                    | S3、[useElfAnalysis](../../../src/hooks/useElfAnalysis.ts): `loadFile`, `resolve`, `clear`   |
+| DIAG-006 | incident one-row Delete / `Delete all` → confirm                         | row delete は直ちに RPC。all は native-style confirm card の Cancel/`Delete all`                                                                                                                                                                                                | incident store を firmware RPC で mutate。recording paused は削除で resume し得る                                               | S3                                                                                           |
+| DIAG-007 | KScan の expand/Refresh、pin/keyboard view、`Reset statistics` → confirm | driver、matrix stats、position/pin activity。Cancel は stats 不変                                                                                                                                                                                                               | stats reset RPC。layout/pin の表示だけは write しない                                                                           | S4                                                                                           |
+| DIAG-008 | PMW3610 `Read surface diagnostics`、frame side/capture/start/stop        | ready/product/revision/init, SQUAL/shutter/pixels、SQUAL health 文言、frame viewer                                                                                                                                                                                              | diagnostics/frame RPC。stream の開始/停止は sensor setting の保存ではない                                                       | S5                                                                                           |
+| DIAG-009 | Stack Usage `Auto-refresh` と 1/3/5/10 s                                 | stack high-water table と 60/80/90% color/badge                                                                                                                                                                                                                                 | browser state の poll timer。非 active tab になると polling OFF                                                                 | S1/S6                                                                                        |
 
 ## 代表ユーザーフロー
 
@@ -59,7 +59,8 @@
 
 1. Crash incident がある source を選び、ID/PC/LR を記録する。
 2. 対応する local `.elf` を Upload して symbol/line-info の表示を確認し、別 build ELF では resolution が正しいと断定しない。
-3. `Delete all` を開き Cancel → incident 数を比較する。承認して削除する実機試験は data loss を伴うため別途許可が必要。
+3. Peripheral 1 に切替え、未対応/未接続なら red error と旧 capacity/stored/dropped・正常表示の消去を確認する。読取り中も Central を選べる。Central に戻し再取得でき、遅れて届いた Peripheral の応答で表示が変わらないことを確認する。
+4. `Delete all` を開き Cancel → incident 数を比較する。承認して削除する実機試験は data loss を伴うため別途許可が必要。
 
 ### F3: input diagnostics の境界（DIAG-007/008/009）
 
@@ -69,7 +70,7 @@
 
 ## 不変条件
 
-- DIAG-I01: unavailable module を「正常」と表示しない。Not Available と module enable hint を比較する（S2–S6）。
+- DIAG-I01: unavailable module を「正常」と表示しない。Not Available と module enable hint を比較する（S2–S6）。Watchdog は読取り前・loading・error・部分一覧も正常と扱わず、source/session/Refresh の変更前の応答が現在の統計・一覧・error・loading を上書きしない（S3）。
 - DIAG-I02: `Copy Support Report` は incidentを削除、ELFを保存、device setting を変更しない（S1）。
 - DIAG-I03: watchdog `Delete all` の Cancel は delete RPC を呼ばない（S3）。
 - DIAG-I04: tab 非 active 時に Stack Usage polling を継続しない（S1/S6）。
@@ -78,6 +79,7 @@
 ## エラーと復帰
 
 - Section error は SectionCard 内の red error。Refresh を再試行する。unsupported は error ではなく module install/firmware enable の案内。
+- Watchdog は無応答・relay timeout・不正な応答・未完の pagination を red error にし、成功した空一覧と区別する。エラーは次の Refresh/source 切替で消し、現在の source の完全な read が成功するまで統計と正常表示を出さない。Central へ戻ると自動 read で復帰する。session/ready/subsystem index の変更と unmount でも未完了応答・relay subscription を無効化する。delete failure は後続 read で成功扱いにしない（S3）。
 - clipboard write rejection は `copySupportReport` が捕捉しないため `Copied!` の未表示/console rejection の可能性がある。clipboard 実測は未実施。
 - ELF parser error は upload bar に残り、別 file/Remove ELF で復帰できる。ELF 解決不能は crash がない証拠ではない。
 - Kscan reset、watchdog delete、PMW stream は RPC failure なら section error/state確認を行う。partial mutation の rollback は保証しない。

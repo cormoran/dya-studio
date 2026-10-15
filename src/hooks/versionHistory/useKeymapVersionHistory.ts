@@ -22,6 +22,7 @@ import {
 } from "../../lib/versionHistory/tabs/keymap";
 import { formatDiffValue } from "../../lib/versionHistory";
 import type { DiffLabeler, JsonValue } from "../../lib/versionHistory";
+import { formatBehaviorBinding } from "../../lib/behaviorMetadata";
 
 export interface UseKeymapVersionHistoryReturn extends UseTabVersionHistoryReturn<KeymapSnapshot> {
   /** Names/values for the diff modal. */
@@ -137,7 +138,7 @@ export function useKeymapVersionHistory(
     () => keymap.keymap?.layers.map((layer) => layer.name) ?? [],
     [keymap.keymap],
   );
-  const getBindingDisplayName = keymap.getBindingDisplayName;
+  const behaviors = keymap.behaviors;
 
   const labeler = useMemo<DiffLabeler>(
     () => ({
@@ -162,12 +163,19 @@ export function useKeymapVersionHistory(
         if (path[0] !== "layers" || path[2] !== "bindings") return null;
         if (typeof value !== "string") return null;
         const binding = decodeBinding(value);
-        return binding
-          ? getBindingDisplayName(binding)
-          : formatDiffValue(value as JsonValue);
+        if (!binding) return formatDiffValue(value as JsonValue);
+        const behavior = behaviors.get(binding.behaviorId);
+        const name = behavior?.displayName || `Behavior ${binding.behaviorId}`;
+        const display = behavior
+          ? formatBehaviorBinding(binding, behavior)
+          : name;
+        // History must distinguish every stored binding, even when metadata
+        // is missing or the friendly formatter omits a parameter (including 0).
+        const context = display === name ? name : `${name}: ${display}`;
+        return `${context} (behaviorId=${binding.behaviorId}, param1=${binding.param1}, param2=${binding.param2})`;
       },
     }),
-    [getBindingDisplayName, layerNames, t],
+    [behaviors, layerNames, t],
   );
 
   return { ...history, labeler };

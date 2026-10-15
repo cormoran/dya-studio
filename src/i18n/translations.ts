@@ -281,6 +281,8 @@ const ja: Record<string, string> = {
   "Move layer up (higher priority)": "レイヤーを上へ移動（優先度を上げる）",
   "Move layer down (lower priority)": "レイヤーを下へ移動（優先度を下げる）",
   "Rename current layer": "現在のレイヤー名を変更",
+  "Failed to rename layer. Please try again.":
+    "レイヤー名の変更に失敗しました。もう一度お試しください。",
   "Add new layer": "新しいレイヤーを追加",
   "Delete current layer": "現在のレイヤーを削除",
   "Restore deleted layer": "削除したレイヤーを復元",
@@ -320,6 +322,8 @@ const ja: Record<string, string> = {
   "Loading trackball settings...": "トラックボール設定を読み込み中...",
   "No runtime input processor found. Make sure your firmware has the runtime input processor module enabled.":
     "ランタイム入力プロセッサーが見つかりません。ファームウェアでランタイム入力プロセッサーモジュールが有効になっていることを確認してください。",
+  "{{setting}} ({{processor}}: {{name}})":
+    "{{setting}}（{{processor}}: {{name}}）",
   "Advanced (PMW3610 Sensor Driver)": "詳細設定（PMW3610 センサードライバー）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 ドライバーのカスタム Studio RPC が公開するセンサーレベルの調整項目です",
@@ -1810,6 +1814,7 @@ const zh: Record<string, string> = {
   "Move layer up (higher priority)": "将层上移（更高优先级）",
   "Move layer down (lower priority)": "将层下移（更低优先级）",
   "Rename current layer": "重命名当前层",
+  "Failed to rename layer. Please try again.": "重命名层失败，请重试。",
   "Add new layer": "添加新层",
   "Delete current layer": "删除当前层",
   "Restore deleted layer": "恢复已删除的层",
@@ -1849,6 +1854,8 @@ const zh: Record<string, string> = {
   "Loading trackball settings...": "正在加载轨迹球设置...",
   "No runtime input processor found. Make sure your firmware has the runtime input processor module enabled.":
     "未找到运行时输入处理器。请确保您的固件已启用运行时输入处理器模块。",
+  "{{setting}} ({{processor}}: {{name}})":
+    "{{setting}}（{{processor}}：{{name}}）",
   "Advanced (PMW3610 Sensor Driver)": "高级（PMW3610 传感器驱动）",
   "Sensor-level tuning exposed by the pmw3610 driver's custom Studio RPC":
     "pmw3610 驱动通过自定义 Studio RPC 公开的传感器级调整",

@@ -5,13 +5,13 @@
 ## Release notes
 
 <!--
-For user-visible changes, add an entry to the `upcoming` section of
-src/i18n/releaseNotes.json (create the section if missing), in both en and ja,
-under major / minor / patch. See docs/RELEASE_GUIDE.md. Skip for internal-only
-changes.
+Do not edit src/i18n/releaseNotes.json in individual feature or fix PRs.
+Describe user-visible outcomes above. Release notes are curated once before
+release in a dedicated PR using .agents/skills/release-notes/SKILL.md.
+See docs/RELEASE_GUIDE.md.
 -->
 
-- [ ] Added an `upcoming` release notes entry, or this change is internal-only
+- [ ] Followed the release notes policy (feature/fix PRs leave releaseNotes.json unchanged; notes are prepared in a dedicated pre-release PR)
 
 ## CLA (Contributor License Agreement)
 

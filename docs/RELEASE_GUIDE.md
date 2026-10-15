@@ -13,7 +13,8 @@ never set it by hand.
 
 ## How a release happens
 
-Start the **Release DYA Studio** workflow (`.github/workflows/release.yml`)
+First complete and merge the dedicated release-notes PR described below. Then
+start the **Release DYA Studio** workflow (`.github/workflows/release.yml`)
 manually (`workflow_dispatch`). It:
 
 1. Runs `node scripts/release.ts`, which resolves the next `YYYY.MM.DD.N` from
@@ -43,10 +44,30 @@ The version-resolution and JSON-rewrite logic lives in
 `src/lib/releaseVersioning.ts` and is unit-tested
 (`src/lib/__tests__/releaseVersioning.test.ts`).
 
-## Editing release notes in a PR
+## Prepare release notes once before a release
 
-**When your PR adds or changes something a user would notice, add an entry to
-the `upcoming` section of `src/i18n/releaseNotes.json`.**
+**Do not edit `src/i18n/releaseNotes.json` in individual feature or fix PRs.**
+Describe the user-visible outcome in each PR instead. This avoids conflicts
+between parallel PRs that would otherwise edit the same `upcoming` section.
+
+After the changes intended for a release have merged, run the
+[release-notes skill](../.agents/skills/release-notes/SKILL.md) once for that
+release candidate:
+
+1. Establish the latest released `v<version>` tag and record the reviewed
+   `origin/main` commit. Review `git log <tag>..origin/main` and the merged PR
+   descriptions and diffs; exclude unmerged work.
+2. Reconcile the user-visible outcomes with `upcoming`: add missing items,
+   combine related changes, remove duplicates or stale entries, and check the
+   translations and categories.
+3. Open one dedicated release-notes PR, validate it, and merge it after review
+   and passing CI. If more feature or fix PRs merge before dispatch, reconcile
+   the additional range into this preparation before proceeding.
+4. Dispatch **Release DYA Studio** only after those notes have merged. The
+   workflow promotes the prepared notes; it does not discover or summarize
+   changes for you.
+
+### Entry format for the dedicated release-notes PR
 
 - The `upcoming` section is the first entry in `releases`, with
   `"version": "upcoming"`. **If it is missing, create it** at the top of

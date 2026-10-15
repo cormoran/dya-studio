@@ -1,17 +1,24 @@
 ---
 name: release-notes
-description: Curate DYA Studio's Upcoming release notes from merged pull requests, a pending PR, or a pre-release git-log review. Use when adding, revising, or validating the in-app release notes.
+description: Curate DYA Studio's Upcoming release notes once before a release from merged PRs and git history. Use for pre-release preparation, not individual feature or fix PRs.
 ---
 
 # DYA Studio Release Notes
 
 Keep the `upcoming` entry in `src/i18n/releaseNotes.json` a concise, user-facing account of changes since the last shipped release. Read [the release guide](../../../docs/RELEASE_GUIDE.md), then inspect the current JSON and [its data contract](../../../src/i18n/releaseNotes.ts) before editing.
 
-## Select the mode
+## Run once before a release
 
-- **Merged-change update:** Find the latest released version and its matching `v<version>` tag. Review only commits and merged PRs in `<tag>..origin/main`; use PR titles, descriptions, and diffs to identify the user outcome. Do not infer a release-note item from commit subjects alone.
-- **Before creating a PR:** Review the proposed PR's committed range and working-tree diff against its target base. Add the user-visible outcome to `upcoming` even though the PR has not been created. Do not invent a PR number; a later run may add the known `pr` field.
-- **Pre-release validation:** Rebuild the candidate list from the latest release tag through `origin/main` with `git log`, and compare it semantically with `upcoming`. Add omitted user-visible outcomes, remove duplicates or stale entries, improve wording and category placement, and leave out unmerged work.
+Do not update `src/i18n/releaseNotes.json` in individual feature or fix PRs, and do not run this skill as part of their PR creation. Describe user-visible outcomes in those PRs so the pre-release review can find them. Shared-file edits from parallel PRs cause avoidable merge conflicts.
+
+Run this skill once for the release candidate, after its feature and fix PRs have merged and before dispatching **Release DYA Studio**:
+
+1. Find the latest released version and its matching `v<version>` tag. Record the reviewed `origin/main` commit and use `git log <tag>..origin/main` to identify the candidate changes.
+2. Review merged PR titles, descriptions, and diffs to identify user outcomes. Do not infer a release-note item from commit subjects alone, and leave out unmerged work.
+3. Compare the candidates semantically with `upcoming`. Add omitted outcomes, remove duplicates or stale entries, and improve wording and category placement. Existing entries are not evidence of complete coverage.
+4. Submit one dedicated release-notes PR for the release candidate. Merge it after checks and review, before dispatching the release workflow. This skill prepares notes; it does not dispatch or publish a release.
+
+If more feature or fix PRs merge before dispatch, reconcile only the additional range into the same preparation before releasing. Avoid competing release-notes PRs for the same candidate.
 
 When the local history or tags are incomplete, fetch only after obtaining the authorization normally required for network-changing commands. If a matching tag cannot be established, report the uncertainty and use the newest dated release record plus the available history; do not silently claim complete coverage.
 

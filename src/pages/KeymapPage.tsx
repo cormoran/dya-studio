@@ -172,6 +172,8 @@ export function KeymapPage() {
   const [showMobileRestoreMenu, setShowMobileRestoreMenu] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState(false);
+  const renamingRef = useRef(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
   // Guards the deferred macro load so it fires once per keymap load; reset when
   // a new load starts (see the effect below).
@@ -614,6 +616,7 @@ export function KeymapPage() {
         const layer = keymap.keymap.layers[selectedLayerIndex];
         if (!layer) return;
         setRenameValue(layer.name);
+        setRenameError(false);
         setShowRenameDialog(true);
       }),
     [keymap.keymap?.layers, selectedLayerIndex, withUnlock],
@@ -621,14 +624,23 @@ export function KeymapPage() {
 
   // Handle rename confirm
   const handleRenameConfirm = useCallback(async () => {
+    if (renamingRef.current || !renameValue) return;
     if (!keymap.keymap?.layers) return;
     const layer = keymap.keymap.layers[selectedLayerIndex];
     if (!layer) return;
+    renamingRef.current = true;
     setIsRenaming(true);
+    setRenameError(false);
     try {
-      await keymap.setLayerName(layer.id, renameValue);
-      setShowRenameDialog(false);
+      if (await keymap.setLayerName(layer.id, renameValue)) {
+        setShowRenameDialog(false);
+      } else {
+        setRenameError(true);
+      }
+    } catch {
+      setRenameError(true);
     } finally {
+      renamingRef.current = false;
       setIsRenaming(false);
     }
   }, [keymap, selectedLayerIndex, renameValue]);
@@ -1797,7 +1809,9 @@ export function KeymapPage() {
       {/* Rename Layer Dialog */}
       <Dialog.Root
         open={showRenameDialog}
-        onOpenChange={(open) => !open && setShowRenameDialog(false)}
+        onOpenChange={(open) => {
+          if (!open && !renamingRef.current) setShowRenameDialog(false);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000]" />
@@ -1816,15 +1830,23 @@ export function KeymapPage() {
               ref={renameInputRef}
               type="text"
               value={renameValue}
+              disabled={isRenaming}
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") void handleRenameConfirm();
-                if (e.key === "Escape") setShowRenameDialog(false);
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  void handleRenameConfirm();
+                }
               }}
               maxLength={keymap.maxLayerNameLength || undefined}
               className="w-full px-3 py-2 rounded-lg bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)] mb-4"
               placeholder={t("Layer name")}
             />
+            {renameError && (
+              <p role="alert" className="text-sm text-red-400 mb-4">
+                {t("Failed to rename layer. Please try again.")}
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 className="flex-1 btn-ghost border border-[var(--color-border)]"
@@ -1837,7 +1859,7 @@ export function KeymapPage() {
                 type="button"
                 className="flex-1 btn-electric flex items-center justify-center gap-2"
                 onClick={() => void handleRenameConfirm()}
-                disabled={isRenaming}
+                disabled={isRenaming || !renameValue}
               >
                 {isRenaming && (
                   <IconLoader2 size={16} className="animate-spin" />

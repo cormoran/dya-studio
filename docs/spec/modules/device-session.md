@@ -50,6 +50,8 @@
 | SESSION-010 | unlock prompt → Cancel / overlay close             | parked RPC を `StudioUnlockCancelledError` で reject、pending editor action を破棄。約 1 秒の quiet cooldown 中の後続 unlock error は modal を再表示せず cancel | cooldown は実際の unlock で解除                                                                                                                    | S5/S6                                       |
 | SESSION-011 | 接続後に custom subsystem list が得られる          | custom subsystem identifier/index を consumer が availability 判定に使用する。Demo の toggle 変更は reconnect 後に初めて list へ反映                            | capability は connection-scoped。前 session の availability を継続保証しない                                                                       | S1/S2、[Subsystems](../pages/subsystems.md) |
 
+- SESSION-012: Demo の keymap `setLayerProps` は現在の配列位置ではなく stable layer ID に対して名前を更新し、成功で dirty になる。無効 ID は `SET_LAYER_PROPS_RESP_ERR_INVALID_ID`、名前の UTF-8 バイト数が advertised max length（終端を含む）以上なら `SET_LAYER_PROPS_RESP_ERR_GENERIC` を返し、値・dirty を変えない。空名は official protocol と同じ成功の no-op。`saveChanges` はその接続のメモリ内保存値を更新して dirty を解除し、`discardChanges` はその保存値へ復帰する。`getKeymap` / ページの Reload は同一接続の値を再読取りし、browser reload・再接続では新規 Demo の初期値になる。実機 flash や電源断 persistence の証拠ではない。consumer は [Keymap KM-012](../pages/keymap.md)、根拠 S7、[#255](https://github.com/cormoran/dya-studio/issues/255)。
+
 ## 代表ユーザーフロー
 
 ### F1: explicit Demo 接続と切断（SESSION-002/003/007）

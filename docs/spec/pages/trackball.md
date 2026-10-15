@@ -48,6 +48,8 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 | TRACK-009 | `Versions` から snapshot を選ぶ                                 | diff modal を経て restore の入口                                                                                        | IndexedDB 等の履歴契約は [version history](../modules/version-history.md)。processor firmware default reset は提供しない | S1    |
 | TRACK-010 | mobile dropdown で processor / PMW3610 driver を選ぶ            | menu が閉じ、選択種別と項目名を二段表示して直下の detail を切り替える。driver の未保存 dot は trigger / item に表示する | 選択だけでは書込まない。隣接 Reload は選択中の subsystem だけを再読込する                                                | S1/S4 |
 
+TRACK-003〜007 の processor switch は、表示中の設定名と選択中 processor 名を含むローカライズ済み accessible name を持ち、`checked` 状態をその processor の現在値に一致させる。日本語・英語の両方で確認する。
+
 ### 慣性と動作確認（2026-09-26 追加）
 
 根拠 S6: [InertiaPreviewGraph](../../../src/components/trackball/InertiaPreviewGraph.tsx)、[inertiaSimulation](../../../src/lib/inertiaSimulation.ts)、[C参照値との比較テスト](../../../src/lib/__tests__/inertiaSimulation.test.ts)。#28 commitのC関数をホストでコンパイルして生成した7ケースの全出力tick列との一致を確認（物理デバイスの検証とは別）。参照値の再生成は[ホストC検証スクリプト](../../../scripts/generate-inertia-simulation-fixtures.py)を参照する。

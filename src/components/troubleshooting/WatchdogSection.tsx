@@ -199,6 +199,7 @@ export function WatchdogSection({
     await deleteAll();
   };
 
+  const hasData = isAvailable && !isLoading && !error && status !== null;
   const hasFatalIncidents = incidents.some((i) => i.fatal);
 
   return (
@@ -212,7 +213,7 @@ export function WatchdogSection({
       title={t("Stability (Watchdog)")}
       subtitle={t("Freeze, crash and unexpected reset incidents")}
       summary={
-        status && (
+        hasData && (
           <>
             {incidents.length > 0 ? (
               <SectionSummaryBadge
@@ -263,7 +264,6 @@ export function WatchdogSection({
               <button
                 key={s}
                 onClick={() => setSource(s)}
-                disabled={isLoading}
                 className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
                   source === s
                     ? "bg-[var(--color-electric)]/10 border-[var(--color-electric)]/40 text-[var(--color-electric)]"
@@ -278,7 +278,7 @@ export function WatchdogSection({
           {error && <SectionError message={error} />}
 
           {/* Status */}
-          {status && (
+          {hasData && (
             <div className="flex flex-wrap gap-4 mb-4 text-xs text-[var(--color-text-secondary)]">
               <span>
                 {t("Capacity")}: <strong>{status.capacity}</strong>
@@ -292,7 +292,7 @@ export function WatchdogSection({
               </span>
             </div>
           )}
-          {status?.recordingStopped && (
+          {hasData && status?.recordingStopped && (
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
               <IconAlertTriangle
                 size={16}
@@ -307,14 +307,14 @@ export function WatchdogSection({
           )}
 
           {/* ELF upload — shown when there are crash incidents */}
-          {hasFatalIncidents && elfAnalysis && (
+          {hasData && hasFatalIncidents && elfAnalysis && (
             <ElfUploadBar elfAnalysis={elfAnalysis} t={t} />
           )}
 
           {/* Incident table / loading / empty state */}
-          {isLoading && !status ? (
+          {isLoading ? (
             <LoadingIndicator variant="inline" label={t("Loading")} />
-          ) : incidents.length === 0 ? (
+          ) : !hasData ? null : incidents.length === 0 ? (
             <div className="p-4 rounded-lg border border-dashed border-[var(--color-border)] flex items-center gap-2">
               <IconCircleCheck size={18} className="text-green-400" />
               <span className="text-sm text-[var(--color-text-muted)]">

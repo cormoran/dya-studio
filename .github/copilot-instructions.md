@@ -14,11 +14,9 @@ Please always run tests and lint after making changes to ensure nothing is broke
 
 ## Release notes
 
-When a change is user-visible, add an entry to the `upcoming` section of
-`src/i18n/releaseNotes.json`. If the `upcoming` section is missing, create it at
-the top of `releases` (`{ "version": "upcoming", "date": null, "changes": { "major": [], "minor": [], "patch": [] } }`).
-Each entry is `{ "en": "...", "ja": "..." }` (write both languages) and goes
-under `major`, `minor`, or `patch` according to its user impact. Optionally add
-a `pr` field (a number or array of numbers) to link the pull request(s). See
-`docs/RELEASE_GUIDE.md` for the classification rules and how releases are cut.
-Purely internal changes (refactors, tests, CI) don't need an entry.
+Do not update `src/i18n/releaseNotes.json` in individual feature or fix PRs.
+Describe user-visible outcomes in the PR so the pre-release review can find them.
+Run the repository [release-notes skill](../.agents/skills/release-notes/SKILL.md)
+once before a release to curate merged changes in one dedicated release-notes
+PR. Merge that PR before dispatching the release workflow. See
+`docs/RELEASE_GUIDE.md` for the preparation process and classification rules.
