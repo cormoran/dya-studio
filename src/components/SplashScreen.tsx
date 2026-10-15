@@ -3,7 +3,7 @@ import {
   IconBluetooth,
   IconUsb,
   IconDeviceDesktop,
-  IconArrowUp,
+  IconBrandGithub,
 } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
@@ -174,68 +174,96 @@ export function SplashScreen({
           <div className="flex flex-col items-center gap-4">
             {/* Device connection buttons */}
             <div className="flex gap-6">
-              <button
-                onClick={() => handleConnectClick("serial")}
-                disabled={isConnecting}
-                className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
-                aria-label={t("Connect via USB")}
-                title={t("Connect via USB")}
-              >
-                <IconUsb
-                  size={28}
-                  className="text-[var(--color-electric)] relative z-10"
-                  strokeWidth={1.5}
-                />
-                {isConnecting && (
-                  <DisabledSlash color="bg-[var(--color-electric)]" />
-                )}
-              </button>
-              <button
-                onClick={() => handleConnectClick("ble")}
-                disabled={isConnecting}
-                className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
-                aria-label={t("Connect via Bluetooth")}
-                title={t("Connect via Bluetooth")}
-              >
-                <IconBluetooth
-                  size={28}
-                  className="text-[var(--color-neon)] relative z-10"
-                  strokeWidth={1.5}
-                />
-                {isConnecting && (
-                  <DisabledSlash color="bg-[var(--color-neon)]" />
-                )}
-              </button>
-              <button
-                onClick={() => handleConnectClick("demo")}
-                disabled={isConnecting}
-                className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
-                aria-label={t("Try Demo Mode")}
-                title={t("Try Demo Mode (no device required)")}
-              >
-                <IconDeviceDesktop
-                  size={28}
-                  className="text-[var(--color-cyber)] relative z-10"
-                  strokeWidth={1.5}
-                />
-                {isConnecting && (
-                  <DisabledSlash color="bg-[var(--color-cyber)]" />
-                )}
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => handleConnectClick("serial")}
+                  disabled={isConnecting}
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+                  aria-label={t("Connect via USB")}
+                  title={t("Connect via USB")}
+                >
+                  <IconUsb
+                    size={28}
+                    className="text-[var(--color-electric)] relative z-10"
+                    strokeWidth={1.5}
+                  />
+                  {isConnecting && (
+                    <DisabledSlash color="bg-[var(--color-electric)]" />
+                  )}
+                </button>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  USB
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => handleConnectClick("ble")}
+                  disabled={isConnecting}
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
+                  aria-label={t("Connect via Bluetooth")}
+                  title={t("Connect via Bluetooth")}
+                >
+                  <IconBluetooth
+                    size={28}
+                    className="text-[var(--color-neon)] relative z-10"
+                    strokeWidth={1.5}
+                  />
+                  {isConnecting && (
+                    <DisabledSlash color="bg-[var(--color-neon)]" />
+                  )}
+                </button>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  BLE
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => handleConnectClick("demo")}
+                  disabled={isConnecting}
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                  aria-label={t("Try Demo Mode")}
+                  title={t("Try Demo Mode (no device required)")}
+                >
+                  <IconDeviceDesktop
+                    size={28}
+                    className="text-[var(--color-cyber)] relative z-10"
+                    strokeWidth={1.5}
+                  />
+                  {isConnecting && (
+                    <DisabledSlash color="bg-[var(--color-cyber)]" />
+                  )}
+                </button>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  Demo
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Demo mode hint */}
-          <motion.p
-            className="text-xs text-[var(--color-text-muted)] mt-2 text-center leading-tight"
+          {/* Release and preview links */}
+          <motion.div
+            className="flex flex-col items-center gap-2 mt-2 text-xs text-[var(--color-text-muted)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
           >
-            {t("Try demo mode without a keyboard")}
-            <br />
-            <IconArrowUp size={14} className="inline-block" />
-          </motion.p>
+            <button
+              onClick={onShowReleaseNotes}
+              className="hover:text-[var(--color-electric)] transition-colors underline"
+            >
+              {version
+                ? t("Release notes ({{version}})", { version })
+                : t("Release notes")}
+            </button>
+            <a
+              href="https://dya-studio-dev.cormoran707.workers.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--color-electric)] transition-colors underline"
+            >
+              {t("Try the Beta version")}
+            </a>
+          </motion.div>
         </motion.div>
       </motion.div>
       {/* Loading indicator */}
@@ -261,33 +289,45 @@ export function SplashScreen({
       )}
 
       {/* Tagline */}
-      <motion.p
-        className="absolute bottom-12 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
+      <motion.div
+        className="absolute bottom-12 flex items-center gap-3 px-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        {t("DYA Studio is maintained by")}
         <a
-          href="https://x.com/cormoran707"
+          href="https://github.com/cormoran/dya-studio"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline mx-1"
+          aria-label={t("DYA Studio on GitHub")}
+          title={t("DYA Studio on GitHub")}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:text-[var(--color-electric)] transition-colors"
         >
-          @cormoran707
+          <IconBrandGithub size={24} strokeWidth={1.5} aria-hidden="true" />
         </a>
-        <br />
-        {t("Special thanks to")}
-        <a
-          href="https://zmk.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline mx-1"
-        >
-          {t("ZMK community")}
-        </a>
-        .
-      </motion.p>
+        <p>
+          {t("DYA Studio is maintained by")}
+          <a
+            href="https://x.com/cormoran707"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline mx-1"
+          >
+            @cormoran707
+          </a>
+          <br />
+          {t("Special thanks to")}
+          <a
+            href="https://zmk.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline mx-1"
+          >
+            {t("ZMK community")}
+          </a>
+          .
+        </p>
+      </motion.div>
 
       {/* Standalone documentation links */}
       <motion.div
@@ -301,14 +341,6 @@ export function SplashScreen({
           className="hover:text-[var(--color-electric)] transition-colors underline"
         >
           {t("Keyboard developer guide")}
-        </button>
-        <button
-          onClick={onShowReleaseNotes}
-          className="hover:text-[var(--color-electric)] transition-colors underline"
-        >
-          {version
-            ? t("Release notes ({{version}})", { version })
-            : t("Release notes")}
         </button>
       </motion.div>
 
