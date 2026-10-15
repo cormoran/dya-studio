@@ -1,10 +1,5 @@
 import { motion } from "framer-motion";
-import {
-  IconBluetooth,
-  IconUsb,
-  IconDeviceDesktop,
-  IconBrandGithub,
-} from "@tabler/icons-react";
+import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
@@ -12,6 +7,10 @@ import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "../hooks/useLanguage";
 import { getCurrentVersion } from "../i18n/releaseNotes";
+import { EditorTooltip } from "./EditorTooltip";
+import { useTheme } from "../hooks/useTheme";
+import githubMarkBlack from "../assets/github/GitHub_Invertocat_Black.svg";
+import githubMarkWhite from "../assets/github/GitHub_Invertocat_White.svg";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -62,6 +61,7 @@ export function SplashScreen({
   onShowDeveloperGuide,
 }: SplashScreenProps) {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const version = getCurrentVersion();
   // Dialog state
   const [showNotice, setShowNotice] = useState(false);
@@ -288,23 +288,46 @@ export function SplashScreen({
         </motion.div>
       )}
 
+      {/* Standalone documentation links */}
+      <motion.div
+        className="absolute bottom-20 flex items-center gap-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.1 }}
+      >
+        <button
+          onClick={onShowDeveloperGuide}
+          className="hover:text-[var(--color-electric)] transition-colors underline"
+        >
+          {t("Keyboard developer guide")}
+        </button>
+      </motion.div>
+
       {/* Tagline */}
       <motion.div
-        className="absolute bottom-12 flex items-center gap-3 px-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
+        className="absolute bottom-5 flex items-center gap-3 px-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <a
-          href="https://github.com/cormoran/dya-studio"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t("DYA Studio on GitHub")}
-          title={t("DYA Studio on GitHub")}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:text-[var(--color-electric)] transition-colors"
-        >
-          <IconBrandGithub size={24} strokeWidth={1.5} aria-hidden="true" />
-        </a>
+        <EditorTooltip content="https://github.com/cormoran/dya-studio">
+          <a
+            href="https://github.com/cormoran/dya-studio"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t("DYA Studio on GitHub")}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity"
+          >
+            <img
+              src={theme === "light" ? githubMarkBlack : githubMarkWhite}
+              width={24}
+              height={24}
+              className="object-contain"
+              alt=""
+              aria-hidden="true"
+            />
+          </a>
+        </EditorTooltip>
         <p>
           {t("DYA Studio is maintained by")}
           <a
@@ -327,21 +350,6 @@ export function SplashScreen({
           </a>
           .
         </p>
-      </motion.div>
-
-      {/* Standalone documentation links */}
-      <motion.div
-        className="absolute bottom-5 flex items-center gap-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.1 }}
-      >
-        <button
-          onClick={onShowDeveloperGuide}
-          className="hover:text-[var(--color-electric)] transition-colors underline"
-        >
-          {t("Keyboard developer guide")}
-        </button>
       </motion.div>
 
       {/* Connection Notice Dialog */}

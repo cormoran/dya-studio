@@ -52,7 +52,7 @@
 
 - SESSION-012: Demo の keymap `setLayerProps` は現在の配列位置ではなく stable layer ID に対して名前を更新し、成功で dirty になる。無効 ID は `SET_LAYER_PROPS_RESP_ERR_INVALID_ID`、名前の UTF-8 バイト数が advertised max length（終端を含む）以上なら `SET_LAYER_PROPS_RESP_ERR_GENERIC` を返し、値・dirty を変えない。空名は official protocol と同じ成功の no-op。`saveChanges` はその接続のメモリ内保存値を更新して dirty を解除し、`discardChanges` はその保存値へ復帰する。`getKeymap` / ページの Reload は同一接続の値を再読取りし、browser reload・再接続では新規 Demo の初期値になる。実機 flash や電源断 persistence の証拠ではない。consumer は [Keymap KM-012](../pages/keymap.md)、根拠 S7、[#255](https://github.com/cormoran/dya-studio/issues/255)。
 
-- SESSION-013: 未接続の splash では接続アイコンの下に `USB` / `BLE` / `Demo` を常時表示する。従来の Demo 案内文・矢印に代えて、現在のリリース済みバージョンを含むリリースノートへの操作と `Try the Beta version`（日本語: `Beta 版を試す`）を別行に表示する。バージョン未定義時は `Release notes` のみ表示。Beta リンクは `https://dya-studio-dev.cormoran707.workers.dev` を別タブで開く。footer のクレジット左に accessible name を持つ GitHub アイコンを表示し、`https://github.com/cormoran/dya-studio` を別タブで開く。開発者ガイドは footer 下段に維持する。これらの表示・リンク操作で接続やキーボード設定を書き換えない。根拠: ユーザー明示要求（2026-10-16）、S4 `SplashScreen`、`getCurrentVersion`。
+- SESSION-013: 未接続の splash では接続アイコンの下に `USB` / `BLE` / `Demo` を常時表示する。従来の Demo 案内文・矢印に代えて、現在のリリース済みバージョンを含むリリースノートへの操作と `Try the Beta version`（日本語: `Beta 版を試す`）を別行に表示する。バージョン未定義時は `Release notes` のみ表示。Beta リンクは `https://dya-studio-dev.cormoran707.workers.dev` を別タブで開く。footer のクレジット左に accessible name を持つ GitHub 公式 Invertocat アイコン（light theme は黒、dark theme は白）を表示し、`https://github.com/cormoran/dya-studio` を別タブで開く。GitHub リンクのマウス hover / keyboard focus ではリンク先 URL を tooltip に表示する（共通 `EditorTooltip` を利用）。開発者ガイドへのリンクは GitHub アイコンとクレジットの行より上に表示する。これらの表示・リンク操作で接続やキーボード設定を書き換えない。根拠: ユーザー明示要求（2026-10-16）、S4 `SplashScreen`、`getCurrentVersion`。
 
 ## 代表ユーザーフロー
 
