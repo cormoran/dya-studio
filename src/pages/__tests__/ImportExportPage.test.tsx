@@ -71,6 +71,38 @@ describe("ImportExportPage", () => {
     expect(login).toHaveBeenCalled();
   });
 
+  it("explains missing OAuth configuration and disables sign-in", async () => {
+    const login = jest.fn();
+    mockUseAbyssAuth.mockReturnValue(auth({ isConfigured: false, login }));
+
+    render(<ImportExportPage />);
+
+    const signIn = screen.getByRole("button", { name: /Sign in with Abyss/ });
+    expect(signIn).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Abyss sign-in is unavailable because this build has no OAuth client configuration.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/A sign-in window opens at/),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(signIn);
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it("keeps sign-in disabled while configured auth is loading", () => {
+    mockUseAbyssAuth.mockReturnValue(auth({ isLoading: true }));
+
+    render(<ImportExportPage />);
+
+    expect(
+      screen.getByRole("button", { name: /Sign in with Abyss/ }),
+    ).toBeDisabled();
+    expect(screen.getByText(/A sign-in window opens at/)).toBeInTheDocument();
+  });
+
   it("renders an auth error", () => {
     mockUseAbyssAuth.mockReturnValue(
       auth({ error: "Could not reach Abyss. Check your network connection." }),
