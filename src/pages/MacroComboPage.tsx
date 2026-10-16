@@ -295,6 +295,13 @@ export function MacroComboPage() {
       return;
     savingRef.current = true;
     setIsSaving(true);
+    comboEditor.setStatusMessage(null);
+    // Saving/flush clears dirty flags. Availability alone does not mean that
+    // this attempt includes changes in that domain.
+    const macroChanged =
+      macroAvailable &&
+      (runtimeMacro.hasUnsavedChanges || macroEditor.isMemoryWritePending);
+    const comboChanged = comboAvailable && runtimeCombo.hasPendingChanges;
     try {
       // Flush any queued debounced edits so they are part of this persist.
       if (!(await macroEditor.flushPendingWrites())) return;
@@ -303,14 +310,24 @@ export function MacroComboPage() {
         if (!(await runtimeMacro.saveMacros())) return;
         macroEditor.clearGlobalModified();
       }
+      let comboCount = 0;
       if (comboAvailable) {
         const status = await runtimeCombo.saveChanges();
         if (!status) return;
         comboEditor.clearModified();
+        comboCount = status.affectedCount;
+      }
+      if (macroChanged || comboChanged) {
         comboEditor.setStatusMessage(
-          t("Saved {{count}} runtime combo changes.", {
-            count: status.affectedCount,
-          }),
+          macroChanged
+            ? comboChanged
+              ? t("Saved runtime macros and {{count}} runtime combo changes.", {
+                  count: comboCount,
+                })
+              : t("Saved runtime macro changes.")
+            : t("Saved {{count}} runtime combo changes.", {
+                count: comboCount,
+              }),
         );
       }
       // What is now on the keyboard is worth keeping as a version.
@@ -615,7 +632,10 @@ export function MacroComboPage() {
         )}
 
         {comboEditor.statusMessage && (
-          <div className="glass-card p-3 mb-4 border-[var(--color-electric)]/20 bg-[var(--color-electric)]/10">
+          <div
+            role="status"
+            className="glass-card p-3 mb-4 border-[var(--color-electric)]/20 bg-[var(--color-electric)]/10"
+          >
             <p className="text-sm text-[var(--color-electric)]">
               {comboEditor.statusMessage}
             </p>

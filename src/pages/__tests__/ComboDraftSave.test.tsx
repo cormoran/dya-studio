@@ -247,6 +247,11 @@ describe.each([MacroComboPage, KeymapPage])(
       expect(
         screen.queryByText(/has not been applied or saved/),
       ).not.toBeInTheDocument();
+      if (Page === MacroComboPage) {
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Saved runtime macro changes.",
+        );
+      }
     });
 
     it("cannot persist an unrelated edit while a retained 17-position draft is invalid", async () => {
@@ -332,6 +337,11 @@ describe.each([MacroComboPage, KeymapPage])(
       expect(saveCombo).toHaveBeenCalledTimes(1);
       expect(saved.keyPositions).toEqual(positions(16));
       expect(saved.name).toBe("Boundary updated chord");
+      if (Page === MacroComboPage) {
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Saved runtime macros and 1 runtime combo changes.",
+        );
+      }
       await act(async () => runtime.reload());
       const readback = await open(user);
       expect(readback.getByLabelText("Positions")).toHaveValue(

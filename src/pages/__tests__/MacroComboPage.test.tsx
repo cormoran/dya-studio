@@ -21,18 +21,21 @@ import {
 const mockCall = jest.fn();
 const mockUnlock = jest.fn(() => true);
 const mockCapture = jest.fn();
+let mockMacroAvailable = true;
 const mockCombo = {
   isAvailable: false,
   isLoading: false,
   hasPendingChanges: false,
   globalSettings: null,
   combos: [],
-  error: null,
+  error: null as string | null,
+  saveChanges: jest.fn(),
+  reload: jest.fn(),
 };
 jest.mock("../../hooks/useCustomSubsystem", () => ({
   useCustomSubsystem: () => ({
-    subsystem: { index: 0 },
-    ready: true,
+    subsystem: mockMacroAvailable ? { index: 0 } : null,
+    ready: mockMacroAvailable,
     call: mockCall,
   }),
 }));
@@ -70,7 +73,15 @@ let deferWrites: boolean;
 beforeEach(() => {
   jest.clearAllMocks();
   mockUnlock.mockReturnValue(true);
+  mockMacroAvailable = true;
   mockCombo.isLoading = false;
+  mockCombo.isAvailable = false;
+  mockCombo.hasPendingChanges = false;
+  mockCombo.error = null;
+  mockCombo.saveChanges.mockImplementation(async () => {
+    mockCombo.hasPendingChanges = false;
+    return { affectedCount: 3 };
+  });
   ram = [
     MacroDetail.create({
       slot: 0,
@@ -144,7 +155,7 @@ async function openPage() {
       <MacroComboPage />
     </ConnectionContext.Provider>,
   );
-  await screen.findByDisplayValue("aa");
+  if (mockMacroAvailable) await screen.findByDisplayValue("aa");
   return user;
 }
 async function completeWrite() {
@@ -165,12 +176,16 @@ it("accepts the first direct Save after typing, waits for RAM, prevents duplicat
   expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Save" }));
   expect(saveCalls()).toHaveLength(0);
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
   await completeWrite();
   await waitFor(() => expect(saveCalls()).toHaveLength(1));
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled(),
   );
   expect(getKeyTapSequenceString(flash[0].steps[0])).toBe("immediate");
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Saved runtime macro changes.",
+  );
   expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Refresh" }));
   await user.click(screen.getByRole("button", { name: "Existing" }));
@@ -205,6 +220,7 @@ it.each(["RAM", "flash"])(
     );
     expect(getKeyTapSequenceString(flash[0].steps[0])).toBe("aa");
     expect(mockCapture).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(saveCalls()).toHaveLength(kind === "RAM" ? 0 : 1);
     if (kind === "RAM") {
       // A later click alone must not persist the stale RAM value.
@@ -280,3 +296,120 @@ it.each(["invalid string", "oversized string", "combo loading"])(
     expect(saveCalls()).toHaveLength(0);
   },
 );
+
+it.each([
+  ["macro", "Saved runtime macro changes."],
+  ["combo", "Saved 3 runtime combo changes."],
+  ["mixed", "Saved runtime macros and 3 runtime combo changes."],
+])(
+  "reports only changed domains for %s edits when both are available",
+  async (domain, message) => {
+    mockCombo.isAvailable = true;
+    mockCombo.hasPendingChanges = domain !== "macro";
+    const user = await openPage();
+    if (domain !== "combo") {
+      await user.clear(screen.getByDisplayValue("aa"));
+      await user.type(screen.getAllByRole("textbox")[1], "changed");
+    }
+    mockCapture.mockClear();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    if (domain !== "combo") {
+      expect(mockCombo.saveChanges).not.toHaveBeenCalled();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      await completeWrite();
+    }
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(message),
+    );
+    expect(saveCalls()).toHaveLength(1);
+    expect(mockCombo.saveChanges).toHaveBeenCalledTimes(1);
+    expect(mockCapture).toHaveBeenCalledTimes(1);
+    expect(getKeyTapSequenceString(flash[0].steps[0])).toBe(
+      domain === "combo" ? "aa" : "changed",
+    );
+  },
+);
+
+it("clears an earlier success before a delayed attempt and reports no overall success after partial failure", async () => {
+  mockCombo.isAvailable = true;
+  const user = await openPage();
+  await user.clear(screen.getByDisplayValue("aa"));
+  await user.type(screen.getAllByRole("textbox")[1], "first");
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  await completeWrite();
+  await screen.findByText("Saved runtime macro changes.");
+
+  mockCombo.hasPendingChanges = true;
+  mockCombo.saveChanges.mockImplementation(async () => {
+    mockCombo.error = "Combo save failed";
+    return null;
+  });
+  finishWrite = undefined;
+  await user.clear(screen.getByDisplayValue("first"));
+  await user.type(screen.getAllByRole("textbox")[1], "second");
+  mockCapture.mockClear();
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mockCombo.saveChanges).toHaveBeenCalledTimes(1);
+  await completeWrite();
+  await screen.findByText("Combo save failed");
+  expect(getKeyTapSequenceString(flash[0].steps[0])).toBe("second");
+  expect(mockCombo.hasPendingChanges).toBe(true);
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mockCapture).not.toHaveBeenCalled();
+});
+
+it("does not save combos or report success when the macro save fails in a mixed attempt", async () => {
+  mockCombo.isAvailable = true;
+  mockCombo.hasPendingChanges = true;
+  failSave = true;
+  const user = await openPage();
+  await user.clear(screen.getByDisplayValue("aa"));
+  await user.type(screen.getAllByRole("textbox")[1], "failed");
+  mockCapture.mockClear();
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  await completeWrite();
+  await screen.findByText("Flash save failed");
+  expect(mockCombo.saveChanges).not.toHaveBeenCalled();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mockCapture).not.toHaveBeenCalled();
+});
+
+it("does not report success or save when nothing changed", async () => {
+  mockCombo.isAvailable = true;
+  const user = await openPage();
+  const save = screen.getByRole("button", { name: "Save" });
+  expect(save).toBeDisabled();
+  await user.click(save);
+  expect(saveCalls()).toHaveLength(0);
+  expect(mockCombo.saveChanges).not.toHaveBeenCalled();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+it("saves combo-only firmware without claiming macros were saved", async () => {
+  mockMacroAvailable = false;
+  mockCombo.isAvailable = true;
+  mockCombo.hasPendingChanges = true;
+  const user = await openPage();
+  mockCapture.mockClear();
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() =>
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Saved 3 runtime combo changes.",
+    ),
+  );
+  expect(saveCalls()).toHaveLength(0);
+  expect(mockCombo.saveChanges).toHaveBeenCalledTimes(1);
+  expect(mockCapture).toHaveBeenCalledTimes(1);
+});
+
+it("does not offer Save when neither subsystem is available", async () => {
+  mockMacroAvailable = false;
+  await openPage();
+  expect(
+    screen.queryByRole("button", { name: "Save" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(saveCalls()).toHaveLength(0);
+  expect(mockCombo.saveChanges).not.toHaveBeenCalled();
+});

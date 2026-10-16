@@ -591,6 +591,9 @@ const ja: Record<string, string> = {
   "Global settings are pending.": "グローバル設定の変更が保留中です。",
   "Saved {{count}} runtime combo changes.":
     "ランタイムコンボの変更を {{count}} 件保存しました。",
+  "Saved runtime macro changes.": "ランタイムマクロの変更を保存しました。",
+  "Saved runtime macros and {{count}} runtime combo changes.":
+    "ランタイムマクロの変更とランタイムコンボの変更 {{count}} 件を保存しました。",
   "Discarded {{count}} runtime combo changes.":
     "ランタイムコンボの変更を {{count}} 件破棄しました。",
   "● Pending changes": "● 保留中の変更",
@@ -802,7 +805,8 @@ const ja: Record<string, string> = {
   "Connect via Bluetooth": "Bluetooth で接続",
   "Try Demo Mode": "デモモードを試す",
   "Try Demo Mode (no device required)": "デモモードを試す（デバイス不要）",
-  "Try demo mode without a keyboard": "キーボードなしでデモモードを試せます",
+  "Try the Beta version": "Beta 版を試す",
+  "DYA Studio on GitHub": "DYA Studio の GitHub リポジトリ",
   "Reconnecting to your keyboard...": "キーボードに再接続中...",
   "DYA Studio is maintained by": "DYA Studio のメンテナー",
   "Special thanks to": "Special thanks to",
@@ -2111,6 +2115,9 @@ const zh: Record<string, string> = {
   "Global settings are pending.": "全局设置待处理。",
   "Saved {{count}} runtime combo changes.":
     "已保存 {{count}} 项运行时组合键更改。",
+  "Saved runtime macro changes.": "已保存运行时宏更改。",
+  "Saved runtime macros and {{count}} runtime combo changes.":
+    "已保存运行时宏更改和 {{count}} 项运行时组合键更改。",
   "Discarded {{count}} runtime combo changes.":
     "已放弃 {{count}} 项运行时组合键更改。",
   "● Pending changes": "● 待处理的更改",
@@ -2308,7 +2315,8 @@ const zh: Record<string, string> = {
   "Connect via Bluetooth": "通过蓝牙连接",
   "Try Demo Mode": "试用演示模式",
   "Try Demo Mode (no device required)": "试用演示模式（无需设备）",
-  "Try demo mode without a keyboard": "无需键盘即可试用演示模式",
+  "Try the Beta version": "试用 Beta 版本",
+  "DYA Studio on GitHub": "DYA Studio 的 GitHub 仓库",
   "Reconnecting to your keyboard...": "正在重新连接您的键盘...",
   "DYA Studio is maintained by": "DYA Studio 由以下人员维护",
   "Special thanks to": "特别感谢",
