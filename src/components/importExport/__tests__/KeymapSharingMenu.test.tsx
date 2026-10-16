@@ -90,18 +90,18 @@ it("shows the account and unsupported notice without hiding owned maps", () => {
   expect(
     screen.getByText(/Keymap identity RPC is not supported/),
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Preview My layout" }));
+  fireEvent.click(screen.getByRole("button", { name: /My layout/ }));
   expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
   expect(mockSharing.confirm).not.toHaveBeenCalled();
   expect(mockSharing.refresh).toHaveBeenCalledTimes(1);
 });
-it("shows current map actions only when it differs", () => {
+it("opens the current map by selecting its row", () => {
   mockAuth.isAuthenticated = true;
   mockAuth.user = { username: "tester" };
   mockSharing.current = record;
   mockSharing.changed = true;
   show();
-  fireEvent.click(screen.getByRole("button", { name: "Preview My layout" }));
+  fireEvent.click(screen.getByRole("button", { name: /My layout/ }));
   expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
 });
 it("new keymaps default to private and require a nonempty name", async () => {
@@ -130,11 +130,19 @@ it("shows a preview for the current map even when it is in sync", () => {
   mockSharing.current = record;
   show();
   expect(screen.getByText("In sync")).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Preview My layout" }),
-  ).toBeEnabled();
+  expect(screen.getByRole("button", { name: /My layout/ })).toBeEnabled();
   expect(
     screen.getByRole("button", { name: "Refresh your keymaps" }),
   ).toBeEnabled();
   expect(screen.queryByRole("button", { name: "Refresh" })).toBeNull();
+});
+
+it("opens an owned map from the full row without a Preview button", () => {
+  mockAuth.isAuthenticated = true;
+  mockSharing.keymaps = [record];
+  show();
+  expect(screen.queryByRole("button", { name: /Preview/ })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "My layout" }));
+  expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
+  expect(mockSharing.confirm).not.toHaveBeenCalled();
 });

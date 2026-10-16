@@ -8,7 +8,8 @@
  * cover a case.
  */
 import { useLanguage } from "../../hooks/useLanguage";
-import { bindingLabel, type CollectionChange } from "../../lib/abyss/abyssDiff";
+import { useSharedBindingLabel } from "../../hooks/useSharedBindingLabel";
+import type { CollectionChange } from "../../lib/abyss/abyssDiff";
 
 /** A combo as KeyboardHub stores it. */
 type ComboShape = {
@@ -35,6 +36,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** `keys 12 + 13 → SPACE` */
 function ComboSummary({ value }: { value: unknown }) {
+  const bindingLabel = useSharedBindingLabel();
   const { t } = useLanguage();
   if (!isRecord(value)) return null;
   const combo = value as ComboShape;
@@ -60,6 +62,7 @@ function ComboSummary({ value }: { value: unknown }) {
 
 /** Macro name plus its steps as chips, in order. */
 function MacroSummary({ value }: { value: unknown }) {
+  const bindingLabel = useSharedBindingLabel();
   const { t } = useLanguage();
   if (!isRecord(value)) return null;
   const macro = value as MacroShape;

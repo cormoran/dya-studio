@@ -159,7 +159,7 @@ it("lets the user inspect JSON in a tab within the same modal", async () => {
 });
 it("requires a second confirmation for Apply; cancel returns to preview and writes nothing", () => {
   render(<Harness />);
-  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
   expect(
     screen.getByRole("dialog", { name: "Apply My map" }),
   ).toBeInTheDocument();
@@ -167,13 +167,19 @@ it("requires a second confirmation for Apply; cancel returns to preview and writ
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   expect(screen.queryByRole("dialog", { name: "Apply My map" })).toBeNull();
   expect(confirm).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
   expect(confirm).toHaveBeenCalledTimes(1);
 });
-it("switches to the cloud-save direction and requires confirmation before saving", () => {
+it("switches to the cloud-save direction and requires confirmation before saving", async () => {
   render(<Harness />);
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog", { name: "Save to My map" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Apply to keyboard" }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Update Abyss keymap" }));
   expect(
     screen.getByRole("dialog", { name: "Save to My map" }),
   ).toBeInTheDocument();
@@ -183,12 +189,19 @@ it("switches to the cloud-save direction and requires confirmation before saving
 });
 it("keeps Save unavailable for files or another user's map, and blocks incompatible Apply", () => {
   render(<Harness canSave={false} blocked />);
-  expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+  expect(
+    screen.queryByRole("button", { name: "Update Abyss keymap" }),
+  ).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  ).toBeDisabled();
 });
 it("shows action help on hover", async () => {
   render(<Harness />);
-  await userEvent.hover(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  await userEvent.hover(
+    screen.getByRole("button", { name: "Update Abyss keymap" }),
+  );
   expect(await screen.findByRole("tooltip")).toHaveTextContent(
     "Update this Abyss keymap",
   );
@@ -196,7 +209,13 @@ it("shows action help on hover", async () => {
 
 it("Escape cancels only the confirmation and returns to the existing preview", async () => {
   render(<Harness />);
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog", { name: "Save to My map" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Apply to keyboard" }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Update Abyss keymap" }));
   await userEvent.keyboard("{Escape}");
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(close).not.toHaveBeenCalled();

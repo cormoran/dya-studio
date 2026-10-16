@@ -73,10 +73,6 @@ export function KeymapSharingPreview({
       {t(check.message, check.params)}
     </p>
   ));
-  function requestAction(kind: ShareReview["kind"]) {
-    onDirectionChange(kind);
-    setConfirming(true);
-  }
   return (
     <>
       <Dialog.Root
@@ -87,7 +83,7 @@ export function KeymapSharingPreview({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-          <Dialog.Content className="diff-sheet fixed left-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
+          <Dialog.Content className="diff-sheet fixed right-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:right-4 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
             <div className="shrink-0 flex items-start gap-3 p-3 tablet:p-4 border-b border-[var(--color-border)]">
               <div className="flex-1 min-w-0">
                 <Dialog.Title className="text-base font-medium break-words">
@@ -118,32 +114,46 @@ export function KeymapSharingPreview({
                 >
                   <Tabs.Trigger
                     value="keymap"
-                    className="btn-ghost text-sm data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                    className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
                   >
                     {t("Keymap preview")}
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="code"
-                    className="btn-ghost text-sm data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                    className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
                   >
                     {t("Code diff")}
                   </Tabs.Trigger>
                 </Tabs.List>
                 {canSave && (
-                  <label className="flex w-full sm:w-auto items-center gap-2 text-xs tablet:ml-auto">
-                    <span className="shrink-0">{t("Preview direction")}</span>
-                    <select
-                      className="input-field text-xs min-w-0 max-w-full"
-                      disabled={busy}
-                      value={review.kind}
-                      onChange={(e) =>
-                        onDirectionChange(e.target.value as ShareReview["kind"])
-                      }
+                  <Tabs.Root
+                    value={review.kind}
+                    onValueChange={(kind) =>
+                      onDirectionChange(kind as ShareReview["kind"])
+                    }
+                    className="w-full sm:w-auto tablet:ml-auto space-y-1"
+                  >
+                    <span className="text-xs">{t("Preview direction")}</span>
+                    <Tabs.List
+                      aria-label={t("Preview direction")}
+                      className="flex flex-wrap gap-1"
                     >
-                      <option value="apply">{t("Abyss → Keyboard")}</option>
-                      <option value="save">{t("Keyboard → Abyss")}</option>
-                    </select>
-                  </label>
+                      {(["apply", "save"] as const).map((kind) => (
+                        <Tabs.Trigger
+                          key={kind}
+                          value={kind}
+                          disabled={busy}
+                          className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                        >
+                          {t(
+                            kind === "apply"
+                              ? "Abyss → Keyboard"
+                              : "Keyboard → Abyss",
+                          )}
+                        </Tabs.Trigger>
+                      ))}
+                    </Tabs.List>
+                  </Tabs.Root>
                 )}
               </div>
               <Tabs.Content
@@ -245,24 +255,15 @@ export function KeymapSharingPreview({
                 >
                   {t("Close")}
                 </button>
-                {canSave && (
-                  <EditorTooltip content={helpSave}>
-                    <button
-                      className="btn-ghost border border-[var(--color-border)] text-sm"
-                      disabled={busy}
-                      onClick={() => requestAction("save")}
-                    >
-                      {t("Save")}
-                    </button>
-                  </EditorTooltip>
-                )}
-                <EditorTooltip content={helpApply}>
+                <EditorTooltip content={save ? helpSave : helpApply}>
                   <button
                     className="btn-electric text-sm"
-                    disabled={busy || (!save && blocked)}
-                    onClick={() => requestAction("apply")}
+                    disabled={
+                      busy || blocked || (empty && (save || !review.record))
+                    }
+                    onClick={() => setConfirming(true)}
                   >
-                    {t("Apply")}
+                    {save ? t("Update Abyss keymap") : t("Apply to keyboard")}
                   </button>
                 </EditorTooltip>
               </div>

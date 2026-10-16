@@ -9,6 +9,7 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Update Abyss keymap": "Abyss のキーマップを更新",
   // Keymap sharing preview
   "Save/share keymap": "キーマップ保存/共有",
   "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.":
@@ -56,7 +57,7 @@ const ja: Record<string, string> = {
   "Applying writes and saves to the keyboard immediately. Partial failures may leave mixed settings.":
     "適用すると、キーボードに直ちに書き込み・保存します。途中で失敗した場合、設定が一部だけ反映されることがあります。",
   "Save to Abyss": "Abyss に保存",
-  "Apply to keyboard": "キーボードに適用",
+  "Apply to keyboard": "キーボードに反映",
   "Save the keyboard's current settings as a new Abyss keymap.":
     "現在のキーボードの設定を、新しいキーマップとして Abyss に保存します。",
   "The keymap file is too large (maximum 5 MB).":
@@ -1663,6 +1664,7 @@ const zh: Record<string, string> = {
   "Preview format": "预览格式",
   "Keymap preview": "键位预览",
   "Code diff": "代码差异",
+  "Update Abyss keymap": "更新 Abyss 键位映射",
   "Preview direction": "比较方向",
   "Abyss → Keyboard": "Abyss → 键盘",
   "Keyboard → Abyss": "键盘 → Abyss",

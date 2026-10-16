@@ -8,10 +8,10 @@
  */
 import { useState } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
+import { useSharedBindingLabel } from "../../hooks/useSharedBindingLabel";
 import { SectionCard } from "../troubleshooting/SectionCard";
 import {
   BINDING_ROW_LIMIT,
-  bindingLabel,
   countDiff,
   globalModuleChanges,
   groupByLayer,
@@ -39,6 +39,7 @@ function BindingRow({
   from?: unknown;
   to?: unknown;
 }) {
+  const bindingLabel = useSharedBindingLabel();
   return (
     <div className="flex items-center gap-2 text-xs py-0.5">
       <span className="w-10 flex-shrink-0 text-[var(--color-text-muted)] tabular-nums">

@@ -7,6 +7,8 @@
  * bindings into labels. Kept structural and local so it is unit-testable — the
  * ESM-only adapter packages cannot be loaded by the CommonJS test runtime.
  */
+import { getKeycodeDisplayName } from "../keycodes";
+import type { KeyboardLayoutType } from "../keyboardLayouts";
 import type { AbyssSectionSelection } from "./abyssExportPayload";
 
 /** One key binding that differs between the Abyss keymap and the device. */
@@ -192,7 +194,10 @@ export const BINDING_ROW_LIMIT = 250;
  * the type name rather than guessing, so an unrecognised binding still shows
  * *something* truthful.
  */
-export function bindingLabel(binding: unknown): string {
+export function bindingLabel(
+  binding: unknown,
+  keyboardLayout?: KeyboardLayoutType,
+): string {
   if (binding === undefined || binding === null) return "—";
   if (typeof binding !== "object") return String(binding);
 
@@ -204,24 +209,24 @@ export function bindingLabel(binding: unknown): string {
   const mods = Array.isArray(value.mods) ? (value.mods as string[]) : [];
   const withMods = (label: string) =>
     mods.length ? `${mods.join("+")}+${label}` : label;
-  const hex = (code: number) => `0x${code.toString(16)}`;
+  const keyName = (code: number) => getKeycodeDisplayName(code, keyboardLayout);
 
   switch (type) {
     case "key":
-      return usage === null ? "key" : withMods(hex(usage));
+      return usage === null ? "key" : withMods(keyName(usage));
     case "mt":
-      return `MT(${String(value.mod ?? "?")}, ${usage === null ? "?" : hex(usage)})`;
+      return `MT(${String(value.mod ?? "?")}, ${usage === null ? "?" : keyName(usage)})`;
     case "lt":
-      return `LT(${String(value.layer ?? "?")}, ${usage === null ? "?" : hex(usage)})`;
+      return `LT(${String(value.layer ?? "?")}, ${usage === null ? "?" : keyName(usage)})`;
     case "mo":
     case "tog":
     case "to":
     case "sl":
       return `${type.toUpperCase()}(${String(value.layer ?? "?")})`;
     case "sticky_key":
-      return usage === null ? "sticky" : `SK(${withMods(hex(usage))})`;
+      return usage === null ? "sticky" : `SK(${withMods(keyName(usage))})`;
     case "key_toggle":
-      return usage === null ? "KT" : `KT(${withMods(hex(usage))})`;
+      return usage === null ? "KT" : `KT(${withMods(keyName(usage))})`;
     case "mouse_button":
       return `MB${String(value.button ?? "?")}`;
     case "mouse_move":

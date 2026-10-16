@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useLanguage } from "../../hooks/useLanguage";
-import { bindingLabel } from "../../lib/abyss/abyssDiff";
+import { useSharedBindingLabel } from "../../hooks/useSharedBindingLabel";
 import {
   isCoarsePointer,
   normalizePositions,
@@ -58,6 +58,7 @@ function KeyCap({
   /** True on touch screens, where the detail opens on tap rather than hover. */
   touch: boolean;
 }) {
+  const bindingLabel = useSharedBindingLabel();
   const { t } = useLanguage();
   const width = (position.w ?? 1) * UNIT - GAP;
   const height = (position.h ?? 1) * UNIT - GAP;

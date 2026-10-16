@@ -13,7 +13,6 @@ import { useAbyssAuth } from "../../hooks/useAbyssAuth";
 import { useKeymapSharing } from "../../hooks/useKeymapSharing";
 import { useAbyssBrowseUrl } from "../../hooks/useAbyssBrowseUrl";
 import { KeymapSharingPreview } from "./KeymapSharingPreview";
-import type { AbyssKeymapSummary } from "@keyboard-hub/abyss-client";
 import abyssIcon from "../../assets/keyboard-abyss.svg";
 import { ResponsiveButton } from "../ResponsiveButton";
 
@@ -49,18 +48,6 @@ export function KeymapSharingMenu({
   useEffect(() => {
     if (open && auth.isAuthenticated) refreshOnOpen();
   }, [open, auth.isAuthenticated]);
-  function actions(record: AbyssKeymapSummary) {
-    return (
-      <button
-        className="btn-ghost text-sm shrink-0"
-        disabled={busy}
-        onClick={() => void sharing.prepare("apply", record)}
-        aria-label={t("Preview {{name}}", { name: record.name })}
-      >
-        {t("Preview")}
-      </button>
-    );
-  }
 
   return (
     <>
@@ -147,7 +134,13 @@ export function KeymapSharingMenu({
                     {t("Current keymap")}
                   </h3>
                   {sharing.current ? (
-                    <div className="flex items-center justify-between gap-2">
+                    <button
+                      className="btn-ghost w-full text-left flex items-center justify-between gap-2"
+                      disabled={busy}
+                      onClick={() =>
+                        void sharing.prepare("apply", sharing.current!)
+                      }
+                    >
                       <span className="text-sm break-words min-w-0">
                         {sharing.current.name}
                       </span>
@@ -156,8 +149,7 @@ export function KeymapSharingMenu({
                           {t("In sync")}
                         </span>
                       )}
-                      {actions(sharing.current)}
-                    </div>
+                    </button>
                   ) : (
                     <p className="text-xs text-[var(--color-text-muted)]">
                       {t(
@@ -200,14 +192,14 @@ export function KeymapSharingMenu({
                     {sharing.keymaps
                       .filter((item) => item.id !== sharing.current?.id)
                       .map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between gap-2 py-1"
-                        >
-                          <span className="text-sm break-words min-w-0">
+                        <li key={item.id}>
+                          <button
+                            className="btn-ghost block w-full text-left text-sm break-words"
+                            disabled={busy}
+                            onClick={() => void sharing.prepare("apply", item)}
+                          >
                             {item.name}
-                          </span>
-                          {actions(item)}
+                          </button>
                         </li>
                       ))}
                   </ul>
