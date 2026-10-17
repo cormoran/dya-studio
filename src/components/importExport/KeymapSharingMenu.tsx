@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   IconChevronDown,
   IconCloud,
+  IconLoader2,
   IconLogout,
   IconRefresh,
   IconX,
@@ -246,7 +247,12 @@ export function KeymapSharingMenu({
               </button>
             </div>
             {sharing.busy && (
-              <p role="status" className="text-xs">
+              <p role="status" className="text-xs flex items-center gap-2">
+                <IconLoader2
+                  size={14}
+                  className="animate-spin shrink-0"
+                  aria-hidden="true"
+                />
                 {t("Loading...")}
               </p>
             )}

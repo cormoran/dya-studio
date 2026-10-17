@@ -30,7 +30,7 @@
 
 接続済みまたは Demo の Keymap が対象。Keymap 読込・Save/Reset/Discard 中は入口を無効化する。Studio locked 時は既存の unlock 操作を優先し、Save と共有メニューを隠す。メニューは画面幅内に収まり、長い一覧はスクロールする。狭い画面の入口はアイコンと accessible name を維持する。
 
-未認証・認証読込中はアカウント/現在/所有一覧/新規保存を出さない。OAuth client 未設定では login を無効化し理由を表示するが、file/search は利用可能。認証後メニューを開くと keyboard snapshot、layout resolve、一覧、識別子を読取り、`Loading...` 中は書込み系操作を無効化する。空一覧とエラーを区別する。
+未認証・認証読込中はアカウント/現在/所有一覧/新規保存を出さない。OAuth client 未設定では login を無効化し理由を表示するが、file/search は利用可能。認証後メニューを開くと keyboard snapshot、layout resolve、一覧、識別子を読取り、`Loading...`（読み込み中）の左には回転する loading icon を表示し、読込完了で文言とともに消える。icon は装飾扱いとし、status の読み上げは文言で行う。`Loading...` 中は書込み系操作を無効化する。空一覧とエラーを区別する。
 
 ## 現行の機能仕様
 
