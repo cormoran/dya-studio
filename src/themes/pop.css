@@ -23,11 +23,11 @@
     --color-text-secondary: #554c46;
     --color-text-muted: #66584d;
     /* This token also fills information banners and hover backgrounds. */
-    --color-border: #f9d9b9;
+    --color-border: #c5e8fa;
     --color-border-hover: #65cafa;
 
     --glass-bg: #f2faff;
-    --glass-border: #efb382;
+    --glass-border: #79c8ed;
 
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
@@ -396,7 +396,7 @@
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
   background: var(--pop-coral);
-  border-color: var(--glass-border);
+  border-color: #f0806c;
 }
 
 /* Quiet key outlines let the vivid selection and modified states stand out. */
