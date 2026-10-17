@@ -18,7 +18,7 @@ test("shows an icon-only trigger and persists a direct selection", async () => {
   const user = userEvent.setup();
   const view = renderToggle();
   const trigger = screen.getByRole("button", { name: "Language: English" });
-  expect(trigger).toHaveTextContent("");
+  expect(trigger.textContent).toBe("");
   expect(trigger.querySelectorAll("svg")).toHaveLength(1);
   await user.click(trigger);
   expect(
