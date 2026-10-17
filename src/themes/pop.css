@@ -9,6 +9,7 @@
     --pop-sky: #65cafa;
     --pop-sky-hover: #4fbceb;
     --pop-soft: #e4f5ff;
+    --pop-warning: #fff1c2;
     --pop-leaf-hover: #6bd28a;
 
     --color-electric: #155b91;
@@ -83,7 +84,7 @@
     [class*="bg-yellow-"],
     [class~="bg-[var(--color-warning)]/10"]
   ) {
-  background: #fff7df;
+  background: var(--pop-warning);
 }
 
 :root.pop .btn-electric,
@@ -320,7 +321,7 @@
 
 :root.pop .warning-banner {
   border-color: transparent;
-  background-color: #fff7df;
+  background-color: var(--pop-warning);
   color: #704500;
 }
 
@@ -404,4 +405,20 @@
 
 :root.pop .physical-key[aria-current="true"] {
   border-width: 2px;
+}
+
+/* Separate the readable warning ink from its cream fill; avoid brown alpha mixes. */
+:root.pop
+  :is(
+    [class~="bg-[var(--color-warning)]"],
+    [class~="bg-[var(--color-warning)]/10"],
+    [class~="bg-[var(--color-warning)]/20"]
+  ) {
+  background-color: var(--pop-warning);
+  border-color: transparent;
+  color: var(--color-warning);
+}
+
+:root.pop [class~="hover:bg-[var(--color-warning)]/20"]:not(:disabled):hover {
+  background-color: #ffe8a3;
 }
