@@ -28,19 +28,30 @@ window automation is still useful for browser-owned chooser/download surfaces.
 
 ## Persist evidence instead of only displaying it
 
-The documented screenshot APIs return PNG bytes (`Uint8Array`). They do not
-require a guessed `saveScreenshot` method or an unsupported `path` option.
-In the CUA Node REPL, local filesystem persistence of those returned bytes was
-used successfully in the hardware pilot:
+The screenshot APIs return image bytes (`Uint8Array`); inspect their actual
+signature before choosing an extension. A later run returned JPEG despite the
+earlier PNG assumption. Do not rename bytes and call that format conversion.
+Retain originals and record any encoding conversion; never edit the scene.
+No guessed `saveScreenshot` method or unsupported `path` option is needed.
+The CUA Node REPL can persist the returned bytes locally:
 
 ```js
 var evidenceFs = await import("node:fs/promises");
 var evidenceRoot = "/private/tmp/your-owned-run";
 await evidenceFs.mkdir(evidenceRoot, { recursive: true });
-var nativePng = await ownedChromeApp.getScreenshot({ emit: false });
-await evidenceFs.writeFile(evidenceRoot + "/native.png", nativePng);
-var pagePng = await ownedTab.screenshot({ fullPage: false });
-await evidenceFs.writeFile(evidenceRoot + "/page.png", pagePng);
+var saveCapture = async (stem, bytes) => {
+  var png = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e;
+  var jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (!png && !jpeg) throw new Error("Inspect unsupported capture encoding");
+  var path = evidenceRoot + "/" + stem + (png ? ".png" : ".jpg");
+  await evidenceFs.writeFile(path, bytes);
+  return path;
+};
+await saveCapture(
+  "native",
+  await ownedChromeApp.getScreenshot({ emit: false }),
+);
+await saveCapture("page", await ownedTab.screenshot({ fullPage: false }));
 await evidenceFs.writeFile(
   evidenceRoot + "/page.txt",
   await ownedTab.playwright.domSnapshot(),
