@@ -3,6 +3,15 @@ import type { UnlockStep } from "../lib/unlockGuide";
 import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import { useLanguage } from "../hooks/useLanguage";
 
+// Okabe and Ito's Color Universal Design palette. Letters identify keys even
+// when colors cannot be distinguished: https://jfly.uni-koeln.de/color/
+const KEY_MARKERS = [
+  { letter: "A", color: "blue", fill: "#0072B2", text: "#FFFFFF" },
+  { letter: "B", color: "orange", fill: "#E69F00", text: "#000000" },
+  { letter: "C", color: "bluish green", fill: "#009E73", text: "#000000" },
+  { letter: "D", color: "reddish purple", fill: "#CC79A7", text: "#000000" },
+] as const;
+
 export function UnlockKeymapGuide({
   model,
   steps,
@@ -11,6 +20,11 @@ export function UnlockKeymapGuide({
   steps: UnlockStep[];
 }) {
   const { t } = useLanguage();
+  // Assign a marker to each physical key, not each operation. A released TO
+  // key can later be pressed again for unlock and must keep its color/letter.
+  const positions = [...new Set(steps.map((step) => step.position))];
+  const markerFor = (position: number) =>
+    KEY_MARKERS[positions.indexOf(position)];
   const keys = model.layouts[model.activeLayoutIndex].keys!;
   const behaviors = new Map(
     model.behaviors.map((b) => [
@@ -53,7 +67,7 @@ export function UnlockKeymapGuide({
             .map((step, index) => ({ step, index }))
             .filter(({ step }) => step.position === position);
           const highlighted = matches.length > 0;
-          const unlock = matches.some(({ step }) => step.action === "unlock");
+          const marker = highlighted ? markerFor(position) : null;
           const binding =
             matches.at(-1)?.step.binding ?? model.layers[0].bindings[position];
           const label = formatBehaviorBinding(
@@ -69,10 +83,12 @@ export function UnlockKeymapGuide({
               transform={`rotate(${key.r / 100} ${key.rx} ${key.ry})`}
             >
               <title>
-                {t("Key {{index}}", { index: position })}: {label}
-                {highlighted
-                  ? ` (${matches.map(({ index }) => index + 1).join(", ")})`
-                  : ""}
+                {marker
+                  ? t("{{color}} key marked {{marker}}", {
+                      color: t(marker.color),
+                      marker: marker.letter,
+                    })
+                  : `${t("Key {{index}}", { index: position })}: ${label}`}
               </title>
               <rect
                 x={key.x + 3}
@@ -80,12 +96,9 @@ export function UnlockKeymapGuide({
                 width={Math.max(1, key.width - 6)}
                 height={Math.max(1, key.height - 6)}
                 rx={8}
-                fill={
-                  highlighted ? "var(--color-electric)" : "var(--color-surface)"
-                }
-                fillOpacity={highlighted ? 0.2 : 1}
+                fill={marker?.fill ?? "var(--color-surface)"}
                 stroke={
-                  highlighted ? "var(--color-electric)" : "var(--color-border)"
+                  highlighted ? "var(--color-text)" : "var(--color-border)"
                 }
                 strokeWidth={highlighted ? 5 : 2}
               />
@@ -93,34 +106,42 @@ export function UnlockKeymapGuide({
                 x={key.x + key.width / 2}
                 y={key.y + key.height / 2 + 8}
                 textAnchor="middle"
-                fontSize={22}
-                fill="var(--color-text)"
+                fontSize={marker ? 40 : 22}
+                fontWeight={marker ? 700 : 400}
+                fill={marker?.text ?? "var(--color-text)"}
               >
-                {highlighted
-                  ? `${matches.map(({ index }) => index + 1).join("/")} ${unlock ? "Unlock" : label}`
-                  : label.slice(0, 8)}
+                {marker ? marker.letter : label.slice(0, 8)}
               </text>
             </g>
           );
         })}
       </svg>
       <ol className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-        {steps.map((step, index) => (
-          <li key={index}>
-            <strong>{index + 1}. </strong>
-            {t(
-              step.action === "hold"
-                ? "Hold key {{key}} on {{layer}} and keep holding."
-                : step.action === "press"
-                  ? "Press and release key {{key}} on {{layer}}."
-                  : "Press Studio Unlock at key {{key}} on {{layer}}.",
-              {
-                key: step.position,
-                layer: model.layers[step.layer].name || String(step.layer),
-              },
-            )}
-          </li>
-        ))}
+        {steps.map((step, index) => {
+          const marker = markerFor(step.position);
+          return (
+            <li key={index} className="flex items-start gap-2">
+              <strong className="pt-0.5">{index + 1}.</strong>
+              <span
+                aria-hidden="true"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[var(--color-text)] font-bold"
+                style={{ backgroundColor: marker.fill, color: marker.text }}
+              >
+                {marker.letter}
+              </span>
+              <span className="pt-0.5">
+                {t(
+                  step.action === "hold"
+                    ? "Hold the {{color}} key marked {{marker}} and keep holding."
+                    : step.action === "press"
+                      ? "Press and release the {{color}} key marked {{marker}}."
+                      : "Press the {{color}} key marked {{marker}} (Studio Unlock).",
+                  { color: t(marker.color), marker: marker.letter },
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ol>
       <p className="text-xs text-[var(--color-text-muted)]">
         {t("After unlocking, release any held keys. Click Retry if needed.")}

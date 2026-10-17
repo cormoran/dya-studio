@@ -12,12 +12,17 @@ const ja: Record<string, string> = {
   "Start on the default layer with other layers off. Follow the highlighted keys in order.":
     "他のレイヤーをオフにして通常レイヤーに戻り、ハイライトされたキーを順に操作してください。",
   "Unlock key positions": "ロック解除キーの位置",
-  "Hold key {{key}} on {{layer}} and keep holding.":
-    "{{layer}} のキー {{key}} を押し続けます。",
-  "Press and release key {{key}} on {{layer}}.":
-    "{{layer}} のキー {{key}} を押して離します。",
-  "Press Studio Unlock at key {{key}} on {{layer}}.":
-    "{{layer}} のキー {{key}}（Studio Unlock）を押します。",
+  blue: "青色",
+  orange: "オレンジ色",
+  "bluish green": "青緑色",
+  "reddish purple": "赤紫色",
+  "{{color}} key marked {{marker}}": "{{color}}の「{{marker}}」キー",
+  "Hold the {{color}} key marked {{marker}} and keep holding.":
+    "{{color}}の「{{marker}}」キーを押し続けます。",
+  "Press and release the {{color}} key marked {{marker}}.":
+    "{{color}}の「{{marker}}」キーを押して離します。",
+  "Press the {{color}} key marked {{marker}} (Studio Unlock).":
+    "{{color}}の「{{marker}}」キー（Studio Unlock）を押します。",
   "After unlocking, release any held keys. Click Retry if needed.":
     "ロック解除後、押し続けていたキーを離してください。必要に応じて「再試行」を押してください。",
 
