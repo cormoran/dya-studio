@@ -173,7 +173,9 @@ it("requires a second confirmation for Apply; cancel returns to preview and writ
 });
 it("switches to the cloud-save direction and requires confirmation before saving", async () => {
   render(<Harness />);
-  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  await userEvent.click(
+    screen.getByRole("tab", { name: "Upload from keyboard to Abyss" }),
+  );
   expect(confirm).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog", { name: "Save to My map" })).toBeNull();
   expect(
@@ -198,7 +200,9 @@ it("keeps Save unavailable for files or another user's map, and blocks incompati
 });
 it("shows action help on hover", async () => {
   render(<Harness />);
-  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  await userEvent.click(
+    screen.getByRole("tab", { name: "Upload from keyboard to Abyss" }),
+  );
   await userEvent.hover(
     screen.getByRole("button", { name: "Update Abyss keymap" }),
   );
@@ -209,7 +213,9 @@ it("shows action help on hover", async () => {
 
 it("Escape cancels only the confirmation and returns to the existing preview", async () => {
   render(<Harness />);
-  await userEvent.click(screen.getByRole("tab", { name: "Keyboard → Abyss" }));
+  await userEvent.click(
+    screen.getByRole("tab", { name: "Upload from keyboard to Abyss" }),
+  );
   expect(confirm).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog", { name: "Save to My map" })).toBeNull();
   expect(

@@ -20,8 +20,8 @@ const ja: Record<string, string> = {
   "Keymap preview": "キーマッププレビュー",
   "Code diff": "コード差分",
   "Preview direction": "比較の方向",
-  "Abyss → Keyboard": "Abyss → キーボード",
-  "Keyboard → Abyss": "キーボード → Abyss",
+  "Apply from Abyss to keyboard": "Abyss からキーボードに適用",
+  "Upload from keyboard to Abyss": "キーボードから Abyss にアップロード",
   Changes: "変更一覧",
   "Filter changes by layer": "変更をレイヤーで絞り込む",
   "Compare the Abyss keymap with the keyboard settings to save.":
@@ -1666,8 +1666,8 @@ const zh: Record<string, string> = {
   "Code diff": "代码差异",
   "Update Abyss keymap": "更新 Abyss 键位映射",
   "Preview direction": "比较方向",
-  "Abyss → Keyboard": "Abyss → 键盘",
-  "Keyboard → Abyss": "键盘 → Abyss",
+  "Apply from Abyss to keyboard": "从 Abyss 应用到键盘",
+  "Upload from keyboard to Abyss": "从键盘上传到 Abyss",
   Changes: "更改列表",
   "Filter changes by layer": "按层筛选更改",
   "Compare the Abyss keymap with the keyboard settings to save.":

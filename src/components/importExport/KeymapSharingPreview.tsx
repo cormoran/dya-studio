@@ -83,7 +83,7 @@ export function KeymapSharingPreview({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-          <Dialog.Content className="diff-sheet fixed right-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:right-4 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
+          <Dialog.Content className="diff-sheet fixed left-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
             <div className="shrink-0 flex items-start gap-3 p-3 tablet:p-4 border-b border-[var(--color-border)]">
               <div className="flex-1 min-w-0">
                 <Dialog.Title className="text-base font-medium break-words">
@@ -107,54 +107,53 @@ export function KeymapSharingPreview({
               onValueChange={setTab}
               className="flex flex-col flex-1 min-h-0 min-w-0"
             >
-              <div className="shrink-0 p-3 flex flex-wrap gap-3 items-center border-b border-[var(--color-border)]">
+              {canSave && (
+                <Tabs.Root
+                  value={review.kind}
+                  onValueChange={(kind) =>
+                    onDirectionChange(kind as ShareReview["kind"])
+                  }
+                  className="shrink-0 p-3 border-b border-[var(--color-border)]"
+                >
+                  <Tabs.List
+                    aria-label={t("Preview direction")}
+                    className="flex flex-wrap gap-1"
+                  >
+                    {(["apply", "save"] as const).map((kind) => (
+                      <Tabs.Trigger
+                        key={kind}
+                        value={kind}
+                        disabled={busy}
+                        className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                      >
+                        {t(
+                          kind === "apply"
+                            ? "Apply from Abyss to keyboard"
+                            : "Upload from keyboard to Abyss",
+                        )}
+                      </Tabs.Trigger>
+                    ))}
+                  </Tabs.List>
+                </Tabs.Root>
+              )}
+              <div className="shrink-0 px-3 py-2 border-b border-[var(--color-border)]">
                 <Tabs.List
                   aria-label={t("Preview format")}
                   className="flex gap-1"
                 >
                   <Tabs.Trigger
                     value="keymap"
-                    className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                    className="px-2.5 py-1 rounded-lg border border-transparent text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
                   >
                     {t("Keymap preview")}
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="code"
-                    className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
+                    className="px-2.5 py-1 rounded-lg border border-transparent text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
                   >
                     {t("Code diff")}
                   </Tabs.Trigger>
                 </Tabs.List>
-                {canSave && (
-                  <Tabs.Root
-                    value={review.kind}
-                    onValueChange={(kind) =>
-                      onDirectionChange(kind as ShareReview["kind"])
-                    }
-                    className="w-full sm:w-auto tablet:ml-auto space-y-1"
-                  >
-                    <span className="text-xs">{t("Preview direction")}</span>
-                    <Tabs.List
-                      aria-label={t("Preview direction")}
-                      className="flex flex-wrap gap-1"
-                    >
-                      {(["apply", "save"] as const).map((kind) => (
-                        <Tabs.Trigger
-                          key={kind}
-                          value={kind}
-                          disabled={busy}
-                          className="px-3 py-2 rounded-lg border border-transparent text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] data-[state=active]:border-[var(--color-electric)] data-[state=active]:text-[var(--color-electric)] data-[state=active]:bg-[var(--color-electric)]/10"
-                        >
-                          {t(
-                            kind === "apply"
-                              ? "Abyss → Keyboard"
-                              : "Keyboard → Abyss",
-                          )}
-                        </Tabs.Trigger>
-                      ))}
-                    </Tabs.List>
-                  </Tabs.Root>
-                )}
               </div>
               <Tabs.Content
                 value="keymap"

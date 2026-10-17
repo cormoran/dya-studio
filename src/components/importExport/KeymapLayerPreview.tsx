@@ -199,6 +199,7 @@ export function KeymapLayerPreview({
           board itself would feed its own scaled size back in. */}
       <div ref={containerRef} className="overflow-x-auto">
         <div
+          className="mx-auto"
           style={{
             width: width * scale,
             height: height * scale,
