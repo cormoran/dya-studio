@@ -448,9 +448,14 @@
   border-color: transparent;
 }
 
-/* Combo membership is a selection; live key-stream highlights stay separate. */
+/* Contrast the white keys against an ice-blue preview canvas. */
+:root.pop .combo-position-preview {
+  background-color: var(--glass-bg);
+}
+
+/* Cream-yellow combo membership keeps the familiar highlight hue. */
 :root.pop .combo-position-preview .physical-key[class~="bg-amber-400/20"] {
-  background-color: var(--pop-sky);
+  background-color: var(--pop-warning);
   border-color: transparent;
   color: var(--color-text);
 }
