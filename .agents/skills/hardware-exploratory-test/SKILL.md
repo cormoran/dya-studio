@@ -97,6 +97,11 @@ The coordinator owns the pre-dispatch inventory and mandatory checklists; drafti
 may be delegated, but review and fix them before device execution. Planned rows
 may contain controls/expectations/prerequisites; leave observations and evidence
 empty until performed. Device workers fill evidence, not remove required rows.
+Check scope as well as IDs: a transport transition belongs to the DUT owner,
+not a no-connection public worker. Select reachable representative variations;
+record unavailable alternative content/states separately rather than making
+every possible combination mandatory. Once execution starts, preserve the
+approved required rows and report omissions honestly, even if planning was poor.
 
 Use a small capable browser worker for ordinary controls (current available
 `gpt-6-luna` / `medium` is a suitable default); use a workhorse such as
@@ -106,6 +111,11 @@ report unavailable defaults before choosing a supported model. Escalate reasonin
 for a difficult verdict, not an inaccessible browser. Give each device owner
 only 1–2 editing pages and bounded 3–5 charters. Do not launch simultaneous DUT
 workers to speed up a single-keyboard run.
+Keep smaller-model assignments narrow. Keymap plus file sharing, history,
+connected Home and a visual matrix can overload one assignment despite sharing
+a route; split that work before dispatch or use the workhorse for the combined
+evidence/restoration scope. A cheap model's unsupported-tool claim or incomplete
+report still requires coordinator verification against actual capabilities.
 
 In Orca use the `orca-cli` and `orchestration` skills, current worktree, and
 `--profile orca` for Codex workers. Load the runtime's guides before commands.
@@ -113,6 +123,10 @@ For explicit model/profile argv use the documented custom-terminal flow, verify
 TUI readiness/model, then attach the terminal to a supervised Dispatch. Orca
 commands normally require `sandbox_permissions: require_escalated`; follow
 actual permission results. Pass the exact page ID on browser commands.
+When an available CUA Chrome path is used for the real chooser, read the
+[Chrome CUA notes](references/chrome-cua.md) for auto-reconnect, native input,
+and saving actual screenshot bytes. Do not assume native-only observation is
+the only available Chrome API.
 
 Worker brief must include:
 
@@ -169,3 +183,14 @@ an unexplained failure is a candidate, not a proven firmware root cause.
 Run the existing coverage checker and review evidence semantically. Keep raw
 logs/backups in temporary storage; summarize in the requested PR/completion
 report. Never infer whole-app completion from a single successful charter or CI.
+
+From the checkout root, the canonical checker is:
+
+```sh
+node .agents/skills/exploratory-ui-test/scripts/check-coverage.mjs /absolute/tmp/batch-coverage.json
+```
+
+Exit 0 means structurally reviewable evidence, not a product pass; 1 is invalid
+structure/IDs/evidence, 2 is required missing/not-run, 3 is required blocked.
+Do not replace it with a homemade gate or claim it is unavailable without
+checking that exact repository path and preserving its actual failure output.

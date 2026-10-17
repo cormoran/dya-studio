@@ -80,6 +80,15 @@ encoded-byte limit, several mixed-size macros to pressure a shared pool and
 reclaim/reuse space, or combo slot/position/name boundaries. Tiny-item counts
 alone do not cover byte pressure. Record aggregate pool deltas when exposed,
 otherwise unknown; undocumented counter semantics alone do not prove a leak.
+Pool usage can include names/allocation overhead rather than only encoded
+bodies. Measure it after actual creates, renames, body edits and deletes;
+never calculate remaining shared capacity solely by summing the Size labels.
+A full runtime pool is not proof of a full physical settings/NVS partition or
+flash garbage collection. If firmware diagnostics or known build configuration
+make that condition observable, select a finite save/delete/reuse sequence
+within the allocated persistence budget and check errors, survivors and reboot
+readback. Otherwise keep NVS exhaustion/compaction unverified; do not force wear
+or power interruption to manufacture it.
 Trackball currently edits existing processors, without UI chain create/delete.
 For that page use fixed-list notification/read stress: e.g. ten serially awaited
 Reload processors operations over a bounded two-minute window with explicit
@@ -92,6 +101,13 @@ Suggested sequence:
    through UI, verify contents after page Refresh; do not attach output-generating
    bindings to physical keys. Include a non-ASCII label/string only if the spec
    supports it; record byte size rather than assuming character count equals bytes.
+   After each create/rename, wait for the actual mutation/list load to settle,
+   explicitly reselect the observed name and verify the loaded editor identity.
+   Scope Step/field actions to that expected editor: a generic locator can
+   auto-wait through loading and click when a different record becomes selected.
+   Confirm target identity immediately before and after the mutation. An action
+   fired before rename settlement is not proof of firmware wrong-slot corruption;
+   preserve its ordering evidence, stop and restore before a corrected continuation.
    **Combo exception:** `New combo` creates an enabled default on positions 0/1
    with HID A (COMBO-001), before Save. Arrange a brief pause of physical key
    input for each creation, disable the new combo through UI, wait for the RAM
