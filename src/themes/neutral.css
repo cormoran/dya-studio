@@ -115,6 +115,10 @@
 :root.neutral
   button[class~="bg-[var(--color-neon)]/10"]:not(:disabled):not(
     [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-cyber)]/10"]:not(:disabled):not(
+    [role="switch"]
   ) {
   background: #ffffff;
   border-color: #171717;
@@ -122,14 +126,17 @@
   box-shadow: inset 0 0 0 1px #171717;
 }
 
-/* Bordered selections already have a 1px outline; avoid doubling it with an inset. */
+/* Normalize bordered accent controls, including splash border-2 buttons, to one
+   thin line. Borderless selections keep the inset indicator above. */
 :root.neutral
-  button.border:is(
+  button:is(.border, .border-2):is(
     [class~="bg-[var(--color-electric)]/10"],
     [class~="bg-[var(--color-electric)]/15"],
     [class~="bg-[var(--color-electric)]/20"],
-    [class~="bg-[var(--color-neon)]/10"]
-  ):not(:disabled):not([role="switch"]) {
+    [class~="bg-[var(--color-neon)]/10"],
+    [class~="bg-[var(--color-cyber)]/10"]
+  ):not([role="switch"]) {
+  border-width: 1px;
   box-shadow: none;
 }
 
