@@ -9,6 +9,7 @@ import {
   isEmptyDiff,
   type KeymapDiff,
 } from "../../lib/abyss/abyssDiff";
+import { abyssKeymapUrl } from "../../lib/abyss/abyssConfig";
 import { isBlocked } from "../../lib/abyss/abyssPreflight";
 import { EditorTooltip } from "../EditorTooltip";
 import { JsonDiffPanel } from "./JsonDiffModal";
@@ -247,6 +248,16 @@ export function KeymapSharingPreview({
                 </p>
               )}
               <div className="flex flex-wrap justify-end gap-2">
+                {review.record && (
+                  <a
+                    className="btn-ghost text-sm mr-auto"
+                    href={abyssKeymapUrl(review.record.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("Open on Abyss")}
+                  </a>
+                )}
                 <button
                   className="btn-ghost text-sm"
                   disabled={busy}

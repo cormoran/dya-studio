@@ -67,9 +67,20 @@ function wrapper({ children }: { children: React.ReactNode }) {
     </ZMKAppContext.Provider>
   );
 }
+const mockTab = {
+  opener: null,
+  closed: false,
+  close: jest.fn(),
+  location: { replace: jest.fn() },
+};
+let openTab: jest.SpyInstance;
+afterEach(() => openTab.mockRestore());
 const applied = jest.fn().mockResolvedValue(undefined);
 beforeEach(() => {
   jest.clearAllMocks();
+  openTab = jest
+    .spyOn(window, "open")
+    .mockReturnValue(mockTab as unknown as Window);
   mockLoad.mockResolvedValue({ state: { currentKeymap: device } });
   mockCall.mockResolvedValue({ error: { code: 0 } }); // older firmware
   mockWrite.mockResolvedValue(undefined);
@@ -292,4 +303,93 @@ it("previews both write directions from one captured snapshot without writing or
   expect(client.getKeymap).toHaveBeenCalledTimes(reads);
   expect(mockWrite).not.toHaveBeenCalled();
   expect(client.updateKeymap).not.toHaveBeenCalled();
+});
+
+it("opens the updated keymap only after the cloud write succeeds", async () => {
+  let finish!: () => void;
+  client.updateKeymap.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("save", record as never);
+  });
+  expect(openTab).not.toHaveBeenCalled();
+  let pending!: Promise<boolean>;
+  await act(async () => {
+    pending = result.current.confirm();
+    // Wait until the revalidation reads have reached the write.
+    for (let i = 0; i < 10 && !finish; i++) await Promise.resolve();
+  });
+  expect(openTab).toHaveBeenCalledWith("about:blank", "_blank");
+  expect(mockTab.location.replace).not.toHaveBeenCalled();
+  await act(async () => {
+    finish();
+    await pending;
+  });
+  expect(mockTab.location.replace).toHaveBeenCalledWith(
+    "https://abyss.keyboard-hub.com/keymap/one",
+  );
+  expect(mockTab.close).not.toHaveBeenCalled();
+  expect(result.current.savedKeymapUrl).toBe(
+    "https://abyss.keyboard-hub.com/keymap/one",
+  );
+});
+
+it("closes the reserved tab when a cloud update fails", async () => {
+  client.updateKeymap.mockRejectedValueOnce(new Error("Upload failed"));
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("save", record as never);
+  });
+  await act(async () => {
+    await result.current.confirm();
+  });
+  expect(mockTab.close).toHaveBeenCalledTimes(1);
+  expect(mockTab.location.replace).not.toHaveBeenCalled();
+  expect(result.current.savedKeymapUrl).toBeNull();
+  expect(result.current.error).toBe("Upload failed");
+});
+
+it("opens the newly created record even if later identity persistence fails", async () => {
+  mockCall.mockImplementation(async (request) =>
+    request.setKeymapIdentifier
+      ? { error: { code: 0 } }
+      : { keymapIdentifier: { identifier: "" } },
+  );
+  client.importKeymap.mockResolvedValueOnce({ id: "new-record", version: 1 });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.create("New map", "private");
+  });
+  expect(mockTab.location.replace).toHaveBeenCalledWith(
+    "https://abyss.keyboard-hub.com/keymap/new-record",
+  );
+  expect(mockTab.close).not.toHaveBeenCalled();
+  expect(result.current.error).toMatch(/identity could not be stored/);
+});
+
+it("keeps a direct link and completes creation when the browser blocks the tab", async () => {
+  openTab.mockReturnValueOnce(null);
+  client.importKeymap.mockResolvedValueOnce({ id: "new-record", version: 1 });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.create("New map", "private");
+  });
+  expect(result.current.message).toBe("Saved to Abyss.");
+  expect(result.current.savedKeymapUrl).toBe(
+    "https://abyss.keyboard-hub.com/keymap/new-record",
+  );
+  expect(mockTab.location.replace).not.toHaveBeenCalled();
 });

@@ -20,6 +20,7 @@ const mockSharing = {
   busy: false,
   error: null,
   message: null,
+  savedKeymapUrl: null as string | null,
   current: null as unknown,
   keymaps: [] as unknown[],
   changed: false,
@@ -52,6 +53,7 @@ beforeEach(() => {
   mockSharing.keymaps = [];
   mockSharing.changed = false;
   mockSharing.review = null;
+  mockSharing.savedKeymapUrl = null;
 });
 it("shows login, search and file actions while signed out", () => {
   show();
@@ -145,4 +147,14 @@ it("opens an owned map from the full row without a Preview button", () => {
   fireEvent.click(screen.getByRole("button", { name: "My layout" }));
   expect(mockSharing.prepare).toHaveBeenCalledWith("apply", record);
   expect(mockSharing.confirm).not.toHaveBeenCalled();
+});
+
+it("keeps the last saved record accessible if automatic opening was blocked", () => {
+  mockAuth.isAuthenticated = true;
+  mockSharing.savedKeymapUrl =
+    "https://abyss.keyboard-hub.com/keymap/saved-one";
+  show();
+  const link = screen.getByRole("link", { name: "Open on Abyss" });
+  expect(link).toHaveAttribute("href", mockSharing.savedKeymapUrl);
+  expect(link).toHaveAttribute("target", "_blank");
 });

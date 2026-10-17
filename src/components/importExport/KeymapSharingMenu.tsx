@@ -255,6 +255,16 @@ export function KeymapSharingMenu({
                 {t(sharing.message)}
               </p>
             )}
+            {sharing.savedKeymapUrl && (
+              <a
+                className="btn-ghost text-xs inline-flex"
+                href={sharing.savedKeymapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("Open on Abyss")}
+              </a>
+            )}
             {error && !review && !creating && (
               <p role="alert" className="text-xs text-[var(--color-danger)]">
                 {t(error)}

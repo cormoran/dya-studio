@@ -27,6 +27,7 @@ import {
 } from "../proto/cormoran/fast_keymap/fast_keymap";
 import { createAbyssZmkConnection } from "../lib/abyss/zmkConnectionAdapter";
 import { createAbyssNotificationSource } from "../lib/abyss/abyssNotifications";
+import { abyssKeymapUrl } from "../lib/abyss/abyssConfig";
 import { getAbyssClient } from "../lib/abyss/abyssClient";
 import {
   abyssErrorMessageKey,
@@ -133,6 +134,7 @@ export function useKeymapSharing(
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedKeymapUrl, setSavedKeymapUrl] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [keymaps, setKeymaps] = useState<AbyssKeymapSummary[]>([]);
   const [current, setCurrent] = useState<AbyssKeymapSummary | null>(null);
@@ -149,6 +151,7 @@ export function useKeymapSharing(
     session.current = connection;
     generation.current += 1;
     setReview(null);
+    setSavedKeymapUrl(null);
     setKeymaps([]);
     setCurrent(null);
     setIdentity("unknown");
@@ -351,8 +354,29 @@ export function useKeymapSharing(
     );
   };
 
-  const confirm = () =>
-    operation(async (valid) => {
+  // Reserve a tab during the click so async API work does not lose popup permission.
+  // If blocked, the menu keeps a direct link to the successfully saved record.
+  function reserveKeymapTab() {
+    let tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    return {
+      show(id: string) {
+        const url = abyssKeymapUrl(id);
+        setSavedKeymapUrl(url);
+        if (tab && !tab.closed) tab.location.replace(url);
+        tab = null;
+      },
+      close() {
+        if (tab && !tab.closed) tab.close();
+      },
+    };
+  }
+
+  const confirm = () => {
+    if (busyRef.current || !review || isBlocked(review.checks))
+      return Promise.resolve(false);
+    const tab = review.kind === "save" ? reserveKeymapTab() : null;
+    return operation(async (valid) => {
       const pending = review;
       if (!pending || isBlocked(pending.checks)) return;
       // Freeze the reviewed payload; never silently replace it with a new snapshot.
@@ -385,6 +409,7 @@ export function useKeymapSharing(
           message: "Saved from DYA Studio",
         });
         valid();
+        tab?.show(pending.record.id);
         await associate(pending.record.id, valid);
       } else {
         await runWithUnlock(() =>
@@ -405,10 +430,14 @@ export function useKeymapSharing(
         pending.kind === "save" ? "Saved to Abyss." : "Applied to keyboard.",
       );
       if (authenticated) await refreshList(valid);
-    });
+    }).finally(() => tab?.close());
+  };
 
-  const create = (name: string, visibility: "private" | "public") =>
-    operation(async (valid) => {
+  const create = (name: string, visibility: "private" | "public") => {
+    if (busyRef.current || !name.trim() || !authenticated || !getAbyssClient())
+      return Promise.resolve(false);
+    const tab = reserveKeymapTab();
+    return operation(async (valid) => {
       if (!name.trim()) return;
       const client = getAbyssClient();
       if (!client || !authenticated) return;
@@ -428,6 +457,7 @@ export function useKeymapSharing(
         ? await client.createKeymap(resolved.layout.variation.id, input)
         : await client.importKeymap(input);
       valid();
+      tab.show(written.id);
       // Once the record exists, a metadata/list failure must not invite a duplicate create.
       setMessage("Saved to Abyss.");
       try {
@@ -441,7 +471,8 @@ export function useKeymapSharing(
             : abyssErrorMessageKey(caught),
         );
       }
-    });
+    }).finally(() => tab.close());
+  };
 
   const saveFile = () =>
     operation(async (valid) => {
@@ -470,6 +501,7 @@ export function useKeymapSharing(
     busy,
     error,
     message,
+    savedKeymapUrl,
     keymaps,
     current,
     changed,

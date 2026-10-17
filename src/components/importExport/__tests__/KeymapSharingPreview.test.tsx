@@ -227,3 +227,32 @@ it("Escape cancels only the confirmation and returns to the existing preview", a
   expect(close).not.toHaveBeenCalled();
   expect(confirm).not.toHaveBeenCalled();
 });
+
+it("offers the record page in a new tab without changing the keymap", () => {
+  render(<Harness />);
+  const link = screen.getByRole("link", { name: "Open on Abyss" });
+  expect(link).toHaveAttribute(
+    "href",
+    "https://abyss.keyboard-hub.com/keymap/one",
+  );
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  expect(confirm).not.toHaveBeenCalled();
+});
+
+it("omits the Abyss page link for file previews", () => {
+  render(
+    <LanguageProvider>
+      <KeymapSharingPreview
+        review={{ ...base, record: undefined }}
+        busy={false}
+        error={null}
+        canSave={false}
+        onClose={close}
+        onDirectionChange={() => {}}
+        onConfirm={confirm}
+      />
+    </LanguageProvider>,
+  );
+  expect(screen.queryByRole("link", { name: "Open on Abyss" })).toBeNull();
+});
