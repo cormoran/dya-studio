@@ -100,15 +100,15 @@ export function KeymapSharingPreview({
             <div className="shrink-0 flex items-start gap-3 p-3 tablet:p-4 border-b border-[var(--color-border)]">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Dialog.Title className="min-w-0 text-base font-medium break-words">
-                    {t("Preview {{name}}", { name })}
-                  </Dialog.Title>
                   {(review.record?.visibility === "private" ||
                     review.record?.visibility === "public") && (
                     <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
                       {review.record.visibility}
                     </span>
                   )}
+                  <Dialog.Title className="min-w-0 text-base font-medium break-words">
+                    {t("Preview {{name}}", { name })}
+                  </Dialog.Title>
                 </div>
                 <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
                   {description}

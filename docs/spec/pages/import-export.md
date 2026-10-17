@@ -56,7 +56,7 @@ IE-001〜IE-012 は旧独立ページの契約として廃止。認証保持は 
 
 | IE-028 | Preview の Include checkbox → 方向/表示形式切替 → 最終確認 | キーマップ（レイヤー名/キー割当）、Combo、Macro、存在するモジュール名ごとに選択でき、初期値は全て ON。1つの module checkbox は global と全 layer override をまとめて選択。OFF 部分は書込み先の現状を維持し、visual/code diff・変更数・preflight・実書込み・readback の対象を一致させる。方向切替と確認 Cancel では選択を保持し、preview を閉じて再度開くと全 ON。OFF module を持つ書込先だけの layer は module を守るため保持する。キーマップ OFF は layer を追加/削除せず、既存 layer の module のみ対象とし、その制約を表示。全差分が空なら確認/実行不可。最終確認には選択した項目を列挙し、確認中/処理中の選択変更は不可。checkbox・方向切替だけでは読取/書込みなし | S2/S3/S5/S7 |
 
-| IE-029 | 所有キーマップ一覧 / Abyss record の Preview を開く | `Your keymaps`（自分のキーマップ）の行では `visibility` が `public` の場合のみ、名前の右側に小文字の `public` ラベルを表示する。Preview modal では header のタイトル横に、公開状態に応じて小文字の `private` / `public` ラベルを表示する。公開状態不明・file preview には表示しない。表示のみで公開設定や保存先を変更しない | S2 |
+| IE-029 | 所有キーマップ一覧 / Abyss record の Preview を開く | `Your keymaps`（自分のキーマップ）の行では `visibility` が `public` の場合のみ、名前の右側に小文字の `public` ラベルを表示する。Preview modal では header のタイトル左側に、公開状態に応じて小文字の `private` / `public` ラベルを表示する。公開状態不明・file preview には表示しない。表示のみで公開設定や保存先を変更しない | S2 |
 
 2026-10-17 のユーザー明示要求に基づき IE-029 を追加。
 
@@ -66,7 +66,7 @@ IE-001〜IE-012 は旧独立ページの契約として廃止。認証保持は 
 2. ファイル保存→JSON を別名で保持→キーを編集→ファイルから反映→visual/code diff で変更先を確認→キーボードに反映→確認 Cancel、編集が残ることを確認。再度反映を確定し、ページ内 Reload 後に元の値が戻ることを確認（IE-017/020/021/022）。Demo は実機 flash の証拠ではない。
 3. 認証環境で current/所有一覧の行を選択して preview を開き、強調キーの tooltip、変更一覧 All layers→単独 layer、Code diff タブ、比較方向を確認。Upload from keyboard to Abyss→Abyss のキーマップを更新→確認 Cancel→再度更新→確認 Save で同じ Abyss record を再取得して確認（IE-015/016/026/027）。
 4. Include を全 ON→キーマップ OFF→module 1つ OFF と変更し、visual/code diff と変更数を比較。方向切替→確認 Cancel 後も選択維持、閉じる→再度 preview で全 ON。global/layer の field path と変更前後を確認する。実行で除外部分が保持されることは Demo/検証用アカウントの適用先 readback と比較して別途確認（IE-028/027）。
-5. 新規保存で private/public を選び保存、一覧更新/record 再取得、sign out 後 cloud section 非表示を確認（IE-019/023）。所有キーマップの行右側には公開済みの場合のみ `public`、Preview header には公開状態に応じて `private` / `public` が表示され、file preview には表示されないことを確認（IE-029）。外部サービス書込みは検証用アカウントでのみ実施。
+5. 新規保存で private/public を選び保存、一覧更新/record 再取得、sign out 後 cloud section 非表示を確認（IE-019/023）。所有キーマップの行右側には公開済みの場合のみ `public`、Preview header のタイトル左側には公開状態に応じて `private` / `public` が表示され、file preview には表示されないことを確認（IE-029）。外部サービス書込みは検証用アカウントでのみ実施。
 6. identity RPC の新旧 firmware を比較。対応機は適用後 identifier の get readback、編集後も同一、再接続後の判定、file 反映後 empty を確認。未対応機は注意表示と file/cloud 機能の継続を確認（IE-024）。
 
 ## 不変条件
