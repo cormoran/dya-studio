@@ -55,7 +55,7 @@
     [class~="bg-[var(--color-warning)]/10"]
   ) {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: 1px solid transparent;
 }
 
 :root.pop :is(.glass-card, .glass-panel)[class*="border-red-"] {
@@ -399,9 +399,9 @@
   border-color: #f0806c;
 }
 
-/* Quiet key outlines let the vivid selection and modified states stand out. */
+/* Borderless white keys soften the surface; selection and focus stay clear. */
 :root.pop button.physical-key.border[class~="border-[var(--color-border)]"] {
-  border-color: var(--glass-border);
+  border-color: transparent;
   border-width: 1px;
 }
 :root.pop
