@@ -13,6 +13,7 @@ import { connectionErrorMessage } from "../lib/connectionError";
 import { useTheme } from "../hooks/useTheme";
 import githubMarkBlack from "../assets/github/GitHub_Invertocat_Black.svg";
 import githubMarkWhite from "../assets/github/GitHub_Invertocat_White.svg";
+import maintainerAvatar from "../assets/maintainer/cormoran707.jpg";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -363,6 +364,24 @@ export function SplashScreen({
           </a>
           .
         </p>
+        <EditorTooltip content="https://x.com/cormoran707">
+          <a
+            href="https://x.com/cormoran707"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="@cormoran707 on X"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+          >
+            <img
+              src={maintainerAvatar}
+              width={24}
+              height={24}
+              className="rounded-full object-cover"
+              alt=""
+              aria-hidden="true"
+            />
+          </a>
+        </EditorTooltip>
       </motion.div>
 
       {/* Connection Notice Dialog */}
