@@ -481,3 +481,8 @@
 :root.pop .encoder-binding-trigger:not(:disabled):hover {
   background-color: #d2eeff;
 }
+
+:root.pop .home-product-gallery {
+  --scrollbar-thumb: #c5e7f8;
+  --scrollbar-thumb-hover: #8ad5f5;
+}

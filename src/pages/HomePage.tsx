@@ -223,7 +223,7 @@ export function HomePage() {
                     </a>
                   </div>
                 </div>
-                <div className="mt-2 overflow-x-auto">
+                <div className="home-product-gallery mt-2 overflow-x-auto">
                   <div className="flex gap-4">
                     {DyaDashImages.map((src, index) => (
                       <img
@@ -283,7 +283,7 @@ export function HomePage() {
                     </a>
                   </div>
                 </div>
-                <div className="mt-2 overflow-x-auto">
+                <div className="home-product-gallery mt-2 overflow-x-auto">
                   <div className="flex gap-4">
                     {Dya2Images.map((src, index) => (
                       <img
