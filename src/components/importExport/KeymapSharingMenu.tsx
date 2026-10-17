@@ -196,11 +196,18 @@ export function KeymapSharingMenu({
                       .map((item) => (
                         <li key={item.id}>
                           <button
-                            className="btn-ghost block w-full text-left text-sm break-words"
+                            className="btn-ghost flex items-center justify-between gap-2 w-full text-left text-sm"
                             disabled={busy}
                             onClick={() => void sharing.prepare("apply", item)}
                           >
-                            {item.name}
+                            <span className="min-w-0 break-words">
+                              {item.name}
+                            </span>
+                            {item.visibility === "public" && (
+                              <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
+                                public
+                              </span>
+                            )}
                           </button>
                         </li>
                       ))}

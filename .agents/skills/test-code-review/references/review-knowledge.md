@@ -11,6 +11,21 @@ before applying them; they are not permanent assertions about implementation.
   values without injecting a notification containing the desired answer; otherwise
   the notification can hide a broken write. Keep notification handling as separate
   behavior coverage.
+- [Unlock guide](../../../../src/hooks/useUnlockGuide.ts) previously depended on
+  the `subsystem` descriptor from `useCustomSubsystem`. The dependency library's
+  `useZMKApp.findSubsystem()` creates a fresh `{ index, identifier }` per lookup;
+  `loadFastKeymap` → `setLoaded` → render therefore restarted `getSnapshot` even
+  without user activity. Depend on connection-scoped primitive identity (index,
+  readiness) and keep genuine session/capability changes reactive. Recheck the
+  installed dependency implementation when reviewing this path.
+- [Unlock lifecycle regression](../../../../src/hooks/__tests__/useUnlockGuide.test.tsx)
+  uses the real custom-subsystem hooks, loader and protobuf codecs, returning a
+  fresh descriptor on each lookup and decoding outgoing `getSnapshot` requests.
+  Establish a completed guide, rerender, and assert that RPC activity settles;
+  then change connection/index and verify a new load completes. The modal's
+  fixed descriptor/mock loader alone missed this feedback loop. For browser
+  checks, compare RPC-log counts across an idle interval after loading and after
+  a harmless rerender; record intentional polling/background requests separately.
 - React debounce/cooldown tests should advance virtual time inside asynchronous
   `act`, with `userEvent.setup({ advanceTimers: jest.advanceTimersByTime })`.
   Check just before and at the boundary, and use distinct values/deadlines for

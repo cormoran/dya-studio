@@ -15,6 +15,7 @@ interface AppLayoutProps {
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isConnecting?: boolean;
+  isHome: boolean;
 }
 
 export function AppLayout({
@@ -24,13 +25,17 @@ export function AppLayout({
   onConnect,
   onDisconnect,
   isConnecting,
+  isHome,
 }: AppLayoutProps) {
   const { t } = useLanguage();
 
   return (
     <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
-      <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header
+        data-home={isHome}
+        className="app-header relative flex shrink-0 items-center justify-end px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300"
+      >
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -40,7 +45,7 @@ export function AppLayout({
           </span>
         )}
         {/* Logo & Brand */}
-        <div className="flex items-center gap-4 flex-shrink-0 mr-4">
+        <div className="app-header-brand flex items-center gap-4">
           <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
@@ -53,7 +58,7 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="app-header-controls flex min-w-0 items-center gap-2">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">

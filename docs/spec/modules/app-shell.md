@@ -38,6 +38,7 @@
 - SHELL-012: AppLayout のヘッダーは640px未満で言語・テーマの個別ボタンを一つの「表示設定」アイコン（44px以上）に置き換える。タップでモーダルを開き、言語（English / 日本語 / 中文）とテーマ（Light / Dark / Pop / Neutral）を選べる。変更は即時反映し SHELL-005/006 と同じ localStorage に保存する。閉じる・外側クリック・Escape は変更を取り消さず、モーダルだけ閉じてトリガーへフォーカスを戻す。640px以上のヘッダーは言語・テーマそれぞれのアイコンからカスタムメニューを開く。ヘッダー操作間と両アイコン間の gap は8px、SplashScreen の言語・テーマ間は6pxとする。接続・端末設定には書込まない。根拠: ユーザー要求（2026-09-20）、S4、[MobileDisplaySettings](../../../src/components/MobileDisplaySettings.tsx)。SplashScreen や独立ページのヘッダーは対象外。
 - SHELL-013: viewport が横向きかつ幅1023px以下・高さ500px以下のとき、固定高shell内のpage単位縦scrollを解除し、header・tab列・main contentを含むdocument全体を縦scrollする。これにより低いモバイル横画面でheaderを画面外へ移動し、main contentへ高さを使える。条件外では動的viewport高にshellを収め、header/tab列を固定したまま各pageが縦scrollし、tabごとのscroll位置を維持する。特に縦画面では、ブラウザーUIによる `vh` と表示領域の差をdocument全体の余分なscrollとして露出させない。横overflow、保存、tab保持の契約は変更しない。根拠: ユーザー要求（2026-09-20）、S1/S3/S4、[共通CSS](../../../src/index.css)。
 - SHELL-014: 幅1023px以下では、テキスト入力を受ける `input`・`select`・`textarea` の実効font sizeを16px未満にしない。入力のfocusだけでモバイルブラウザーのviewportが拡大されず、値・保存範囲・focus操作は変更しない。checkbox・radio・range・fileなどテキスト入力を伴わないcontrolは対象外。根拠: ユーザー要求（2026-09-20）、[共通CSS](../../../src/index.css)。
+- SHELL-015: AppLayout のヘッダーは1024px以上かつ Home タブ選択時、ロゴと「DYA Studio」を一体として左右中央に表示する。他のタブでは同じグループを左端へ移動する。1024px未満では全タブで初めから左揃えとし、タブ切替による位置移動を行わない。640px未満では全タブで元の左端のロゴのみを表示する。接続状態・表示設定は常に同じ段の右側に置き、長い端末名は省略する。タブ移動・ブラウザー履歴で位置が切り替わる際は420msのCSS transitionで素早く移動して滑らかに停止し、移動途中の再切替でも現在位置から反転する。`prefers-reduced-motion: reduce` では即時切替とする。接続・設定操作と保存範囲は変更しない。根拠: ユーザー要求（2026-10-17）、S1/S4、[共通CSS](../../../src/index.css)。
 
 検証: 320/390pxとデスクトップで同じページを比較し、ページ幅・scrollWidth、個別横スクロール領域、icon-onlyのaccessible nameを確認する。通常タップ/長押し/指を動かす操作を区別し、長押しで保存や削除が実行されないことを確認する。実機touch検証と合成イベントの自動テストは別の証拠として記録する。
 
@@ -59,7 +60,8 @@
 1. Demo で Home → Keymap。URL `/keymap` と tab を確認（SHELL-001）。
 2. layer を変更、Settings へ行って戻る。元の layer 選択が残る（SHELL-002）。保存成功の証明にはしない。
 3. browser Back/Forward。履歴に対応した tab を確認（SHELL-003）。
-4. 元の theme/language を記録する。言語ドロップダウンで3言語を直接選び、選択名・翻訳・html lang を確認する。browser reload 後の選択維持、Escape 取消しで値が変わらないことを確認し、元の言語に戻して再読込する（SHELL-005/006）。他 worker とは別 origin を使用。
+4. Home → 他のタブ → Home でヘッダーの中央・左端間の移動を確認する。1024px未満では常に左揃え、640px未満ではロゴのみとなること、動きを抑える設定では即時切替になることも確認する（SHELL-015）。
+5. 元の theme/language を記録する。言語ドロップダウンで3言語を直接選び、選択名・翻訳・html lang を確認する。browser reload 後の選択維持、Escape 取消しで値が変わらないことを確認し、元の言語に戻して再読込する（SHELL-005/006）。他 worker とは別 origin を使用。
 
 ## 不変条件
 
