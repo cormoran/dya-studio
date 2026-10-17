@@ -400,10 +400,11 @@
 }
 
 /* Quiet key outlines let the vivid selection and modified states stand out. */
-:root.pop .physical-key[class~="border-[var(--color-border)]"] {
+:root.pop button.physical-key.border[class~="border-[var(--color-border)]"] {
   border-color: #35628a;
   border-width: 1px;
 }
-:root.pop .physical-key[class~="border-[var(--color-border)]"]:hover {
+:root.pop
+  button.physical-key.border[class~="border-[var(--color-border)]"]:hover {
   border-color: var(--color-electric);
 }
