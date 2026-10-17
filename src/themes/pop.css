@@ -7,8 +7,9 @@
     /* Bright fills are separate from the darker accents used for text on white. */
     --pop-sunshine: #ffd43b;
     --pop-leaf: #4dd66d;
-    --pop-sky: #69b8f7;
-    --pop-sky-hover: #4da6ec;
+    --pop-sky: #299bff;
+    --pop-sky-hover: #1688ed;
+    --pop-orange: #ffab40;
 
     --color-electric: #155b91;
     --color-neon: #217238;
@@ -25,8 +26,8 @@
     --color-border: #e8e8e8;
     --color-border-hover: #626262;
 
-    --glass-bg: #fff8e7;
-    --glass-border: #dfd1ae;
+    --glass-bg: #ffdbaf;
+    --glass-border: #c18348;
 
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
@@ -43,7 +44,7 @@
   text-shadow: none !important;
 }
 
-/* Warm neutral cards yield to explicit warning and destructive surfaces. */
+/* Apricot cards yield to explicit warning and destructive surfaces. */
 :root.pop
   :is(.glass-card, .glass-panel):not(.warning-banner):not(
     [class*="border-red-"],
@@ -387,4 +388,21 @@
 
 :root.pop :is(input, textarea, select, .physical-key) {
   font-family: var(--font-ui);
+}
+
+/* Orange marks page identity; blue remains the color of interactive selection. */
+:root.pop
+  div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.pop
+  div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  background: var(--pop-orange);
+  border-color: var(--glass-border);
+}
+
+/* Give ordinary white keycaps a warm, distinct edge without masking states. */
+:root.pop .physical-key[class~="border-[var(--color-border)]"] {
+  border-color: var(--glass-border);
+}
+:root.pop .physical-key[class~="border-[var(--color-border)]"]:hover {
+  border-color: var(--color-electric);
 }
