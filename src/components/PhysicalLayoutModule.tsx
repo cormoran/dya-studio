@@ -71,11 +71,11 @@ export function PhysicalLayoutModule({
   const content = (
     <div
       className={`
-        absolute border transition-colors duration-150 pointer-events-auto
+        physical-layout-module absolute border transition-colors duration-150 pointer-events-auto
         flex flex-col items-center justify-center gap-1 p-1.5 overflow-hidden
         ${
           module.enabled
-            ? "bg-[var(--color-electric)]/10 border-[var(--color-electric)]/40 text-[var(--color-electric)]"
+            ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)]"
             : "bg-[var(--color-surface)]/70 border-dashed border-[var(--color-text-muted)]/40 text-[var(--color-text-muted)] opacity-70"
         }
         ${isRound ? "rounded-full" : "rounded-lg"}

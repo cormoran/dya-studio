@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @import "tailwindcss";
+@import "./themes/pop.css";
+@import "./themes/neutral.css";
 @config "../tailwind.config.js";
 
 @layer base {
@@ -703,5 +705,34 @@
   .diff-sheet {
     border-radius: 0;
     border-width: 0;
+  }
+}
+
+/* Keep adjacent combo keys distinct without moving their physical positions. */
+.combo-position-preview .physical-key-position {
+  padding: 2px;
+}
+
+/* Product images stay the focus; keep the horizontal scroll affordance quiet. */
+.home-product-gallery {
+  padding-bottom: 4px;
+}
+
+.home-product-gallery::-webkit-scrollbar {
+  height: 5px;
+}
+
+.home-product-gallery::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .home-product-gallery {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .home-product-gallery:hover {
+    scrollbar-color: var(--scrollbar-thumb-hover) transparent;
   }
 }

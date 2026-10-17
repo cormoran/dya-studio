@@ -45,7 +45,9 @@
 
 ## 現行の機能仕様
 
-KM-024: 主要操作の tooltip は、Stream が ON の間は押したキーボードのキーをハイライトすること、Reset が以前のバージョンや初期値に戻す入口であること、Save が現在適用中のキーマップを再起動後も維持するための保存であることを説明する。レイヤー名変更・追加・削除と editor の dialog/floating 切替も対象や表示結果を説明し、短いボタン名・accessible name は維持する。根拠: 2026-10-17 ユーザー要求、KeymapPage。文言変更のみで操作・保存境界は変更しない。
+KM-025: 主要操作の tooltip は、Stream が ON の間は押したキーボードのキーをハイライトすること、Reset が以前のバージョンや初期値に戻す入口であること、Save が現在適用中のキーマップを再起動後も維持するための保存であることを説明する。レイヤー名変更・追加・削除と editor の dialog/floating 切替も対象や表示結果を説明し、短いボタン名・accessible name は維持する。根拠: 2026-10-17 ユーザー要求、KeymapPage。文言変更のみで操作・保存境界は変更しない。
+
+KM-024: 物理レイアウトの Trackball・Touch Pad・Encoder・custom module は、全テーマで通常キーと同じ背景・枠・文字色を使う。表示専用のためhoverしても背景・枠・文字色は変化させない。Popでは通常時の枠線を表示しない。形状・アイコン・ラベルで種類を示し、無効moduleの半透明・破線・disabled表示は維持する。表示専用で選択・binding編集は行わず、hoverの詳細tooltipを維持する。根拠: [PhysicalLayoutModule](../../../src/components/PhysicalLayoutModule.tsx)、S5。2026-10-17ユーザー要求。
 
 KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示は[共通画面 SHELL-009/010/011](../modules/app-shell.md)、floating editor のviewport内配置は[binding editor BIND-011](../modules/binding-editor.md)に従う。モバイルでもlayer切替列とプレビューの個別横スクロールを保持し、bindingの座標・保存契約は変更しない（S1/S5、2026-09-20ユーザー要求）。
 

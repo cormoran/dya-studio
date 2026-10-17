@@ -5,6 +5,7 @@ import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 import { LanguageToggle } from "./LanguageToggle";
+import { ThemeSelect } from "./ThemeSelect";
 import { useLanguage } from "../hooks/useLanguage";
 import { getCurrentVersion } from "../i18n/releaseNotes";
 import { EditorTooltip } from "./EditorTooltip";
@@ -113,25 +114,26 @@ export function SplashScreen({
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-cyber opacity-30" />
-      <div className="absolute right-6 top-6 z-20">
+      <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5">
         <LanguageToggle />
+        <ThemeSelect />
       </div>
 
       {/* Animated rings */}
       <motion.div
-        className="absolute w-[400px] h-[400px] rounded-full border border-[var(--color-electric)]/20"
+        className="splash-ring-inner absolute w-[400px] h-[400px] rounded-full border border-[var(--color-electric)]/20"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       />
       <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full border border-[var(--color-electric)]/10"
+        className="splash-ring-middle absolute w-[500px] h-[500px] rounded-full border border-[var(--color-electric)]/10"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
       />
       <motion.div
-        className="absolute w-[600px] h-[600px] rounded-full border border-[var(--color-electric)]/5"
+        className="splash-ring-outer absolute w-[600px] h-[600px] rounded-full border border-[var(--color-electric)]/5"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
@@ -221,7 +223,7 @@ export function SplashScreen({
                 <button
                   onClick={() => handleConnectClick("demo")}
                   disabled={isConnecting}
-                  className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                  className="splash-demo-button relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                   aria-label={t("Try Demo Mode")}
                   title={t("Try Demo Mode (no device required)")}
                 >
@@ -330,7 +332,7 @@ export function SplashScreen({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity"
           >
             <img
-              src={theme === "light" ? githubMarkBlack : githubMarkWhite}
+              src={theme === "dark" ? githubMarkWhite : githubMarkBlack}
               width={24}
               height={24}
               className="object-contain"

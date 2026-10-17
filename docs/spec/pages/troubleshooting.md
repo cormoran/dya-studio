@@ -33,6 +33,8 @@
 
 DIAG-010: Refresh All の tooltip は利用可能な診断情報をキーボードから再読み込みすること、Copy Support Report は収集済みの診断情報をサポート向けにクリップボードへコピーすることを説明する。コピーによる再読込や外部送信を示唆しない（2026-10-17 ユーザー要求、TroubleshootingPage）。
 
+Popでは診断summary badgeを、OKはミント、注意はクリームイエロー、エラーは淡いコーラルの背景と濃い同系色の文字で表示する。文言と状態判定は維持する（DIAG-003/004/007/008/009、SectionSummaryBadge、2026-10-17ユーザー要求）。
+
 モバイル幅のページ表示・共通操作・説明は[共通画面 SHELL-009/010/011](../modules/app-shell.md)に従う。下記の可用性・保存・エラー契約は画面幅で変わらない。
 
 各診断sectionのRefreshも640px未満ではアイコンだけを表示し、section固有のaccessible name・無効条件・RPCは維持する。

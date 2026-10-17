@@ -29,7 +29,8 @@ describe("MobileDisplaySettings", () => {
     expect(
       screen.getByRole("dialog", { name: "Display settings" }),
     ).toBeVisible();
-    await user.selectOptions(screen.getByLabelText("Theme"), "dark");
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Dark" }));
     expect(document.documentElement).toHaveClass("dark");
     expect(localStorage.getItem("dya-studio-theme")).toBe("dark");
     await user.selectOptions(screen.getByLabelText("Language"), "ja");
@@ -40,7 +41,25 @@ describe("MobileDisplaySettings", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "表示設定" }));
     expect(screen.getByLabelText("言語")).toHaveValue("ja");
-    expect(screen.getByLabelText("テーマ")).toHaveValue("dark");
+    expect(screen.getByRole("button", { name: "テーマ" })).toHaveAttribute(
+      "title",
+      "テーマ: ダーク",
+    );
+  });
+
+  it("Escape closes only the nested theme menu without changing the saved theme", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    await user.click(screen.getByRole("button", { name: "Display settings" }));
+    const themeTrigger = screen.getByRole("button", { name: "Theme" });
+    await user.click(themeTrigger);
+    await user.keyboard("{ArrowDown}{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Display settings" }),
+    ).toBeVisible();
+    expect(themeTrigger).toHaveFocus();
+    expect(localStorage.getItem("dya-studio-theme")).toBe("light");
   });
 
   it("closes on an outside tap", async () => {
@@ -58,7 +77,8 @@ describe("MobileDisplaySettings", () => {
     renderSettings();
     const trigger = screen.getByRole("button", { name: "Display settings" });
     await user.click(trigger);
-    await user.selectOptions(screen.getByLabelText("Theme"), "dark");
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Dark" }));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),

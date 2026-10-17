@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { IconSun, IconMoon, IconPlugConnectedX } from "@tabler/icons-react";
+import { IconPlugConnectedX } from "@tabler/icons-react";
 import DyaLogo from "../assets/dya.svg?react";
-import { useTheme } from "../hooks/useTheme";
+import { ThemeSelect } from "../components/ThemeSelect";
 import { useLanguage } from "../hooks/useLanguage";
 import type { ConnectionMethod } from "../components/DeviceConnection";
 import { LanguageToggle } from "../components/LanguageToggle";
@@ -27,7 +27,6 @@ export function AppLayout({
   isConnecting,
   isHome,
 }: AppLayoutProps) {
-  const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
 
   return (
@@ -59,7 +58,7 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="app-header-controls flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="app-header-controls flex min-w-0 items-center gap-2">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -99,24 +98,9 @@ export function AppLayout({
           <div className="sm:hidden shrink-0">
             <MobileDisplaySettings />
           </div>
-          <div className="hidden sm:flex items-center gap-4 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <LanguageToggle />
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle shrink-0"
-              aria-label={
-                theme === "dark"
-                  ? t("Switch to light mode")
-                  : t("Switch to dark mode")
-              }
-            >
-              {theme === "dark" ? (
-                <IconSun size={18} />
-              ) : (
-                <IconMoon size={18} />
-              )}
-            </button>
+            <ThemeSelect />
           </div>
         </div>
       </header>

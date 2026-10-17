@@ -1,0 +1,176 @@
+@layer base {
+  :root.neutral {
+    color-scheme: light;
+
+    --color-electric: #404040;
+    --color-neon: #525252;
+    --color-cyber: #595959;
+    --color-warning: #925000;
+
+    --color-bg: #fafafa;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #f5f5f5;
+    --color-text: #171717;
+    --color-text-secondary: #525252;
+    --color-text-muted: #666666;
+    --color-border: rgba(0, 0, 0, 0.1);
+    --color-border-hover: rgba(0, 0, 0, 0.2);
+
+    --glass-bg: #ffffff;
+    --glass-border: rgba(0, 0, 0, 0.1);
+
+    --scrollbar-track: #f5f5f5;
+    --scrollbar-thumb: #a3a3a3;
+    --scrollbar-thumb-hover: #737373;
+  }
+}
+
+/* Keep shared components quiet, including decorations with fixed cyber colors. */
+:root.neutral .glass-card {
+  box-shadow: 0 2px 8px rgba(36, 36, 36, 0.04);
+}
+
+:root.neutral .glass-panel {
+  background: var(--glass-bg);
+}
+
+:root.neutral .bg-gradient-dark {
+  background: var(--color-bg);
+}
+
+:root.neutral .bg-gradient-cyber {
+  background: var(--color-surface);
+}
+
+:root.neutral .text-glow-electric,
+:root.neutral .text-glow-neon {
+  text-shadow: none;
+}
+
+:root.neutral .border-glow-electric {
+  border-color: var(--color-border-hover);
+  box-shadow: none;
+}
+
+:root.neutral .status-indicator.connected,
+:root.neutral .tab-trigger[data-state="active"]::after {
+  box-shadow: none;
+}
+
+:root.neutral .input-field:focus,
+:root.neutral .select-field:focus {
+  border-color: var(--color-electric);
+  box-shadow: 0 0 0 2px rgba(64, 64, 64, 0.16);
+}
+
+:root.neutral .select-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+}
+
+/* Splash transport buttons, selected physical keys, and the devtool launcher. */
+:root.neutral [class*="shadow-"][class*="rgba(0,212,255"],
+:root.neutral [class*="shadow-"][class*="rgba(0,255,204"],
+:root.neutral [class*="shadow-"][class*="rgba(139,92,246"],
+:root.neutral [class*="shadow-glow-"] {
+  --tw-shadow: 0 2px 6px rgba(36, 36, 36, 0.1);
+  box-shadow: 0 2px 6px rgba(36, 36, 36, 0.1);
+}
+
+/* Semantic warnings retain an amber surface and dark, readable text. */
+:root.neutral .warning-banner {
+  border-color: #c9954d;
+  background-color: #fff4df;
+  color: #78350f;
+}
+
+/* Primary actions stay white, including hover; gray is reserved for disabled actions. */
+:root.neutral :is(.btn-electric, .btn-neon):not(:disabled),
+:root.neutral :is(.btn-electric, .btn-neon):not(:disabled):hover {
+  background: #ffffff;
+  border-color: #171717;
+  color: #171717;
+}
+
+:root.neutral :is(.btn-electric, .btn-neon):disabled {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-muted);
+}
+
+/* Existing accent-fill classes identify selected layers, macros, combos, keys,
+   output priority and shared value selectors. Exclude switch tracks and disabled
+   controls; an inset outline also marks selected controls without a CSS border. */
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/10"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/15"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/20"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-neon)]/10"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-cyber)]/10"]:not(:disabled):not(
+    [role="switch"]
+  ) {
+  background: #ffffff;
+  border-color: #171717;
+  color: #171717;
+  box-shadow: inset 0 0 0 1px #171717;
+}
+
+/* Normalize bordered accent controls, including splash border-2 buttons, to one
+   thin line. Borderless selections keep the inset indicator above. */
+:root.neutral
+  button:is(.border, .border-2):is(
+    [class~="bg-[var(--color-electric)]/10"],
+    [class~="bg-[var(--color-electric)]/15"],
+    [class~="bg-[var(--color-electric)]/20"],
+    [class~="bg-[var(--color-neon)]/10"],
+    [class~="bg-[var(--color-cyber)]/10"]
+  ):not([role="switch"]) {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+/* Page-heading icons, current OS rows and informational status cards use these
+   exact paired utilities. Warning/error surfaces use their own semantic colors. */
+:root.neutral
+  div[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.neutral
+  div[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  background: #ffffff;
+  border-color: #171717;
+}
+
+/* Heading icons are decoration, so keep their white tiles lightly outlined. */
+:root.neutral
+  div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.neutral
+  div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  border-color: var(--color-border-hover);
+}
+
+/* USB/BLE icon circles and help/guidance panels share these border utilities.
+   Restrict to div containers so status dots, switch tracks and rules keep fill. */
+:root.neutral
+  div:is(
+    .rounded-lg,
+    .rounded-full
+  )[class~="bg-[var(--color-border)]"][class~="border-[var(--color-border-hover)]"] {
+  background: #ffffff;
+}
+
+/* The active BLE profile has a separate accent pair; retain its selection outline. */
+:root.neutral
+  div.rounded-full[class~="bg-[var(--color-cyber)]/20"][class~="border-[var(--color-cyber)]/40"] {
+  background: #ffffff;
+  border-color: #171717;
+}

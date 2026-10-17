@@ -1,0 +1,515 @@
+@layer base {
+  :root.pop {
+    color-scheme: light;
+    --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+    font-family: "M PLUS Rounded 1c", var(--font-ui);
+
+    /* Creamy Pastel × Pop: brighten with white, never muddy colors with gray.
+       Keep saturated accents small and separate from readable text colors. */
+    --pop-leaf: #9ee5bd;
+    --pop-rose: #ff91a6;
+    --pop-sky: #65cafa;
+    --pop-sky-hover: #4fbceb;
+    --pop-focus: #3797c4;
+    --pop-soft: #e4f5ff;
+    --pop-warning: #ffecad;
+    --pop-leaf-hover: #83dba9;
+
+    --color-electric: #155b91;
+    --color-neon: #217238;
+    --color-cyber: #1266b0;
+    --color-warning: #895200;
+
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-text: #393735;
+    --color-text-secondary: #554c46;
+    --color-text-muted: #66584d;
+    /* This token also fills information banners and hover backgrounds. */
+    --color-border: #dcebf2;
+    --color-border-hover: #c5e4f3;
+
+    --glass-bg: #f2faff;
+    --glass-border: #d4e8f2;
+
+    --scrollbar-track: #ffffff;
+    --scrollbar-thumb: var(--pop-sky);
+    --scrollbar-thumb-hover: var(--pop-leaf);
+  }
+}
+
+/* Flat, solid color keeps Pop distinct on every shared page and overlay.
+   Remove rings implemented as shadows too; focus and ring selections use outlines. */
+:root.pop *,
+:root.pop *::before,
+:root.pop *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Ice-blue cards yield to explicit warning and destructive surfaces. */
+:root.pop
+  :is(.glass-card, .glass-panel):not(.warning-banner, .keymap-sharing-menu):not(
+    [class*="border-red-"],
+    [class*="bg-red-"],
+    [class*="border-amber-"],
+    [class*="bg-amber-"],
+    [class*="border-yellow-"],
+    [class*="bg-yellow-"],
+    [class~="border-[var(--color-warning)]"],
+    [class~="bg-[var(--color-warning)]/10"]
+  ) {
+  background: var(--glass-bg);
+  border: 1px solid transparent;
+}
+
+:root.pop :is(.glass-card, .glass-panel)[class*="border-red-"] {
+  border-color: transparent;
+}
+
+:root.pop :is(.glass-card, .glass-panel)[class*="bg-red-"] {
+  background: #fff0ee;
+}
+
+:root.pop
+  :is(.glass-card, .glass-panel):is(
+    [class*="border-amber-"],
+    [class*="border-yellow-"],
+    [class~="border-[var(--color-warning)]"]
+  ) {
+  border-color: transparent;
+}
+
+:root.pop
+  :is(.glass-card, .glass-panel):is(
+    [class*="bg-amber-"],
+    [class*="bg-yellow-"],
+    [class~="bg-[var(--color-warning)]/10"]
+  ) {
+  background: var(--pop-warning);
+}
+
+:root.pop .btn-electric,
+:root.pop .btn-neon {
+  color: var(--color-text);
+  border-width: 1px;
+}
+
+:root.pop .btn-electric {
+  background: var(--pop-sky);
+  border-color: transparent;
+}
+
+:root.pop .btn-neon {
+  background: var(--pop-leaf);
+  border-color: transparent;
+}
+
+:root.pop .btn-electric:not(:disabled):hover {
+  background: var(--pop-sky-hover);
+  border-color: transparent;
+}
+
+:root.pop .btn-neon:not(:disabled):hover {
+  background: var(--pop-leaf-hover);
+  border-color: transparent;
+}
+
+/* Inputs retain a quiet boundary; decorative frames do not compete with focus. */
+:root.pop .input-field,
+:root.pop .select-field {
+  border-color: var(--color-border);
+  border-width: 1px;
+  background-color: #ffffff;
+}
+
+:root.pop .select-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23554c46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+}
+
+:root.pop
+  :is(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [tabindex],
+    [role="switch"]
+  ):focus-visible,
+:root.pop .input-field:focus,
+:root.pop .select-field:focus {
+  outline: 2px solid var(--pop-focus);
+  outline-offset: 1px;
+}
+
+:root.pop .app-tab-list {
+  background: #ffffff;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+:root.pop .tab-trigger[data-state="active"] {
+  color: var(--color-text);
+  background: transparent;
+  font-weight: 700;
+}
+
+:root.pop .tab-trigger[data-state="active"]::after {
+  height: 5px;
+  background: var(--pop-rose);
+}
+
+:root.pop .status-indicator.connected {
+  background: var(--pop-leaf);
+}
+
+/* White canvas, including the splash decoration. */
+:root.pop .bg-gradient-cyber {
+  background: none;
+}
+
+/* Map the utility classes actually shared by page-heading icons, layer and
+   macro selectors, connection profiles, badges, and binding editor controls.
+   Accent text tokens stay dark on white; filled surfaces use dark ink. */
+:root.pop [class~="bg-[var(--color-electric)]"],
+:root.pop [class~="bg-[var(--color-electric)]/5"],
+:root.pop [class~="bg-[var(--color-electric)]/10"],
+:root.pop [class~="bg-[var(--color-electric)]/15"],
+:root.pop [class~="bg-[var(--color-electric)]/20"],
+:root.pop [class~="bg-[var(--color-electric)]/50"] {
+  background-color: var(--pop-sky);
+  color: var(--color-text);
+}
+
+:root.pop [class~="border-[var(--color-electric)]"],
+:root.pop [class~="border-[var(--color-electric)]/5"],
+:root.pop [class~="border-[var(--color-electric)]/10"],
+:root.pop [class~="border-[var(--color-electric)]/20"],
+:root.pop [class~="border-[var(--color-electric)]/25"],
+:root.pop [class~="border-[var(--color-electric)]/30"],
+:root.pop [class~="border-[var(--color-electric)]/40"],
+:root.pop [class~="border-[var(--color-electric)]/50"],
+:root.pop [class~="border-[var(--color-electric)]/60"] {
+  border-color: var(--pop-sky);
+}
+
+:root.pop [class~="hover:bg-[var(--color-electric)]"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-electric)]/5"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-electric)]/10"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-electric)]/20"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-electric)]/50"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-electric)]/80"]:not(:disabled):hover {
+  background-color: var(--pop-sky-hover);
+  color: var(--color-text);
+}
+
+:root.pop [class~="bg-[var(--color-neon)]"],
+:root.pop [class~="bg-[var(--color-neon)]/10"],
+:root.pop [class~="bg-[var(--color-neon)]/20"],
+:root.pop [class~="bg-[var(--color-neon)]/25"] {
+  background-color: var(--pop-leaf);
+  color: var(--color-text);
+}
+
+:root.pop [class~="border-[var(--color-neon)]"],
+:root.pop [class~="border-[var(--color-neon)]/20"],
+:root.pop [class~="border-[var(--color-neon)]/30"],
+:root.pop [class~="border-[var(--color-neon)]/40"],
+:root.pop [class~="border-[var(--color-neon)]/50"] {
+  border-color: var(--pop-leaf);
+}
+
+:root.pop [class~="hover:bg-[var(--color-neon)]"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-neon)]/5"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-neon)]/10"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-neon)]/20"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-neon)]/50"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-neon)]/80"]:not(:disabled):hover {
+  background-color: var(--pop-leaf-hover);
+  color: var(--color-text);
+}
+
+:root.pop [class~="bg-[var(--color-cyber)]"],
+:root.pop [class~="bg-[var(--color-cyber)]/5"],
+:root.pop [class~="bg-[var(--color-cyber)]/10"],
+:root.pop [class~="bg-[var(--color-cyber)]/20"] {
+  background-color: var(--pop-sky);
+  color: var(--color-text);
+}
+
+:root.pop [class~="border-[var(--color-cyber)]"],
+:root.pop [class~="border-[var(--color-cyber)]/20"],
+:root.pop [class~="border-[var(--color-cyber)]/40"] {
+  border-color: var(--pop-sky);
+}
+
+:root.pop [class~="hover:bg-[var(--color-cyber)]"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-cyber)]/5"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-cyber)]/10"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-cyber)]/20"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-cyber)]/50"]:not(:disabled):hover,
+:root.pop [class~="hover:bg-[var(--color-cyber)]/80"]:not(:disabled):hover {
+  background-color: var(--pop-sky-hover);
+  color: var(--color-text);
+}
+
+/* Use dark ink for every accent/secondary label inside solid fills.
+   Both :is groups retain the specificity of the original two attributes. */
+:root.pop
+  :is(
+    [class~="bg-[var(--color-electric)]"],
+    [class~="bg-[var(--color-electric)]/5"],
+    [class~="bg-[var(--color-electric)]/10"],
+    [class~="bg-[var(--color-electric)]/15"],
+    [class~="bg-[var(--color-electric)]/20"],
+    [class~="bg-[var(--color-electric)]/50"],
+    [class~="bg-[var(--color-neon)]"],
+    [class~="bg-[var(--color-neon)]/10"],
+    [class~="bg-[var(--color-neon)]/20"],
+    [class~="bg-[var(--color-neon)]/25"],
+    [class~="bg-[var(--color-cyber)]"],
+    [class~="bg-[var(--color-cyber)]/5"],
+    [class~="bg-[var(--color-cyber)]/10"],
+    [class~="bg-[var(--color-cyber)]/20"]
+  )
+  :is(
+    [class~="text-[var(--color-electric)]"],
+    [class~="text-[var(--color-neon)]"],
+    [class~="text-[var(--color-cyber)]"],
+    [class~="text-[var(--color-text-secondary)]"],
+    [class~="text-[var(--color-text-muted)]"]
+  ) {
+  color: var(--color-text);
+}
+
+/* Checked switches keep their authored dimensions and thumb translations. */
+:root.pop
+  [class~="data-[state=checked]:bg-[var(--color-electric)]"][data-state="checked"] {
+  background-color: var(--pop-sky);
+}
+
+:root.pop [class~="ring-2"] {
+  outline: 2px solid var(--color-cyber);
+  outline-offset: 2px;
+}
+
+:root.pop [class~="ring-2"]:focus-visible {
+  outline: 2px solid var(--pop-focus);
+  outline-offset: 1px;
+}
+
+:root.pop .border-glow-electric {
+  border-color: var(--pop-sky);
+}
+
+:root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"],
+:root.pop button.rounded-full[class~="bg-[var(--color-neon)]/10"],
+:root.pop button.rounded-full[class~="bg-[var(--color-cyber)]/10"] {
+  border-width: 1px;
+  border-color: transparent;
+}
+
+:root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"] svg,
+:root.pop button.rounded-full[class~="bg-[var(--color-neon)]/10"] svg,
+:root.pop button.rounded-full[class~="bg-[var(--color-cyber)]/10"] svg {
+  color: var(--color-text);
+}
+
+/* Disabled controls lose their bright fill even if selected. */
+:root.pop :is(button, input, select, textarea):disabled {
+  background-color: #ededed;
+  border-color: transparent;
+  color: #626262;
+}
+
+:root.pop .warning-banner {
+  border-color: transparent;
+  background-color: var(--pop-warning);
+  color: #704500;
+}
+
+/* Native slider thumbs have their own shadow declarations. */
+:root.pop input::-webkit-slider-thumb {
+  box-shadow: none !important;
+}
+
+:root.pop input::-moz-range-thumb {
+  box-shadow: none !important;
+}
+
+:root.pop [class*="drop-shadow"],
+:root.pop [style*="drop-shadow"] {
+  filter: none !important;
+}
+
+/* Raw editor inputs share the same blue frame as the common form fields. */
+:root.pop
+  input.border:not([type="range"]):not([type="checkbox"]):not(
+    [type="radio"]
+  ):not(:disabled),
+:root.pop select.border:not(:disabled),
+:root.pop textarea.border:not(:disabled) {
+  border-color: var(--color-border);
+  border-width: 1px;
+  background-color: #ffffff;
+}
+
+/* Explanations use the same soft blue as decorative icons, not warning yellow. */
+:root.pop
+  div.rounded-lg[class~="bg-[var(--color-border)]"][class~="border-[var(--color-border-hover)]"] {
+  background-color: var(--pop-soft);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+:root.pop
+  div.rounded-lg[class~="bg-[var(--color-border)]"][class~="border-[var(--color-border-hover)]"]
+  :is(
+    [class~="text-[var(--color-text-secondary)]"],
+    [class~="text-[var(--color-text-muted)]"]
+  ) {
+  color: var(--color-text);
+}
+
+/* The remote face is registered asynchronously on first use of Pop. */
+:root.pop :is(h1, h2, h3, h4, h5, h6) {
+  font-family: "M PLUS Rounded 1c", var(--font-ui);
+  font-weight: 700;
+}
+
+:root.pop :is(button:not(.physical-key), .tab-trigger, [role="tab"]),
+:root.pop .app-header-brand span {
+  font-family: "M PLUS Rounded 1c", var(--font-ui);
+  font-weight: 500;
+}
+
+:root.pop :is(input, textarea, select, .physical-key) {
+  font-family: var(--font-ui);
+}
+
+/* Heading tiles blend with the soft blue guidance and card surfaces. */
+:root.pop
+  div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.pop
+  div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  background: var(--pop-soft);
+  border-color: transparent;
+}
+
+/* Borderless white keys soften the surface; selection and focus stay clear. */
+:root.pop button.physical-key.border[class~="border-[var(--color-border)]"],
+:root.pop .physical-layout-module[class~="border-[var(--color-border)]"] {
+  border-color: transparent;
+  border-width: 1px;
+}
+:root.pop
+  button.physical-key.border[class~="border-[var(--color-border)]"]:hover {
+  border-color: var(--color-electric);
+}
+
+:root.pop .physical-key[aria-current="true"] {
+  border-width: 2px;
+}
+
+/* Separate the readable warning ink from its cream fill; avoid brown alpha mixes. */
+:root.pop
+  :is(
+    [class~="bg-[var(--color-warning)]"],
+    [class~="bg-[var(--color-warning)]/10"],
+    [class~="bg-[var(--color-warning)]/20"]
+  ) {
+  background-color: var(--pop-warning);
+  border-color: transparent;
+  color: var(--color-warning);
+}
+
+:root.pop [class~="hover:bg-[var(--color-warning)]/20"]:not(:disabled):hover {
+  background-color: #ffe8a3;
+}
+
+/* Status ink stays readable on creamy semantic fills. */
+:root.pop .diagnostic-summary-badge[data-tone="ok"] {
+  background-color: var(--pop-leaf);
+  color: var(--color-neon);
+}
+
+:root.pop .diagnostic-summary-badge[data-tone="amber"] {
+  background-color: var(--pop-warning);
+  color: var(--color-warning);
+}
+
+:root.pop .diagnostic-summary-badge[data-tone="red"] {
+  background-color: #ffd6ce;
+  color: #943c30;
+}
+
+:root.pop .demo-subsystem-option {
+  background-color: var(--pop-soft);
+  border-color: transparent;
+}
+
+/* Contrast the white keys against an ice-blue preview canvas. */
+:root.pop .combo-position-preview {
+  background-color: var(--glass-bg);
+}
+
+/* Cream-yellow combo membership keeps the familiar highlight hue. */
+:root.pop .combo-position-preview .physical-key[class~="bg-amber-400/20"] {
+  background-color: var(--pop-warning);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+:root.pop .combo-position-preview .physical-key > .animate-pulse {
+  border-color: transparent;
+  animation: none;
+}
+
+/* Floating menus need a distinct surface above ice-blue cards. */
+:root.pop .keymap-sharing-menu {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-hover);
+}
+
+/* Binding controls use a clear blue fill instead of the muted border token. */
+:root.pop .encoder-binding-trigger {
+  background-color: var(--pop-soft);
+  color: var(--color-text);
+}
+
+:root.pop .encoder-binding-trigger:not(:disabled):hover {
+  background-color: #d2eeff;
+}
+
+:root.pop .home-product-gallery {
+  --scrollbar-thumb: #c5e7f8;
+  --scrollbar-thumb-hover: #8ad5f5;
+}
+
+:root.pop .connection-target-icon[class~="bg-[var(--color-border)]"],
+:root.pop .device-settings-summary {
+  background-color: var(--pop-soft);
+  border-color: transparent;
+}
+
+/* Three connection choices, echoed softly by the surrounding rings. */
+:root.pop button.splash-demo-button:not(:disabled) {
+  background-color: var(--pop-rose);
+}
+
+:root.pop button.splash-demo-button:not(:disabled):hover {
+  background-color: #ff7f98;
+}
+
+:root.pop .splash-ring-inner {
+  border-color: #bde9fc;
+}
+
+:root.pop .splash-ring-middle {
+  border-color: #c6eed8;
+}
+
+:root.pop .splash-ring-outer {
+  border-color: #ffd0d9;
+}

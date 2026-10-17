@@ -447,7 +447,7 @@ export function ConnectionPage() {
                     <div key="usb" className="glass-card p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+                          <div className="connection-target-icon w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
                             <IconUsb
                               size={18}
                               className="text-[var(--color-text-muted)]"
@@ -539,7 +539,7 @@ export function ConnectionPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            className={`connection-target-icon w-10 h-10 rounded-full flex items-center justify-center ${
                               profile.isActive
                                 ? "bg-[var(--color-cyber)]/20 border border-[var(--color-cyber)]/40"
                                 : "bg-[var(--color-border)] border border-[var(--color-border-hover)]"
@@ -767,7 +767,7 @@ export function ConnectionPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+                        <div className="connection-target-icon w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
                           <IconBluetooth
                             size={18}
                             className="text-[var(--color-text-muted)]"

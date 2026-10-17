@@ -18,14 +18,14 @@ import { connectDya2 } from "./dya2.helpers";
 // wipes keymap + all custom settings) nor the Sleep Timeout — only the Idle
 // Timeout is edited and restored.
 
-// Use the control's accessible name so styling changes cannot break this E2E.
+// SET-002 exposes the field label followed by its current value.
 function idleDropdown(page: Page): Locator {
-  return page.getByRole("button", { name: "Idle Timeout", exact: true });
+  return page.getByRole("button", { name: /^Idle Timeout\s/ });
 }
 
-// The TimeDropdown renders its open menu into a body portal (`div.fixed.w-48`).
+// Scope to Idle's options; Sleep has its own mounted, hidden portal.
 function dropdownMenu(page: Page): Locator {
-  return page.locator("div.fixed.w-48");
+  return page.getByRole("group", { name: "Idle Timeout options", exact: true });
 }
 
 // Map the dropdown's display label to a minutes value. Presets: "Never" (0),
@@ -132,7 +132,11 @@ test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (
   // 6) REVERT to the exact original idle value and persist it, so the device is
   //    left exactly as found (net-zero).
   await setIdleMinutes(page, originalMinutes);
-  await expect(idleDropdown(page)).toContainText(originalLabel);
+  // Compare the same rendered text that was captured above; textContent joins
+  // the field label and value spans without innerText's separating newline.
+  await expect(idleDropdown(page)).toContainText(originalLabel, {
+    useInnerText: true,
+  });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({
     timeout: 60_000,
   });
@@ -141,5 +145,6 @@ test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (
   await reReadSettings(page);
   await expect(idleDropdown(page)).toContainText(originalLabel, {
     timeout: 120_000,
+    useInnerText: true,
   });
 });
