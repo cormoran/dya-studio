@@ -257,6 +257,7 @@ function AppContent() {
             isHome={activeTab === "home"}
             isConnected={connection.isConnected}
             deviceName={connection.deviceName}
+            connectionMethod={connection.connectionMethod}
             onConnect={connection.onConnect}
             onDisconnect={connection.onDisconnect}
             isConnecting={connection.isLoading}

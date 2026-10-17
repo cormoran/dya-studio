@@ -5,6 +5,8 @@ export type ConnectionMethod = "serial" | "ble" | "demo";
 export interface ConnectionContextValue {
   isConnected: boolean;
   deviceName: string | undefined;
+  /** Transport used by the current connected session. */
+  connectionMethod?: ConnectionMethod;
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isLoading: boolean;

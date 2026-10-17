@@ -71,6 +71,7 @@ export function DeviceConnectionProvider({
 }: DeviceConnectionProviderProps) {
   const zmkApp = useZMKApp({ connectTimeoutMs });
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod>();
 
   // Dev-only: log every notification pushed from the device, mirroring the RPC
   // logging that wraps outbound calls. Wrap the shared `zmkApp` once here so all
@@ -141,8 +142,8 @@ export function DeviceConnectionProvider({
       setIsReconnecting(false);
     };
 
+    const method = savedConnectionMethod() === "demo" ? "demo" : "serial";
     const reconnect = async () => {
-      const method = savedConnectionMethod();
       if (method === "demo") return connectDemo();
 
       const ports = await getPairedSerialPorts();
@@ -183,6 +184,7 @@ export function DeviceConnectionProvider({
             return;
           }
 
+          setConnectionMethod(method);
           await zmkApp.connect(() =>
             Promise.resolve(transport as RpcTransport),
           );
@@ -218,6 +220,7 @@ export function DeviceConnectionProvider({
         connectFn = connectUSB;
       }
       attemptedMethodRef.current = method;
+      setConnectionMethod(method);
       try {
         await zmkApp.connect(connectFn);
         saveConnectionMethod(method);
@@ -234,6 +237,7 @@ export function DeviceConnectionProvider({
 
   const handleDisconnect = useCallback(() => {
     clearSavedConnectionMethod();
+    setConnectionMethod(undefined);
     zmkApp.disconnect();
   }, [zmkApp]);
 
@@ -250,6 +254,7 @@ export function DeviceConnectionProvider({
   const connectionValue: ConnectionContextValue = {
     isConnected: zmkApp.isConnected,
     deviceName: zmkApp.state.deviceInfo?.name,
+    connectionMethod: zmkApp.isConnected ? connectionMethod : undefined,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
     isLoading: zmkApp.state.isLoading,
