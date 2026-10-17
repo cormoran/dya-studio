@@ -16,7 +16,7 @@
 orca terminal create \\
   --worktree active \\
   --title "Codex" \\
-  --command 'codex --model gpt-5.6-luna -c model_reasoning_effort="low"' \\
+  --command 'codex --profile orca --model gpt-5.6-luna -c model_reasoning_effort="low"' \\
   --json
 ```
 
@@ -28,6 +28,8 @@ orca terminal read --terminal <handle> --json
 ```
 
 `wait.satisfied: true` と、起動画面の `model: gpt-5.6-luna low` の両方を確認してから prompt を送る。別の指定値では `gpt-5.6-luna` と `low` を依頼された model / effort に置き換え、表示された実値も記録する。待機が timeout の場合は一度だけ時間を延長して再試行し、なお未起動なら prompt を送らず blocked と報告する。
+
+新規 Codex worker は全て `--profile orca` を指定する。custom argv で作った terminal は orchestration 上 `external_terminal` になり得るため、coordinator が作成 receipt と handle を所有記録へ保存する。report・生ログの回収と settlement/release 後、release が `processAction: none` なら、この run 自身が作成した idle terminal だけを明示的に close し、`ptyKilled` と terminal list で確認する。他者の external terminal は閉じない。active worker は終了確認まで閉じず、版対応の orchestration 契約を守る。
 
 ## viewport と device emulation
 
@@ -46,6 +48,26 @@ orca exec --page <id> --command "set viewport 1280 800" --json
 実表示の寸法は必要に応じて `orca eval` で `window.innerWidth` / `window.innerHeight`、対象要素の `getBoundingClientRect()`、`document.body.scrollWidth` を読む。レスポンシブ実装では desktop/mobile 両方の control が DOM に存在して片方だけ CSS で hidden になる場合があるため、`querySelectorAll` の件数だけで表示を判定しない。`getBoundingClientRect().height > 0` など実寸で可視要素を絞る。
 
 ## 観測と native dialog
+
+static preview の事前 build は `VITE_BASE=/ npm run build` とし、nested guide URL の H1/active route が実際に描画されることを worker 起動前に確認する。defaultの相対asset baseで深いURLを直接開いた空画面を、製品のroute不具合と即断しない。build後は全session終了まで再生成しない。
+
+`goto` 成功直後の snapshot は React の描画前で空の場合がある。期待する見出し等を現在版で対応する wait で待ってから fresh snapshot とURLを読む。Developer Guideは共通の`h1`の存在だけでなく各route固有の見出しと`aria-current`を確認する。接続中の編集ページ間はアプリ内tabで移動し、document navigationを保存後Reloadの代わりにしない。
+
+`screenshot --json` が `result.data` のbase64と`result.format`を返す版では、成功確認後にローカル画像へdecodeできる。外部artifact公開は不要。たとえば取得JSONを一時ディレクトリの`shot.json`に保存した場合:
+
+```sh
+python3 - <<'PY'
+import base64, json
+from pathlib import Path
+capture = Path('/private/tmp/your-run/shot.json')
+reply = json.loads(capture.read_text())
+assert reply['ok'], reply.get('error')
+assert reply['result']['format'] == 'png'
+capture.with_suffix('.png').write_bytes(base64.b64decode(reply['result']['data'], validate=True))
+PY
+```
+
+実際の応答形式を確認し、存在する画像だけをreportへリンクする。画像と同じpageのURL、言語、theme選択値、viewportと必要なcomputed styleを新しく記録し、対応しなければvisual passを保留する。
 
 CLI の JSON 応答は最初に `ok` を確認する。低コスト実行では refs と tree が重複する JSON 全体を毎回読む代わりに、画面情報を抽出する。jq が利用可能なら次の例を使える。
 

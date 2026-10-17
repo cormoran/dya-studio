@@ -28,6 +28,8 @@ jobs:
         run: python3 -m unittest discover -s .agents/skills/issue-queue/scripts -p 'test_*.py'
       - name: Check product specifications
         run: npm run spec:check
+      - name: Check exploratory coverage acceptance
+        run: node --test .agents/skills/exploratory-ui-test/scripts/check-coverage.test.mjs
       - name: Check preview approval guards
         run: node --test scripts/preview-workflow.test.mjs
       - name: Run tests

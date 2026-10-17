@@ -19,11 +19,15 @@ coordinator は worker にも利用するツールと環境別手順を渡し、
 4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/Renode/実機、初期値を記録する。Renode では DUT ELF の出典・commit、locking/topology、Renode version、shim 境界、boot/connection 回数も記録する。並列 worker は専用のタブ/ブラウザセッションを持ち、各操作の対象を明示する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
 5. 観測 → 操作 → 再観測を繰り返す。要素参照は snapshot 後に取得し、画面変化後は再取得する。UI 操作を DOM/React 状態への書き込みで代用しない。
 
+全体探索では [skill の計画・受入手順](../../.agents/skills/exploratory-ui-test/references/whole-app.md) に従い、全入口の batch と必須観測を dispatch 前に決める。同時実行数と総 batch 数は別であり、最初の2〜3 workerが終了しても未着手の計画済み batch を残して完了にしない。各 worker の最初の charter 後に途中レビューし、`worker_done` 前にも report/checklist の受入確認を依頼する。15〜25分は計画の目安で、必須操作を省くための打切り期限ではない。利用者の明示予算・期限は優先する。
+
 この作業で Demo または割当済み Renode DUT 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save や Renode の一時 NVS を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。Renode の再起動後は erased NVS から始まるため、物理的な電源断をまたぐ永続性の証拠にはしない。実機・外部アカウントは別条件。
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
 
 保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
+
+report の言語・theme と screenshot が食い違う場合は、同じ page ID の新しい DOM/選択値と画像を照合する。食い違いが未解決なら復帰確認・見た目の pass を保留し、ツールの対応付けを含む証拠不足として記録する。画像取得時に生ログとローカル画像を保存し、terminal 終了後の transcript 回収だけに依存しない。
 
 言語の「復元」は最初に観測した言語へ戻すこと。英語は一律の初期値ではない。最終値が初期値と違えば「永続変更なし」と書かない。未接続なだけで Demo 接続が許可されているページを blocked にせず、Try Demo Mode と接続完了まで試し、失敗した場合はエラー/待機状態と復帰操作を残す。
 
@@ -114,6 +118,8 @@ UIレビュー・探索テストでは、担当ページと共有部品を**利�
 
 必須ケースを時間都合で not-run にした report は、正直な途中報告ではあるが合格ではない。次セッションの対象をその未実行ケースだけに絞り、済んだ baseline を繰り返さない。曖昧な「再読み込み」は避け、アプリの Reload ボタンか browser reload コマンドかと操作後の URL/接続状態を必ず記録する。想定外の画面遷移が起きたら実際に押した ref/ラベルを再確認し、ガイドに存在しない復帰手順を存在したように記述しない。
 
+worker は未実行の必須操作を残したまま成功 settlement を送らない。active Task 内の途中レビューで不足を解消し、完了前に coordinator の受入 reply を得る。実行不能なら具体的 blocker と残存値を示して失敗 settlement とする。settlement 後の狭い証拠補足は run 全体で1回（利用者指定があれば優先）とし、事前に割り当てた未着手 batch の初回実行とは区別する。終了した担当の抜けを新しい初回 batch と呼び替えたり、worker ごとに補足回数を増やしたりしない。
+
 ## テスト agent への依頼ひな形
 
 ```text
@@ -125,6 +131,9 @@ UIレビュー・探索テストでは、担当ページと共有部品を**利�
 担当ページ/共有部品を全テーマで確認する。探索ガイドのテーマ一貫性確認に従い、色・書体・各状態と切替漏れの表を残す。
 Demo内の編集・保存・復帰は許可範囲。実機/外部サービスは操作しない。
 出力: <一時ディレクトリ内の専有report>（通常commitしない）。
+必須観測: <coordinatorがdispatch前に確定したchecklist。baseline、独立した変形、保存/復帰の各段階、theme/state、初期/最終表示設定>。
+最初のcharter後に進捗と証拠を送り、active Task中に不足を修正する。
+worker_done前にreport/checklistのレビューをaskし、coordinatorの受入replyを待つ。必須not-runを残して成功終了しない。
 操作単位で仕様ID、期待/実測、証拠、判定。完了報告/PRには要約を残す。
 承認していないconfirm後の動作、未実行、実機依存はpassにしない。
 UIの値とブラウザ設定を元へ戻し、未復帰なら残存値を報告する。
