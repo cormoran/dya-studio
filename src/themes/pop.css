@@ -395,12 +395,14 @@
 }
 
 /* Borderless white keys soften the surface; selection and focus stay clear. */
-:root.pop button.physical-key.border[class~="border-[var(--color-border)]"] {
+:root.pop button.physical-key.border[class~="border-[var(--color-border)]"],
+:root.pop .physical-layout-module[class~="border-[var(--color-border)]"] {
   border-color: transparent;
   border-width: 1px;
 }
 :root.pop
-  button.physical-key.border[class~="border-[var(--color-border)]"]:hover {
+  button.physical-key.border[class~="border-[var(--color-border)]"]:hover,
+:root.pop .physical-layout-module[class~="border-[var(--color-border)]"]:hover {
   border-color: var(--color-electric);
 }
 
