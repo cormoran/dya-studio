@@ -2,10 +2,17 @@
   :root.pop {
     color-scheme: light;
 
-    /* Saturated accents support both white labels and links on white. */
-    --color-electric: #2454df;
-    --color-neon: #ce1680;
-    --color-cyber: #7040ce;
+    /* Bright fills are separate from the darker accents used for text on white. */
+    --pop-coral: #ff7865;
+    --pop-sunshine: #ffd447;
+    --pop-leaf: #55cf69;
+    --pop-sky: #359cf4;
+    --pop-coral-hover: #f26552;
+    --pop-leaf-hover: #43bc57;
+
+    --color-electric: #b73425;
+    --color-neon: #217238;
+    --color-cyber: #1266b0;
     --color-warning: #895200;
 
     --color-bg: #ffffff;
@@ -19,71 +26,71 @@
     --color-border-hover: #626262;
 
     --glass-bg: #ffffff;
-    --glass-border: #2454df;
+    --glass-border: var(--pop-coral);
 
     --scrollbar-track: #ffffff;
-    --scrollbar-thumb: #7040ce;
-    --scrollbar-thumb-hover: #ce1680;
+    --scrollbar-thumb: var(--pop-sky);
+    --scrollbar-thumb-hover: var(--pop-leaf);
   }
 }
 
 :root.pop .glass-card {
-  box-shadow: 3px 3px 0 #ce1680;
+  box-shadow: 3px 3px 0 var(--pop-leaf);
 }
 
 :root.pop .glass-panel {
   background: #ffffff;
-  box-shadow: 3px 3px 0 #7040ce;
+  box-shadow: 3px 3px 0 var(--pop-sky);
 }
 
 :root.pop .btn-electric {
-  color: #ffffff;
-  background: var(--color-electric);
-  border-color: var(--color-electric);
-  box-shadow: 2px 2px 0 #ffe34d;
+  color: var(--color-text);
+  background: var(--pop-coral);
+  border-color: var(--pop-coral);
+  box-shadow: 2px 2px 0 var(--pop-sunshine);
 }
 
 :root.pop .btn-electric:not(:disabled):hover {
-  background: #193db0;
-  border-color: #193db0;
+  background: var(--pop-coral-hover);
+  border-color: var(--pop-coral-hover);
 }
 
 :root.pop .btn-neon {
-  color: #ffffff;
-  background: var(--color-neon);
-  border-color: var(--color-neon);
-  box-shadow: 2px 2px 0 #7040ce;
+  color: var(--color-text);
+  background: var(--pop-leaf);
+  border-color: var(--pop-leaf);
+  box-shadow: 2px 2px 0 var(--pop-sky);
 }
 
 :root.pop .btn-neon:not(:disabled):hover {
-  background: #a60e65;
-  border-color: #a60e65;
+  background: var(--pop-leaf-hover);
+  border-color: var(--pop-leaf-hover);
 }
 
 /* SplashScreen uses utility-styled circular buttons rather than .btn-*.
    Match their actual color classes, independent of order and translated labels. */
 :root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"] {
-  background: var(--color-electric);
-  border-color: var(--color-electric);
-  box-shadow: 3px 3px 0 #ffe34d;
+  background: var(--pop-coral);
+  border-color: var(--pop-coral);
+  box-shadow: 3px 3px 0 var(--pop-sunshine);
 }
 
 :root.pop button.rounded-full[class~="bg-[var(--color-neon)]/10"] {
-  background: var(--color-neon);
-  border-color: var(--color-neon);
-  box-shadow: 3px 3px 0 #2454df;
+  background: var(--pop-leaf);
+  border-color: var(--pop-leaf);
+  box-shadow: 3px 3px 0 var(--pop-coral);
 }
 
 :root.pop button.rounded-full[class~="bg-[var(--color-cyber)]/10"] {
-  background: var(--color-cyber);
-  border-color: var(--color-cyber);
-  box-shadow: 3px 3px 0 #ce1680;
+  background: var(--pop-sky);
+  border-color: var(--pop-sky);
+  box-shadow: 3px 3px 0 var(--pop-leaf);
 }
 
 :root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"] svg,
 :root.pop button.rounded-full[class~="bg-[var(--color-neon)]/10"] svg,
 :root.pop button.rounded-full[class~="bg-[var(--color-cyber)]/10"] svg {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 :root.pop
@@ -95,20 +102,21 @@
 :root.pop
   button.rounded-full[class~="bg-[var(--color-cyber)]/10"]
   [class~="bg-[var(--color-cyber)]"] {
-  background: #ffffff;
+  background: var(--color-text);
 }
 
 :root.pop .status-indicator.connected {
-  box-shadow: 0 0 0 2px #ffe34d;
+  background: var(--pop-leaf);
+  box-shadow: 0 0 0 2px var(--pop-sunshine);
 }
 
 :root.pop .tab-trigger[data-state="active"] {
-  color: #ffffff;
-  background: var(--color-electric);
+  color: var(--color-text);
+  background: var(--pop-coral);
 }
 
 :root.pop .tab-trigger[data-state="active"]::after {
-  background: #ffe34d;
+  background: var(--pop-sunshine);
   box-shadow: none;
 }
 
@@ -119,7 +127,7 @@
 :root.pop .select-field:focus,
 :root.pop .input-field:focus {
   border-color: var(--color-electric);
-  box-shadow: 0 0 0 3px #ffe34d;
+  box-shadow: 0 0 0 3px var(--pop-sunshine);
 }
 
 :root.pop .text-glow-electric,
@@ -133,25 +141,25 @@
 }
 
 :root.pop [class~="border-[var(--color-electric)]/20"] {
-  border-color: var(--color-electric);
+  border-color: var(--pop-coral);
 }
 
 :root.pop [class~="border-[var(--color-electric)]/10"] {
-  border-color: var(--color-neon);
+  border-color: var(--pop-leaf);
 }
 
 :root.pop [class~="border-[var(--color-electric)]/5"] {
-  border-color: var(--color-cyber);
-  box-shadow: 0 0 0 2px #ffe34d;
+  border-color: var(--pop-sky);
+  box-shadow: 0 0 0 2px var(--pop-sunshine);
 }
 
 :root.pop .border-glow-electric {
-  border-color: var(--color-electric);
-  box-shadow: 2px 2px 0 #ce1680;
+  border-color: var(--pop-coral);
+  box-shadow: 2px 2px 0 var(--pop-leaf);
 }
 
 :root.pop .hover\:shadow-glow-electric-sm:hover {
-  box-shadow: 2px 2px 0 #ce1680;
+  box-shadow: 2px 2px 0 var(--pop-leaf);
 }
 
 :root.pop .warning-banner {
