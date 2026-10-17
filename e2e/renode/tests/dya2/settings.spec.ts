@@ -132,7 +132,11 @@ test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (
   // 6) REVERT to the exact original idle value and persist it, so the device is
   //    left exactly as found (net-zero).
   await setIdleMinutes(page, originalMinutes);
-  await expect(idleDropdown(page)).toContainText(originalLabel);
+  // Compare the same rendered text that was captured above; textContent joins
+  // the field label and value spans without innerText's separating newline.
+  await expect(idleDropdown(page)).toContainText(originalLabel, {
+    useInnerText: true,
+  });
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({
     timeout: 60_000,
   });
@@ -141,5 +145,6 @@ test("dya2 Settings tab: reads, changes, persists and reverts the Idle Timeout (
   await reReadSettings(page);
   await expect(idleDropdown(page)).toContainText(originalLabel, {
     timeout: 120_000,
+    useInnerText: true,
   });
 });
