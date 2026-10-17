@@ -9,8 +9,6 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
-  "Start on the default layer with other layers off. Follow the highlighted keys in order.":
-    "他のレイヤーをオフにして通常レイヤーに戻り、ハイライトされたキーを順に操作してください。",
   "Unlock key positions": "ロック解除キーの位置",
   cyan: "水色",
   orange: "オレンジ色",

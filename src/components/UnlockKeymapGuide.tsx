@@ -54,11 +54,6 @@ export function UnlockKeymapGuide({
   const height = Math.max(...corners.map((p) => p.y)) - top + 8;
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        {t(
-          "Start on the default layer with other layers off. Follow the highlighted keys in order.",
-        )}
-      </p>
       <svg
         role="img"
         aria-label={t("Unlock key positions")}
