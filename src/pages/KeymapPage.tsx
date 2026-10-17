@@ -1441,8 +1441,28 @@ export function KeymapPage() {
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="keymap-preview glass-card p-3 sm:p-6 relative">
-                <div className="mb-2 flex items-center justify-end gap-3">
-                  <div className="ml-auto flex shrink-0 items-center gap-3">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <div className="flex shrink-0 items-center gap-3">
+                    {inputStream.isAvailable && (
+                      <EditorTooltip content={t("Toggle stream mode")}>
+                        <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                          <span>{t("Stream")}</span>
+                          <Switch.Root
+                            checked={inputStream.isEnabled}
+                            onCheckedChange={() =>
+                              void inputStream.toggleStream()
+                            }
+                            disabled={
+                              inputStream.isToggling || keymap.isLoading
+                            }
+                            aria-label={t("Toggle stream mode")}
+                            className="relative h-4 w-7 shrink-0 rounded-full bg-[var(--color-border)] transition-colors data-[state=checked]:bg-[var(--color-electric)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Switch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-3.5" />
+                          </Switch.Root>
+                        </label>
+                      </EditorTooltip>
+                    )}
                     {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
@@ -1481,27 +1501,163 @@ export function KeymapPage() {
                           : t("Saved")}
                       </span>
                     </div>
-                    {inputStream.isAvailable && (
-                      <EditorTooltip content={t("Toggle stream mode")}>
-                        <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-                          <span>{t("Stream")}</span>
-                          <Switch.Root
-                            checked={inputStream.isEnabled}
-                            onCheckedChange={() =>
-                              void inputStream.toggleStream()
-                            }
-                            disabled={
-                              inputStream.isToggling || keymap.isLoading
-                            }
-                            aria-label={t("Toggle stream mode")}
-                            className="relative h-4 w-7 shrink-0 rounded-full bg-[var(--color-border)] transition-colors data-[state=checked]:bg-[var(--color-electric)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Switch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-3.5" />
-                          </Switch.Root>
-                        </label>
-                      </EditorTooltip>
-                    )}
                   </div>
+                  <div className="ml-auto hidden min-w-0 max-w-full sm:block">
+                    <Popover.Root>
+                      <Popover.Trigger asChild>
+                        <button
+                          type="button"
+                          aria-label={t("Layout and display")}
+                          aria-description={`${t("Physical Layout")}: ${currentLayout.name || t("Physical Layout")}; ${t("OS Layout")}: ${getLayoutLabel(keyboardLayoutContext.layout)}`}
+                          className="flex h-7 max-w-full items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50"
+                        >
+                          <IconKeyboard
+                            size={14}
+                            className="shrink-0 text-[var(--color-text-muted)]"
+                          />
+                          <span
+                            className="max-w-40 truncate"
+                            title={currentLayout.name || t("Physical Layout")}
+                          >
+                            {currentLayout.name || t("Physical Layout")}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="h-3 w-px bg-[var(--color-border)]"
+                          />
+                          <span className="shrink-0">
+                            <span className="text-[var(--color-text-muted)]">
+                              OS{" "}
+                            </span>
+                            {keyboardLayoutContext.layout === "US_JP"
+                              ? "US (JP)"
+                              : keyboardLayoutContext.layout}
+                          </span>
+                          <IconChevronDown
+                            size={12}
+                            className="shrink-0 text-[var(--color-text-muted)]"
+                          />
+                        </button>
+                      </Popover.Trigger>
+                      <Popover.Portal>
+                        <Popover.Content
+                          aria-label={t("Layout and display")}
+                          align="end"
+                          sideOffset={8}
+                          collisionPadding={12}
+                          className="keymap-layout-options z-50 w-72 max-w-[calc(100vw-24px)] space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4 shadow-xl"
+                        >
+                          <h3 className="text-sm font-medium text-[var(--color-text)]">
+                            {t("Layout and display")}
+                          </h3>
+                          {/* Physical Layout Selector (if multiple layouts) */}
+                          {keymap.physicalLayouts &&
+                            keymap.physicalLayouts.layouts.length > 1 && (
+                              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                                <label
+                                  htmlFor="keymap-physical-layout"
+                                  className="text-xs text-[var(--color-text-muted)]"
+                                >
+                                  {t("Physical Layout")}
+                                </label>
+                                <select
+                                  id="keymap-physical-layout"
+                                  value={
+                                    keymap.physicalLayouts.activeLayoutIndex
+                                  }
+                                  onChange={(e) =>
+                                    keymap.setActiveLayout(
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                  className="select-field keymap-layout-select w-full min-w-0 text-xs"
+                                >
+                                  {keymap.physicalLayouts.layouts.map(
+                                    (layout, index) => (
+                                      <option key={index} value={index}>
+                                        {layout.name ||
+                                          t("Layout {{id}}", { id: index + 1 })}
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+                              </div>
+                            )}
+
+                          {/* Keyboard Layout Selector */}
+                          <div className="flex min-w-0 items-end gap-2">
+                            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                              <label
+                                htmlFor="keymap-os-layout"
+                                className="text-xs text-[var(--color-text-muted)]"
+                              >
+                                {t("OS Layout")}
+                              </label>
+                              <select
+                                id="keymap-os-layout"
+                                value={keyboardLayoutContext.layout}
+                                onChange={(e) =>
+                                  keyboardLayoutContext.setLayout(
+                                    e.target
+                                      .value as import("../lib/keyboardLayouts").KeyboardLayoutType,
+                                  )
+                                }
+                                className="select-field keymap-layout-select w-full min-w-0 text-xs"
+                              >
+                                {getAvailableLayouts().map((layoutType) => (
+                                  <option key={layoutType} value={layoutType}>
+                                    {getLayoutLabel(layoutType)}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <>
+                              {/* Tips: */}
+                              <EditorTooltip
+                                content={
+                                  <>
+                                    <div className="mb-1 font-semibold text-[var(--color-electric)]">
+                                      {t("Choose OS's keyboard layout setting")}
+                                    </div>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                      <li>
+                                        {t(
+                                          "This setting only affects the visual key labels in DYA Studio web UI.",
+                                        )}
+                                      </li>
+                                      <li>
+                                        {t(
+                                          "Changing this does not update any firmware setting. The keyboard is detected as US regardless of this setting. Please change the layout setting in your OS if needed. For MacOS, USB connection is always detected as US and cannot be changed for now.",
+                                        )}
+                                      </li>
+                                      <li>
+                                        {t(
+                                          "The selection is saved in your browser's local storage for now.",
+                                        )}
+                                      </li>
+                                    </ul>
+                                  </>
+                                }
+                              >
+                                <button
+                                  type="button"
+                                  className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                                  aria-label={t(
+                                    "Choose OS's keyboard layout setting",
+                                  )}
+                                >
+                                  <IconInfoCircle size={16} />
+                                </button>
+                              </EditorTooltip>
+                            </>
+                          </div>
+                        </Popover.Content>
+                      </Popover.Portal>
+                    </Popover.Root>
+                  </div>
+                </div>
+                <div className="relative hidden sm:block">
+                  {inputStream.isEnabled && <BrowserKeyInputOverlay />}
                 </div>
                 <KeyboardLayout
                   layout={currentLayout}
@@ -1535,104 +1691,6 @@ export function KeymapPage() {
                       t("Layer {{id}}", { id: selectedLayerIndex }),
                   })}
                 />
-                <div className="keymap-layout-options relative hidden min-w-0 sm:flex items-start gap-x-6 gap-y-3 flex-wrap mt-4 pt-3 border-t border-[var(--color-border)]">
-                  {/* Physical Layout Selector (if multiple layouts) */}
-                  {keymap.physicalLayouts &&
-                    keymap.physicalLayouts.layouts.length > 1 && (
-                      <div className="flex min-w-0 flex-col gap-1.5">
-                        <label
-                          htmlFor="keymap-physical-layout"
-                          className="text-xs text-[var(--color-text-muted)]"
-                        >
-                          {t("Physical Layout")}
-                        </label>
-                        <select
-                          id="keymap-physical-layout"
-                          value={keymap.physicalLayouts.activeLayoutIndex}
-                          onChange={(e) =>
-                            keymap.setActiveLayout(Number(e.target.value))
-                          }
-                          className="select-field keymap-layout-select min-w-0 text-xs"
-                        >
-                          {keymap.physicalLayouts.layouts.map(
-                            (layout, index) => (
-                              <option key={index} value={index}>
-                                {layout.name ||
-                                  t("Layout {{id}}", { id: index + 1 })}
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      </div>
-                    )}
-
-                  {/* Keyboard Layout Selector */}
-                  <div className="flex min-w-0 items-end gap-2">
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <label
-                        htmlFor="keymap-os-layout"
-                        className="text-xs text-[var(--color-text-muted)]"
-                      >
-                        {t("OS Layout")}
-                      </label>
-                      <select
-                        id="keymap-os-layout"
-                        value={keyboardLayoutContext.layout}
-                        onChange={(e) =>
-                          keyboardLayoutContext.setLayout(
-                            e.target
-                              .value as import("../lib/keyboardLayouts").KeyboardLayoutType,
-                          )
-                        }
-                        className="select-field keymap-layout-select min-w-0 text-xs"
-                      >
-                        {getAvailableLayouts().map((layoutType) => (
-                          <option key={layoutType} value={layoutType}>
-                            {getLayoutLabel(layoutType)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <>
-                      {/* Tips: */}
-                      <EditorTooltip
-                        content={
-                          <>
-                            <div className="mb-1 font-semibold text-[var(--color-electric)]">
-                              {t("Choose OS's keyboard layout setting")}
-                            </div>
-                            <ul className="list-disc pl-4 space-y-1">
-                              <li>
-                                {t(
-                                  "This setting only affects the visual key labels in DYA Studio web UI.",
-                                )}
-                              </li>
-                              <li>
-                                {t(
-                                  "Changing this does not update any firmware setting. The keyboard is detected as US regardless of this setting. Please change the layout setting in your OS if needed. For MacOS, USB connection is always detected as US and cannot be changed for now.",
-                                )}
-                              </li>
-                              <li>
-                                {t(
-                                  "The selection is saved in your browser's local storage for now.",
-                                )}
-                              </li>
-                            </ul>
-                          </>
-                        }
-                      >
-                        <button
-                          type="button"
-                          className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                          aria-label={t("Choose OS's keyboard layout setting")}
-                        >
-                          <IconInfoCircle size={16} />
-                        </button>
-                      </EditorTooltip>
-                    </>
-                  </div>
-                  {inputStream.isEnabled && <BrowserKeyInputOverlay />}
-                </div>
               </div>
             )}
 

@@ -14,6 +14,7 @@ jest.mock("../../hooks/useVersionHistory");
 import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
+import { KeyboardLayoutProvider } from "../../contexts/KeyboardLayoutProvider";
 import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import {
   ZMKAppProvider,
@@ -279,7 +280,9 @@ describe("KeymapPage", () => {
       <ConnectionContext.Provider value={connectionContext}>
         <ZMKAppProvider value={zmkApp}>
           <StudioUnlockProvider>
-            <KeymapPage />
+            <KeyboardLayoutProvider>
+              <KeymapPage />
+            </KeyboardLayoutProvider>
           </StudioUnlockProvider>
         </ZMKAppProvider>
       </ConnectionContext.Provider>
@@ -843,7 +846,8 @@ describe("KeymapPage", () => {
       expect(item).not.toHaveTextContent("0x7");
     });
 
-    it("exposes the keymap controls with names and selection state", () => {
+    it("exposes the keymap controls with names and selection state", async () => {
+      const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
         {
@@ -860,9 +864,26 @@ describe("KeymapPage", () => {
       expect(
         within(layers).getByRole("button", { name: "Lower" }),
       ).toHaveAttribute("aria-pressed", "false");
+      const layoutTrigger = screen.getByRole("button", {
+        name: "Layout and display",
+      });
+      expect(layoutTrigger).toHaveTextContent("Default");
+      expect(layoutTrigger).toHaveTextContent("OS US");
+      expect(
+        screen.queryByRole("combobox", { name: "OS Layout" }),
+      ).not.toBeInTheDocument();
+      await user.click(layoutTrigger);
       expect(
         screen.getByRole("combobox", { name: "OS Layout" }),
       ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("combobox", { name: "Physical Layout" }),
+      ).not.toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(
+        screen.queryByRole("dialog", { name: "Layout and display" }),
+      ).not.toBeInTheDocument();
+      expect(layoutTrigger).toHaveFocus();
       expect(
         screen.getByRole("group", { name: "Keyboard layout for Base" }),
       ).toBeInTheDocument();
@@ -870,6 +891,60 @@ describe("KeymapPage", () => {
         screen.getAllByRole("button", { name: /Key position \d+:/ }),
       ).toHaveLength(3);
       expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    });
+
+    it("changes both layouts through the grouped dropdown and retains the OS choice after closing", async () => {
+      const user = userEvent.setup();
+      const setActiveLayout = jest.fn().mockResolvedValue(true);
+      const physicalLayouts = {
+        ...mockPhysicalLayouts,
+        layouts: [
+          mockPhysicalLayouts.layouts[0],
+          { ...mockPhysicalLayouts.layouts[0], name: "Alternate" },
+        ],
+      };
+      const { replaceKeymap } = renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts,
+          behaviors: mockBehaviors,
+          setActiveLayout,
+        },
+      );
+      const trigger = screen.getByRole("button", {
+        name: "Layout and display",
+      });
+      await user.click(trigger);
+      const dropdown = screen.getByRole("dialog", {
+        name: "Layout and display",
+      });
+      await user.selectOptions(
+        within(dropdown).getByLabelText("Physical Layout"),
+        "1",
+      );
+      expect(setActiveLayout).toHaveBeenCalledWith(1);
+      replaceKeymap({
+        physicalLayouts: { ...physicalLayouts, activeLayoutIndex: 1 },
+      });
+      expect(trigger).toHaveTextContent("Alternate");
+      await user.selectOptions(
+        within(dropdown).getByLabelText("OS Layout"),
+        "JIS",
+      );
+      expect(trigger).toHaveTextContent("OS JIS");
+      expect(dropdown).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(trigger).toHaveFocus();
+      await user.click(trigger);
+      expect(screen.getByLabelText("OS Layout")).toHaveValue("JIS");
+      await user.selectOptions(screen.getByLabelText("OS Layout"), "US");
+      expect(mockUseKeymap().setBinding).not.toHaveBeenCalled();
+      expect(setActiveLayout).toHaveBeenCalledTimes(1);
+      await user.click(screen.getByRole("status"));
+      expect(
+        screen.queryByRole("dialog", { name: "Layout and display" }),
+      ).not.toBeInTheDocument();
     });
 
     it("opens mobile keymap settings from the rightmost action and keeps grouped controls usable", async () => {
