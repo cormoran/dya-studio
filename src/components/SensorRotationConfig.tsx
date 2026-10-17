@@ -384,7 +384,7 @@ export function SensorRotationConfig({
                         </span>
                       </div>
                       <button
-                        className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
+                        className="encoder-binding-trigger w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
                         aria-label={`${sensorContext} · ${t("Counter-clockwise")}: ${getBindingDisplayName(ccwBinding)}`}
                         onClick={() =>
                           handleBindingClick(sensor.index, "counterClockwise")
@@ -405,7 +405,7 @@ export function SensorRotationConfig({
                         </span>
                       </div>
                       <button
-                        className="w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
+                        className="encoder-binding-trigger w-full min-h-9 px-3 py-2 rounded-md bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm break-words text-[var(--color-text-secondary)] transition-colors"
                         aria-label={`${sensorContext} · ${t("Clockwise")}: ${getBindingDisplayName(cwBinding)}`}
                         onClick={() =>
                           handleBindingClick(sensor.index, "clockwise")

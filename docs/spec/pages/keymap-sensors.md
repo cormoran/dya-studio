@@ -24,6 +24,8 @@ runtime sensor rotation 対応 device と current layer が必要。Discard/Relo
 
 ## 現行の機能仕様
 
+Popの時計/反時計方向のbinding選択ボタンは淡い青（#e4f5ff）と濃い文字で表示し、hover時は少し強い青（#d2eeff）にする（ROT-001、S1、2026-10-17ユーザー要求）。
+
 ROT-005の可視見出し（sensor番号・名前・選択layer）はカード内の上部に配置し、fieldsetの上辺に重ねない。読み上げ用legendとfieldsetのaccessible nameは維持する。全テーマ共通（2026-10-17ユーザー要求、S1）。
 
 | ID      | 前提 → 操作                                               | 観測できる結果                                                                                                                                                                                                                                                                  | 保存範囲・副作用                                                                    | 根拠                                 |
