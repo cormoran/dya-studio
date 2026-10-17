@@ -66,6 +66,10 @@ export async function openKeymap(page: Page): Promise<void> {
 // Scope to the semantic layer-tab group. Unlike a CSS utility-class locator,
 // this survives presentation-only Keymap toolbar changes while still excluding
 // main navigation, layer-management controls, and portal'd restore-menu items.
+// Edit mode adds icon buttons to the group; only layer-name buttons expose
+// aria-pressed in both modes.
 export function layerTabs(page: Page) {
-  return page.getByRole("group", { name: "Keymap layers" }).getByRole("button");
+  return page
+    .getByRole("group", { name: "Keymap layers" })
+    .locator("button[aria-pressed]");
 }
