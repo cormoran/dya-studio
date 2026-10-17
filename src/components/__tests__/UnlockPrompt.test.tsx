@@ -57,7 +57,7 @@ it("shows generic instructions while reading, then highlights both keys with hol
     screen.getByRole("img", { name: "Unlock key positions" }),
   ).toBeInTheDocument();
   expect(
-    screen.getByText("Hold the blue key marked A and keep holding."),
+    screen.getByText("Hold the cyan key marked A and keep holding."),
   ).toBeInTheDocument();
   expect(
     screen.getByText("Press the orange key marked B (Studio Unlock)."),
@@ -124,16 +124,16 @@ it("keeps the same color and letter when a released key is used again for unlock
   render(modal({}));
   const preview = await screen.findByRole("img");
   expect(
-    screen.getByText("Press and release the blue key marked A."),
+    screen.getByText("Press and release the cyan key marked A."),
   ).toBeInTheDocument();
   expect(
-    screen.getByText("Press the blue key marked A (Studio Unlock)."),
+    screen.getByText("Press the cyan key marked A (Studio Unlock)."),
   ).toBeInTheDocument();
   expect(preview.querySelectorAll("rect")).toHaveLength(1);
   expect(preview.querySelector("text")).toHaveTextContent("A");
 });
 
-it("labels all four possible guide keys and gives their text at least 4.5:1 contrast", async () => {
+it("labels all four possible guide keys and matches their accents to the instructions", async () => {
   const rows = Array.from({ length: 4 }, (_, layer) =>
     Array.from({ length: 4 }, (_, position) =>
       position === layer
@@ -155,18 +155,18 @@ it("labels all four possible guide keys and gives their text at least 4.5:1 cont
     new Set(groups.map((g) => g.querySelector("rect")?.getAttribute("fill")))
       .size,
   ).toBe(4);
-  const luminance = (hex: string) => {
-    const rgb = hex.match(/[0-9a-f]{2}/gi)!.map((part) => {
-      const c = parseInt(part, 16) / 255;
-      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-    });
-    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
-  };
-  for (const group of groups) {
-    const bg = luminance(group.querySelector("rect")!.getAttribute("fill")!);
-    const fg = luminance(group.querySelector("text")!.getAttribute("fill")!);
-    expect(
-      (Math.max(bg, fg) + 0.05) / (Math.min(bg, fg) + 0.05),
-    ).toBeGreaterThanOrEqual(4.5);
-  }
+  const badges = [
+    ...screen.getByRole("list").querySelectorAll("[aria-hidden='true']"),
+  ];
+  expect(badges.map((badge) => badge.textContent)).toEqual([
+    "A",
+    "B",
+    "C",
+    "D",
+  ]);
+  groups.forEach((group, index) => {
+    expect(group.querySelector("rect")!.getAttribute("stroke")).toBe(
+      (badges[index] as HTMLElement).style.borderColor,
+    );
+  });
 });

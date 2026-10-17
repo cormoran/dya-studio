@@ -12,10 +12,10 @@ const ja: Record<string, string> = {
   "Start on the default layer with other layers off. Follow the highlighted keys in order.":
     "他のレイヤーをオフにして通常レイヤーに戻り、ハイライトされたキーを順に操作してください。",
   "Unlock key positions": "ロック解除キーの位置",
-  blue: "青色",
+  cyan: "水色",
   orange: "オレンジ色",
   "bluish green": "青緑色",
-  "reddish purple": "赤紫色",
+  purple: "紫色",
   "{{color}} key marked {{marker}}": "{{color}}の「{{marker}}」キー",
   "Hold the {{color}} key marked {{marker}} and keep holding.":
     "{{color}}の「{{marker}}」キーを押し続けます。",

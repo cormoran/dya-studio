@@ -3,14 +3,17 @@ import type { UnlockStep } from "../lib/unlockGuide";
 import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import { useLanguage } from "../hooks/useLanguage";
 
-// Okabe and Ito's Color Universal Design palette. Letters identify keys even
-// when colors cannot be distinguished: https://jfly.uni-koeln.de/color/
+// Reuse DYA's theme-aware accent colors and its tinted surface / accent border
+// treatment. Letters keep the guide usable without distinguishing the hues.
 const KEY_MARKERS = [
-  { letter: "A", color: "blue", fill: "#0072B2", text: "#FFFFFF" },
-  { letter: "B", color: "orange", fill: "#E69F00", text: "#000000" },
-  { letter: "C", color: "bluish green", fill: "#009E73", text: "#000000" },
-  { letter: "D", color: "reddish purple", fill: "#CC79A7", text: "#000000" },
+  { letter: "A", color: "cyan", accent: "var(--color-electric)" },
+  { letter: "B", color: "orange", accent: "var(--color-warning)" },
+  { letter: "C", color: "bluish green", accent: "var(--color-neon)" },
+  { letter: "D", color: "purple", accent: "var(--color-cyber)" },
 ] as const;
+
+const markerSurface = (accent: string) =>
+  `color-mix(in srgb, ${accent} 15%, var(--color-surface))`;
 
 export function UnlockKeymapGuide({
   model,
@@ -96,19 +99,26 @@ export function UnlockKeymapGuide({
                 width={Math.max(1, key.width - 6)}
                 height={Math.max(1, key.height - 6)}
                 rx={8}
-                fill={marker?.fill ?? "var(--color-surface)"}
-                stroke={
-                  highlighted ? "var(--color-text)" : "var(--color-border)"
+                fill={
+                  marker ? markerSurface(marker.accent) : "var(--color-surface)"
                 }
-                strokeWidth={highlighted ? 5 : 2}
+                stroke={marker?.accent ?? "var(--color-border)"}
+                strokeWidth={highlighted ? 3 : 2}
+                style={
+                  marker
+                    ? {
+                        filter: `drop-shadow(0 0 5px color-mix(in srgb, ${marker.accent} 20%, transparent))`,
+                      }
+                    : undefined
+                }
               />
               <text
                 x={key.x + key.width / 2}
                 y={key.y + key.height / 2 + 8}
                 textAnchor="middle"
-                fontSize={marker ? 40 : 22}
-                fontWeight={marker ? 700 : 400}
-                fill={marker?.text ?? "var(--color-text)"}
+                fontSize={marker ? 36 : 22}
+                fontWeight={marker ? 600 : 400}
+                fill="var(--color-text)"
               >
                 {marker ? marker.letter : label.slice(0, 8)}
               </text>
@@ -124,8 +134,12 @@ export function UnlockKeymapGuide({
               <strong className="pt-0.5">{index + 1}.</strong>
               <span
                 aria-hidden="true"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[var(--color-text)] font-bold"
-                style={{ backgroundColor: marker.fill, color: marker.text }}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border font-medium text-[var(--color-text)]"
+                style={{
+                  backgroundColor: markerSurface(marker.accent),
+                  borderColor: marker.accent,
+                  boxShadow: `0 0 10px color-mix(in srgb, ${marker.accent} 12%, transparent)`,
+                }}
               >
                 {marker.letter}
               </span>
