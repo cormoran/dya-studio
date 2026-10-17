@@ -1,8 +1,15 @@
 const STYLESHEET_ID = "pop-theme-font";
 
 /** Start only when Pop is used; native font-display: swap keeps the UI usable. */
-export function loadPopFont(): void {
-  if (document.getElementById(STYLESHEET_ID)) return;
+export function setPopFontEnabled(enabled: boolean): void {
+  const existing = document.getElementById(
+    STYLESHEET_ID,
+  ) as HTMLLinkElement | null;
+  if (existing) {
+    existing.disabled = !enabled;
+    return;
+  }
+  if (!enabled) return;
 
   const link = document.createElement("link");
   link.id = STYLESHEET_ID;

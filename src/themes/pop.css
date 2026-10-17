@@ -1,6 +1,7 @@
 @layer base {
   :root.pop {
     color-scheme: light;
+    --font-ui: "Inter", system-ui, -apple-system, sans-serif;
     font-family: "M PLUS Rounded 1c", var(--font-ui);
 
     /* Bright fills are separate from the darker accents used for text on white. */

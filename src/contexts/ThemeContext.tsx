@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { loadPopFont } from "../themes/loadPopFont";
+import { setPopFontEnabled } from "../themes/loadPopFont";
 import { isTheme, themeOptions, type Theme } from "../themes/themes";
 
 interface ThemeContextValue {
@@ -52,7 +52,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     root.classList.add(theme);
     root.style.colorScheme = theme === "dark" ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, theme);
-    if (theme === "pop") loadPopFont();
+    setPopFontEnabled(theme === "pop");
   }, [theme]);
 
   // Listen for system theme changes
