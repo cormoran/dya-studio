@@ -174,8 +174,3 @@
   background: #ffffff;
   border-color: #171717;
 }
-
-/* A small accent marks the current page without coloring the tab or its icon. */
-:root.neutral .tab-trigger[data-state="active"]::after {
-  background: #5273a3;
-}
