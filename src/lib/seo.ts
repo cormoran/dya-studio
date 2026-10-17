@@ -4,9 +4,12 @@ import {
 } from "../content/developerGuide";
 import type { Language } from "../i18n/translations";
 
+import { ABOUT_PATH, aboutContent } from "../content/about";
+
 export const SITE_URL = "https://studio.dya.cormoran.works";
 export const PUBLIC_PAGE_PATHS: readonly string[] = [
   "/",
+  ABOUT_PATH,
   ...developerGuideRoutes,
   "/release-notes",
 ];
@@ -52,9 +55,14 @@ export function getPageMetadata(pathname: string, language: Language) {
   const guide = getDeveloperGuidePageDefinition(pathname, language);
   const content = guide
     ? { title: `${guide.title} | DYA Studio`, description: guide.description }
-    : pathname === "/release-notes"
-      ? releases[language]
-      : home[language];
+    : pathname === ABOUT_PATH
+      ? {
+          title: `${aboutContent[language].aboutLabel} | DYA Studio`,
+          description: aboutContent[language].description,
+        }
+      : pathname === "/release-notes"
+        ? releases[language]
+        : home[language];
   return {
     ...content,
     canonical: PUBLIC_PAGE_PATHS.includes(pathname)

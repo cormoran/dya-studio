@@ -25,6 +25,7 @@ import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { useSettings, type UseSettingsReturn } from "../hooks/useSettings";
 import { useResetSettings } from "../hooks/useResetSettings";
 import { useDebouncedMemoryWrite } from "../hooks/useDebouncedMemoryWrite";
+import { useIsTabActive } from "../hooks/useIsTabActive";
 import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
@@ -98,6 +99,7 @@ interface TimeDropdownProps {
 }
 
 function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
+  const isTabActive = useIsTabActive();
   const { t } = useLanguage();
   const id = useId();
   const optionsId = `${id}-options`;
@@ -118,7 +120,7 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
 
   // Update dropdown position when opened
   useEffect(() => {
-    if (isOpen && buttonRef.current) {
+    if (isOpen && isTabActive && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       // Align dropdown to the right edge of the button
       // Dropdown width is 192px (w-48)
@@ -127,17 +129,17 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
         left: rect.right - 192, // 192px = w-48
       });
     }
-  }, [isOpen]);
+  }, [isOpen, isTabActive]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isTabActive) {
       dropdownRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isTabActive]);
 
   // Handle clicks outside dropdown
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isTabActive) return;
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
@@ -162,7 +164,7 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
     };
-  }, [isOpen, showCustomInput]);
+  }, [isOpen, showCustomInput, isTabActive]);
 
   const handlePresetSelect = (minutes: number) => {
     onChange(minutesToMs(minutes));
@@ -194,7 +196,7 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
         ref={buttonRef}
         type="button"
         aria-labelledby={`${id}-label ${id}-value`}
-        aria-expanded={isOpen}
+        aria-expanded={isOpen && isTabActive}
         aria-controls={optionsId}
         className="w-40 min-h-9 px-3 py-2 rounded-lg text-sm flex items-center justify-between gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-hover)]"
         onClick={() => setIsOpen(!isOpen)}
@@ -212,7 +214,7 @@ function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
           ref={dropdownRef}
           role="group"
           aria-label={t("{{label}} options", { label })}
-          hidden={!isOpen}
+          hidden={!isOpen || !isTabActive}
           className="fixed w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-[9999] py-1"
           style={{
             top: `${dropdownPosition.top}px`,
@@ -310,6 +312,7 @@ export function SettingsPage() {
 }
 
 function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
+  const isTabActive = useIsTabActive();
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
   const {
@@ -741,7 +744,7 @@ function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
 
       {/* Reset-all Confirmation Dialog */}
       <Dialog.Root
-        open={showResetAllDialog}
+        open={showResetAllDialog && isTabActive}
         onOpenChange={(open) => {
           if (!open && !isResetting) setShowResetAllDialog(false);
         }}

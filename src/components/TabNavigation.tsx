@@ -13,12 +13,14 @@ export interface TabItem {
 
 interface TabNavigationProps {
   tabs: TabItem[];
+  isActive?: boolean;
   activeTab: string;
   onTabChange: (tabId: string) => void;
 }
 
 export function TabNavigation({
   tabs,
+  isActive = true,
   activeTab,
   onTabChange,
 }: TabNavigationProps) {
@@ -70,8 +72,10 @@ export function TabNavigation({
               className="app-tab-panel h-full outline-none data-[state=inactive]:hidden"
               forceMount
             >
-              <TabActiveContext.Provider value={activeTab === tab.id}>
-                <PageTransition isActive={activeTab === tab.id}>
+              <TabActiveContext.Provider
+                value={isActive && activeTab === tab.id}
+              >
+                <PageTransition isActive={isActive && activeTab === tab.id}>
                   {tab.content}
                 </PageTransition>
               </TabActiveContext.Provider>

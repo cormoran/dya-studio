@@ -86,3 +86,16 @@ describe("DeveloperGuidePage navigation", () => {
     ).toHaveAttribute("href", "/");
   });
 });
+
+it("returns to the connection screen through SPA navigation", () => {
+  const scrollTo = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+  window.history.replaceState({}, "", "/developer-guide");
+  render(<DeveloperGuidePage page={page} />);
+  const popstate = jest.fn();
+  window.addEventListener("popstate", popstate);
+  fireEvent.click(screen.getByRole("link", { name: "Back to DYA Studio" }));
+  expect(window.location.pathname).toBe("/");
+  expect(popstate).toHaveBeenCalledTimes(1);
+  window.removeEventListener("popstate", popstate);
+  scrollTo.mockRestore();
+});

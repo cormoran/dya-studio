@@ -86,9 +86,12 @@ const StudioUnlockContext = createContext<StudioUnlockContextValue>({
 
 export function StudioUnlockProvider({
   children,
+  visible = true,
   quietMs = DEFAULT_QUIET_MS,
 }: {
   children: ReactNode;
+  /** Hide the prompt on public routes without cancelling parked operations. */
+  visible?: boolean;
   /**
    * Quiet window (ms) after a Cancel before the modal may re-open. Overridable
    * mainly so tests don't have to wait out the real-world default.
@@ -307,7 +310,11 @@ export function StudioUnlockProvider({
   return (
     <StudioUnlockContext.Provider value={value}>
       {children}
-      <UnlockPrompt open={isOpen} onClose={cancel} onRetry={retryAll} />
+      <UnlockPrompt
+        open={visible && isOpen}
+        onClose={cancel}
+        onRetry={retryAll}
+      />
     </StudioUnlockContext.Provider>
   );
 }

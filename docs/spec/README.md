@@ -18,6 +18,7 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 
 | 入口 / 機能                        | 仕様                                                                      | 接続条件                                       |
 | ---------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- |
+| `/about` 公開紹介                  | [DYA Studio 紹介](pages/about.md)                                         | 不要・接続 API 不要                            |
 | `/` 接続前                         | [接続・unlock](modules/device-session.md)                                 | 不要                                           |
 | `/` Home                           | [ホーム](pages/home.md)                                                   | 接続または Demo                                |
 | `/keymap`                          | [キーマップ](pages/keymap.md) / [rotary encoder](pages/keymap-sensors.md) | 接続または Demo、機能別 capability             |

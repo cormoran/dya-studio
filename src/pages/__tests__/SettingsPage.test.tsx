@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsPage } from "../SettingsPage";
+import { TabActiveContext } from "../../contexts/TabActiveContext";
 import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import { useSettings, type UseSettingsReturn } from "../../hooks/useSettings";
 
@@ -275,4 +276,57 @@ it("late write completion cannot clear a new session edit or show Saved", async 
   ).toHaveTextContent("1 minute");
   expect(screen.queryByText("Saved")).not.toBeInTheDocument();
   expect(screen.getByText("Saving...")).toBeVisible();
+});
+
+it("hides timeout portal options while inactive and restores the pending custom form", () => {
+  const { rerender } = render(
+    <TabActiveContext.Provider value={true}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Idle Timeout 5 minutes" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Custom value..." }));
+  const customInput = screen.getByRole("spinbutton");
+  fireEvent.change(customInput, { target: { value: "42" } });
+  rerender(
+    <TabActiveContext.Provider value={false}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  expect(
+    screen.queryByRole("group", { name: "Idle Timeout options" }),
+  ).not.toBeInTheDocument();
+  expect(customInput).not.toBeVisible();
+  expect(settings.setActivitySettings).not.toHaveBeenCalled();
+  rerender(
+    <TabActiveContext.Provider value={true}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  expect(screen.getByRole("spinbutton")).toBe(customInput);
+  expect(customInput).toHaveValue(42);
+});
+
+it("hides factory reset confirmation while inactive without confirming or cancelling", () => {
+  const { rerender } = render(
+    <TabActiveContext.Provider value={true}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Reset all settings" }));
+  expect(screen.getByRole("dialog")).toBeVisible();
+  rerender(
+    <TabActiveContext.Provider value={false}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  rerender(
+    <TabActiveContext.Provider value={true}>
+      <Page />
+    </TabActiveContext.Provider>,
+  );
+  expect(screen.getByRole("dialog")).toBeVisible();
 });

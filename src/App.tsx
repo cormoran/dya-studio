@@ -12,6 +12,8 @@ import {
   IconWand,
 } from "@tabler/icons-react";
 
+import { AboutPage } from "./pages/AboutPage";
+import { ABOUT_PATH } from "./content/about";
 import { SplashScreen } from "./components/SplashScreen";
 import { ReleaseNotesPage, RELEASE_NOTES_PATH } from "./pages/ReleaseNotesPage";
 import { ReconnectingOverlay } from "./components/ReconnectingOverlay";
@@ -47,7 +49,7 @@ import {
   isDeveloperGuidePath,
 } from "./content/developerGuide";
 
-function getTabs(t: (key: string) => string): TabItem[] {
+function getTabs(t: (key: string) => string, shellVisible: boolean): TabItem[] {
   return [
     {
       id: "home",
@@ -59,7 +61,7 @@ function getTabs(t: (key: string) => string): TabItem[] {
       id: "keymap",
       label: t("Keymap"),
       icon: <IconKeyboard size={18} />,
-      content: <KeymapPage />,
+      content: <KeymapPage shellVisible={shellVisible} />,
     },
     {
       id: "macro-combo",
@@ -110,88 +112,88 @@ function App() {
   );
 }
 
-/**
- * Select connection-free documentation before mounting any keyboard provider.
- * This keeps guide URLs usable on a browser without Web Serial, Web Bluetooth,
- * or a connected keyboard.
- */
+/** Public entry does not initialize a keyboard; an activated session stays mounted. */
 function AppRouter() {
-  useAbyssSessionRenewal();
   const { language } = useLanguage();
   const pathname = usePathname();
+  useAbyssSessionRenewal(pathname !== ABOUT_PATH);
+  const onPublicRoute =
+    pathname === ABOUT_PATH ||
+    isDeveloperGuidePath(pathname) ||
+    pathname === RELEASE_NOTES_PATH ||
+    pathname === OAUTH_CALLBACK_PATH;
+  const [sessionActivated, setSessionActivated] = useState(!onPublicRoute);
+  if (!onPublicRoute && !sessionActivated) {
+    setSessionActivated(true);
+  }
 
   usePageMetadata(pathname, language);
 
-  if (isDeveloperGuidePath(pathname)) {
-    return (
-      <DeveloperGuidePage
-        page={
-          getDeveloperGuidePageDefinition(pathname, language) ??
-          getDeveloperGuidePageDefinition(DEVELOPER_GUIDE_PATH, language)!
-        }
-      />
-    );
-  }
-
-  return (
-    <KeyboardLayoutProvider>
-      <DeviceConnectionProvider>
-        <StudioUnlockProvider>
-          <AppContent />
-        </StudioUnlockProvider>
-      </DeviceConnectionProvider>
-    </KeyboardLayoutProvider>
-  );
-}
-
-function AppContent() {
-  const connection = useContext(ConnectionContext);
-  const { t } = useLanguage();
-  const [urlTab, navigateToTab] = useUrlTab();
-  const tabs = getTabs(t);
-  const { isAvailable: isDevtoolAvailable } = useDevtool();
-  const [devtoolOpen, setDevtoolOpen] = useState(false);
-  const activeTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "home";
-
-  // The release notes page is a standalone, connection-independent route so it
-  // stays reachable from the splash screen and via GitHub Release deep links.
-  const [pathname, setPathname] = useState(() => window.location.pathname);
-  useEffect(() => {
-    const onPopState = () => setPathname(window.location.pathname);
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-  const navigatePath = useCallback((path: string) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState(null, "", path);
-    }
-    // Notify both this route state and useUrlTab's own popstate listener.
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  }, []);
-  // Same as navigatePath but without a history entry, so Back never returns to
-  // a URL carrying a spent OAuth authorization code.
   const replacePath = useCallback((path: string) => {
     window.history.replaceState(null, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }, []);
-  const onReleaseNotes = pathname === RELEASE_NOTES_PATH;
-  const onOauthCallback = pathname === OAUTH_CALLBACK_PATH;
+
+  return (
+    <>
+      {sessionActivated && (
+        <div hidden={onPublicRoute}>
+          <KeyboardLayoutProvider>
+            <DeviceConnectionProvider>
+              <StudioUnlockProvider visible={!onPublicRoute}>
+                <AppContent visible={!onPublicRoute} />
+              </StudioUnlockProvider>
+            </DeviceConnectionProvider>
+          </KeyboardLayoutProvider>
+        </div>
+      )}
+      {pathname === ABOUT_PATH && <AboutPage />}
+      {isDeveloperGuidePath(pathname) && (
+        <DeveloperGuidePage
+          page={
+            getDeveloperGuidePageDefinition(pathname, language) ??
+            getDeveloperGuidePageDefinition(DEVELOPER_GUIDE_PATH, language)!
+          }
+        />
+      )}
+      {pathname === RELEASE_NOTES_PATH && (
+        <ReleaseNotesPage onBack={() => navigatePath("/")} />
+      )}
+      {pathname === OAUTH_CALLBACK_PATH && (
+        <AbyssCallbackPage onDone={replacePath} />
+      )}
+    </>
+  );
+}
+
+function navigatePath(path: string) {
+  if (window.location.pathname !== path) {
+    window.history.pushState(null, "", path);
+  }
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+function AppContent({ visible }: { visible: boolean }) {
+  const connection = useContext(ConnectionContext);
+  const { t } = useLanguage();
+  const [urlTab, navigateToTab] = useUrlTab();
+  const tabs = getTabs(t, visible);
+  const { isAvailable: isDevtoolAvailable } = useDevtool();
+  const [devtoolOpen, setDevtoolOpen] = useState(false);
+  const nextTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "home";
+  // Public routes hide this shell without changing the selected editor tab.
+  const [activeTab, setActiveTab] = useState(nextTab);
+  if (visible && activeTab !== nextTab) {
+    setActiveTab(nextTab);
+  }
 
   useEffect(() => {
-    // Canonicalize unknown paths (e.g. a stale/typo'd link) to the home tab,
-    // but leave the standalone routes alone. The OAuth callback especially:
-    // rewriting it to "/" would discard the ?code=&state= query string before
-    // AbyssCallbackPage ever gets to read it.
-    if (
-      !onReleaseNotes &&
-      !onOauthCallback &&
-      urlTab !== activeTab &&
-      window.location.pathname !== "/"
-    ) {
+    // Keep standalone paths and OAuth's single-use query untouched.
+    if (visible && urlTab !== nextTab && window.location.pathname !== "/") {
       window.history.replaceState(null, "", "/");
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
-  }, [urlTab, activeTab, onReleaseNotes, onOauthCallback]);
+  }, [visible, urlTab, nextTab]);
 
   const setActiveTabWithTracking = useCallback(
     (tabId: string) => {
@@ -206,17 +208,6 @@ function AppContent() {
     },
     [navigateToTab, tabs],
   );
-
-  // Both standalone routes return before the connection gate: the user lands on
-  // the OAuth callback with no keyboard connected whenever the popup was
-  // blocked and the whole page navigated to Abyss.
-  if (onOauthCallback) {
-    return <AbyssCallbackPage onDone={replacePath} />;
-  }
-
-  if (onReleaseNotes) {
-    return <ReleaseNotesPage onBack={() => navigatePath("/")} />;
-  }
 
   return (
     <>
@@ -235,9 +226,11 @@ function AppContent() {
               transition={{ duration: 0.3 }}
             >
               <SplashScreen
+                visible={visible}
                 onConnect={connection.onConnect}
                 isConnecting={connection.isLoading}
                 error={connection.error}
+                onShowAbout={() => navigatePath(ABOUT_PATH)}
                 onShowReleaseNotes={() => navigatePath(RELEASE_NOTES_PATH)}
                 onShowDeveloperGuide={() => navigatePath(DEVELOPER_GUIDE_PATH)}
               />
@@ -263,6 +256,7 @@ function AppContent() {
           >
             <TabNavigation
               tabs={tabs}
+              isActive={visible}
               activeTab={activeTab}
               onTabChange={setActiveTabWithTracking}
             />
@@ -281,9 +275,10 @@ function AppContent() {
         </button>
       )}
 
-      {connection.isConnected && isDevtoolAvailable && devtoolOpen && (
-        <DevtoolWindow onClose={() => setDevtoolOpen(false)} />
-      )}
+      {visible &&
+        connection.isConnected &&
+        isDevtoolAvailable &&
+        devtoolOpen && <DevtoolWindow onClose={() => setDevtoolOpen(false)} />}
     </>
   );
 }

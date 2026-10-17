@@ -44,6 +44,8 @@ HOME-003の製品画像ギャラリーは、画像下に4pxの余白を置き、
 | HOME-006 | 最新リリースカードを見る                                              | 最新の公開済み version/date、summary/highlights、カテゴリ別変更、または空表示を現在言語で表示 | build 内 JSON の読み取りのみ                                    | S1/S3          |
 | HOME-007 | `View all release notes` を選ぶ                                       | `/release-notes#<最新version>` を開き、詳細ページの同じ version を指す                        | SPA history/hash のみ                                           | S1/S3          |
 
+- HOME-008: 接続後 Home には現在言語の紹介リンクを表示し、`href="/about"` で機能・firmware・環境別接続条件の公開説明へ移動できる。通常左クリックは SPA、中/修飾クリックとリンクコピーは browser 標準動作。通常遷移と Back/Forward は既存 provider と訪問済み tab を保持し、Save / Discard / 再接続を実行しない。About の接続入口は `/` へ戻る。根拠: issues #306/#309、S1、[About ABOUT-004/005](about.md)、[SHELL-021–023](../modules/app-shell.md)。
+
 ## 代表ユーザーフロー
 
 ### F1: 製品情報を探す（HOME-001/003）

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { LanguageContext } from "../../contexts/language";
 import { translate, type Language } from "../../i18n/translations";
+import { aboutContent } from "../../content/about";
 import { SplashScreen } from "../SplashScreen";
 
 describe("SplashScreen", () => {
@@ -127,11 +128,13 @@ test.each([
 );
 
 test.each([
+  [aboutContent.en.aboutLabel, "/about", "about"],
   ["Keyboard developer guide", "/developer-guide", "guide"],
   [/Release notes/, "/release-notes", "releases"],
 ] as const)(
   "provides a native link for %s and intercepts only ordinary clicks",
   (name, href, target) => {
+    const about = jest.fn();
     const guide = jest.fn();
     const releases = jest.fn();
     render(
@@ -139,13 +142,15 @@ test.each([
         onConnect={jest.fn()}
         isConnecting={false}
         error={null}
+        onShowAbout={about}
         onShowDeveloperGuide={guide}
         onShowReleaseNotes={releases}
       />,
     );
     const link = screen.getByRole("link", { name });
     expect(link).toHaveAttribute("href", href);
-    const callback = target === "guide" ? guide : releases;
+    const callback =
+      target === "about" ? about : target === "guide" ? guide : releases;
     for (const modifiers of [
       { ctrlKey: true },
       { metaKey: true },
@@ -158,8 +163,17 @@ test.each([
         cancelable: true,
         ...modifiers,
       });
+      let preventedByApp: boolean | undefined;
+      document.addEventListener(
+        "click",
+        (browserEvent) => {
+          preventedByApp = browserEvent.defaultPrevented;
+          browserEvent.preventDefault();
+        },
+        { once: true },
+      );
       link.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      expect(preventedByApp).toBe(false);
       expect(callback).not.toHaveBeenCalled();
       // Prevent jsdom's asynchronous navigation after checking native semantics.
       event.preventDefault();
@@ -170,3 +184,37 @@ test.each([
     expect(callback).toHaveBeenCalledTimes(1);
   },
 );
+
+test.each(["en", "ja", "zh"] as const)(
+  "localizes the About entry link in %s",
+  (language) => {
+    render(localizedSplash(language, ""));
+    expect(
+      screen.getByRole("link", { name: aboutContent[language].aboutLabel }),
+    ).toHaveAttribute("href", "/about");
+  },
+);
+
+test("hides the body-portal notice on public routes and restores the pending method on return", () => {
+  const onConnect = jest.fn();
+  const props = {
+    onConnect,
+    isConnecting: false,
+    error: null,
+    onShowReleaseNotes: jest.fn(),
+    onShowDeveloperGuide: jest.fn(),
+  };
+  const { rerender } = render(<SplashScreen {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Connect via USB" }));
+  expect(
+    screen.getByRole("dialog", { name: "Connect via USB" }),
+  ).toBeInTheDocument();
+  rerender(<SplashScreen {...props} visible={false} />);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(onConnect).not.toHaveBeenCalled();
+  rerender(<SplashScreen {...props} visible />);
+  expect(
+    screen.getByRole("dialog", { name: "Connect via USB" }),
+  ).toBeInTheDocument();
+  expect(onConnect).not.toHaveBeenCalled();
+});

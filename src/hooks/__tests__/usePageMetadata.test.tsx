@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { usePageMetadata } from "../usePageMetadata";
+import { aboutContent } from "../../content/about";
 import { PUBLIC_PAGE_PATHS, SITE_URL } from "../../lib/seo";
 import type { Language } from "../../i18n/translations";
 
@@ -106,3 +107,29 @@ test("sitemap contains exactly the public routes, with production URLs and valid
     `Sitemap: ${SITE_URL}/sitemap.xml`,
   );
 });
+
+test.each(["en", "ja", "zh"] as const)(
+  "about metadata follows %s and removes query/hash",
+  (language) => {
+    window.history.replaceState(null, "", "/about?source=test#compatibility");
+    renderHook(() => usePageMetadata(window.location.pathname, language));
+    expect(document.title).toContain("DYA Studio");
+    expect(
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href,
+    ).toBe(`${SITE_URL}/about`);
+    expect(
+      document.querySelector<HTMLMetaElement>('meta[property="og:url"]')!
+        .content,
+    ).toBe(`${SITE_URL}/about`);
+    expect(
+      document.querySelector<HTMLMetaElement>('meta[name="description"]')!
+        .content,
+    ).toBe(aboutContent[language].description);
+    expect(
+      document.querySelector<HTMLMetaElement>('meta[property="og:title"]')!
+        .content,
+    ).toBe(document.title);
+    expect(document.head.innerHTML).not.toContain("source=test");
+    window.history.replaceState(null, "", "/");
+  },
+);

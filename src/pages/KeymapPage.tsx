@@ -73,7 +73,11 @@ import { useIsTabActive } from "../hooks/useIsTabActive";
 import type { FloatingWindowPosition } from "../hooks/useFloatingWindow";
 import "./keymap.css";
 
-export function KeymapPage() {
+export function KeymapPage({
+  shellVisible = true,
+}: {
+  shellVisible?: boolean;
+}) {
   const { t } = useLanguage();
   const connection = useContext(ConnectionContext);
   const keyboardLayoutContext = useContext(KeyboardLayoutContext);
@@ -723,6 +727,8 @@ export function KeymapPage() {
   ]);
 
   useEffect(() => {
+    // Public documentation hides the editor without ending its selection.
+    if (!shellVisible) return;
     if (!isTabActive) {
       setShowComboEditor(false);
       setShowComboBindingSelector(false);
@@ -732,7 +738,7 @@ export function KeymapPage() {
     }
     // A tab return must read edits made on Macro&Combo while this page was retained.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTabActive]);
+  }, [isTabActive, shellVisible]);
 
   const mobileVisibleRemovedLayerIds = keymap.removedLayerIds.slice(0, 3);
   const mobileOverflowRemovedLayerIds = keymap.removedLayerIds.slice(3);
@@ -865,7 +871,7 @@ export function KeymapPage() {
                 </>
               )}
               <Dialog.Root
-                open={showMobileSettings}
+                open={showMobileSettings && isTabActive}
                 onOpenChange={setShowMobileSettings}
               >
                 <Dialog.Trigger asChild>
@@ -1918,7 +1924,7 @@ export function KeymapPage() {
 
       {/* Rename Layer Dialog */}
       <Dialog.Root
-        open={showRenameDialog}
+        open={showRenameDialog && isTabActive}
         onOpenChange={(open) => {
           if (!open && !renamingRef.current) setShowRenameDialog(false);
         }}
@@ -1983,7 +1989,7 @@ export function KeymapPage() {
 
       {/* Reset-to-Default Confirmation Dialog */}
       <Dialog.Root
-        open={showResetDialog}
+        open={showResetDialog && isTabActive}
         onOpenChange={(open) => {
           if (!open && !isResetting) setShowResetDialog(false);
         }}
@@ -2148,7 +2154,7 @@ export function KeymapPage() {
       {/* Keycode Selector Dialog */}
       <MacroEditorDialog
         key={macroEditorSession}
-        open={macroEditorMode !== null}
+        open={macroEditorMode !== null && isTabActive}
         mode={macroEditorMode ?? "edit"}
         editSlot={macroEditorSlot}
         onOpenChange={(open) => {

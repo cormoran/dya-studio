@@ -33,15 +33,15 @@
 
 ## 現行の機能仕様
 
-| ID        | 前提 → 操作                                              | 観測できる結果                                                                                                         | 保存範囲・副作用                                            | 根拠        |
-| --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------- |
-| GUIDE-001 | known guide URL を直接開く                               | connection splash を経ず selected page definition を render                                                            | keyboard RPC、device/browser storage write はしない         | S1/S2/S4    |
-| GUIDE-002 | unknown `/developer-guide/*` URL                         | root page definition を fallback 表示する                                                                              | URL 自体を canonicalize しない                              | S1/S2       |
-| GUIDE-003 | desktop sidebar / mobile `Menu`                          | active route に `aria-current=page`。mobile link は details を閉じ、history push/popstate/scroll top で同一 SPA 内移動 | browser history のみ                                        | S3/S4       |
-| GUIDE-004 | heading link / `On this page`                            | page content の heading id に `#id` anchor、desktop/mobile TOC を表示                                                  | browser hash scroll。content を変更しない                   | S3          |
-| GUIDE-005 | language 日本語/English、Theme dropdown                  | content definition、言語表示、現在のテーマ名と配色を切替（Light / Dark / Pop / Neutral）                               | language/theme persistence は app-shell の契約              | S1/S2/S3/S4 |
-| GUIDE-006 | code/table/callout/image/flow/features/levels/link group | content type ごとに static rendering。`src` 不在 image は placeholder と alt/caption                                   | link は通常 anchor。external firmware/GitHub URL を開くのみ | S2/S3       |
-| GUIDE-007 | previous/next、`Back to DYA Studio`                      | related page link または `/` link を表示                                                                               | normal browser navigation。keyboard state を保存/破棄しない | S2/S3/S4    |
+| ID        | 前提 → 操作                                              | 観測できる結果                                                                                                         | 保存範囲・副作用                                                                                                          | 根拠        |
+| --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| GUIDE-001 | known guide URL を直接開く                               | connection splash を経ず selected page definition を render                                                            | keyboard RPC、device/browser storage write はしない                                                                       | S1/S2/S4    |
+| GUIDE-002 | unknown `/developer-guide/*` URL                         | root page definition を fallback 表示する                                                                              | URL 自体を canonicalize しない                                                                                            | S1/S2       |
+| GUIDE-003 | desktop sidebar / mobile `Menu`                          | active route に `aria-current=page`。mobile link は details を閉じ、history push/popstate/scroll top で同一 SPA 内移動 | browser history のみ                                                                                                      | S3/S4       |
+| GUIDE-004 | heading link / `On this page`                            | page content の heading id に `#id` anchor、desktop/mobile TOC を表示                                                  | browser hash scroll。content を変更しない                                                                                 | S3          |
+| GUIDE-005 | language 日本語/English、Theme dropdown                  | content definition、言語表示、現在のテーマ名と配色を切替（Light / Dark / Pop / Neutral）                               | language/theme persistence は app-shell の契約                                                                            | S1/S2/S3/S4 |
+| GUIDE-006 | code/table/callout/image/flow/features/levels/link group | content type ごとに static rendering。`src` 不在 image は placeholder と alt/caption                                   | link は通常 anchor。external firmware/GitHub URL を開くのみ                                                               | S2/S3       |
+| GUIDE-007 | previous/next、`Back to DYA Studio`                      | related page link または `/` link を表示                                                                               | 通常クリックは SPA navigation で既存 session を保持。中/修飾クリックは browser 標準動作。keyboard state を保存/破棄しない | S2/S3/S4    |
 
 ## 代表ユーザーフロー
 
@@ -53,7 +53,7 @@
 ## 不変条件
 
 - GUIDE-I01: guide route を開くために Web Serial、Bluetooth、接続 keyboard を要求しない（S1）。
-- GUIDE-I02: guide internal navigation は `/developer-guide` prefix だけを SPA intercept し、外部 link/anchor の意味を置換しない（S3）。
+- GUIDE-I02: guide 内の `/developer-guide` prefix・`/`・`/about`・`/release-notes` の通常クリックを SPA intercept し、外部 link/anchor・中/修飾クリックの意味を置換しない（S3）。
 - GUIDE-I03: mobile で page link を選んだ後に menu は開いたまま残らない（S3/S4）。
 - GUIDE-I04: guide の設定例を表示・コピー・リンクするだけでは firmware/device に write しない（S2/S3）。
 

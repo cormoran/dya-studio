@@ -526,3 +526,31 @@ describe("StudioUnlockProvider", () => {
     });
   });
 });
+
+it("hides the unlock portal on public routes without rejecting the parked request", async () => {
+  setLockState("locked");
+  const fn = jest
+    .fn()
+    .mockRejectedValueOnce(unlockError())
+    .mockResolvedValue("restored");
+  const onResolve = jest.fn();
+  const onReject = jest.fn();
+  const content = <Harness fn={fn} onResolve={onResolve} onReject={onReject} />;
+  const { rerender } = render(
+    <StudioUnlockProvider>{content}</StudioUnlockProvider>,
+  );
+  await userEvent.click(screen.getByText("run"));
+  expect(await screen.findByText("Keyboard Unlock Required")).toBeVisible();
+  rerender(
+    <StudioUnlockProvider visible={false}>{content}</StudioUnlockProvider>,
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(onReject).not.toHaveBeenCalled();
+  expect(fn).toHaveBeenCalledTimes(1);
+  rerender(<StudioUnlockProvider>{content}</StudioUnlockProvider>);
+  expect(screen.getByRole("dialog")).toBeVisible();
+  act(() => setLockState("unlocked"));
+  rerender(<StudioUnlockProvider>{content}</StudioUnlockProvider>);
+  await waitFor(() => expect(onResolve).toHaveBeenCalledWith("restored"));
+  expect(onReject).not.toHaveBeenCalled();
+});
