@@ -2,12 +2,15 @@ import { useId } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
-import { ThemeSelect } from "./ThemeSelect";
+import { useTheme } from "../hooks/useTheme";
+import { themeOptions, type Theme } from "../themes/themes";
 import { languageLabels, type Language } from "../i18n/translations";
 
 export function MobileDisplaySettings() {
   const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const languageId = useId();
+  const themeId = useId();
 
   return (
     <Dialog.Root>
@@ -24,14 +27,6 @@ export function MobileDisplaySettings() {
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         <Dialog.Content
           aria-describedby={undefined}
-          onEscapeKeyDown={(event) => {
-            if (
-              event.target instanceof Element &&
-              event.target.closest('[role="menu"]')
-            ) {
-              event.preventDefault();
-            }
-          }}
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-2xl z-50 p-4"
         >
           <div className="flex items-center justify-between gap-2 mb-4">
@@ -68,7 +63,23 @@ export function MobileDisplaySettings() {
                 ))}
               </select>
             </div>
-            <ThemeSelect fullWidth />
+            <div>
+              <label htmlFor={themeId} className="block text-sm mb-2">
+                {t("Theme")}
+              </label>
+              <select
+                id={themeId}
+                className="select-field w-full min-w-0 min-h-11 text-base"
+                value={theme}
+                onChange={(event) => setTheme(event.target.value as Theme)}
+              >
+                {themeOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {t(label)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

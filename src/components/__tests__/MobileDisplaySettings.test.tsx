@@ -29,8 +29,10 @@ describe("MobileDisplaySettings", () => {
     expect(
       screen.getByRole("dialog", { name: "Display settings" }),
     ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Theme" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Dark" }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Theme" }),
+      "dark",
+    );
     expect(document.documentElement).toHaveClass("dark");
     expect(localStorage.getItem("dya-studio-theme")).toBe("dark");
     await user.selectOptions(screen.getByLabelText("Language"), "ja");
@@ -41,25 +43,29 @@ describe("MobileDisplaySettings", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "表示設定" }));
     expect(screen.getByLabelText("言語")).toHaveValue("ja");
-    expect(screen.getByRole("button", { name: "テーマ" })).toHaveAttribute(
-      "title",
-      "テーマ: ダーク",
+    expect(screen.getByRole("combobox", { name: "テーマ" })).toHaveValue(
+      "dark",
     );
   });
 
-  it("Escape closes only the nested theme menu without changing the saved theme", async () => {
+  it("offers all themes in a native select and persists each selection", async () => {
     const user = userEvent.setup();
     renderSettings();
     await user.click(screen.getByRole("button", { name: "Display settings" }));
-    const themeTrigger = screen.getByRole("button", { name: "Theme" });
-    await user.click(themeTrigger);
-    await user.keyboard("{ArrowDown}{Escape}");
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    const select = screen.getByRole("combobox", { name: "Theme" });
+    expect(select.tagName).toBe("SELECT");
     expect(
-      screen.getByRole("dialog", { name: "Display settings" }),
-    ).toBeVisible();
-    expect(themeTrigger).toHaveFocus();
-    expect(localStorage.getItem("dya-studio-theme")).toBe("light");
+      Array.from((select as HTMLSelectElement).options, ({ value }) => value),
+    ).toEqual(["light", "dark", "pop", "neutral"]);
+    for (const theme of ["dark", "pop", "neutral", "light"]) {
+      await user.selectOptions(select, theme);
+      expect(select).toHaveValue(theme);
+      expect(document.documentElement).toHaveClass(theme);
+      expect(localStorage.getItem("dya-studio-theme")).toBe(theme);
+      expect(
+        screen.getByRole("dialog", { name: "Display settings" }),
+      ).toBeVisible();
+    }
   });
 
   it("closes on an outside tap", async () => {
@@ -77,8 +83,10 @@ describe("MobileDisplaySettings", () => {
     renderSettings();
     const trigger = screen.getByRole("button", { name: "Display settings" });
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: "Theme" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Dark" }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Theme" }),
+      "dark",
+    );
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
