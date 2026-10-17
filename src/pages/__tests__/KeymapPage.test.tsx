@@ -861,7 +861,7 @@ describe("KeymapPage", () => {
         within(layers).getByRole("button", { name: "Lower" }),
       ).toHaveAttribute("aria-pressed", "false");
       expect(
-        screen.getByRole("combobox", { name: "OS Layout:" }),
+        screen.getByRole("combobox", { name: "OS Layout" }),
       ).toBeInTheDocument();
       expect(
         screen.getByRole("group", { name: "Keyboard layout for Base" }),
