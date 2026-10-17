@@ -82,3 +82,69 @@
   background-color: #fff4df;
   color: #78350f;
 }
+
+/* Primary actions stay white, including hover; gray is reserved for disabled actions. */
+:root.neutral :is(.btn-electric, .btn-neon):not(:disabled),
+:root.neutral :is(.btn-electric, .btn-neon):not(:disabled):hover {
+  background: #ffffff;
+  border-color: #171717;
+  color: #171717;
+}
+
+:root.neutral :is(.btn-electric, .btn-neon):disabled {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-muted);
+}
+
+/* Existing accent-fill classes identify selected layers, macros, combos, keys,
+   output priority and shared value selectors. Exclude switch tracks and disabled
+   controls; an inset outline also marks selected controls without a CSS border. */
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/10"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/15"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-electric)]/20"]:not(:disabled):not(
+    [role="switch"]
+  ),
+:root.neutral
+  button[class~="bg-[var(--color-neon)]/10"]:not(:disabled):not(
+    [role="switch"]
+  ) {
+  background: #ffffff;
+  border-color: #171717;
+  color: #171717;
+  box-shadow: inset 0 0 0 1px #171717;
+}
+
+/* Page-heading icons, current OS rows and informational status cards use these
+   exact paired utilities. Warning/error surfaces use their own semantic colors. */
+:root.neutral
+  div[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.neutral
+  div[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  background: #ffffff;
+  border-color: #171717;
+}
+
+/* USB/BLE icon circles and help/guidance panels share these border utilities.
+   Restrict to div containers so status dots, switch tracks and rules keep fill. */
+:root.neutral
+  div:is(
+    .rounded-lg,
+    .rounded-full
+  )[class~="bg-[var(--color-border)]"][class~="border-[var(--color-border-hover)]"] {
+  background: #ffffff;
+}
+
+/* The active BLE profile has a separate accent pair; retain its selection outline. */
+:root.neutral
+  div.rounded-full[class~="bg-[var(--color-cyber)]/20"][class~="border-[var(--color-cyber)]/40"] {
+  background: #ffffff;
+  border-color: #171717;
+}
