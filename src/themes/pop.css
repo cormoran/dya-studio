@@ -424,3 +424,36 @@
 :root.pop [class~="hover:bg-[var(--color-warning)]/20"]:not(:disabled):hover {
   background-color: #ffe8a3;
 }
+
+/* Status ink stays readable on creamy semantic fills. */
+:root.pop .diagnostic-summary-badge[data-tone="ok"] {
+  background-color: var(--pop-leaf);
+  color: var(--color-neon);
+}
+
+:root.pop .diagnostic-summary-badge[data-tone="amber"] {
+  background-color: var(--pop-warning);
+  color: var(--color-warning);
+}
+
+:root.pop .diagnostic-summary-badge[data-tone="red"] {
+  background-color: #ffd6ce;
+  color: #943c30;
+}
+
+:root.pop .demo-subsystem-option {
+  background-color: var(--pop-soft);
+  border-color: transparent;
+}
+
+/* Combo membership is a selection; live key-stream highlights stay separate. */
+:root.pop .combo-position-preview .physical-key[class~="bg-amber-400/20"] {
+  background-color: var(--pop-sky);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+:root.pop .combo-position-preview .physical-key > .animate-pulse {
+  border-color: transparent;
+  animation: none;
+}

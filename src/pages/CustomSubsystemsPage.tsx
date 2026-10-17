@@ -327,7 +327,7 @@ function DemoSubsystemToggles() {
         {DEMO_SUBSYSTEMS.map((s) => (
           <label
             key={s.identifier}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] cursor-pointer select-none"
+            className="demo-subsystem-option flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] cursor-pointer select-none"
           >
             <input
               type="checkbox"
