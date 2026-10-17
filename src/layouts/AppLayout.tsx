@@ -15,6 +15,7 @@ interface AppLayoutProps {
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isConnecting?: boolean;
+  isHome: boolean;
 }
 
 export function AppLayout({
@@ -24,6 +25,7 @@ export function AppLayout({
   onConnect,
   onDisconnect,
   isConnecting,
+  isHome,
 }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
@@ -31,7 +33,10 @@ export function AppLayout({
   return (
     <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
-      <header className="relative grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-y-3 px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header
+        data-home={isHome}
+        className="app-header relative flex shrink-0 items-center justify-end px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300"
+      >
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -41,18 +46,20 @@ export function AppLayout({
           </span>
         )}
         {/* Logo & Brand */}
-        <DyaLogo className="col-start-1 row-start-1 justify-self-start w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
-        <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-center">
-          <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
-            DYA
-          </span>
-          <span className="text-xs font-light tracking-wider text-[var(--color-text-muted)] uppercase pt-1">
-            Studio
-          </span>
+        <div className="app-header-brand flex items-center gap-4">
+          <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
+              DYA
+            </span>
+            <span className="text-xs font-light tracking-wider text-[var(--color-text-muted)] uppercase pt-1">
+              Studio
+            </span>
+          </div>
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="col-span-3 flex min-w-0 max-w-full items-center gap-2 sm:gap-4 justify-self-end lg:col-span-1 lg:col-start-3 lg:row-start-1">
+        <div className="app-header-controls flex min-w-0 items-center gap-2 sm:gap-4">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">

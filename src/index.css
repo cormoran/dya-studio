@@ -155,6 +155,47 @@
   cursor: pointer;
 }
 
+.app-header-brand {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translate(0, -50%);
+}
+
+.app-header-controls {
+  max-width: calc(100% - 3rem);
+}
+
+@media (min-width: 640px) {
+  .app-header-brand {
+    left: 1.5rem;
+    transition:
+      left 420ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-header-controls {
+    max-width: calc(100% - 11rem);
+    transition: max-width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-header[data-home="true"] .app-header-brand {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .app-header[data-home="true"] .app-header-controls {
+    max-width: calc(50% - 5.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header-brand,
+  .app-header-controls {
+    transition: none;
+  }
+}
+
 .app-page {
   min-width: 0;
   max-width: 100%;

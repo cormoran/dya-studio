@@ -256,6 +256,7 @@ function AppContent() {
           className="app-connected-shell"
         >
           <AppLayout
+            isHome={activeTab === "home"}
             isConnected={connection.isConnected}
             deviceName={connection.deviceName}
             onConnect={connection.onConnect}
