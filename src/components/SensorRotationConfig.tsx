@@ -349,10 +349,10 @@ export function SensorRotationConfig({
                 className="flex-1 min-w-0 basis-[280px] max-w-[400px] p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]"
               >
                 {/* Sensor Name */}
-                <legend className="flex w-full items-center gap-2 mb-4 p-0">
-                  <span id={headingId} className="sr-only">
-                    {sensorContext}
-                  </span>
+                <legend id={headingId} className="sr-only">
+                  {sensorContext}
+                </legend>
+                <div className="flex w-full items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-full bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20 flex items-center justify-center">
                     <span className="text-xs font-mono text-[var(--color-electric)]">
                       {sensor.index}
@@ -366,7 +366,7 @@ export function SensorRotationConfig({
                       {selectedLayerLabel}
                     </p>
                   </div>
-                </legend>
+                </div>
 
                 {/* Rotation Bindings */}
                 <div className="space-y-3">
