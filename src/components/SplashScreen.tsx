@@ -8,6 +8,7 @@ import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "../hooks/useLanguage";
 import { getCurrentVersion } from "../i18n/releaseNotes";
 import { EditorTooltip } from "./EditorTooltip";
+import { connectionErrorMessage } from "../lib/connectionError";
 import { useTheme } from "../hooks/useTheme";
 import githubMarkBlack from "../assets/github/GitHub_Invertocat_Black.svg";
 import githubMarkWhite from "../assets/github/GitHub_Invertocat_White.svg";
@@ -280,11 +281,21 @@ export function SplashScreen({
       {/* Error message */}
       {error && (
         <motion.div
-          className="mt-4 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30"
+          role="alert"
+          className="relative z-10 mt-4 mx-4 max-w-lg max-h-[30vh] overflow-y-auto px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-sm text-red-500">
+            {t(connectionErrorMessage(error))}
+          </p>
+          <details
+            key={error}
+            className="mt-2 text-sm text-[var(--color-text-secondary)]"
+          >
+            <summary className="cursor-pointer">{t("Error details")}</summary>
+            <p className="mt-2 whitespace-pre-wrap break-words">{error}</p>
+          </details>
         </motion.div>
       )}
 
