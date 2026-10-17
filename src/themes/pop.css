@@ -11,7 +11,6 @@
     --pop-sky-hover: #4fbceb;
     --pop-soft: #e4f5ff;
     --pop-warning: #ffecad;
-    --pop-lilac: #dbc5ff;
     --pop-leaf-hover: #83dba9;
 
     --color-electric: #155b91;
@@ -386,12 +385,12 @@
   font-family: var(--font-ui);
 }
 
-/* A small lilac accent adds playfulness beside the ice-blue surfaces. */
+/* Heading tiles blend with the soft blue guidance and card surfaces. */
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
-  background: var(--pop-lilac);
+  background: var(--pop-soft);
   border-color: transparent;
 }
 
