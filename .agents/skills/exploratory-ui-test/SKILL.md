@@ -13,6 +13,10 @@ This skill guides the coordinator's scope and model decisions. Read the [explora
 - **Whole-app exploration:** When the user requests broad or comprehensive testing, inventory every entry point in the sitemap and assign representative flows, variations, and shared features. This does not guarantee every combination of states. Track unreachable and untested entry points too.
 - Honor explicit scope, budget, and model choices. Proactively launch bounded subagent testing when substantial UI changes or changes to persistence, connections, or shared editors create cross-page regression risk. First explain the reason and limited targets. Do not launch merely because a diff is large, for documentation-only changes, or after every small edit.
 
+## Theme consistency
+
+Include the exploration guide's [theme consistency checks](../../../docs/spec/EXPLORATORY_TESTING.md#テーマの一貫性確認) in every assigned UI charter. Exercise all available themes on affected pages/shared consumers, including opened overlays, state colors, typography after async loading, and font/style restoration when leaving Pop. Assign explicit theme coverage to workers and review the theme × page/component × state evidence matrix; screenshots and fresh rendered-style observations are required for visual verdicts. Keep unexecuted themes/states visible rather than substituting a source-only or single-theme pass. This adds a visual check within the assigned scope, not repeated device writes in every theme.
+
 ## Models and cost
 
 | Role                                                               | Default                  | When to use                                                                                                                          |

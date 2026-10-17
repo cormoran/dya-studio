@@ -17,6 +17,7 @@ For each assigned page, assess:
 - **State and feedback:** Can it read selected/expanded/disabled states, draft versus applied values, pending work, success, failure, and unsupported conditions? Inspect the actual accessibility/DOM attributes before blaming the app for a snapshot omission.
 - **Action semantics and recovery:** Do names communicate immediate writes, save boundaries, close/cancel behavior, and destructive scope? Can it cancel, retry, reload, and restore without guessing?
 - **Efficiency:** Can ordinary tasks use semantic controls without coordinates, source-code knowledge, large repeated snapshots, or remembering hidden context? Measure concrete extra steps; do not invent a numeric usability score.
+- **Theme consistency and visual affordances:** Follow the [all-theme checks](../../../docs/spec/EXPLORATORY_TESTING.md#テーマの一貫性確認) on assigned pages and visible overlays. Compare colors, fonts, focus/selection/disabled states, and separation of cards, menus and keys against the theme concept. Check actual rendered visuals after async fonts settle and restoration outside Pop; do not infer visual consistency from accessible names or DOM snapshots alone. Include the theme × page/component × state matrix and distinguish design suggestions from specification mismatches.
 - **Alternative interfaces:** Where a structured agent interface already exists, inspect its documented scope and contracts. UI success does not verify that interface; its absence alone is not a defect. Do not introduce a new API as the automatic answer to poor labels.
 
 Perform a representative task and one relevant variant per page. For editing pages, read back the changed value through the application's Refresh/Reload or documented equivalent before restoration. For informational pages, use real navigation/search/expand controls and verify the destination or resulting content. Directly opening a route proves rendering, not that its incoming links work. Related documentation routes may share one exercised navigation variant, but enumerate each route's actual observations. Mobile exploration is optional unless assigned; do not let it displace a required desktop task.
@@ -64,6 +65,7 @@ Record environment and actual model/effort. Use your own browser page ID.
 For each page: representative task + variant; applicable edit/save/readback/
 restoration/readback; concrete target names and values, extra inference needed,
 positive affordances, improvement candidates, and blocked/not-run conditions.
+Include all-theme color/font/state observations and untested cells per the exploration guide.
 Inspect source only after UI evidence; distinguish DOM/tool omissions.
 Finish with exact remaining changes and skill ambiguities encountered.
 ```

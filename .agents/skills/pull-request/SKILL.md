@@ -26,6 +26,7 @@ Help a reviewer seeing the change for the first time quickly understand what cha
 - When useful, add `### Validation` below the summary bullets and briefly state the checks performed and their results. Distinguish unexecuted, failed, and skipped checks from successful ones.
 - If finer detail is necessary, add a section such as `### Technical details` further down. Put formulas, model assumptions, protocol details, and detailed verification conditions there. For longer content, use `<details>` or links to existing specifications and CI results.
 - Keep detail sections focused on information needed for review. Avoid dumping raw logs, every test name, long commit hashes, or environment IDs.
+- For UI changes, review the [theme consistency coverage](../../../docs/spec/EXPLORATORY_TESTING.md#テーマの一貫性確認) and report the themes/components/states actually exercised, including typography and overlay boundaries. Missing all-theme evidence stays unverified; do not turn CI success or CSS inspection into a visual pass or silently expand a small task into a whole-app audit.
 - Distinguish source comparisons, Demo evidence, and physical-device evidence. Passing CI does not prove hardware behavior or persistence after a power cycle.
 
 ## Publish and verify
