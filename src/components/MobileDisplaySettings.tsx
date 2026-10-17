@@ -24,6 +24,14 @@ export function MobileDisplaySettings() {
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         <Dialog.Content
           aria-describedby={undefined}
+          onEscapeKeyDown={(event) => {
+            if (
+              event.target instanceof Element &&
+              event.target.closest('[role="menu"]')
+            ) {
+              event.preventDefault();
+            }
+          }}
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-2xl z-50 p-4"
         >
           <div className="flex items-center justify-between gap-2 mb-4">

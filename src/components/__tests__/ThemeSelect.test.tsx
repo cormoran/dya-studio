@@ -22,9 +22,11 @@ it("switches all themes without leaving stale classes and restores the saved cho
   const user = userEvent.setup();
   const view = renderSelector();
   for (const theme of ["pop", "neutral", "light", "dark", "pop"]) {
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Theme" }),
-      theme,
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    await user.click(
+      screen.getByRole("menuitemradio", {
+        name: theme[0].toUpperCase() + theme.slice(1),
+      }),
     );
     expect(document.documentElement.className.split(" ").sort()).toEqual(
       [theme, "unrelated"].sort(),
@@ -36,7 +38,10 @@ it("switches all themes without leaving stale classes and restores the saved cho
   }
   view.unmount();
   renderSelector();
-  expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue("pop");
+  expect(screen.getByRole("button", { name: "Theme" })).toHaveAttribute(
+    "title",
+    "Theme: Pop",
+  );
 });
 
 it.each(["unknown", "pastel"])(
@@ -45,13 +50,45 @@ it.each(["unknown", "pastel"])(
     localStorage.setItem("dya-studio-theme", stored);
     renderSelector();
     expect(
-      screen.queryByRole("option", { name: "Pastel" }),
+      screen.queryByRole("menuitemradio", { name: "Pastel" }),
     ).not.toBeInTheDocument();
     const expected = window.matchMedia("(prefers-color-scheme: light)").matches
       ? "light"
       : "dark";
-    expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue(
-      expected,
+    expect(screen.getByRole("button", { name: "Theme" })).toHaveAttribute(
+      "title",
+      `Theme: ${expected[0].toUpperCase() + expected.slice(1)}`,
     );
   },
 );
+
+it("opens on the selected theme, navigates without saving, and closes with focus restored", async () => {
+  localStorage.setItem("dya-studio-theme", "light");
+  const user = userEvent.setup();
+  renderSelector();
+  const trigger = screen.getByRole("button", { name: "Theme" });
+  expect(trigger).toHaveTextContent("");
+  await user.click(trigger);
+  expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveFocus();
+  await user.keyboard("{End}");
+  expect(screen.getByRole("menuitemradio", { name: "Neutral" })).toHaveFocus();
+  expect(localStorage.getItem("dya-studio-theme")).toBe("light");
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+  await user.click(trigger);
+  await user.keyboard("{ArrowDown}{Enter}");
+  expect(localStorage.getItem("dya-studio-theme")).toBe("dark");
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+});
+
+it("dismisses on an outside click without changing the selection", async () => {
+  localStorage.setItem("dya-studio-theme", "light");
+  const user = userEvent.setup();
+  renderSelector();
+  await user.click(screen.getByRole("button", { name: "Theme" }));
+  await user.click(document.body);
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  expect(localStorage.getItem("dya-studio-theme")).toBe("light");
+});

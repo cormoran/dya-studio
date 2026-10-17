@@ -77,9 +77,8 @@ describe("DeveloperGuidePage navigation", () => {
       </ThemeContext.Provider>,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Theme" }), {
-      target: { value: "pop" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Pop" }));
 
     expect(setTheme).toHaveBeenCalledWith("pop");
     expect(
