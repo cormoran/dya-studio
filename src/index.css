@@ -540,11 +540,6 @@
   transform: scale(0.95);
 }
 
-.language-select {
-  padding-left: 2.25rem;
-  font-size: 16px;
-}
-
 /* Warning banner — readable in both dark and light themes */
 .warning-banner {
   border-color: rgba(245, 158, 11, 0.4);

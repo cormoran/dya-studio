@@ -203,7 +203,7 @@ export function ReleaseNotesPage({ onBack }: { onBack: () => void }) {
 
       {/* Top bar: brand on the left (mirrors the app header), controls right */}
       <header className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
             <div className="flex items-center gap-2">
