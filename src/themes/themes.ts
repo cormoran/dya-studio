@@ -3,7 +3,6 @@ export const themeOptions = [
   { value: "dark", label: "Dark" },
   { value: "pop", label: "Pop" },
   { value: "neutral", label: "Neutral" },
-  { value: "pastel", label: "Pastel" },
 ] as const;
 
 export type Theme = (typeof themeOptions)[number]["value"];

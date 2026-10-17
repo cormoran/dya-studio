@@ -3,7 +3,6 @@
 @import "tailwindcss";
 @import "./themes/pop.css";
 @import "./themes/neutral.css";
-@import "./themes/pastel.css";
 @config "../tailwind.config.js";
 
 @layer base {

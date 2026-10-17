@@ -21,7 +21,7 @@ it("switches all themes without leaving stale classes and restores the saved cho
   document.documentElement.classList.add("unrelated");
   const user = userEvent.setup();
   const view = renderSelector();
-  for (const theme of ["pop", "neutral", "pastel", "light", "dark", "pastel"]) {
+  for (const theme of ["pop", "neutral", "light", "dark", "pop"]) {
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Theme" }),
       theme,
@@ -36,14 +36,22 @@ it("switches all themes without leaving stale classes and restores the saved cho
   }
   view.unmount();
   renderSelector();
-  expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue("pastel");
+  expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue("pop");
 });
 
-it("falls back to system preference for an unknown saved theme", () => {
-  localStorage.setItem("dya-studio-theme", "unknown");
-  renderSelector();
-  const expected = window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-  expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue(expected);
-});
+it.each(["unknown", "pastel"])(
+  "falls back to system preference for unsupported saved theme %s",
+  (stored) => {
+    localStorage.setItem("dya-studio-theme", stored);
+    renderSelector();
+    expect(
+      screen.queryByRole("option", { name: "Pastel" }),
+    ).not.toBeInTheDocument();
+    const expected = window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
+    expect(screen.getByRole("combobox", { name: "Theme" })).toHaveValue(
+      expected,
+    );
+  },
+);

@@ -3,25 +3,25 @@
     color-scheme: light;
 
     --color-electric: #404040;
-    --color-neon: #475569;
-    --color-cyber: #52525b;
+    --color-neon: #525252;
+    --color-cyber: #595959;
     --color-warning: #925000;
 
-    --color-bg: #ffffff;
-    --color-surface: #f6f6f6;
-    --color-surface-elevated: #ededed;
-    --color-text: #242424;
-    --color-text-secondary: #505862;
-    --color-text-muted: #62676d;
-    --color-border: #d7d9dc;
-    --color-border-hover: #969ba2;
+    --color-bg: #fafafa;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #f5f5f5;
+    --color-text: #171717;
+    --color-text-secondary: #525252;
+    --color-text-muted: #666666;
+    --color-border: rgba(0, 0, 0, 0.1);
+    --color-border-hover: rgba(0, 0, 0, 0.2);
 
-    --glass-bg: rgba(246, 246, 246, 0.96);
-    --glass-border: #d7d9dc;
+    --glass-bg: #ffffff;
+    --glass-border: rgba(0, 0, 0, 0.1);
 
-    --scrollbar-track: #f6f6f6;
-    --scrollbar-thumb: #969ba2;
-    --scrollbar-thumb-hover: #62676d;
+    --scrollbar-track: #f5f5f5;
+    --scrollbar-thumb: #a3a3a3;
+    --scrollbar-thumb-hover: #737373;
   }
 }
 
@@ -64,7 +64,7 @@
 }
 
 :root.neutral .select-field {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2362676d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
 }
 
 /* Splash transport buttons, selected physical keys, and the devtool launcher. */

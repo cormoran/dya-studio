@@ -78,10 +78,10 @@ describe("DeveloperGuidePage navigation", () => {
     );
 
     fireEvent.change(screen.getByRole("combobox", { name: "Theme" }), {
-      target: { value: "pastel" },
+      target: { value: "pop" },
     });
 
-    expect(setTheme).toHaveBeenCalledWith("pastel");
+    expect(setTheme).toHaveBeenCalledWith("pop");
     expect(
       screen.getByRole("link", { name: "Back to DYA Studio" }),
     ).toHaveAttribute("href", "/");
