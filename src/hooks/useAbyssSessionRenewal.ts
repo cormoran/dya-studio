@@ -3,8 +3,9 @@ import { getAbyssClient } from "../lib/abyss/abyssClient";
 import { OAUTH_CALLBACK_PATH } from "../lib/abyss/abyssOAuth";
 
 /** Renew a saved login while Studio is in use, even without a keyboard. */
-export function useAbyssSessionRenewal(): void {
+export function useAbyssSessionRenewal(enabled = true): void {
   useEffect(() => {
+    if (!enabled) return;
     // A popup callback only relays authorization; it must not rotate tokens.
     if (window.location.pathname === OAUTH_CALLBACK_PATH) return;
     const renew = async () => {
@@ -27,5 +28,5 @@ export function useAbyssSessionRenewal(): void {
       window.removeEventListener("focus", onForeground);
       document.removeEventListener("visibilitychange", onForeground);
     };
-  }, []);
+  }, [enabled]);
 }

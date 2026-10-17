@@ -27,7 +27,7 @@
 
 ## 前提・状態
 
-- splash / disconnected: `AppContent` は `SplashScreen` を表示し、USB、Bluetooth、`Try Demo Mode` を選べる。standalone Developer Guide / release notes は connection gate より前に選択されるため、この session を不要とする。
+- splash / disconnected: `AppContent` は `SplashScreen` を表示し、USB、Bluetooth、`Try Demo Mode` を選べる。standalone About / Developer Guide / release notes / OAuth callback への直接 entry は provider 自体を起動しない（[SHELL-021](app-shell.md)）。既存 session から訪れた場合は provider を保持する（SHELL-022）。
 - connecting: `zmkApp.state.isLoading` 中は splash の全接続 button が無効。error は splash 内に表示する。
 - reconnecting: page mount 時のみ saved session を検査し、overlay `Reconnecting to your keyboard...` を最低 600 ms 表示する。Cancel がある。
 - connected: `isConnected` のときだけ AppLayout と normal tabs を mount する。capability は `zmkApp.state.customSubsystems` を consumer が読む。
@@ -60,7 +60,9 @@ PopのsplashではUSBをスカイブルー、BLEをミント、Demoをクリー�
 
 接続前の splash 右上にも Theme dropdown を表示し、言語と独立して配色を選択できる。選択肢・即時反映・localStorage 保存は [SHELL-005](app-shell.md) に従う。接続操作は発生しない。
 
-- SESSION-016: splash の開発者ガイド・リリースノートは、それぞれ `/developer-guide`・`/release-notes` の `href` を持つ通常リンクとして表示する。通常の左クリックのみ既存 SPA navigation を使い、Ctrl / Command / Shift / Alt を伴うクリックと中クリックは browser の標準動作を妨げない。リンク先のコピー・別タブ表示ができる。表示順・テーマのクラス・接続処理は SESSION-013 のまま。根拠: ユーザー明示要求（2026-10-18）、[issue #303](https://github.com/cormoran/dya-studio/issues/303)、S4 `navigateLink`。検索メタ情報は [SHELL-018–020](app-shell.md) を参照する。
+- SESSION-016: splash の紹介・開発者ガイド・リリースノートは、それぞれ `/about`・`/developer-guide`・`/release-notes` の `href` を持つ通常リンクとして表示する。通常の左クリックのみ既存 SPA navigation を使い、Ctrl / Command / Shift / Alt を伴うクリックと中クリックは browser の標準動作を妨げない。リンク先のコピー・別タブ表示ができる。表示順・テーマのクラス・接続処理は SESSION-013 のまま。根拠: ユーザー明示要求（2026-10-18）、[issue #303](https://github.com/cormoran/dya-studio/issues/303)、S4 `navigateLink`。検索メタ情報は [SHELL-018–020](app-shell.md) を参照する。
+
+- SESSION-017: splash の紹介リンクから `/about` へ通常遷移しても進行中の connect / auto reconnect を中止・再実行しない。公開 route 閲覧中に成功・失敗することがあり、`/` へ戻ると現在の connected / connecting / reconnecting / error 状態を表示する。connecting のボタン無効化と reconnecting の `Cancel` を維持し、Cancel は SESSION-006 のまま。direct `/about` の保存済み session は接続入口への初回移動まで再開しない。接続 notice と unlock prompt の portal は非表示にし、pending method・parked unlock 操作を維持して戻ると再表示する。紹介表示中は新規 account renewal を起動しない。sessionStorage の保存・消去、notice の承諾条件、firmware capability の意味は変更しない。根拠: [About ABOUT-004/005](../pages/about.md)、issues #306/#309、S1 `AppRouter` / `AppContent`、[SHELL-021/022](app-shell.md)。
 
 ## 代表ユーザーフロー
 

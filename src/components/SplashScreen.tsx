@@ -1,3 +1,4 @@
+import { ABOUT_PATH, aboutContent } from "../content/about";
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
@@ -17,9 +18,13 @@ import githubMarkWhite from "../assets/github/GitHub_Invertocat_White.svg";
 import maintainerAvatar from "../assets/maintainer/cormoran707.jpg";
 
 interface SplashScreenProps {
+  /** Keep pending notice state while a public route hides this screen. */
+  visible?: boolean;
   onConnect: (method: ConnectionMethod) => void;
   isConnecting: boolean;
   error: string | null;
+  /** Navigate to the connection-free product introduction. */
+  onShowAbout?: () => void;
   /** Navigate to the standalone release notes page. */
   onShowReleaseNotes: () => void;
   /** Navigate to the connection-free keyboard developer guide. */
@@ -75,13 +80,15 @@ function DisabledSlash({ color }: { color: string }) {
 }
 
 export function SplashScreen({
+  visible = true,
   onConnect,
   isConnecting,
   error,
+  onShowAbout,
   onShowReleaseNotes,
   onShowDeveloperGuide,
 }: SplashScreenProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { theme } = useTheme();
   const version = getCurrentVersion();
   // Dialog state
@@ -323,11 +330,20 @@ export function SplashScreen({
 
       {/* Standalone documentation links */}
       <motion.div
-        className="absolute bottom-20 flex items-center gap-4 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
+        className="absolute bottom-20 flex flex-wrap justify-center px-4 items-center gap-x-4 gap-y-2 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.1 }}
       >
+        <a
+          href={ABOUT_PATH}
+          onClick={(event) => {
+            if (onShowAbout) navigateLink(event, onShowAbout);
+          }}
+          className="hover:text-[var(--color-electric)] transition-colors underline"
+        >
+          {aboutContent[language].aboutLabel}
+        </a>
         <a
           href="/developer-guide"
           onClick={(event) => navigateLink(event, onShowDeveloperGuide)}
@@ -406,7 +422,7 @@ export function SplashScreen({
 
       {/* Connection Notice Dialog */}
       <ConnectionNoticeDialog
-        open={showNotice}
+        open={visible && showNotice}
         method={pendingMethod}
         onAgree={handleAgree}
         onCancel={handleCancel}

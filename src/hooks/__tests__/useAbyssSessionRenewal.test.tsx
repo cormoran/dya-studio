@@ -43,3 +43,24 @@ it("keeps stored credentials when renewal fails", async () => {
   });
   expect(clearTokenSet).not.toHaveBeenCalled();
 });
+
+it("does not access credentials while disabled and removes foreground renewal on public navigation", () => {
+  const getAccessToken = jest.fn().mockResolvedValue("token");
+  getClient.mockReturnValue({ getTokenSet: () => ({}), getAccessToken });
+  getClient.mockClear();
+  const { rerender } = renderHook(
+    ({ enabled }) => useAbyssSessionRenewal(enabled),
+    {
+      initialProps: { enabled: false },
+    },
+  );
+  act(() => window.dispatchEvent(new Event("focus")));
+  act(() => jest.advanceTimersByTime(5 * 60 * 1000));
+  expect(getClient).not.toHaveBeenCalled();
+  rerender({ enabled: true });
+  expect(getAccessToken).toHaveBeenCalledTimes(1);
+  rerender({ enabled: false });
+  act(() => window.dispatchEvent(new Event("focus")));
+  act(() => jest.advanceTimersByTime(5 * 60 * 1000));
+  expect(getAccessToken).toHaveBeenCalledTimes(1);
+});

@@ -135,7 +135,7 @@ describe("MacroEditorDialog", () => {
     );
   });
 
-  it("confirms X and restores the opening RAM value without a global discard", async () => {
+  it("retains the opening RAM baseline across hidden public routes and restores only this macro", async () => {
     const user = userEvent.setup();
     const onOpenChange = jest.fn();
     const cancelPendingWrites = jest.fn();
@@ -167,10 +167,11 @@ describe("MacroEditorDialog", () => {
       cancelPendingWrites,
       flushPendingWrites,
     } as MacroEditorController;
-    const renderEditor = (macro: MacroEditorController) => (
+    const renderEditor = (macro: MacroEditorController, visible = true) => (
       <LanguageProvider>
         <MacroEditorDialog
           open
+          visible={visible}
           mode="edit"
           editSlot={3}
           onOpenChange={onOpenChange}
@@ -191,6 +192,17 @@ describe("MacroEditorDialog", () => {
       }),
     );
 
+    const edited = {
+      ...initial,
+      renameDraft: "Edited",
+      loadedMacro: { ...initial.loadedMacro!, name: "Edited" },
+    };
+    rerender(renderEditor(edited, false));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(renameMacro).not.toHaveBeenCalled();
+    rerender(renderEditor(edited));
+
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(
       screen.getByRole("dialog", { name: "Discard macro edits?" }),
@@ -200,6 +212,14 @@ describe("MacroEditorDialog", () => {
         /Changes already in memory when you opened it will remain/,
       ),
     ).toBeInTheDocument();
+    rerender(renderEditor(edited, false));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    rerender(renderEditor(edited));
+    expect(screen.getByRole("dialog", { name: "Edit macros" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(
+      screen.getByRole("dialog", { name: "Discard macro edits?" }),
+    ).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Keep editing" }));
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(cancelPendingWrites).not.toHaveBeenCalled();

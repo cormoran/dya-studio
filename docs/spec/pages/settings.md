@@ -47,6 +47,8 @@ Popでは「Current Settings by Device」の背景を淡い青（#e4f5ff）に�
 | SET-006 | Danger Zone または Versions の `Reset all settings` → dialog → Cancel | dialog が閉じ、reset RPC は送らない                                                                                                                                                                                                                                                                                                                  | 変更なし                                                                                                                                                                                                                     | S1    |
 | SET-007 | reset dialog → `Reset all settings`                                   | busy 中は Cancel / close / confirm を無効化。成功時に dialog を閉じる                                                                                                                                                                                                                                                                                | keymap と custom settings を含む保存済み設定を firmware default へ戻す要求。不可逆、再起動・反映時期は未保証                                                                                                                 | S1/S4 |
 
+- SET-008: 非選択 tab または公開 route 閲覧中は timeout popup・factory reset dialog・version diff の body portal を操作可能にしない。ページは mount を維持し、選択中の custom 入力・確認待ち reset を保留して戻ると再表示する。navigation 自体は timeout 確定や reset RPC を送らない。既に queue / 送信済みの書込みは既存の debounce 契約に従う。根拠: issues #306/#309、S1、[SHELL-022](../modules/app-shell.md)。
+
 ## 代表ユーザーフロー
 
 ### F1: power timeout を変更して確認する（SET-001–004）

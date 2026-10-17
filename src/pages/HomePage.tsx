@@ -8,6 +8,7 @@ import {
   IconNews,
   IconShoppingCart,
 } from "@tabler/icons-react";
+import { ABOUT_PATH, aboutContent } from "../content/about";
 import type { MouseEvent } from "react";
 
 import DyaDashImg from "../assets/dya-dash/dya-dash.jpeg";
@@ -60,6 +61,14 @@ export function HomePage() {
   return (
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
+        <a
+          href={ABOUT_PATH}
+          onClick={(event) => navigateWithinApp(event, ABOUT_PATH)}
+          className="inline-flex items-center gap-2 mb-4 text-sm text-[var(--color-electric)] underline hover:text-[var(--color-text)]"
+        >
+          <IconInfoCircle size={16} />
+          {aboutContent[language].aboutLabel}
+        </a>
         {/* Header */}
         <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-6">
           <div className="flex items-center gap-3 flex-1">

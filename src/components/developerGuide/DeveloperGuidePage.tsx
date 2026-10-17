@@ -380,7 +380,20 @@ export function DeveloperGuidePage({
   const handleGuideNavigation = (event: MouseEvent<HTMLElement>) => {
     const link = (event.target as Element | null)?.closest("a[href]");
     const href = link?.getAttribute("href");
-    if (!href?.startsWith("/developer-guide")) return;
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      !(
+        href?.startsWith("/developer-guide") ||
+        href === "/" ||
+        href === "/about" ||
+        href === "/release-notes"
+      )
+    )
+      return;
 
     event.preventDefault();
     link?.closest("details")?.removeAttribute("open");

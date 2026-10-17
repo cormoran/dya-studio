@@ -33,16 +33,11 @@
 3. Configure away. Changes marked as unsaved can be saved to the keyboard's flash so they persist across reboots.
 
 > [!TIP]
-> The UI is available in **English** and **日本語** — use the language toggle in the top-right corner.
+> The UI is available in **English**, **日本語** and **中文** — use the language toggle in the top-right corner.
 
-### Supported browsers
+### Browser and firmware requirements
 
-| Platform                                                                       | USB (Web Serial) | Bluetooth (Web Bluetooth) |
-| ------------------------------------------------------------------------------ | ---------------- | ------------------------- |
-| Chrome / Edge (desktop)                                                        | ✅               | ✅                        |
-| Android (Chrome)                                                               | ❌               | ✅                        |
-| iOS ([Bluefy](https://apps.apple.com/app/bluefy-web-ble-browser/id1492822055)) | ❌               | ✅                        |
-| Firefox / Safari                                                               | ❌               | ❌                        |
+Read [About DYA Studio](https://studio.dya.cormoran.works/about) for connection prerequisites, standard Studio versus additional firmware features, and unverified conditions. Reading and Demo do not need hardware APIs. USB uses Web Serial on desktop and WebUSB on Android Chrome; BLE depends on browser, OS and firmware support. API availability alone does not guarantee a working connection.
 
 ## Features
 
