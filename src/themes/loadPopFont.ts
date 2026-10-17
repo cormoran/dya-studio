@@ -8,7 +8,7 @@ export function loadPopFont(): void {
   link.id = STYLESHEET_ID;
   link.rel = "stylesheet";
   link.href =
-    "https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap";
+    "https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap";
   // Keep successful/in-flight requests across theme changes. A failed stylesheet
   // may be retried the next time Pop is selected.
   link.addEventListener("error", () => link.remove(), { once: true });

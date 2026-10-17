@@ -111,7 +111,7 @@ it("requests fonts only for Pop and reuses the request across theme changes", as
   expect(link).toHaveAttribute("rel", "stylesheet");
   expect(link).toHaveAttribute(
     "href",
-    "https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap",
+    "https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap",
   );
   await select("Light");
   link?.dispatchEvent(new Event("load"));
