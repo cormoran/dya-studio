@@ -370,3 +370,19 @@
   ) {
   color: var(--color-text);
 }
+
+/* Only the playful UI labels change typeface; data and descriptions stay familiar.
+   The remote face is registered asynchronously by ThemeProvider on first use. */
+:root.pop :is(h1, h2, h3, h4, h5, h6) {
+  font-family: "M PLUS Rounded 1c", var(--font-ui);
+  font-weight: 700;
+}
+
+:root.pop :is(button:not(.physical-key), .tab-trigger, [role="tab"]) {
+  font-family: "M PLUS Rounded 1c", var(--font-ui);
+  font-weight: 500;
+}
+
+:root.pop :is(p, input, textarea, select, .physical-key) {
+  font-family: var(--font-ui);
+}

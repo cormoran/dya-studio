@@ -12,6 +12,7 @@ function renderSelector() {
 }
 
 afterEach(() => {
+  document.getElementById("pop-theme-font")?.remove();
   localStorage.clear();
   document.documentElement.className = "";
 });
@@ -91,4 +92,51 @@ it("dismisses on an outside click without changing the selection", async () => {
   await user.click(document.body);
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   expect(localStorage.getItem("dya-studio-theme")).toBe("light");
+});
+
+it("requests fonts only for Pop and reuses the request across theme changes", async () => {
+  localStorage.setItem("dya-studio-theme", "light");
+  const user = userEvent.setup();
+  const view = renderSelector();
+  const select = async (name: string) => {
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    await user.click(screen.getByRole("menuitemradio", { name }));
+  };
+  expect(document.getElementById("pop-theme-font")).toBeNull();
+  await select("Neutral");
+  await select("Dark");
+  expect(document.getElementById("pop-theme-font")).toBeNull();
+  await select("Pop");
+  const link = document.getElementById("pop-theme-font");
+  expect(link).toHaveAttribute("rel", "stylesheet");
+  expect(link).toHaveAttribute(
+    "href",
+    "https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap",
+  );
+  await select("Light");
+  link?.dispatchEvent(new Event("load"));
+  expect(document.documentElement).toHaveClass("light");
+  expect(document.documentElement).not.toHaveClass("pop");
+  await select("Pop");
+  expect(document.getElementById("pop-theme-font")).toBe(link);
+  view.unmount();
+  renderSelector();
+  expect(document.querySelectorAll("#pop-theme-font")).toHaveLength(1);
+});
+
+it("loads saved Pop and retries a failed stylesheet on the next selection", async () => {
+  localStorage.setItem("dya-studio-theme", "pop");
+  const user = userEvent.setup();
+  renderSelector();
+  const link = document.getElementById("pop-theme-font");
+  expect(link).not.toBeNull();
+  link?.dispatchEvent(new Event("error"));
+  expect(document.getElementById("pop-theme-font")).toBeNull();
+  expect(document.documentElement).toHaveClass("pop");
+  await user.click(screen.getByRole("button", { name: "Theme" }));
+  await user.click(screen.getByRole("menuitemradio", { name: "Neutral" }));
+  await user.click(screen.getByRole("button", { name: "Theme" }));
+  await user.click(screen.getByRole("menuitemradio", { name: "Pop" }));
+  expect(document.getElementById("pop-theme-font")).not.toBeNull();
+  expect(document.getElementById("pop-theme-font")).not.toBe(link);
 });
