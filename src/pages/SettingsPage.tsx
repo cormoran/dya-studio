@@ -666,7 +666,7 @@ function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
 
               {/* Show all devices status - moved after inputs */}
               {devices.length > 0 && (
-                <div className="mt-6 p-4 rounded-lg bg-[var(--color-border)]">
+                <div className="device-settings-summary mt-6 p-4 rounded-lg bg-[var(--color-border)]">
                   <p className="text-xs font-medium text-[var(--color-text-muted)] mb-2">
                     {t("Current Settings by Device")}:
                   </p>

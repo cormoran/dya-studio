@@ -486,3 +486,9 @@
   --scrollbar-thumb: #c5e7f8;
   --scrollbar-thumb-hover: #8ad5f5;
 }
+
+:root.pop .connection-target-icon[class~="bg-[var(--color-border)]"],
+:root.pop .device-settings-summary {
+  background-color: var(--pop-soft);
+  border-color: transparent;
+}
