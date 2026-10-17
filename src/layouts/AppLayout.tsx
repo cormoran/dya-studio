@@ -31,7 +31,7 @@ export function AppLayout({
   return (
     <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
-      <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header className="relative grid shrink-0 grid-cols-1 items-center gap-y-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -41,9 +41,9 @@ export function AppLayout({
           </span>
         )}
         {/* Logo & Brand */}
-        <div className="flex items-center gap-4 flex-shrink-0 mr-4">
+        <div className="flex items-center gap-4 justify-self-center lg:col-start-2">
           <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
               DYA
             </span>
@@ -54,7 +54,7 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 max-w-full items-center gap-2 sm:gap-4 justify-self-end lg:col-start-3">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
