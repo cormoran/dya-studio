@@ -64,6 +64,15 @@ rendered values; font-family or theme class alone does not prove final rendering
 After a macro rename, reacquire the textbox: its accessible name may be the
 current macro name rather than the visible Name label.
 
+Inspect ambiguous restore/reset labels before acting. Settings currently uses
+`ResetVersionMenu`: its top-level “Reset”/“リセット” button with
+`aria-haspopup="menu"` opens a popover containing both saved timestamps and a
+separate destructive reset item. For a history-only charter, verify that exact
+visible menu trigger, select only a timestamp, inspect the diff and Cancel.
+Do not choose reset items, confirmations or Apply. A label alone does not prove
+either a harmless menu or a destructive action; preserve actual permission
+rejections and resolve the ambiguity without raw-event or permission bypasses.
+
 Complete live observations and cleanup before closing the tab or settling the
 worker. Preserve exact error details before closing a failed connection page.
 Verify owned-tab closure through a fresh inventory; do not close unrelated tabs
