@@ -121,11 +121,14 @@ export function UnlockKeymapGuide({
           );
         })}
       </svg>
-      <ol className="space-y-2 text-sm text-[var(--color-text-secondary)]">
+      <ol className="grid grid-cols-[max-content_max-content_minmax(0,1fr)] gap-x-2 gap-y-2 text-sm text-[var(--color-text-secondary)]">
         {steps.map((step, index) => {
           const marker = markerFor(step.position);
           return (
-            <li key={index} className="flex items-start gap-2">
+            <li
+              key={index}
+              className="col-span-3 grid grid-cols-subgrid items-start"
+            >
               <strong className="pt-0.5">{index + 1}.</strong>
               <span
                 aria-hidden="true"
