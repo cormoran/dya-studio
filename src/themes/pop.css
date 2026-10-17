@@ -26,7 +26,7 @@
     --color-border: #f9d9b9;
     --color-border-hover: #65cafa;
 
-    --glass-bg: #fffcf7;
+    --glass-bg: #f2faff;
     --glass-border: #efb382;
 
     --scrollbar-track: #ffffff;
@@ -44,7 +44,7 @@
   text-shadow: none !important;
 }
 
-/* Milk-white cards yield to explicit warning and destructive surfaces. */
+/* Ice-blue cards yield to explicit warning and destructive surfaces. */
 :root.pop
   :is(.glass-card, .glass-panel):not(.warning-banner):not(
     [class*="border-red-"],
