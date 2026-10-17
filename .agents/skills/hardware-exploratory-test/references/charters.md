@@ -148,8 +148,18 @@ Suggested sequence:
   output while UI RPC reads/logging occur. Use a dedicated non-executing input
   sink; never emit shortcuts into the user's terminal or applications. Record
   input stimulus and host observation separately from UI configuration readback.
-- BLE, battery, idle/sleep/wake, powered-off peripheral recovery and cold-start
-  require the corresponding transport, safe power control and human/actuator.
+- BLE needs a real browser/OS radio path and the firmware's Studio advertisement,
+  but does not inherently need a human: use authorized USB devtool unlock first
+  when that firmware makes Studio discoverable, disconnect the serial session,
+  then use the real BLE chooser for the same DUT and fresh-read capabilities/data.
+  Record actual GATT connection separately from ordinary keyboard HID output.
+  Disconnect BLE, reconnect USB and restore the initial lock/session state. Plan
+  both transport transitions in the finite reconnect budget before dispatch;
+  never clear pairing profiles or change the keyboard output route to force it.
+  An absent advertisement/API/chooser remains blocked, not a Renode-equivalent pass.
+- Battery, idle/sleep/wake, powered-off peripheral recovery and cold-start need
+  their corresponding safe physical control and human/actuator when not available
+  through the authorized rig.
   Never remove the user's sole control path by changing output/sleep/pairing
   settings without a recovery channel. A software reboot does not cover these.
 

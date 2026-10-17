@@ -135,6 +135,12 @@ page Reload/Refresh (and reselection when needed), not another DOM snapshot.
 Capacity scenarios require initial count/bytes, attempted payload, actual accepted
 count/bytes, errors and timeouts; timing measurements are observations rather
 than invented performance SLAs. Distinguish firmware refusal from UI validation.
+For large keymaps/lists, retain full raw evidence locally at checkpoints and keep
+model-facing observations scoped to visible controls, changed values, counts and
+sentinels. Hidden retained panels are not visual coverage. After setup unlock,
+close Debug Tool for ordinary baselines unless streaming is part of the selected
+load charter; compare stream-off and stream-on conditions deliberately instead
+of flooding every observation with logs.
 
 Save only deliberate test changes. Record RAM readback, flash Save response,
 post-save fresh read, reconnect read, RPC reboot read, and physical cold-start
