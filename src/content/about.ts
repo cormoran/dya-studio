@@ -107,7 +107,7 @@ export const aboutContent: Record<Language, AboutContent> = {
       ],
     ],
     caveat:
-      "USB and BLE require a secure connection to this site, browser permission and firmware that supports the selected transport. Browser support and OS settings can vary. If your keyboard does not appear or the connection fails, check the connection-screen guidance and the developer guide. On Android, the OS may prevent access to the USB interface.",
+      "USB and BLE require a secure connection to this site, browser permission and firmware that supports the selected transport. Browser support and OS settings can vary. If your keyboard does not appear or the connection fails, check the connection-screen guidance and the developer guide. On Android, the OS may prevent access to the USB interface. For BLE outside Linux, use cormoran's ZMK fork and press your keyboard's Studio unlock key, as explained in the connection notice.",
     startTitle: "Get started",
     steps: [
       {
@@ -205,7 +205,7 @@ export const aboutContent: Record<Language, AboutContent> = {
       ],
     ],
     caveat:
-      "USB・BLE 接続には、このサイトへの安全な接続、ブラウザのアクセス許可、選択した接続方法に対応する firmware が必要です。利用できる接続方法はブラウザや OS の設定によって異なります。キーボードが表示されない・接続できない場合は、接続画面の案内や開発者ガイドを確認してください。Android では OS によって USB interface へのアクセスが制限される場合があります。",
+      "USB・BLE 接続には、このサイトへの安全な接続、ブラウザのアクセス許可、選択した接続方法に対応する firmware が必要です。利用できる接続方法はブラウザや OS の設定によって異なります。キーボードが表示されない・接続できない場合は、接続画面の案内や開発者ガイドを確認してください。Android では OS によって USB interface へのアクセスが制限される場合があります。Linux 以外で BLE を利用するには cormoran の ZMK fork と Studio unlock キーの操作が必要です。接続時の案内に従ってください。",
     startTitle: "始め方",
     steps: [
       {
@@ -303,7 +303,7 @@ export const aboutContent: Record<Language, AboutContent> = {
       ],
     ],
     caveat:
-      "USB 和 BLE 连接需要与本站建立安全连接、获得浏览器访问权限，并使用支持相应连接方式的固件。可用方式因浏览器和操作系统设置而异。如果键盘未出现或连接失败，请查看连接页面的提示和开发者指南。Android 系统可能限制对 USB 接口的访问。",
+      "USB 和 BLE 连接需要与本站建立安全连接、获得浏览器访问权限，并使用支持相应连接方式的固件。可用方式因浏览器和操作系统设置而异。如果键盘未出现或连接失败，请查看连接页面的提示和开发者指南。Android 系统可能限制对 USB 接口的访问。在非 Linux 环境使用 BLE 时，需要 cormoran 的 ZMK 分支，并按下键盘的 Studio 解锁键。请遵循连接时的提示。",
     startTitle: "如何开始",
     steps: [
       {
