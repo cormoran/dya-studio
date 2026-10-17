@@ -1,3 +1,4 @@
+import { KeymapLayerTabs } from "../components/KeymapLayerTabs";
 import { KeymapSharingMenu } from "../components/importExport/KeymapSharingMenu";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
@@ -16,19 +17,16 @@ import {
   IconWindow,
   IconPlayerTrackNext,
   IconDeviceFloppy,
-  IconChevronUp,
-  IconChevronDown,
   IconAlertCircle,
   IconLoader2,
   IconPlus,
-  IconTrash,
+  IconChevronDown,
   IconRestore,
   IconAlertTriangle,
   IconInfoCircle,
   IconPencil,
   IconLock,
   IconRefresh,
-  IconSettings,
   IconX,
   IconLink,
 } from "@tabler/icons-react";
@@ -167,13 +165,15 @@ export function KeymapPage({
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [isEditingLayers, setIsEditingLayers] = useState(false);
+  const [isMovingLayer, setIsMovingLayer] = useState(false);
+  const movingLayerRef = useRef(false);
+  const [renameLayerId, setRenameLayerId] = useState<number | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   // Popup listing the device's deleted (restorable) layers, opened from the
   // restore button in the layer toolbar.
   const [showRestoreMenu, setShowRestoreMenu] = useState(false);
-  const [showMobileRestoreMenu, setShowMobileRestoreMenu] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameError, setRenameError] = useState(false);
@@ -334,7 +334,7 @@ export function KeymapPage({
   const withUnlock = useCallback(
     (action: () => void | Promise<void>) => {
       if (!requireUnlocked(action)) return;
-      void action();
+      return action();
     },
     [requireUnlocked],
   );
@@ -512,37 +512,31 @@ export function KeymapPage({
     [comboEditor, isComboAvailable, keymap, runtimeCombo, withUnlock],
   );
 
-  // Handle layer move up
-  const handleMoveLayerUp = useCallback(
-    () =>
-      withUnlock(async () => {
-        if (selectedLayerIndex <= 0) return;
-        const success = await keymap.moveLayer(
-          selectedLayerIndex,
-          selectedLayerIndex - 1,
-        );
-        if (success) {
-          setSelectedLayerIndex(selectedLayerIndex - 1);
-        }
-      }),
-    [selectedLayerIndex, keymap, withUnlock],
-  );
-
-  // Handle layer move down
-  const handleMoveLayerDown = useCallback(
-    () =>
-      withUnlock(async () => {
-        if (!keymap.keymap?.layers) return;
-        if (selectedLayerIndex >= keymap.keymap.layers.length - 1) return;
-        const success = await keymap.moveLayer(
-          selectedLayerIndex,
-          selectedLayerIndex + 1,
-        );
-        if (success) {
-          setSelectedLayerIndex(selectedLayerIndex + 1);
-        }
-      }),
-    [selectedLayerIndex, keymap, withUnlock],
+  // Keep the preview on the same stable layer ID when its ordered index changes.
+  const handleMoveLayer = useCallback(
+    async (from: number, to: number) => {
+      if (movingLayerRef.current || from === to) return;
+      movingLayerRef.current = true;
+      setIsMovingLayer(true);
+      try {
+        await withUnlock(async () => {
+          // The protocol swaps two indexes. Move through adjacent positions
+          // so a drop across several tabs inserts the layer at the drop point.
+          const step = to > from ? 1 : -1;
+          for (let index = from; index !== to; index += step) {
+            const next = index + step;
+            if (!(await keymap.moveLayer(index, next))) break;
+            setSelectedLayerIndex((selected) =>
+              selected === index ? next : selected === next ? index : selected,
+            );
+          }
+        });
+      } finally {
+        movingLayerRef.current = false;
+        setIsMovingLayer(false);
+      }
+    },
+    [keymap, withUnlock],
   );
 
   // Handle add layer
@@ -560,20 +554,24 @@ export function KeymapPage({
 
   // Handle delete layer
   const handleDeleteLayer = useCallback(
-    () =>
+    (index: number) =>
       withUnlock(async () => {
         if (!keymap.keymap?.layers || keymap.keymap.layers.length <= 1) return;
         if (!confirm(t("Are you sure you want to delete this layer?"))) return;
 
-        const success = await keymap.removeLayer(selectedLayerIndex);
+        const remainingCount = keymap.keymap.layers.length - 1;
+        const success = await keymap.removeLayer(index);
         if (success) {
-          // Adjust selected index if we deleted the last layer
-          if (selectedLayerIndex >= keymap.keymap.layers.length - 1) {
-            setSelectedLayerIndex(Math.max(0, selectedLayerIndex - 1));
-          }
+          setSelectedLayerIndex((selected) =>
+            selected > index
+              ? selected - 1
+              : selected === index
+                ? Math.min(index, remainingCount - 1)
+                : selected,
+          );
         }
       }),
-    [selectedLayerIndex, keymap, t, withUnlock],
+    [keymap, t, withUnlock],
   );
 
   // Handle restore of a single deleted layer (picked from the restore popup).
@@ -612,23 +610,26 @@ export function KeymapPage({
 
   // Handle open rename dialog
   const handleOpenRenameDialog = useCallback(
-    () =>
+    (index: number) =>
       withUnlock(() => {
         if (!keymap.keymap?.layers) return;
-        const layer = keymap.keymap.layers[selectedLayerIndex];
+        const layer = keymap.keymap.layers[index];
         if (!layer) return;
+        setRenameLayerId(layer.id);
         setRenameValue(layer.name);
         setRenameError(false);
         setShowRenameDialog(true);
       }),
-    [keymap.keymap?.layers, selectedLayerIndex, withUnlock],
+    [keymap.keymap?.layers, withUnlock],
   );
 
   // Handle rename confirm
   const handleRenameConfirm = useCallback(async () => {
     if (renamingRef.current || !renameValue) return;
     if (!keymap.keymap?.layers) return;
-    const layer = keymap.keymap.layers[selectedLayerIndex];
+    const layer = keymap.keymap.layers.find(
+      (layer) => layer.id === renameLayerId,
+    );
     if (!layer) return;
     renamingRef.current = true;
     setIsRenaming(true);
@@ -645,21 +646,11 @@ export function KeymapPage({
       renamingRef.current = false;
       setIsRenaming(false);
     }
-  }, [keymap, selectedLayerIndex, renameValue]);
-
-  // The mobile settings sheet sits above the app-level Debug Tool. If an edit
-  // needs the shared unlock dialog, close the sheet first so that prompt stays
-  // visible. Ordinary unlocked edits keep the sheet open.
-  const handleMobileLayerAction = useCallback(
-    (action: () => void) => {
-      if (locked) setShowMobileSettings(false);
-      action();
-    },
-    [locked],
-  );
+  }, [keymap, renameLayerId, renameValue]);
 
   useEffect(() => {
     if (
+      isEditingLayers ||
       inputStream.activeLayerIndex === null ||
       !keymap.keymap?.layers[inputStream.activeLayerIndex]
     ) {
@@ -667,7 +658,7 @@ export function KeymapPage({
     }
 
     setSelectedLayerIndex(inputStream.activeLayerIndex);
-  }, [inputStream.activeLayerIndex, keymap.keymap?.layers]);
+  }, [inputStream.activeLayerIndex, keymap.keymap?.layers, isEditingLayers]);
 
   // Stream mode highlights (and beeps on) every key press, which only makes
   // sense while the Keymap tab is on screen. The page stays mounted when you
@@ -739,9 +730,6 @@ export function KeymapPage({
     // A tab return must read edits made on Macro&Combo while this page was retained.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTabActive, shellVisible]);
-
-  const mobileVisibleRemovedLayerIds = keymap.removedLayerIds.slice(0, 3);
-  const mobileOverflowRemovedLayerIds = keymap.removedLayerIds.slice(3);
 
   return (
     <div className="keymap-page app-page p-4 sm:p-6 h-full">
@@ -870,352 +858,6 @@ export function KeymapPage({
                   </ResponsiveButton>
                 </>
               )}
-              <Dialog.Root
-                open={showMobileSettings && isTabActive}
-                onOpenChange={setShowMobileSettings}
-              >
-                <Dialog.Trigger asChild>
-                  <button
-                    type="button"
-                    className="keymap-mobile-settings-trigger flex sm:hidden"
-                    aria-label={t("Keymap settings")}
-                  >
-                    <IconSettings size={19} />
-                  </button>
-                </Dialog.Trigger>
-                <Dialog.Portal>
-                  <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]" />
-                  <Dialog.Content
-                    aria-describedby={undefined}
-                    className="keymap-mobile-settings fixed inset-0 z-[9999] flex h-dvh w-screen flex-col overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)] sm:hidden"
-                  >
-                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-                      <Dialog.Title className="text-lg font-medium">
-                        {t("Keymap settings")}
-                      </Dialog.Title>
-                      <Dialog.Close asChild>
-                        <button
-                          type="button"
-                          className="keymap-mobile-settings-close flex"
-                          aria-label={t("Close")}
-                        >
-                          <IconX size={21} />
-                        </button>
-                      </Dialog.Close>
-                    </header>
-
-                    <div className="flex-1 space-y-5 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                      <section
-                        className="keymap-settings-section"
-                        aria-labelledby="keymap-mobile-layer-settings"
-                      >
-                        <h2
-                          id="keymap-mobile-layer-settings"
-                          className="keymap-settings-section-title"
-                        >
-                          {t("Layer editing")}
-                        </h2>
-
-                        <p
-                          id="keymap-mobile-current-layer-label"
-                          className="keymap-settings-label"
-                        >
-                          {t("Current layer")}
-                        </p>
-                        <div
-                          className="keymap-settings-layer-list"
-                          role="group"
-                          aria-labelledby="keymap-mobile-current-layer-label"
-                        >
-                          {keymap.keymap.layers.map((layer, index) => (
-                            <button
-                              type="button"
-                              key={layer.id}
-                              className="keymap-settings-layer-button"
-                              aria-pressed={selectedLayerIndex === index}
-                              onClick={() => setSelectedLayerIndex(index)}
-                            >
-                              {layer.name || t("Layer {{id}}", { id: index })}
-                            </button>
-                          ))}
-                        </div>
-
-                        <div
-                          className="keymap-settings-action-row"
-                          role="group"
-                          aria-label={t("Layer actions")}
-                        >
-                          <EditorTooltip
-                            content={t("Move layer up (higher priority)")}
-                          >
-                            <button
-                              type="button"
-                              className="keymap-settings-action"
-                              aria-label={t("Move layer up (higher priority)")}
-                              onClick={() =>
-                                handleMobileLayerAction(handleMoveLayerUp)
-                              }
-                              disabled={
-                                !currentLayer || selectedLayerIndex <= 0
-                              }
-                            >
-                              <IconChevronUp size={19} />
-                            </button>
-                          </EditorTooltip>
-                          <EditorTooltip
-                            content={t("Move layer down (lower priority)")}
-                          >
-                            <button
-                              type="button"
-                              className="keymap-settings-action"
-                              aria-label={t("Move layer down (lower priority)")}
-                              onClick={() =>
-                                handleMobileLayerAction(handleMoveLayerDown)
-                              }
-                              disabled={
-                                !currentLayer ||
-                                selectedLayerIndex >=
-                                  keymap.keymap.layers.length - 1
-                              }
-                            >
-                              <IconChevronDown size={19} />
-                            </button>
-                          </EditorTooltip>
-                          <EditorTooltip
-                            content={t(
-                              "Change the name shown on the selected layer tab",
-                            )}
-                          >
-                            <button
-                              type="button"
-                              className="keymap-settings-action"
-                              aria-label={t("Rename current layer")}
-                              disabled={!currentLayer}
-                              onClick={() =>
-                                handleMobileLayerAction(handleOpenRenameDialog)
-                              }
-                            >
-                              <IconPencil size={19} />
-                            </button>
-                          </EditorTooltip>
-                          <EditorTooltip
-                            content={t(
-                              "Add a layer for another set of key bindings",
-                            )}
-                          >
-                            <button
-                              type="button"
-                              className="keymap-settings-action"
-                              aria-label={t("Add new layer")}
-                              onClick={() =>
-                                handleMobileLayerAction(handleAddLayer)
-                              }
-                              disabled={
-                                keymap.availableLayers <=
-                                keymap.keymap.layers.length
-                              }
-                            >
-                              <IconPlus size={19} />
-                            </button>
-                          </EditorTooltip>
-                          <EditorTooltip
-                            content={t(
-                              "Remove the selected layer and its key bindings",
-                            )}
-                          >
-                            <button
-                              type="button"
-                              className="keymap-settings-action keymap-settings-action-danger"
-                              aria-label={t("Delete current layer")}
-                              onClick={() =>
-                                handleMobileLayerAction(handleDeleteLayer)
-                              }
-                              disabled={keymap.keymap.layers.length <= 1}
-                            >
-                              <IconTrash size={19} />
-                            </button>
-                          </EditorTooltip>
-                        </div>
-
-                        <div className="keymap-settings-restore">
-                          <div className="keymap-settings-restore-heading">
-                            <p className="keymap-settings-label">
-                              {t("Restore deleted layer")}
-                            </p>
-                            {keymap.removedLayerIds.length > 0 && (
-                              <EditorTooltip
-                                content={t(
-                                  "Restore all deleted layers ({{count}})",
-                                  { count: keymap.removedLayerIds.length },
-                                )}
-                              >
-                                <button
-                                  type="button"
-                                  className="keymap-settings-restore-all"
-                                  aria-label={t(
-                                    "Restore all deleted layers ({{count}})",
-                                    { count: keymap.removedLayerIds.length },
-                                  )}
-                                  onClick={() =>
-                                    handleMobileLayerAction(
-                                      handleRestoreAllLayers,
-                                    )
-                                  }
-                                >
-                                  <IconRestore size={17} />
-                                </button>
-                              </EditorTooltip>
-                            )}
-                          </div>
-                          {keymap.removedLayerIds.length === 0 ? (
-                            <p className="text-sm text-[var(--color-text-muted)]">
-                              {t("No deleted layers to restore")}
-                            </p>
-                          ) : (
-                            <div className="keymap-settings-restore-grid">
-                              {mobileVisibleRemovedLayerIds.map((layerId) => (
-                                <button
-                                  type="button"
-                                  className="keymap-settings-restore-action"
-                                  key={`mobile-restore-${layerId}`}
-                                  onClick={() =>
-                                    handleMobileLayerAction(() =>
-                                      handleRestoreLayer(layerId),
-                                    )
-                                  }
-                                >
-                                  <IconRestore size={17} />
-                                  {t("Layer {{id}}", { id: layerId })}
-                                </button>
-                              ))}
-                              {mobileOverflowRemovedLayerIds.length > 0 && (
-                                <Popover.Root
-                                  open={showMobileRestoreMenu}
-                                  onOpenChange={setShowMobileRestoreMenu}
-                                >
-                                  <Popover.Trigger asChild>
-                                    <button
-                                      type="button"
-                                      className="keymap-settings-restore-action"
-                                    >
-                                      <IconChevronDown size={17} />
-                                      {t("Other deleted layers ({{count}})", {
-                                        count:
-                                          mobileOverflowRemovedLayerIds.length,
-                                      })}
-                                    </button>
-                                  </Popover.Trigger>
-                                  <Popover.Content
-                                    className="z-[10001] max-h-48 w-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-1 shadow-xl"
-                                    sideOffset={6}
-                                    collisionPadding={12}
-                                    role="menu"
-                                    aria-label={t("Other deleted layers")}
-                                  >
-                                    {mobileOverflowRemovedLayerIds.map(
-                                      (layerId) => (
-                                        <button
-                                          type="button"
-                                          role="menuitem"
-                                          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
-                                          key={`mobile-restore-more-${layerId}`}
-                                          onClick={() => {
-                                            setShowMobileRestoreMenu(false);
-                                            handleMobileLayerAction(() =>
-                                              handleRestoreLayer(layerId),
-                                            );
-                                          }}
-                                        >
-                                          <IconRestore size={16} />
-                                          {t("Layer {{id}}", { id: layerId })}
-                                        </button>
-                                      ),
-                                    )}
-                                  </Popover.Content>
-                                </Popover.Root>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </section>
-
-                      <section
-                        className="keymap-settings-section"
-                        aria-labelledby="keymap-mobile-layout-settings"
-                      >
-                        <h2
-                          id="keymap-mobile-layout-settings"
-                          className="keymap-settings-section-title"
-                        >
-                          {t("Layout and display")}
-                        </h2>
-
-                        {keymap.physicalLayouts &&
-                          keymap.physicalLayouts.layouts.length > 1 && (
-                            <div>
-                              <label
-                                htmlFor="keymap-mobile-physical-layout"
-                                className="keymap-settings-label"
-                              >
-                                {t("Physical Layout")}
-                              </label>
-                              <select
-                                id="keymap-mobile-physical-layout"
-                                value={keymap.physicalLayouts.activeLayoutIndex}
-                                onChange={(event) =>
-                                  keymap.setActiveLayout(
-                                    Number(event.target.value),
-                                  )
-                                }
-                                className="select-field min-h-11 w-full min-w-0 text-base"
-                              >
-                                {keymap.physicalLayouts.layouts.map(
-                                  (layout, index) => (
-                                    <option key={index} value={index}>
-                                      {layout.name ||
-                                        t("Layout {{id}}", { id: index + 1 })}
-                                    </option>
-                                  ),
-                                )}
-                              </select>
-                            </div>
-                          )}
-
-                        <div>
-                          <label
-                            htmlFor="keymap-mobile-os-layout"
-                            className="keymap-settings-label"
-                          >
-                            {t("OS Layout")}
-                          </label>
-                          <select
-                            id="keymap-mobile-os-layout"
-                            value={keyboardLayoutContext.layout}
-                            onChange={(event) =>
-                              keyboardLayoutContext.setLayout(
-                                event.target
-                                  .value as import("../lib/keyboardLayouts").KeyboardLayoutType,
-                              )
-                            }
-                            className="select-field min-h-11 w-full min-w-0 text-base"
-                          >
-                            {getAvailableLayouts().map((layoutType) => (
-                              <option key={layoutType} value={layoutType}>
-                                {getLayoutLabel(layoutType)}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
-                            {t(
-                              "This setting only affects the visual key labels in DYA Studio web UI.",
-                            )}
-                          </p>
-                        </div>
-                      </section>
-                    </div>
-                  </Dialog.Content>
-                </Dialog.Portal>
-              </Dialog.Root>
             </div>
           )}
         </div>
@@ -1267,213 +909,156 @@ export function KeymapPage({
         {/* Main Content */}
         {connection.isConnected && keymap.keymap && currentLayout && (
           <>
-            {/* Layer Tabs */}
-            <div className="keymap-layer-toolbar flex flex-wrap items-center gap-2 mb-4 pb-4">
-              <div
-                className="flex min-w-0 gap-1 flex-1 overflow-x-auto p-1 basis-full sm:basis-auto"
-                role="group"
-                aria-label={t("Keymap layers")}
-              >
-                {keymap.keymap.layers.map((layer, index) => (
-                  <button
-                    key={layer.id}
-                    className={`keymap-layer px-4 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${
-                      index === selectedLayerIndex
-                        ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
-                        : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]"
-                    }`}
-                    onClick={() => setSelectedLayerIndex(index)}
-                    aria-pressed={index === selectedLayerIndex}
-                  >
-                    {layer.name || t("Layer {{id}}", { id: index })}
-                  </button>
-                ))}
-              </div>
-
-              {/* Layer Management Buttons */}
-              <>
-                <div className="hidden sm:flex items-center gap-1 border-l border-[var(--color-border)] pl-2 ml-auto">
-                  {/* Layer Sorting Label */}
-                  <span className="hidden sm:inline text-xs text-[var(--color-text-muted)] mr-1">
-                    {t("Sort")}:
-                  </span>
-
-                  {/* Move Up Button */}
-                  <EditorTooltip
-                    content={<>{t("Move layer up (higher priority)")}</>}
-                  >
-                    <button
-                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={handleMoveLayerUp}
-                      disabled={!currentLayer || selectedLayerIndex <= 0}
-                      aria-label={t("Move layer up (higher priority)")}
-                    >
-                      <IconChevronUp
-                        size={16}
-                        className="text-[var(--color-text-muted)]"
-                      />
-                    </button>
-                  </EditorTooltip>
-
-                  {/* Move Down Button */}
-                  <EditorTooltip
-                    content={<>{t("Move layer down (lower priority)")}</>}
-                  >
-                    <button
-                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={handleMoveLayerDown}
-                      disabled={
-                        !currentLayer ||
-                        selectedLayerIndex >= keymap.keymap.layers.length - 1
-                      }
-                      aria-label={t("Move layer down (lower priority)")}
-                    >
-                      <IconChevronDown
-                        size={16}
-                        className="text-[var(--color-text-muted)]"
-                      />
-                    </button>
-                  </EditorTooltip>
-                </div>
-
-                {/* Layer Add/Delete/Restore Buttons */}
-                <div className="hidden sm:flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
-                  {/* Rename Layer Button */}
-                  <EditorTooltip
-                    content={
-                      <>
-                        {t("Change the name shown on the selected layer tab")}
-                      </>
-                    }
-                  >
-                    <button
-                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={handleOpenRenameDialog}
-                      disabled={!currentLayer}
-                      aria-label={t("Rename current layer")}
-                    >
-                      <IconPencil
-                        size={16}
-                        className="text-[var(--color-text-muted)]"
-                      />
-                    </button>
-                  </EditorTooltip>
-
-                  {/* Add Layer Button */}
-                  <EditorTooltip
-                    content={
-                      <>{t("Add a layer for another set of key bindings")}</>
-                    }
-                  >
-                    <button
-                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={handleAddLayer}
-                      disabled={
-                        keymap.availableLayers <= keymap.keymap.layers.length
-                      }
-                      aria-label={t("Add new layer")}
-                    >
-                      <IconPlus
-                        size={16}
-                        className="text-[var(--color-neon)]"
-                      />
-                    </button>
-                  </EditorTooltip>
-
-                  {/* Delete Layer Button */}
-                  <EditorTooltip
-                    content={
-                      <>{t("Remove the selected layer and its key bindings")}</>
-                    }
-                  >
-                    <button
-                      className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={handleDeleteLayer}
-                      disabled={keymap.keymap.layers.length <= 1}
-                      aria-label={t("Delete current layer")}
-                    >
-                      <IconTrash size={16} className="text-red-400" />
-                    </button>
-                  </EditorTooltip>
-
-                  {/* Restore Layer Button — opens a popup listing the device's
-                      deleted (restorable) layers: a "restore all" action on top,
-                      then one row per deleted layer. */}
-                  <Popover.Root
-                    open={showRestoreMenu}
-                    onOpenChange={setShowRestoreMenu}
-                  >
+            {/* The same layer toolbar is used on desktop and mobile. */}
+            <div
+              className="keymap-layer-toolbar flex items-center gap-2 mb-4"
+              data-editing={isEditingLayers}
+            >
+              <span className="keymap-layer-label text-sm font-medium text-[var(--color-text-muted)]">
+                {t("Layer")}
+              </span>
+              <KeymapLayerTabs
+                layers={keymap.keymap.layers}
+                selectedIndex={selectedLayerIndex}
+                editing={isEditingLayers}
+                busy={isMovingLayer || keymap.isLoading}
+                onSelect={setSelectedLayerIndex}
+                onMove={handleMoveLayer}
+                onRename={handleOpenRenameDialog}
+                onDelete={handleDeleteLayer}
+              />
+              <div className="keymap-layer-actions ml-auto flex shrink-0 items-center gap-1">
+                {isEditingLayers ? (
+                  <>
                     <EditorTooltip
-                      content={
-                        <>
-                          {keymap.removedLayerIds.length > 0
-                            ? t("Restore deleted layer ({{count}} available)", {
-                                count: keymap.removedLayerIds.length,
-                              })
-                            : t("No deleted layers to restore")}
-                        </>
-                      }
+                      content={t("Add a layer for another set of key bindings")}
                     >
-                      <Popover.Trigger
-                        asChild
-                        disabled={keymap.removedLayerIds.length === 0}
+                      <button
+                        type="button"
+                        aria-label={t("Add new layer")}
+                        className="keymap-layer-action"
+                        onClick={handleAddLayer}
+                        disabled={
+                          isMovingLayer ||
+                          keymap.isLoading ||
+                          keymap.availableLayers <= keymap.keymap.layers.length
+                        }
                       >
-                        <button
-                          className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
-                          disabled={keymap.removedLayerIds.length === 0}
-                          aria-label={t("Restore deleted layer")}
-                          aria-haspopup="menu"
-                          aria-expanded={showRestoreMenu}
-                        >
-                          <IconRestore
-                            size={16}
-                            className="text-[var(--color-electric)]"
-                          />
-                        </button>
-                      </Popover.Trigger>
+                        <IconPlus size={16} />
+                      </button>
                     </EditorTooltip>
-
-                    {showRestoreMenu && keymap.removedLayerIds.length > 0 && (
-                      <Popover.Portal>
-                        <Popover.Content
-                          role="menu"
-                          aria-label={t("Restore deleted layer")}
-                          align="end"
-                          sideOffset={4}
-                          collisionPadding={8}
-                          className="z-50 w-64 max-w-[calc(100vw-16px)] max-h-[min(16rem,var(--radix-popover-content-available-height))] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
+                    <Popover.Root
+                      open={showRestoreMenu}
+                      onOpenChange={setShowRestoreMenu}
+                    >
+                      <EditorTooltip
+                        content={
+                          <>
+                            {keymap.removedLayerIds.length > 0
+                              ? t(
+                                  "Restore deleted layer ({{count}} available)",
+                                  {
+                                    count: keymap.removedLayerIds.length,
+                                  },
+                                )
+                              : t("No deleted layers to restore")}
+                          </>
+                        }
+                      >
+                        <Popover.Trigger
+                          asChild
+                          disabled={
+                            isMovingLayer ||
+                            keymap.isLoading ||
+                            keymap.removedLayerIds.length === 0
+                          }
                         >
                           <button
-                            role="menuitem"
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-left text-[var(--color-electric)] hover:bg-[var(--color-border)]"
-                            onClick={handleRestoreAllLayers}
+                            className="keymap-layer-action keymap-layer-restore"
+                            disabled={
+                              isMovingLayer ||
+                              keymap.isLoading ||
+                              keymap.removedLayerIds.length === 0
+                            }
+                            aria-label={t("Restore deleted layer")}
+                            aria-haspopup="menu"
+                            aria-expanded={showRestoreMenu}
                           >
-                            <IconRestore size={14} />
-                            {t("Restore all deleted layers ({{count}})", {
-                              count: keymap.removedLayerIds.length,
-                            })}
+                            <IconRestore
+                              size={16}
+                              className="text-[var(--color-electric)]"
+                            />
+                            <IconChevronDown size={12} aria-hidden="true" />
                           </button>
-                          <div className="my-1 border-t border-[var(--color-border)]" />
-                          {keymap.removedLayerIds.map((layerId) => (
+                        </Popover.Trigger>
+                      </EditorTooltip>
+
+                      {showRestoreMenu && keymap.removedLayerIds.length > 0 && (
+                        <Popover.Portal>
+                          <Popover.Content
+                            role="menu"
+                            aria-label={t("Restore deleted layer")}
+                            align="end"
+                            sideOffset={4}
+                            collisionPadding={8}
+                            className="z-50 w-64 max-w-[calc(100vw-16px)] max-h-[min(16rem,var(--radix-popover-content-available-height))] overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl py-1"
+                          >
                             <button
-                              key={`restore-${layerId}`}
                               role="menuitem"
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
-                              onClick={() => handleRestoreLayer(layerId)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-left text-[var(--color-electric)] hover:bg-[var(--color-border)]"
+                              onClick={handleRestoreAllLayers}
                             >
-                              <IconRestore
-                                size={14}
-                                className="text-[var(--color-text-muted)]"
-                              />
-                              {t("Layer {{id}}", { id: layerId })}
+                              <IconRestore size={14} />
+                              {t("Restore all deleted layers ({{count}})", {
+                                count: keymap.removedLayerIds.length,
+                              })}
                             </button>
-                          ))}
-                        </Popover.Content>
-                      </Popover.Portal>
-                    )}
-                  </Popover.Root>
-                </div>
-              </>
+                            <div className="my-1 border-t border-[var(--color-border)]" />
+                            {keymap.removedLayerIds.map((layerId) => (
+                              <button
+                                key={`restore-${layerId}`}
+                                role="menuitem"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
+                                onClick={() => handleRestoreLayer(layerId)}
+                              >
+                                <IconRestore
+                                  size={14}
+                                  className="text-[var(--color-text-muted)]"
+                                />
+                                {t("Layer {{id}}", { id: layerId })}
+                              </button>
+                            ))}
+                          </Popover.Content>
+                        </Popover.Portal>
+                      )}
+                    </Popover.Root>
+                    <ResponsiveButton
+                      label={t("Finish editing")}
+                      className="keymap-layer-action text-sm"
+                      disabled={isMovingLayer}
+                      onClick={() => {
+                        setShowRestoreMenu(false);
+                        setIsEditingLayers(false);
+                      }}
+                    >
+                      <IconX size={16} />
+                    </ResponsiveButton>
+                  </>
+                ) : (
+                  <ResponsiveButton
+                    label={t("Edit layers")}
+                    className="keymap-layer-action keymap-layer-edit text-sm"
+                    onClick={() =>
+                      withUnlock(() => {
+                        closeSelector();
+                        setIsEditingLayers(true);
+                      })
+                    }
+                  >
+                    <IconPencil size={14} />
+                  </ResponsiveButton>
+                )}
+              </div>
             </div>
 
             {/* Keyboard Layout */}
@@ -1544,7 +1129,7 @@ export function KeymapPage({
                       </span>
                     </div>
                   </div>
-                  <div className="ml-auto hidden min-w-0 max-w-full sm:block">
+                  <div className="ml-auto min-w-0 max-w-full">
                     <Popover.Root>
                       <Popover.Trigger asChild>
                         <button

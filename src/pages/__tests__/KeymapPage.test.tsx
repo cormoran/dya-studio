@@ -947,133 +947,33 @@ describe("KeymapPage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("opens mobile keymap settings from the rightmost action and keeps grouped controls usable", async () => {
+    it("uses the preview layout dropdown on every screen size without mobile settings", async () => {
       const user = userEvent.setup();
       const setActiveLayout = jest.fn().mockResolvedValue(true);
-      const physicalLayouts = {
-        activeLayoutIndex: 0,
-        layouts: [
-          mockPhysicalLayouts.layouts[0],
-          { ...mockPhysicalLayouts.layouts[0], name: "Alternate" },
-        ],
-      };
       renderComponent(
         { isConnected: true },
         {
           keymap: mockKeymap,
-          physicalLayouts,
           behaviors: mockBehaviors,
           setActiveLayout,
+          physicalLayouts: {
+            activeLayoutIndex: 0,
+            layouts: [
+              mockPhysicalLayouts.layouts[0],
+              { ...mockPhysicalLayouts.layouts[0], name: "Alternate" },
+            ],
+          },
         },
-        createConnectedMockZMKApp({
-          subsystems: [INPUT_STREAM_IDENTIFIER],
-        }),
-      );
-
-      const trigger = screen.getByRole("button", { name: "Keymap settings" });
-      expect(trigger).toBe(
-        document.querySelector(".keymap-actions")?.lastElementChild,
-      );
-      await user.click(trigger);
-
-      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
-      expect(dialog).toHaveClass(
-        "fixed",
-        "inset-0",
-        "h-dvh",
-        "w-screen",
-        "z-[9999]",
       );
       expect(
-        within(dialog).getByRole("heading", { name: "Layer editing" }),
-      ).toBeInTheDocument();
-      expect(
-        within(dialog).getByRole("heading", { name: "Layout and display" }),
-      ).toBeInTheDocument();
-
-      const layerButtons = within(dialog).getByRole("group", {
-        name: "Current layer",
-      });
+        screen.queryByRole("button", { name: "Keymap settings" }),
+      ).not.toBeInTheDocument();
       await user.click(
-        within(layerButtons).getByRole("button", { name: "Lower" }),
+        screen.getByRole("button", { name: "Layout and display" }),
       );
-      expect(
-        within(layerButtons).getByRole("button", { name: "Lower" }),
-      ).toHaveAttribute("aria-pressed", "true");
-      expect(
-        within(dialog).getByRole("button", {
-          name: "Move layer down (lower priority)",
-        }),
-      ).toBeDisabled();
-      expect(
-        within(dialog).getByRole("button", {
-          name: "Move layer up (higher priority)",
-        }),
-      ).toHaveTextContent("");
-
-      await user.selectOptions(
-        within(dialog).getByLabelText("Physical Layout"),
-        "1",
-      );
+      await user.selectOptions(screen.getByLabelText("Physical Layout"), "1");
       expect(setActiveLayout).toHaveBeenCalledWith(1);
-      expect(within(dialog).getByLabelText("OS Layout")).toBeInTheDocument();
-      expect(
-        within(dialog).queryByLabelText("Toggle stream mode"),
-      ).not.toBeInTheDocument();
-
-      await user.click(within(dialog).getByRole("button", { name: "Close" }));
-      expect(
-        screen.queryByRole("dialog", { name: "Keymap settings" }),
-      ).not.toBeInTheDocument();
-      expect(trigger).toHaveFocus();
-    });
-
-    it("keeps mobile deleted-layer restore choices to three buttons plus an overflow menu", async () => {
-      const user = userEvent.setup();
-      const restoreLayer = jest
-        .fn()
-        .mockResolvedValue({ id: 0, name: "Restored", bindings: [] });
-      renderComponent(
-        { isConnected: true },
-        {
-          keymap: mockKeymap,
-          physicalLayouts: mockPhysicalLayouts,
-          behaviors: mockBehaviors,
-          removedLayerIds: [2, 3, 4, 5, 6],
-          restoreLayer,
-        },
-      );
-
-      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
-      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
-
-      expect(
-        within(dialog).getByRole("button", { name: "Layer 2" }),
-      ).toBeInTheDocument();
-      expect(
-        within(dialog).getByRole("button", { name: "Layer 3" }),
-      ).toBeInTheDocument();
-      expect(
-        within(dialog).getByRole("button", { name: "Layer 4" }),
-      ).toBeInTheDocument();
-      expect(
-        within(dialog).queryByRole("button", { name: "Layer 5" }),
-      ).not.toBeInTheDocument();
-
-      await user.click(
-        within(dialog).getByRole("button", {
-          name: "Other deleted layers (2)",
-        }),
-      );
-      const menu = screen.getByRole("menu", {
-        name: "Other deleted layers",
-      });
-      await user.click(within(menu).getByRole("menuitem", { name: "Layer 6" }));
-
-      expect(restoreLayer).toHaveBeenCalledWith(6, 2);
-      expect(
-        screen.queryByRole("menu", { name: "Other deleted layers" }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByLabelText("OS Layout")).toBeInTheDocument();
     });
 
     describe("layer rename", () => {
@@ -1090,8 +990,9 @@ describe("KeymapPage", () => {
             setLayerName,
           },
         );
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
         await user.click(
-          screen.getAllByRole("button", { name: "Rename current layer" })[0],
+          screen.getByRole("button", { name: "Rename layer Base" }),
         );
         const dialog = screen.getByRole("dialog", { name: "Rename Layer" });
         const input = within(dialog).getByRole("textbox");
@@ -1194,7 +1095,7 @@ describe("KeymapPage", () => {
       });
     });
 
-    it("keeps the rename confirmation label visible after opening it from mobile settings", async () => {
+    it("keeps the rename confirmation label visible in layer editing mode", async () => {
       const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
@@ -1205,11 +1106,9 @@ describe("KeymapPage", () => {
         },
       );
 
-      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
       await user.click(
-        within(
-          screen.getByRole("dialog", { name: "Keymap settings" }),
-        ).getByRole("button", { name: "Rename current layer" }),
+        screen.getByRole("button", { name: "Rename layer Base" }),
       );
 
       const renameDialog = screen.getByRole("dialog", { name: "Rename Layer" });
@@ -1407,7 +1306,7 @@ describe("KeymapPage", () => {
       expect(screen.getByText("Keyboard Unlock Required")).toBeInTheDocument();
     });
 
-    it("closes mobile settings before showing the unlock prompt for a layer edit", async () => {
+    it("prompts for unlock before entering layer editing", async () => {
       const user = userEvent.setup();
       mockUseStudioLockState.mockReturnValue({
         locked: true,
@@ -1422,11 +1321,7 @@ describe("KeymapPage", () => {
         },
       );
 
-      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
-      const settings = screen.getByRole("dialog", { name: "Keymap settings" });
-      await user.click(
-        within(settings).getByRole("button", { name: "Rename current layer" }),
-      );
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
 
       expect(
         screen.queryByRole("dialog", { name: "Keymap settings" }),
@@ -1519,8 +1414,9 @@ describe("KeymapPage", () => {
       await user.click(lowerTab);
 
       // The Lower tab should now have the active styling
-      expect(lowerTab.closest("button")).toHaveClass(
-        "bg-[var(--color-electric)]/20",
+      expect(lowerTab.closest("button")).toHaveAttribute(
+        "aria-pressed",
+        "true",
       );
     });
   });
@@ -1580,6 +1476,7 @@ describe("KeymapPage", () => {
         },
       );
       try {
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
         await user.click(screen.getByRole("button", { name: "Add new layer" }));
         expect(
           screen.getByRole("button", { name: "Added", exact: true }),
@@ -1600,20 +1497,13 @@ describe("KeymapPage", () => {
           screen.getByRole("button", { name: "Save", exact: true }),
         ).toBeDisabled();
         expect(
-          screen.getByRole("button", {
-            name: "Move layer up (higher priority)",
-          }),
+          screen.getByRole("button", { name: "Reorder layer Lower" }),
         ).toBeEnabled();
         expect(
-          screen.getByRole("button", {
-            name: "Move layer down (lower priority)",
-          }),
-        ).toBeDisabled();
-        expect(
-          screen.getByRole("button", { name: "Rename current layer" }),
+          screen.getByRole("button", { name: "Rename layer Lower" }),
         ).toBeEnabled();
         expect(
-          screen.getByRole("button", { name: "Delete current layer" }),
+          screen.getByRole("button", { name: "Delete layer Lower" }),
         ).toBeEnabled();
       } finally {
         confirm.mockRestore();
@@ -1670,6 +1560,7 @@ describe("KeymapPage", () => {
       );
       try {
         await screen.findByText("Saved");
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
         await user.click(screen.getByRole("button", { name: "Add new layer" }));
         await waitFor(() =>
           expect(
@@ -1779,28 +1670,16 @@ describe("KeymapPage", () => {
       expect(
         screen.queryByText("Rotary Encoder Configuration"),
       ).not.toBeInTheDocument();
-      for (const name of [
-        "Move layer up (higher priority)",
-        "Move layer down (lower priority)",
-        "Rename current layer",
-        "Delete current layer",
-      ]) {
-        expect(screen.getByRole("button", { name })).toBeDisabled();
-      }
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
+      expect(
+        screen.queryByRole("button", { name: /Rename layer/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Delete layer/ }),
+      ).not.toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: "Add new layer" }),
       ).toBeEnabled();
-      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
-      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
-      for (const name of [
-        "Move layer up (higher priority)",
-        "Move layer down (lower priority)",
-        "Rename current layer",
-        "Delete current layer",
-      ]) {
-        expect(within(dialog).getByRole("button", { name })).toBeDisabled();
-      }
-      await user.click(within(dialog).getByRole("button", { name: "Close" }));
       await act(async () => {
         replaceKeymap({ keymap: expandedKeymap });
       });
@@ -1808,60 +1687,262 @@ describe("KeymapPage", () => {
     });
   });
 
-  describe("Layer Reordering", () => {
-    it("should show layer reorder buttons", () => {
-      renderComponent(
-        { isConnected: true },
-        {
-          keymap: mockKeymap,
-          physicalLayouts: mockPhysicalLayouts,
-          behaviors: mockBehaviors,
-        },
-      );
-
-      expect(
-        screen.getByLabelText("Move layer up (higher priority)"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByLabelText("Move layer down (lower priority)"),
-      ).toBeInTheDocument();
-    });
-
-    it("should disable move up button for first layer", () => {
-      renderComponent(
-        { isConnected: true },
-        {
-          keymap: mockKeymap,
-          physicalLayouts: mockPhysicalLayouts,
-          behaviors: mockBehaviors,
-        },
-      );
-
-      const moveUpButton = screen.getByLabelText(
-        "Move layer up (higher priority)",
-      );
-      expect(moveUpButton).toBeDisabled();
-    });
-
-    it("should call moveLayer when clicking move down", async () => {
+  describe("Layer editing", () => {
+    it("hides management controls until editing, freezes tab selection, and resumes on finish", async () => {
       const user = userEvent.setup();
-      const mockMoveLayer = jest.fn().mockResolvedValue(true);
       renderComponent(
         { isConnected: true },
         {
           keymap: mockKeymap,
           physicalLayouts: mockPhysicalLayouts,
           behaviors: mockBehaviors,
-          moveLayer: mockMoveLayer,
         },
       );
+      expect(screen.getByText("Layer", { exact: true })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Add new layer" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Rename layer Lower" }),
+      ).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
+      const lower = screen.getByRole("button", { name: "Lower", exact: true });
+      await user.click(lower);
+      expect(lower).toHaveAttribute("aria-pressed", "false");
+      expect(
+        screen.getByRole("group", { name: "Keyboard layout for Base" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Rename layer Lower" }),
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Finish editing" }));
+      const normalLower = screen.getByRole("button", {
+        name: "Lower",
+        exact: true,
+      });
+      await user.click(normalLower);
+      expect(normalLower).toHaveAttribute("aria-pressed", "true");
+    });
 
-      const moveDownButton = screen.getByLabelText(
-        "Move layer down (lower priority)",
+    it("reorders using arrow keys and preserves the preview layer identity", async () => {
+      const user = userEvent.setup();
+      const moveLayer = jest.fn(async () => {
+        replaceKeymap({
+          keymap: { ...mockKeymap, layers: [...mockKeymap.layers].reverse() },
+        });
+        return true;
+      });
+      const { replaceKeymap } = renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          moveLayer,
+        },
       );
-      await user.click(moveDownButton);
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
+      screen.getByRole("button", { name: "Reorder layer Lower" }).focus();
+      await user.keyboard("{ArrowRight}");
+      expect(moveLayer).not.toHaveBeenCalled();
+      await user.keyboard("{ArrowLeft}");
+      expect(moveLayer).toHaveBeenCalledWith(1, 0);
+      expect(
+        screen.getByRole("button", { name: "Base", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        screen.getByRole("group", { name: "Keyboard layout for Base" }),
+      ).toBeInTheDocument();
+    });
 
-      expect(mockMoveLayer).toHaveBeenCalledWith(0, 1);
+    it("uses vertical keyboard reordering on mobile and switches axes when resized", async () => {
+      const user = userEvent.setup();
+      const originalMatchMedia = window.matchMedia;
+      let mobile = true;
+      let changed = () => {};
+      window.matchMedia = jest.fn((query: string) => ({
+        ...originalMatchMedia(query),
+        matches: query === "(max-width: 639px)" && mobile,
+        addEventListener: (_event: string, listener: () => void) => {
+          changed = listener;
+        },
+        removeEventListener: jest.fn(),
+      }));
+      let reversed = false;
+      const moveLayer = jest.fn(async () => {
+        reversed = !reversed;
+        replaceKeymap({
+          keymap: {
+            ...mockKeymap,
+            layers: reversed
+              ? [...mockKeymap.layers].reverse()
+              : mockKeymap.layers,
+          },
+        });
+        return true;
+      });
+      const { replaceKeymap } = renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          moveLayer,
+        },
+      );
+      try {
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
+        screen.getByRole("button", { name: "Reorder layer Base" }).focus();
+        await user.keyboard("{ArrowRight}");
+        expect(moveLayer).not.toHaveBeenCalled();
+        await user.keyboard("{ArrowDown}");
+        expect(moveLayer).toHaveBeenCalledWith(0, 1);
+        expect(
+          screen.getByRole("button", { name: "Base", exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+        await act(async () => {
+          mobile = false;
+          changed();
+        });
+        expect(moveLayer).toHaveBeenCalledTimes(1);
+        screen.getByRole("button", { name: "Reorder layer Base" }).focus();
+        await user.keyboard("{ArrowUp}");
+        expect(moveLayer).toHaveBeenCalledTimes(1);
+        await user.keyboard("{ArrowLeft}");
+        expect(moveLayer).toHaveBeenLastCalledWith(1, 0);
+        expect(
+          screen.getByRole("button", { name: "Base", exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+        expect(
+          screen.getByRole("button", { name: "Reorder layer Base" }),
+        ).toHaveFocus();
+      } finally {
+        window.matchMedia = originalMatchMedia;
+      }
+    });
+
+    it("blocks duplicate moves while pending and keeps selection on a failed move", async () => {
+      const user = userEvent.setup();
+      let finish!: (result: boolean) => void;
+      const moveLayer = jest.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          moveLayer,
+        },
+      );
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
+      const handle = screen.getByRole("button", { name: "Reorder layer Base" });
+      handle.focus();
+      await user.keyboard("{ArrowRight}{ArrowRight}");
+      expect(moveLayer).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByRole("button", { name: "Add new layer" }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Finish editing" }),
+      ).toBeDisabled();
+      await act(async () => finish(false));
+      expect(handle).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Base", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it.each([0, 1])(
+      "reconciles preview after deleting index %s while the last layer is selected",
+      async (index) => {
+        const user = userEvent.setup();
+        const removeLayer = jest.fn(async () => {
+          replaceKeymap({
+            keymap: {
+              ...mockKeymap,
+              layers: mockKeymap.layers.filter((_, i) => i !== index),
+            },
+          });
+          return true;
+        });
+        const { replaceKeymap } = renderComponent(
+          { isConnected: true },
+          {
+            keymap: mockKeymap,
+            physicalLayouts: mockPhysicalLayouts,
+            behaviors: mockBehaviors,
+            removeLayer,
+          },
+        );
+        const confirm = jest.spyOn(window, "confirm").mockReturnValue(true);
+        try {
+          await user.click(
+            screen.getByRole("button", { name: "Lower", exact: true }),
+          );
+          await user.click(screen.getByRole("button", { name: "Edit layers" }));
+          await user.click(
+            screen.getByRole("button", {
+              name: `Delete layer ${index === 0 ? "Base" : "Lower"}`,
+            }),
+          );
+          expect(removeLayer).toHaveBeenCalledWith(index);
+          expect(
+            screen.getByRole("button", {
+              name: index === 0 ? "Lower" : "Base",
+              exact: true,
+            }),
+          ).toHaveAttribute("aria-pressed", "true");
+          expect(
+            screen.getByRole("button", { name: /Delete layer/ }),
+          ).toBeDisabled();
+        } finally {
+          confirm.mockRestore();
+        }
+      },
+    );
+
+    it("renames and deletes the item acted on without selecting it", async () => {
+      const user = userEvent.setup();
+      const setLayerName = jest.fn().mockResolvedValue(true);
+      const removeLayer = jest.fn().mockResolvedValue(true);
+      const confirm = jest.spyOn(window, "confirm").mockReturnValue(true);
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          setLayerName,
+          removeLayer,
+        },
+      );
+      try {
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
+        await user.click(
+          screen.getByRole("button", { name: "Rename layer Lower" }),
+        );
+        const dialog = screen.getByRole("dialog", { name: "Rename Layer" });
+        await user.clear(within(dialog).getByRole("textbox"));
+        await user.type(within(dialog).getByRole("textbox"), "Utility");
+        await user.click(
+          within(dialog).getByRole("button", { name: "Rename", exact: true }),
+        );
+        expect(setLayerName).toHaveBeenCalledWith(1, "Utility");
+        await user.click(
+          screen.getByRole("button", { name: "Delete layer Lower" }),
+        );
+        expect(removeLayer).toHaveBeenCalledWith(1);
+        expect(
+          screen.getByRole("button", { name: "Base", exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+      } finally {
+        confirm.mockRestore();
+      }
     });
   });
 
@@ -1884,6 +1965,7 @@ describe("KeymapPage", () => {
 
       // The popup is closed until the restore button is clicked.
       expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
       await user.click(screen.getByLabelText("Restore deleted layer"));
 
       // Clicking a specific layer row restores exactly that id, appended to the
@@ -1912,6 +1994,7 @@ describe("KeymapPage", () => {
         },
       );
 
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
       await user.click(screen.getByLabelText("Restore deleted layer"));
       const menu = screen.getByRole("menu");
       await user.click(
@@ -1925,7 +2008,8 @@ describe("KeymapPage", () => {
       expect(mockRestoreLayer).toHaveBeenNthCalledWith(2, 3, 3);
     });
 
-    it("disables the restore button when there are no deleted layers", () => {
+    it("disables the restore button when there are no deleted layers", async () => {
+      const user = userEvent.setup();
       renderComponent(
         { isConnected: true },
         {
@@ -1936,6 +2020,7 @@ describe("KeymapPage", () => {
         },
       );
 
+      await user.click(screen.getByRole("button", { name: "Edit layers" }));
       expect(screen.getByLabelText("Restore deleted layer")).toBeDisabled();
       expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     });
