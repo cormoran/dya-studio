@@ -5,14 +5,24 @@ description: Run supervised exploratory UI tests against a physical DYA2 keyboar
 
 # Physical DYA2 exploratory UI testing
 
-Use the real Studio UI and the connected keyboard's existing firmware. Read
-[exploratory-ui-test](../exploratory-ui-test/SKILL.md), the
-[exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md), specification
-[sitemap](../../../docs/spec/README.md), affected page/module specifications,
-and [hardware charters](references/charters.md). Read the
-[Renode skill](../renode-exploratory-test/SKILL.md) and harness/firmware guides
-before choosing coverage. This skill adds hardware risk selection and exclusive
-device ownership; the normal evidence, theme, and restoration rules still apply.
+Use the real Studio UI and the connected keyboard's existing firmware.
+
+- **Coordinator:** before choosing coverage, read
+  [exploratory-ui-test](../exploratory-ui-test/SKILL.md), the
+  [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md), specification
+  [sitemap](../../../docs/spec/README.md), affected specs and
+  [hardware charters](references/charters.md). Read the
+  [Renode skill](../renode-exploratory-test/SKILL.md) and its harness/firmware
+  guides to select actual gaps rather than repeat emulated coverage.
+- **Assigned browser worker:** read the safety/execution rules here, exploration
+  guide, assigned page/module specs, assigned charter sections and current tool
+  documentation. The coordinator supplies the fixed scope, risk selection and
+  checklist; do not reload unrelated Renode setup recipes or the entire app's
+  specifications unless investigating a concrete verdict gap. Preserve context
+  for actual observations and restoration.
+
+This skill adds hardware risk selection and exclusive device ownership; normal
+evidence, theme and restoration rules still apply.
 
 ## Scope and authority
 
@@ -141,6 +151,10 @@ Worker brief must include:
   Worker reports actual values and stage-specific verdicts; required not-run
   coverage cannot settle as success. Release/transfer the lease only after
   verified restoration/disconnection or an explicit blocked residual-state handoff.
+  At charter boundaries and before cleanup/closing, process and acknowledge inbox
+  deliveries, then check for queued follow-ups. An old replayed delivery can hide
+  a newer lease/budget correction until acknowledged. A request for corrections
+  is not acceptance to settle the original assignment.
 
 ## Execute, restore, report
 

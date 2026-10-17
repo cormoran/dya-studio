@@ -132,6 +132,18 @@ Suggested sequence:
    A firmware or transport refusal must not cause a success banner for unsaved
    data; inspect accepted state before retrying any non-idempotent create.
 
+On a large-write timeout, stop growth immediately. Preserve the attempted draft,
+loaded record identity, input event/debounce ordering, exact errors and timestamps.
+The displayed byte limit and local text are not accepted firmware state. Permit
+one fresh read after pending requests settle; if reads also time out, stop rather
+than queue more requests. A coordinator may allocate one ordinary reconnect for
+cleanup, then compare every disposable body and original sentinels through fresh
+reads before deleting only test records. A shorter returned string or partial
+state is evidence of the failed operation, not sufficient to assign a UI,
+transport or firmware root cause. Never Save the suspect state merely to reach a
+reboot milestone. A separate small-payload persistence control may proceed only
+after verified restoration and within the remaining Save/reboot budget.
+
 ## Transport, lock and firmware resources
 
 - Real USB connect → capability inventory → devtool lock refresh → authorized
@@ -168,6 +180,9 @@ Suggested sequence:
   but does not inherently need a human: use authorized USB devtool unlock first
   when that firmware makes Studio discoverable, disconnect the serial session,
   then use the real BLE chooser for the same DUT and fresh-read capabilities/data.
+  Keep the same app document between transport changes: a new/reloaded tab with
+  a paired serial port may automatically reconnect USB. Use in-app Disconnect,
+  connection buttons and tabs instead of browser navigation as a transport reset.
   Record actual GATT connection separately from ordinary keyboard HID output.
   Disconnect BLE, reconnect USB and restore the initial lock/session state. Plan
   both transport transitions in the finite reconnect budget before dispatch;
