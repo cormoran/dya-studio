@@ -37,7 +37,7 @@
 | GUIDE-002 | unknown `/developer-guide/*` URL                         | root page definition を fallback 表示する                                                                              | URL 自体を canonicalize しない                              | S1/S2       |
 | GUIDE-003 | desktop sidebar / mobile `Menu`                          | active route に `aria-current=page`。mobile link は details を閉じ、history push/popstate/scroll top で同一 SPA 内移動 | browser history のみ                                        | S3/S4       |
 | GUIDE-004 | heading link / `On this page`                            | page content の heading id に `#id` anchor、desktop/mobile TOC を表示                                                  | browser hash scroll。content を変更しない                   | S3          |
-| GUIDE-005 | language 日本語/English、theme toggle                    | content definition、button 表示、light/dark icon を切替                                                                | language/theme persistence は app-shell の契約              | S1/S2/S3/S4 |
+| GUIDE-005 | language 日本語/English、Theme dropdown                  | content definition、言語表示、現在のテーマ名と配色を切替（Light / Dark / Pop / Neutral / Pastel）                      | language/theme persistence は app-shell の契約              | S1/S2/S3/S4 |
 | GUIDE-006 | code/table/callout/image/flow/features/levels/link group | content type ごとに static rendering。`src` 不在 image は placeholder と alt/caption                                   | link は通常 anchor。external firmware/GitHub URL を開くのみ | S2/S3       |
 | GUIDE-007 | previous/next、`Back to DYA Studio`                      | related page link または `/` link を表示                                                                               | normal browser navigation。keyboard state を保存/破棄しない | S2/S3/S4    |
 
@@ -46,7 +46,7 @@
 1. 未接続 browser で root、各 level、各 modules、reference、troubleshooting の URL を直接開き、connection UI を出さず title/content を表示することを確認する（GUIDE-001）。
 2. mobile width で `Menu` を開き nested module page を押す。details が閉じ、URL・active label・scroll top が更新することを確認する（GUIDE-003）。
 3. heading anchor、previous/next、breadcrumb、footer の各 link を遷移して history Back で戻る（GUIDE-004/007）。
-4. 日本語/English、light/dark を切替え、code/table/placeholder image の可読性を確認する（GUIDE-005/006）。
+4. 日本語/English、5種類のテーマを切替え、code/table/placeholder image の可読性を確認する（GUIDE-005/006）。
 
 ## 不変条件
 

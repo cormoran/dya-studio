@@ -1,0 +1,102 @@
+@layer base {
+  :root.pop {
+    color-scheme: light;
+
+    /* Raspberry, teal, and violet keep the playful accents readable on cream. */
+    --color-electric: #bd2864;
+    --color-neon: #066e75;
+    --color-cyber: #7141c8;
+    --color-warning: #895200;
+
+    --color-bg: #fffaf3;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #f8edf8;
+    --color-text: #282344;
+    --color-text-secondary: #524260;
+    --color-text-muted: #6c5974;
+    --color-border: #dfc8dc;
+    --color-border-hover: #b48aab;
+
+    --glass-bg: rgba(255, 255, 255, 0.96);
+    --glass-border: #dfc8dc;
+
+    --scrollbar-track: #f8edf8;
+    --scrollbar-thumb: #b48aab;
+    --scrollbar-thumb-hover: #886180;
+  }
+}
+
+/* These shared components otherwise retain the default theme's cyan glow. */
+:root.pop .glass-card {
+  box-shadow: 0 3px 0 rgba(113, 65, 200, 0.08);
+}
+
+:root.pop .glass-panel {
+  background: linear-gradient(135deg, var(--glass-bg), var(--color-bg));
+}
+
+:root.pop .btn-electric {
+  background: color-mix(in srgb, var(--color-electric) 6%, transparent);
+}
+
+:root.pop .btn-electric:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-electric) 7%, transparent);
+}
+
+:root.pop .btn-neon {
+  background: color-mix(in srgb, var(--color-neon) 6%, transparent);
+}
+
+:root.pop .btn-neon:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-neon) 8%, transparent);
+}
+
+:root.pop .status-indicator.connected {
+  box-shadow: 0 0 0 3px rgba(6, 110, 117, 0.12);
+}
+
+:root.pop .tab-trigger[data-state="active"]::after {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  box-shadow: none;
+}
+
+:root.pop .select-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c5974' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+}
+
+:root.pop .select-field:focus,
+:root.pop .input-field:focus {
+  border-color: var(--color-electric);
+  box-shadow: 0 0 0 3px rgba(189, 40, 100, 0.14);
+}
+
+:root.pop .text-glow-electric,
+:root.pop .text-glow-neon {
+  text-shadow: none;
+}
+
+:root.pop .bg-gradient-cyber {
+  background: linear-gradient(
+    135deg,
+    rgba(189, 40, 100, 0.1),
+    rgba(113, 65, 200, 0.08) 55%,
+    rgba(6, 110, 117, 0.08)
+  );
+}
+
+:root.pop .border-glow-electric {
+  border-color: color-mix(in srgb, var(--color-electric) 35%, transparent);
+  box-shadow: inset 0 0 20px rgba(189, 40, 100, 0.04);
+}
+
+:root.pop .hover\:shadow-glow-electric-sm:hover {
+  box-shadow: 0 0 0 3px rgba(189, 40, 100, 0.12);
+}
+
+/* Reserve yellow for warnings, with dark amber text rather than neon yellow. */
+:root.pop .warning-banner {
+  border-color: #c28a26;
+  background-color: #fff0c2;
+  color: #704500;
+}

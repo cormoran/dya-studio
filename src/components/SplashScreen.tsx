@@ -5,6 +5,7 @@ import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 import { LanguageToggle } from "./LanguageToggle";
+import { ThemeSelect } from "./ThemeSelect";
 import { useLanguage } from "../hooks/useLanguage";
 import { getCurrentVersion } from "../i18n/releaseNotes";
 import { EditorTooltip } from "./EditorTooltip";
@@ -113,8 +114,9 @@ export function SplashScreen({
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-cyber opacity-30" />
-      <div className="absolute right-6 top-6 z-20">
+      <div className="absolute right-6 top-6 z-20 flex items-center gap-3">
         <LanguageToggle />
+        <ThemeSelect />
       </div>
 
       {/* Animated rings */}
@@ -330,7 +332,7 @@ export function SplashScreen({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity"
           >
             <img
-              src={theme === "light" ? githubMarkBlack : githubMarkWhite}
+              src={theme === "dark" ? githubMarkWhite : githubMarkBlack}
               width={24}
               height={24}
               className="object-contain"

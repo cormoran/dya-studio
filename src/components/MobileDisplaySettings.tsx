@@ -2,14 +2,12 @@ import { useId } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
-import { useTheme } from "../hooks/useTheme";
+import { ThemeSelect } from "./ThemeSelect";
 import { languageLabels, type Language } from "../i18n/translations";
 
 export function MobileDisplaySettings() {
   const { language, setLanguage, t } = useLanguage();
-  const { theme, setTheme } = useTheme();
   const languageId = useId();
-  const themeId = useId();
 
   return (
     <Dialog.Root>
@@ -62,22 +60,7 @@ export function MobileDisplaySettings() {
                 ))}
               </select>
             </div>
-            <div>
-              <label htmlFor={themeId} className="block text-sm mb-2">
-                {t("Theme")}
-              </label>
-              <select
-                id={themeId}
-                className="select-field w-full min-w-0 min-h-11 text-base"
-                value={theme}
-                onChange={(event) =>
-                  setTheme(event.target.value === "light" ? "light" : "dark")
-                }
-              >
-                <option value="light">{t("Light")}</option>
-                <option value="dark">{t("Dark")}</option>
-              </select>
-            </div>
+            <ThemeSelect fullWidth />
           </div>
         </Dialog.Content>
       </Dialog.Portal>

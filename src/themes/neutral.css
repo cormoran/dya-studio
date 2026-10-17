@@ -1,0 +1,84 @@
+@layer base {
+  :root.neutral {
+    color-scheme: light;
+
+    --color-electric: #404040;
+    --color-neon: #475569;
+    --color-cyber: #52525b;
+    --color-warning: #925000;
+
+    --color-bg: #ffffff;
+    --color-surface: #f6f6f6;
+    --color-surface-elevated: #ededed;
+    --color-text: #242424;
+    --color-text-secondary: #505862;
+    --color-text-muted: #62676d;
+    --color-border: #d7d9dc;
+    --color-border-hover: #969ba2;
+
+    --glass-bg: rgba(246, 246, 246, 0.96);
+    --glass-border: #d7d9dc;
+
+    --scrollbar-track: #f6f6f6;
+    --scrollbar-thumb: #969ba2;
+    --scrollbar-thumb-hover: #62676d;
+  }
+}
+
+/* Keep shared components quiet, including decorations with fixed cyber colors. */
+:root.neutral .glass-card {
+  box-shadow: 0 2px 8px rgba(36, 36, 36, 0.04);
+}
+
+:root.neutral .glass-panel {
+  background: var(--glass-bg);
+}
+
+:root.neutral .bg-gradient-dark {
+  background: var(--color-bg);
+}
+
+:root.neutral .bg-gradient-cyber {
+  background: var(--color-surface);
+}
+
+:root.neutral .text-glow-electric,
+:root.neutral .text-glow-neon {
+  text-shadow: none;
+}
+
+:root.neutral .border-glow-electric {
+  border-color: var(--color-border-hover);
+  box-shadow: none;
+}
+
+:root.neutral .status-indicator.connected,
+:root.neutral .tab-trigger[data-state="active"]::after {
+  box-shadow: none;
+}
+
+:root.neutral .input-field:focus,
+:root.neutral .select-field:focus {
+  border-color: var(--color-electric);
+  box-shadow: 0 0 0 2px rgba(64, 64, 64, 0.16);
+}
+
+:root.neutral .select-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2362676d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+}
+
+/* Splash transport buttons, selected physical keys, and the devtool launcher. */
+:root.neutral [class*="shadow-"][class*="rgba(0,212,255"],
+:root.neutral [class*="shadow-"][class*="rgba(0,255,204"],
+:root.neutral [class*="shadow-"][class*="rgba(139,92,246"],
+:root.neutral [class*="shadow-glow-"] {
+  --tw-shadow: 0 2px 6px rgba(36, 36, 36, 0.1);
+  box-shadow: 0 2px 6px rgba(36, 36, 36, 0.1);
+}
+
+/* Semantic warnings retain an amber surface and dark, readable text. */
+:root.neutral .warning-banner {
+  border-color: #c9954d;
+  background-color: #fff4df;
+  color: #78350f;
+}
