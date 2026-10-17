@@ -7,6 +7,7 @@
     /* Creamy Pastel × Pop: brighten with white, never muddy colors with gray.
        Keep saturated accents small and separate from readable text colors. */
     --pop-leaf: #9ee5bd;
+    --pop-coral: #ff9b87;
     --pop-sky: #65cafa;
     --pop-sky-hover: #4fbceb;
     --pop-focus: #3797c4;
@@ -156,7 +157,7 @@
 
 :root.pop .tab-trigger[data-state="active"]::after {
   height: 5px;
-  background: var(--pop-sky);
+  background: var(--pop-coral);
 }
 
 :root.pop .status-indicator.connected {
