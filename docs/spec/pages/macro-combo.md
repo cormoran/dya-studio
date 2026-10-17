@@ -41,6 +41,8 @@ macro step と combo behavior の keycode 表示は [binding editor BIND-024](..
 
 ## 現行の機能仕様
 
+ページタイトル直下の説明文と主操作の狭幅配置は[共通画面 SHELL-022](../modules/app-shell.md)に従う。幅640px未満では説明文を非表示にし、操作はタイトル行から配置して必要な分だけ折り返す。
+
 ページ見出し左の装飾アイコンは[共通画面 SHELL-021](../modules/app-shell.md)に従い、幅640px未満では枠ごと非表示、640px以上では表示する。
 
 MC-005: Refresh の tooltip はキーボードからマクロ・コンボを再読み込みすること、Save は変更を再起動後も維持するための保存であることを説明する。操作・可用性・保存境界は変更しない（2026-10-17 ユーザー要求、MacroComboPage）。
