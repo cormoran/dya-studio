@@ -1715,9 +1715,7 @@ describe("KeymapPage", () => {
       expect(
         screen.getByRole("button", { name: "Rename layer Lower" }),
       ).toBeInTheDocument();
-      await user.click(
-        screen.getByRole("button", { name: "Finish layer editing" }),
-      );
+      await user.click(screen.getByRole("button", { name: "Finish editing" }));
       const normalLower = screen.getByRole("button", {
         name: "Lower",
         exact: true,
@@ -1784,7 +1782,7 @@ describe("KeymapPage", () => {
         screen.getByRole("button", { name: "Add new layer" }),
       ).toBeDisabled();
       expect(
-        screen.getByRole("button", { name: "Finish layer editing" }),
+        screen.getByRole("button", { name: "Finish editing" }),
       ).toBeDisabled();
       await act(async () => finish(false));
       expect(handle).toBeEnabled();

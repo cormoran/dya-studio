@@ -924,19 +924,23 @@ export function KeymapPage() {
               <div className="keymap-layer-actions ml-auto flex shrink-0 items-center gap-1">
                 {isEditingLayers ? (
                   <>
-                    <ResponsiveButton
-                      label={t("Add new layer")}
-                      title={t("Add a layer for another set of key bindings")}
-                      className="btn-ghost text-sm flex items-center gap-1.5"
-                      onClick={handleAddLayer}
-                      disabled={
-                        isMovingLayer ||
-                        keymap.isLoading ||
-                        keymap.availableLayers <= keymap.keymap.layers.length
-                      }
+                    <EditorTooltip
+                      content={t("Add a layer for another set of key bindings")}
                     >
-                      <IconPlus size={16} />
-                    </ResponsiveButton>
+                      <button
+                        type="button"
+                        aria-label={t("Add new layer")}
+                        className="keymap-layer-action"
+                        onClick={handleAddLayer}
+                        disabled={
+                          isMovingLayer ||
+                          keymap.isLoading ||
+                          keymap.availableLayers <= keymap.keymap.layers.length
+                        }
+                      >
+                        <IconPlus size={16} />
+                      </button>
+                    </EditorTooltip>
                     <Popover.Root
                       open={showRestoreMenu}
                       onOpenChange={setShowRestoreMenu}
@@ -964,7 +968,7 @@ export function KeymapPage() {
                           }
                         >
                           <button
-                            className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="keymap-layer-action"
                             disabled={
                               isMovingLayer ||
                               keymap.isLoading ||
@@ -978,6 +982,7 @@ export function KeymapPage() {
                               size={16}
                               className="text-[var(--color-electric)]"
                             />
+                            <IconChevronDown size={12} aria-hidden="true" />
                           </button>
                         </Popover.Trigger>
                       </EditorTooltip>
@@ -1022,8 +1027,8 @@ export function KeymapPage() {
                       )}
                     </Popover.Root>
                     <ResponsiveButton
-                      label={t("Finish layer editing")}
-                      className="btn-ghost text-sm flex items-center gap-1.5"
+                      label={t("Finish editing")}
+                      className="keymap-layer-action text-sm"
                       disabled={isMovingLayer}
                       onClick={() => {
                         setShowRestoreMenu(false);
@@ -1036,7 +1041,7 @@ export function KeymapPage() {
                 ) : (
                   <ResponsiveButton
                     label={t("Edit layers")}
-                    className="keymap-layer-edit btn-ghost text-sm flex items-center gap-1.5"
+                    className="keymap-layer-action keymap-layer-edit text-sm"
                     onClick={() =>
                       withUnlock(() => {
                         closeSelector();

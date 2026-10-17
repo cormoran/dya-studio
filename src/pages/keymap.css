@@ -158,8 +158,28 @@
 .keymap-layer-drag:active {
   cursor: grabbing;
 }
-.keymap-layer-actions > button {
+.keymap-layer-actions .keymap-layer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
   min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+.keymap-layer-actions .keymap-layer-action:enabled:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-hover);
+}
+.keymap-layer-actions .keymap-layer-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 @media (max-width: 639px) {
   .keymap-layer-toolbar[data-editing="true"] .keymap-layer-tabs {
