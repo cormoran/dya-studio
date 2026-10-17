@@ -211,6 +211,9 @@ export function ConnectionPage() {
               <>
                 <ResponsiveButton
                   label={t("Refresh")}
+                  title={t(
+                    "Read connection profiles and settings from the keyboard again",
+                  )}
                   className="btn-ghost flex items-center gap-2"
                   onClick={() => void reload()}
                   disabled={isLoading}

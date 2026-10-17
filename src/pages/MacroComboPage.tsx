@@ -496,6 +496,7 @@ export function MacroComboPage() {
               />
               <ResponsiveButton
                 label={t("Refresh")}
+                title={t("Read macros and combos from the keyboard again")}
                 className="btn-ghost text-sm flex items-center gap-1.5"
                 onClick={() => void handleRefresh()}
                 disabled={anyLoading}
@@ -547,6 +548,9 @@ export function MacroComboPage() {
                   />
                   <ResponsiveButton
                     label={t("Save")}
+                    title={t(
+                      "Save macro and combo changes so they are kept after the keyboard restarts",
+                    )}
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={

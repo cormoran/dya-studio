@@ -41,6 +41,8 @@ macro step と combo behavior の keycode 表示は [binding editor BIND-024](..
 
 ## 現行の機能仕様
 
+MC-005: Refresh の tooltip はキーボードからマクロ・コンボを再読み込みすること、Save は変更を再起動後も維持するための保存であることを説明する。操作・可用性・保存境界は変更しない（2026-10-17 ユーザー要求、MacroComboPage）。
+
 モバイル幅のページ表示・共通操作・説明は[共通画面 SHELL-009/010/011](../modules/app-shell.md)に従う。下記の可用性・保存・エラー契約は画面幅で変わらない。
 
 | ID        | 前提 → 操作                                                                                                 | 観測できる結果                                                                                                                                                                                                                                                                                                                                                                                                                   | 保存範囲・副作用                                                                                                                                                                                                                                                                                                                                                                                | 根拠                                                                                                      |

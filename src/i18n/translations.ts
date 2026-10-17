@@ -9,6 +9,39 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  // Explain the result of toolbar actions without repeating their labels.
+  "Highlight keys pressed on your keyboard when turned on":
+    "ON にすると押したキーボードのキーをハイライトします",
+  "Restore the keymap to a previous version or its defaults":
+    "キーマップを以前のバージョンや初期値に戻します",
+  "Manage your keymaps in the cloud with Keyboard Abyss":
+    "Keyboard Abyss と連携してキーマップをクラウドで管理します",
+  "Save the currently applied keymap so it is kept after the keyboard restarts":
+    "現在適用されているキーマップを、キーボードが再起動しても維持されるように保存します",
+  "Choose a previous version to compare and restore":
+    "以前のバージョンを選んで、変更内容を比較してから復元します",
+  "Choose how to restore settings from previous versions or defaults":
+    "以前のバージョンや初期値に設定を戻す方法を選びます",
+  "Change the name shown on the selected layer tab":
+    "選択中のレイヤーのタブに表示する名前を変更します",
+  "Add a layer for another set of key bindings":
+    "別のキー割り当てを設定するためのレイヤーを追加します",
+  "Remove the selected layer and its key bindings":
+    "選択中のレイヤーと、そのキー割り当てを削除します",
+  "Edit in a dialog that covers the keyboard preview":
+    "キーボードのプレビューに重なるダイアログで編集します",
+  "Edit beside the keyboard preview while keeping it visible":
+    "キーボードのプレビューを見ながら、その横のウィンドウで編集します",
+  "Read macros and combos from the keyboard again":
+    "キーボードからマクロとコンボを再読み込みします",
+  "Save macro and combo changes so they are kept after the keyboard restarts":
+    "マクロとコンボの変更を、キーボードが再起動しても維持されるように保存します",
+  "Read connection profiles and settings from the keyboard again":
+    "キーボードから接続先と接続設定を再読み込みします",
+  "Read all available diagnostic sections from the keyboard again":
+    "キーボードから利用可能なすべての診断情報を再読み込みします",
+  "Copy the collected diagnostic information to the clipboard for support":
+    "サポートに共有できるよう、収集済みの診断情報をクリップボードにコピーします",
   "Update Abyss keymap": "Abyss のキーマップを更新",
   "Module settings for new layers require Keymap to be selected.":
     "新しいレイヤーのモジュール設定を転送するには、キーマップも選択してください。",
@@ -1665,6 +1698,37 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  // Explain the result of toolbar actions without repeating their labels.
+  "Highlight keys pressed on your keyboard when turned on":
+    "开启后，高亮显示键盘上按下的按键",
+  "Restore the keymap to a previous version or its defaults":
+    "将键位映射恢复为以前的版本或默认值",
+  "Manage your keymaps in the cloud with Keyboard Abyss":
+    "通过 Keyboard Abyss 在云端管理键位映射",
+  "Save the currently applied keymap so it is kept after the keyboard restarts":
+    "保存当前已应用的键位映射，使其在键盘重启后仍然保留",
+  "Choose a previous version to compare and restore":
+    "选择以前的版本，比较更改后再恢复",
+  "Choose how to restore settings from previous versions or defaults":
+    "选择如何将设置恢复为以前的版本或默认值",
+  "Change the name shown on the selected layer tab":
+    "修改所选层标签上显示的名称",
+  "Add a layer for another set of key bindings":
+    "添加一个层，用于设置另一组按键绑定",
+  "Remove the selected layer and its key bindings": "删除所选层及其按键绑定",
+  "Edit in a dialog that covers the keyboard preview":
+    "在覆盖键盘预览的对话框中编辑",
+  "Edit beside the keyboard preview while keeping it visible":
+    "在键盘预览旁的窗口中编辑，同时保持预览可见",
+  "Read macros and combos from the keyboard again": "从键盘重新读取宏和组合键",
+  "Save macro and combo changes so they are kept after the keyboard restarts":
+    "保存宏和组合键更改，使其在键盘重启后仍然保留",
+  "Read connection profiles and settings from the keyboard again":
+    "从键盘重新读取连接配置和设置",
+  "Read all available diagnostic sections from the keyboard again":
+    "从键盘重新读取所有可用的诊断信息",
+  "Copy the collected diagnostic information to the clipboard for support":
+    "将已收集的诊断信息复制到剪贴板，以便提供给支持人员",
   "Module settings for new layers require Keymap to be selected.":
     "传输新层的模块设置需要同时选择键位映射。",
   // Keymap sharing preview

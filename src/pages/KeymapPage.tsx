@@ -794,6 +794,9 @@ export function KeymapPage() {
                       dropdown — see ResetVersionMenu. */}
                   <div className="flex-shrink-0">
                     <ResetVersionMenu
+                      title={t(
+                        "Restore the keymap to a previous version or its defaults",
+                      )}
                       versions={versionHistory.versions}
                       onSelectVersion={versionHistory.selectVersion}
                       disabled={keymap.isLoading}
@@ -841,6 +844,9 @@ export function KeymapPage() {
                   />
                   <ResponsiveButton
                     label={t("Save")}
+                    title={t(
+                      "Save the currently applied keymap so it is kept after the keyboard restarts",
+                    )}
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={
@@ -969,7 +975,11 @@ export function KeymapPage() {
                               <IconChevronDown size={19} />
                             </button>
                           </EditorTooltip>
-                          <EditorTooltip content={t("Rename current layer")}>
+                          <EditorTooltip
+                            content={t(
+                              "Change the name shown on the selected layer tab",
+                            )}
+                          >
                             <button
                               type="button"
                               className="keymap-settings-action"
@@ -982,7 +992,11 @@ export function KeymapPage() {
                               <IconPencil size={19} />
                             </button>
                           </EditorTooltip>
-                          <EditorTooltip content={t("Add new layer")}>
+                          <EditorTooltip
+                            content={t(
+                              "Add a layer for another set of key bindings",
+                            )}
+                          >
                             <button
                               type="button"
                               className="keymap-settings-action"
@@ -998,7 +1012,11 @@ export function KeymapPage() {
                               <IconPlus size={19} />
                             </button>
                           </EditorTooltip>
-                          <EditorTooltip content={t("Delete current layer")}>
+                          <EditorTooltip
+                            content={t(
+                              "Remove the selected layer and its key bindings",
+                            )}
+                          >
                             <button
                               type="button"
                               className="keymap-settings-action keymap-settings-action-danger"
@@ -1315,7 +1333,13 @@ export function KeymapPage() {
                 {/* Layer Add/Delete/Restore Buttons */}
                 <div className="hidden sm:flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
                   {/* Rename Layer Button */}
-                  <EditorTooltip content={<>{t("Rename current layer")}</>}>
+                  <EditorTooltip
+                    content={
+                      <>
+                        {t("Change the name shown on the selected layer tab")}
+                      </>
+                    }
+                  >
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleOpenRenameDialog}
@@ -1330,7 +1354,11 @@ export function KeymapPage() {
                   </EditorTooltip>
 
                   {/* Add Layer Button */}
-                  <EditorTooltip content={<>{t("Add new layer")}</>}>
+                  <EditorTooltip
+                    content={
+                      <>{t("Add a layer for another set of key bindings")}</>
+                    }
+                  >
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleAddLayer}
@@ -1347,7 +1375,11 @@ export function KeymapPage() {
                   </EditorTooltip>
 
                   {/* Delete Layer Button */}
-                  <EditorTooltip content={<>{t("Delete current layer")}</>}>
+                  <EditorTooltip
+                    content={
+                      <>{t("Remove the selected layer and its key bindings")}</>
+                    }
+                  >
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleDeleteLayer}
@@ -1444,7 +1476,11 @@ export function KeymapPage() {
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                   <div className="flex shrink-0 items-center gap-3">
                     {inputStream.isAvailable && (
-                      <EditorTooltip content={t("Toggle stream mode")}>
+                      <EditorTooltip
+                        content={t(
+                          "Highlight keys pressed on your keyboard when turned on",
+                        )}
+                      >
                         <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                           <span>{t("Stream")}</span>
                           <Switch.Root
@@ -2077,7 +2113,9 @@ export function KeymapPage() {
               </button>
             </EditorTooltip>
             {selectorMode === "floating" ? (
-              <EditorTooltip content={t("Switch to dialog mode")}>
+              <EditorTooltip
+                content={t("Edit in a dialog that covers the keyboard preview")}
+              >
                 <button
                   type="button"
                   className="p-1 rounded hover:bg-[var(--color-border)]"
@@ -2088,7 +2126,11 @@ export function KeymapPage() {
                 </button>
               </EditorTooltip>
             ) : (
-              <EditorTooltip content={t("Switch to floating mode")}>
+              <EditorTooltip
+                content={t(
+                  "Edit beside the keyboard preview while keeping it visible",
+                )}
+              >
                 <button
                   type="button"
                   className="p-1 rounded hover:bg-[var(--color-border)]"
@@ -2179,7 +2221,11 @@ export function KeymapPage() {
                     <IconChevronRight size={16} />
                   </button>
                 </EditorTooltip>
-                <EditorTooltip content={t("Switch to dialog mode")}>
+                <EditorTooltip
+                  content={t(
+                    "Edit in a dialog that covers the keyboard preview",
+                  )}
+                >
                   <button
                     type="button"
                     className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-40"
@@ -2195,7 +2241,11 @@ export function KeymapPage() {
               </div>
             </div>
           ) : (
-            <EditorTooltip content={t("Switch to floating mode")}>
+            <EditorTooltip
+              content={t(
+                "Edit beside the keyboard preview while keeping it visible",
+              )}
+            >
               <button
                 type="button"
                 className="p-1 rounded hover:bg-[var(--color-border)]"

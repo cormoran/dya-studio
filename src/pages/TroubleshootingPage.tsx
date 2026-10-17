@@ -168,6 +168,9 @@ export function TroubleshootingPage() {
           <div className="flex flex-wrap items-center gap-2">
             <ResponsiveButton
               label={t("Refresh All")}
+              title={t(
+                "Read all available diagnostic sections from the keyboard again",
+              )}
               onClick={refreshAll}
               className="btn-ghost flex items-center gap-2"
               aria-label={t("Refresh all sections")}
@@ -176,6 +179,9 @@ export function TroubleshootingPage() {
             </ResponsiveButton>
             <ResponsiveButton
               label={copied ? t("Copied!") : t("Copy Support Report")}
+              title={t(
+                "Copy the collected diagnostic information to the clipboard for support",
+              )}
               onClick={() => void copySupportReport()}
               className="btn-electric flex items-center gap-2"
               aria-label={t("Copy Support Report")}

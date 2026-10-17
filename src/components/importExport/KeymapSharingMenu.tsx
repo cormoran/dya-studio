@@ -62,6 +62,7 @@ export function KeymapSharingMenu({
         <Popover.Trigger asChild>
           <ResponsiveButton
             label={t("Save/share keymap")}
+            title={t("Manage your keymaps in the cloud with Keyboard Abyss")}
             className="btn-ghost border border-[var(--color-border)] text-sm flex items-center gap-1.5"
             disabled={disabled}
             trailingIcon={<IconChevronDown size={12} />}

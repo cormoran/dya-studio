@@ -45,6 +45,8 @@
 
 ## 現行の機能仕様
 
+KM-024: 主要操作の tooltip は、Stream が ON の間は押したキーボードのキーをハイライトすること、Reset が以前のバージョンや初期値に戻す入口であること、Save が現在適用中のキーマップを再起動後も維持するための保存であることを説明する。レイヤー名変更・追加・削除と editor の dialog/floating 切替も対象や表示結果を説明し、短いボタン名・accessible name は維持する。根拠: 2026-10-17 ユーザー要求、KeymapPage。文言変更のみで操作・保存境界は変更しない。
+
 KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示は[共通画面 SHELL-009/010/011](../modules/app-shell.md)、floating editor のviewport内配置は[binding editor BIND-011](../modules/binding-editor.md)に従う。モバイルでもlayer切替列とプレビューの個別横スクロールを保持し、bindingの座標・保存契約は変更しない（S1/S5、2026-09-20ユーザー要求）。
 
 | ID     | 前提 → 操作                                                     | 観測できる結果                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | 保存範囲・副作用                                                                                                                                                                                                                                                                             | 根拠                                                                                                 |
