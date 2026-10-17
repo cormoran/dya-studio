@@ -53,7 +53,7 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -93,7 +93,7 @@ export function AppLayout({
           <div className="sm:hidden shrink-0">
             <MobileDisplaySettings />
           </div>
-          <div className="hidden sm:flex items-center gap-4 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <LanguageToggle />
             <ThemeSelect />
           </div>

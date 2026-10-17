@@ -114,7 +114,7 @@ export function SplashScreen({
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-cyber opacity-30" />
-      <div className="absolute right-6 top-6 z-20 flex items-center gap-3">
+      <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5">
         <LanguageToggle />
         <ThemeSelect />
       </div>
