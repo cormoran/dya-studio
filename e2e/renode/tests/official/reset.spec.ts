@@ -50,7 +50,7 @@ test("Reset all settings restores the keyboard to firmware defaults (core.resetS
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(keyLabel(page, EDITED_KEYCODE).first()).toBeVisible();
 
-  const saveButton = page.getByRole("button", { name: "Save" });
+  const saveButton = page.getByRole("button", { name: "Save", exact: true });
   await expect(saveButton).toBeEnabled();
   await saveButton.click();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({

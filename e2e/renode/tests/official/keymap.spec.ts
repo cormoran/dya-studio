@@ -91,7 +91,7 @@ test("dya-studio Keymap tab: renders the keymap + behaviors and round-trips a bi
   ).toBeVisible();
 
   // 6) SAVE to the device (keymap.* set/save RPC over the emulated USB CDC).
-  const saveButton = page.getByRole("button", { name: "Save" });
+  const saveButton = page.getByRole("button", { name: "Save", exact: true });
   await expect(saveButton).toBeEnabled();
   await saveButton.click();
   // Save cleared the unsaved state: the status flips to "Saved" and Save disables.
