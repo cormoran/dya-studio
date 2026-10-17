@@ -9,6 +9,18 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Start on the default layer with other layers off. Follow the highlighted keys in order.":
+    "他のレイヤーをオフにして通常レイヤーに戻り、ハイライトされたキーを順に操作してください。",
+  "Unlock key positions": "ロック解除キーの位置",
+  "Hold key {{key}} on {{layer}} and keep holding.":
+    "{{layer}} のキー {{key}} を押し続けます。",
+  "Press and release key {{key}} on {{layer}}.":
+    "{{layer}} のキー {{key}} を押して離します。",
+  "Press Studio Unlock at key {{key}} on {{layer}}.":
+    "{{layer}} のキー {{key}}（Studio Unlock）を押します。",
+  "After unlocking, release any held keys. Click Retry if needed.":
+    "ロック解除後、押し続けていたキーを離してください。必要に応じて「再試行」を押してください。",
+
   "Update Abyss keymap": "Abyss のキーマップを更新",
   "Module settings for new layers require Keymap to be selected.":
     "新しいレイヤーのモジュール設定を転送するには、キーマップも選択してください。",
