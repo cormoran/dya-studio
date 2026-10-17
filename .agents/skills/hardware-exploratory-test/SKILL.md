@@ -176,6 +176,12 @@ read as separate stages. Match each to the page's persistence contract, includin
 immediate-save settings and split RPC fan-out. Do not apply keymap Save semantics
 to every domain. Verify unchanged neighbouring records and another domain at
 capacity checkpoints to expose corruption rather than only counting new rows.
+After Save and reboot, compare original records in the entire persistence scope,
+including unchanged firmware defaults. Verify enabled state, bindings/positions,
+parameters and overrides through fresh detail reads; a surviving name or list
+count is insufficient. A previously unverified flash baseline limits attribution
+of a mismatch, but does not make that mismatch acceptable. Stop, preserve it and
+review an exact restoration plan before further writes.
 
 Restore in dependency order: remove test bindings before deleting their macros,
 then restore each affected source and its globals, Save as required, fresh-read
