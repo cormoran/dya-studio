@@ -8,6 +8,7 @@
 - `playwright-cli` を使う場合は、開始前に [Playwright CLI 向けガイド](browser-tools/playwright-cli.md) を読む。
 - その他の環境では、提供されているブラウザ操作ツールとその skill/手順を使う。別ツールのコマンドや戻り値の形式を流用しない。必要な操作ができなければ制約を報告する。
 - Demo では再現できない firmware capability、RPC、保存・再読込を対象にする場合は repository の `renode-exploratory-test` skill を読み、shim を初回 navigation 前に注入できるブラウザツールを選ぶ。Renode を実機 WebSerial と同一視せず、ELF と emulator の条件を記録する。
+- DYA2 実機テストを依頼された場合は [hardware-exploratory-test](../../.agents/skills/hardware-exploratory-test/SKILL.md) を使う。実 transport、容量・resource 負荷、flash/再起動、split/sensor の観点を選び、実機は worker 一人ずつ占有する。RPC reboot と物理電源断の証拠は分ける。
 
 coordinator は worker にも利用するツールと環境別手順を渡し、同じ URL に到達できることを確認する。ブラウザが別ホストで動く場合、その localhost はアプリのホストと同じとは限らない。
 
