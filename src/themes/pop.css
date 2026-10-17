@@ -23,11 +23,11 @@
     --color-text-secondary: #554c46;
     --color-text-muted: #66584d;
     /* This token also fills information banners and hover backgrounds. */
-    --color-border: #c5e8fa;
+    --color-border: #dcebf2;
     --color-border-hover: #65cafa;
 
     --glass-bg: #f2faff;
-    --glass-border: #79c8ed;
+    --glass-border: #d4e8f2;
 
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
