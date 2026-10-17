@@ -122,6 +122,17 @@
   box-shadow: inset 0 0 0 1px #171717;
 }
 
+/* Bordered selections already have a 1px outline; avoid doubling it with an inset. */
+:root.neutral
+  button.border:is(
+    [class~="bg-[var(--color-electric)]/10"],
+    [class~="bg-[var(--color-electric)]/15"],
+    [class~="bg-[var(--color-electric)]/20"],
+    [class~="bg-[var(--color-neon)]/10"]
+  ):not(:disabled):not([role="switch"]) {
+  box-shadow: none;
+}
+
 /* Page-heading icons, current OS rows and informational status cards use these
    exact paired utilities. Warning/error surfaces use their own semantic colors. */
 :root.neutral
@@ -130,6 +141,14 @@
   div[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
   background: #ffffff;
   border-color: #171717;
+}
+
+/* Heading icons are decoration, so keep their white tiles lightly outlined. */
+:root.neutral
+  div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
+:root.neutral
+  div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
+  border-color: var(--color-border-hover);
 }
 
 /* USB/BLE icon circles and help/guidance panels share these border utilities.
