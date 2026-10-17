@@ -729,9 +729,9 @@ export function KeymapPage() {
     <div className="keymap-page app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+            <div className="hidden sm:block p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconKeyboard
                 size={24}
                 className="text-[var(--color-electric)]"
@@ -741,7 +741,7 @@ export function KeymapPage() {
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Keymap")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t("Configure key bindings and layers")}
               </p>
             </div>
@@ -749,7 +749,7 @@ export function KeymapPage() {
 
           {/* Action Buttons */}
           {connection.isConnected && keymap.keymap && (
-            <div className="keymap-actions flex flex-wrap items-center gap-2">
+            <div className="page-header-actions keymap-actions flex flex-wrap items-center gap-2">
               {/* Reading is allowed while locked, so Reload sits outside the
                   lock branch below. */}
               <ResponsiveButton

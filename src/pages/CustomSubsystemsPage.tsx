@@ -460,15 +460,15 @@ export function CustomSubsystemsPage() {
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+        <div className="page-header flex items-center gap-3 mb-6">
+          <div className="hidden sm:block shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
             <IconPuzzle size={24} className="text-[var(--color-electric)]" />
           </div>
           <div>
             <h1 className="text-xl font-medium text-[var(--color-text)]">
               {t("Custom Subsystems")}
             </h1>
-            <p className="text-sm text-[var(--color-text-muted)]">
+            <p className="page-header-description text-sm text-[var(--color-text-muted)]">
               {t(
                 "Available custom firmware subsystems and their web interfaces",
               )}

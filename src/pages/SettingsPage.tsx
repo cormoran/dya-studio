@@ -520,9 +520,9 @@ function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+            <div className="hidden sm:block shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconSettings
                 size={24}
                 className="text-[var(--color-electric)]"
@@ -532,7 +532,7 @@ function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Settings")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t("Device configuration and power management")}
               </p>
             </div>
@@ -540,7 +540,7 @@ function SettingsSessionPage({ settings }: { settings: UseSettingsReturn }) {
           {/* The page keeps its state across tab switches, so re-reading the
               device is an explicit action. */}
           {isAvailable && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="page-header-actions flex flex-wrap items-center gap-2">
               <ResponsiveButton
                 label={t("Reload")}
                 className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"

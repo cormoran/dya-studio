@@ -465,35 +465,37 @@ export function MacroComboPage() {
   return (
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+            <div className="hidden sm:block p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconWand size={24} className="text-[var(--color-electric)]" />
             </div>
             <div>
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Macro&Combo")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t("Edit runtime macro and combo slots")}
               </p>
             </div>
           </div>
 
           {connection.isConnected && anyAvailable && (
-            <div className="w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
-              <MobileMacroComboMenu
-                macros={mobileMacroItems}
-                combos={mobileComboItems}
-                settings={mobileSettingsItems}
-                onCreateMacro={macroAvailable ? handleCreateMacro : undefined}
-                onCreateCombo={
-                  comboAvailable && keymap.keymap ? handleNewCombo : undefined
-                }
-                createMacroDisabled={
-                  macroEditor.isCreating || runtimeMacro.isLoading
-                }
-              />
+            <div className="page-header-actions w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
+              <div className="page-header-selector desktop:hidden min-w-0 flex flex-1">
+                <MobileMacroComboMenu
+                  macros={mobileMacroItems}
+                  combos={mobileComboItems}
+                  settings={mobileSettingsItems}
+                  onCreateMacro={macroAvailable ? handleCreateMacro : undefined}
+                  onCreateCombo={
+                    comboAvailable && keymap.keymap ? handleNewCombo : undefined
+                  }
+                  createMacroDisabled={
+                    macroEditor.isCreating || runtimeMacro.isLoading
+                  }
+                />
+              </div>
               <ResponsiveButton
                 label={t("Refresh")}
                 title={t("Read macros and combos from the keyboard again")}

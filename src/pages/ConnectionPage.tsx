@@ -188,9 +188,9 @@ export function ConnectionPage() {
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
+            <div className="hidden sm:block p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPlugConnected
                 size={24}
                 className="text-[var(--color-cyber)]"
@@ -200,12 +200,12 @@ export function ConnectionPage() {
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Connection")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t("Manage connections, default layers and OS detection")}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="page-header-actions flex flex-wrap items-center gap-2">
             {/* Refresh Button */}
             {connection.isConnected && (
               <>

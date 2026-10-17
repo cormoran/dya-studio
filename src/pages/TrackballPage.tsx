@@ -652,27 +652,29 @@ export function TrackballPage() {
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
+            <div className="hidden sm:block shrink-0 p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPointer size={24} className="text-[var(--color-cyber)]" />
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Trackball Settings")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t(
                   "Adjust sensitivity and behavior via runtime input processor",
                 )}
               </p>
             </div>
           </div>
-          <div className="w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
-            <MobileTrackballMenu
-              processors={mobileProcessorItems}
-              drivers={mobileDriverItems}
-            />
+          <div className="page-header-actions w-full desktop:w-auto min-w-0 flex items-center gap-2 flex-nowrap">
+            <div className="page-header-selector desktop:hidden min-w-0 flex flex-1">
+              <MobileTrackballMenu
+                processors={mobileProcessorItems}
+                drivers={mobileDriverItems}
+              />
+            </div>
             <ResponsiveButton
               label={reloadSelectedLabel}
               className="desktop:hidden btn-ghost text-sm flex items-center gap-1.5"
@@ -687,7 +689,7 @@ export function TrackballPage() {
             </ResponsiveButton>
             {processor && rightView.kind === "processor" && (
               <EditorTooltip content={t("Toggle input test")}>
-                <div className="flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+                <div className="page-header-secondary-action flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
                   <span className="text-xs text-[var(--color-text-muted)]">
                     {t("Input test")}
                   </span>
