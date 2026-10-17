@@ -5,11 +5,11 @@
     font-family: "M PLUS Rounded 1c", var(--font-ui);
 
     /* Bright fills are separate from the darker accents used for text on white. */
-    --pop-sunshine: #ffd43b;
-    --pop-leaf: #4dd66d;
-    --pop-sky: #299bff;
-    --pop-sky-hover: #3ba3ff;
-    --pop-orange: #ffab40;
+    --pop-sunshine: #ffe478;
+    --pop-leaf: #83db9b;
+    --pop-sky: #65cafa;
+    --pop-sky-hover: #4fbceb;
+    --pop-coral: #ff9c86;
 
     --color-electric: #155b91;
     --color-neon: #217238;
@@ -19,15 +19,15 @@
     --color-bg: #ffffff;
     --color-surface: #ffffff;
     --color-surface-elevated: #ffffff;
-    --color-text: #182b56;
-    --color-text-secondary: #234472;
-    --color-text-muted: #35547c;
+    --color-text: #393735;
+    --color-text-secondary: #554c46;
+    --color-text-muted: #66584d;
     /* This token also fills information banners and hover backgrounds. */
-    --color-border: #fff0b8;
-    --color-border-hover: #299bff;
+    --color-border: #f9d9b9;
+    --color-border-hover: #65cafa;
 
-    --glass-bg: #ffe995;
-    --glass-border: #e0ad21;
+    --glass-bg: #ffe3c5;
+    --glass-border: #efb382;
 
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
@@ -44,7 +44,7 @@
   text-shadow: none !important;
 }
 
-/* Lemon cards yield to explicit warning and destructive surfaces. */
+/* Peach cards yield to explicit warning and destructive surfaces. */
 :root.pop
   :is(.glass-card, .glass-panel):not(.warning-banner):not(
     [class*="border-red-"],
@@ -129,7 +129,7 @@
 }
 
 :root.pop .select-field {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23234472' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23554c46' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
 }
 
 :root.pop
@@ -390,18 +390,18 @@
   font-family: var(--font-ui);
 }
 
-/* Orange marks page identity; blue remains the color of interactive selection. */
+/* Coral marks page identity; blue remains the color of interactive selection. */
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
-  background: var(--pop-orange);
+  background: var(--pop-coral);
   border-color: var(--glass-border);
 }
 
 /* Quiet key outlines let the vivid selection and modified states stand out. */
 :root.pop button.physical-key.border[class~="border-[var(--color-border)]"] {
-  border-color: #35628a;
+  border-color: var(--glass-border);
   border-width: 1px;
 }
 :root.pop
