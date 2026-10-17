@@ -654,7 +654,7 @@ export function TrackballPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
+            <div className="hidden sm:block shrink-0 p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPointer size={24} className="text-[var(--color-cyber)]" />
             </div>
             <div className="min-w-0 flex-1">

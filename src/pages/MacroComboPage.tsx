@@ -467,7 +467,7 @@ export function MacroComboPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+            <div className="hidden sm:block p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
               <IconWand size={24} className="text-[var(--color-electric)]" />
             </div>
             <div>
