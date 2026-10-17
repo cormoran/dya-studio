@@ -4,13 +4,15 @@
     --font-ui: "Inter", system-ui, -apple-system, sans-serif;
     font-family: "M PLUS Rounded 1c", var(--font-ui);
 
-    /* Bright fills are separate from the darker accents used for text on white. */
-    --pop-leaf: #83db9b;
+    /* Creamy Pastel × Pop: brighten with white, never muddy colors with gray.
+       Keep saturated accents small and separate from readable text colors. */
+    --pop-leaf: #9ee5bd;
     --pop-sky: #65cafa;
     --pop-sky-hover: #4fbceb;
     --pop-soft: #e4f5ff;
-    --pop-warning: #fff1c2;
-    --pop-leaf-hover: #6bd28a;
+    --pop-warning: #ffecad;
+    --pop-lilac: #dbc5ff;
+    --pop-leaf-hover: #83dba9;
 
     --color-electric: #155b91;
     --color-neon: #217238;
@@ -384,12 +386,12 @@
   font-family: var(--font-ui);
 }
 
-/* Soft blue heading tiles stay quieter than interactive selection. */
+/* A small lilac accent adds playfulness beside the ice-blue surfaces. */
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
-  background: var(--pop-soft);
+  background: var(--pop-lilac);
   border-color: transparent;
 }
 
