@@ -174,8 +174,3 @@
   background: #ffffff;
   border-color: #171717;
 }
-
-/* Only the icon beside the page title uses this subdued blue accent. */
-:root.neutral .app-page div.p-2.rounded-lg:has(+ div > h1) > svg {
-  color: #5273a3;
-}
