@@ -75,7 +75,7 @@ export function PhysicalLayoutModule({
         flex flex-col items-center justify-center gap-1 p-1.5 overflow-hidden
         ${
           module.enabled
-            ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5"
+            ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)]"
             : "bg-[var(--color-surface)]/70 border-dashed border-[var(--color-text-muted)]/40 text-[var(--color-text-muted)] opacity-70"
         }
         ${isRound ? "rounded-full" : "rounded-lg"}

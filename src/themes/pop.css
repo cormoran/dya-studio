@@ -401,8 +401,7 @@
   border-width: 1px;
 }
 :root.pop
-  button.physical-key.border[class~="border-[var(--color-border)]"]:hover,
-:root.pop .physical-layout-module[class~="border-[var(--color-border)]"]:hover {
+  button.physical-key.border[class~="border-[var(--color-border)]"]:hover {
   border-color: var(--color-electric);
 }
 
