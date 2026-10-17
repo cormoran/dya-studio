@@ -258,8 +258,10 @@ export function useComboEditor({
   );
 
   const validationError = useMemo(
-    () => validateCombo(draft, maxCombo, t),
-    [draft, maxCombo, t],
+    // The empty default draft is not an edit and must not block other saves.
+    // A selected draft remains an edit even when its modal is closed.
+    () => (selectedIndex === null ? null : validateCombo(draft, maxCombo, t)),
+    [draft, maxCombo, selectedIndex, t],
   );
 
   const handleDeleteCombo = useCallback(async () => {
@@ -278,10 +280,16 @@ export function useComboEditor({
         nextSet.delete(draft.index);
         return nextSet;
       });
-      selectDraft(nextDraft);
+      if (remaining.length > 0) {
+        selectDraft(nextDraft);
+      } else {
+        setDraft(nextDraft);
+        clearSelection();
+      }
     }
   }, [
     comboMemoryWrite,
+    clearSelection,
     draft.index,
     keymap.behaviors,
     maxCombo,

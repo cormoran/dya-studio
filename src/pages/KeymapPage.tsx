@@ -53,6 +53,7 @@ import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
 import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
+import { ComboDraftValidationAlert } from "../components/macroCombo/ComboDraftValidationAlert";
 import {
   comboEditStatus,
   formatComboBehavior,
@@ -429,6 +430,7 @@ export function KeymapPage() {
   // The page-level Save is the single flash-persistence boundary for both
   // keymap bindings and runtime combos.
   const handleSave = useCallback(async () => {
+    if (comboEditor.validationError) return;
     setIsSaving(true);
     try {
       await comboEditor.flushPendingWrites();
@@ -468,6 +470,7 @@ export function KeymapPage() {
           : Promise.resolve(null),
       ]);
       comboEditor.clearModified();
+      comboEditor.clearSelection();
       setShowComboEditor(false);
       setShowComboBindingSelector(false);
     } finally {
@@ -847,7 +850,7 @@ export function KeymapPage() {
                       isSaving ||
                       !hasUnsavedChanges ||
                       keymap.isLoading ||
-                      Boolean(comboEditor.validationError && showComboEditor)
+                      Boolean(comboEditor.validationError)
                     }
                   >
                     {isSaving ? (
@@ -1768,6 +1771,11 @@ export function KeymapPage() {
                   <p role="alert" className="text-sm text-red-400 mb-2">
                     {t(runtimeCombo.error)}
                   </p>
+                )}
+                {!showComboEditor && comboEditor.validationError && (
+                  <ComboDraftValidationAlert
+                    error={comboEditor.validationError}
+                  />
                 )}
                 {comboEditor.statusMessage && (
                   <p

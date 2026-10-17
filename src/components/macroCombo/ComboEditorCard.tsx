@@ -6,7 +6,6 @@
  */
 import { useMemo } from "react";
 import {
-  IconAlertTriangle,
   IconChevronDown,
   IconRestore,
   IconTrash,
@@ -36,6 +35,7 @@ import {
   MAX_NAME_LENGTH,
 } from "./comboUtils";
 import type { ComboEditorController } from "./useComboEditor";
+import { ComboDraftValidationAlert } from "./ComboDraftValidationAlert";
 
 interface ComboEditorCardProps {
   combo: ComboEditorController;
@@ -127,10 +127,7 @@ export function ComboEditorCard({
       </div>
 
       {combo.validationError && (
-        <div className="mb-4 p-3 rounded-lg border warning-banner text-sm flex items-center gap-2">
-          <IconAlertTriangle size={16} className="shrink-0" />
-          <span>{combo.validationError}</span>
-        </div>
+        <ComboDraftValidationAlert error={combo.validationError} />
       )}
 
       {/* Name (Slot removed) */}

@@ -289,6 +289,7 @@ export function MacroComboPage() {
       !hasPendingChanges ||
       macroEditor.encodedSizeError ||
       macroEditor.stringConversionError ||
+      comboEditor.validationError ||
       !requireUnlocked()
     )
       return;
@@ -555,6 +556,7 @@ export function MacroComboPage() {
                       isResetting ||
                       saveBlockedByLoading ||
                       !hasPendingChanges ||
+                      Boolean(comboEditor.validationError) ||
                       Boolean(macroEditor.encodedSizeError) ||
                       Boolean(macroEditor.stringConversionError)
                     }
