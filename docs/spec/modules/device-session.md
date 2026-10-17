@@ -114,6 +114,6 @@
 
 - 標準 alias `studio_unlock` の直接配置、`mo` / `lt` の保持、`to` / `tog` の押下から最大 3 回のレイヤー操作を探索する。layer parameter は stable ID でなく配列順 index として扱う。複数レイヤーは高い index を優先し、`trans` だけ下位へ透過する。保持中の物理位置は次の押下に使わず、保持中に他レイヤーを解除する `to` は候補にしない。最短の検出経路を一つ表示する。
 - 未対応 firmware、読み込み中・失敗、geometry / binding 不足、到達経路なし、custom behavior / macro / combo / conditional layer の内部だけにある解除など、確定できない場合は従来の 1 / 2 / 3 ステップと firmware 確認の注記を表示する。読み取り失敗は案内を妨げる alert にせず、この汎用説明へ戻す。
-- 接続の変更・modal close で旧読み取り結果を無効化する。案内用 RPC は unlock gate を通さず、再帰的な unlock 待ちを作らない。キーマップの書き換え・保存は行わず、Cancel / Retry / actual unlock による元操作の再開は SESSION-008–010 のまま。
+- 同じ接続・subsystem index の通常再描画では案内データを再取得せず、完了後の `getSnapshot` は増え続けない。接続・subsystem index の変更または対応復帰時は再読取りし、接続・index の変更・modal close で旧読み取り結果を無効化する。案内用 RPC は unlock gate を通さず、再帰的な unlock 待ちを作らない。キーマップの書き換え・保存は行わず、Cancel / Retry / actual unlock による元操作の再開は SESSION-008–010 のまま。
 
 根拠: [UnlockPrompt](../../../src/components/UnlockPrompt.tsx)、[useUnlockGuide](../../../src/hooks/useUnlockGuide.ts)、[findUnlockGuide](../../../src/lib/unlockGuide.ts)、[UnlockKeymapGuide](../../../src/components/UnlockKeymapGuide.tsx)。自動テストは経路探索・modal 表示・読み取りの失敗/接続切替を対象とし、実機での押下・unlock 通知は別途検証が必要。

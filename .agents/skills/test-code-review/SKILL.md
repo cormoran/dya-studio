@@ -53,6 +53,16 @@ then unreliable timing, duplicated setup, and maintenance-only simplifications.
 - Preserve meaningful accessibility, selected/changed state, viewport and lifecycle
   checks. A class assertion is not browser geometry evidence, but removing it
   without replacement may discard an existing regression guard.
+- For hooks/providers that auto-load or subscribe, review the render → dependency
+  → effect → state-update cycle. Check objects, arrays, inline codecs/options and
+  callbacks for identity churn; memoizing a wrapper does not stabilize a changing
+  dependency. Keep genuine connection/capability changes as reload boundaries.
+- Verify convergence after a successful baseline load and unrelated rerenders:
+  observe actual RPC/subscription/timer activity, not just rendered data. Preserve
+  real identity behavior in fixtures; a constant mock descriptor/callback can hide
+  a loop. Check that intended Reload/reconnect still runs and that polling or
+  StrictMode's bounded setup/cleanup is distinguished from unbounded work. See
+  the lifecycle example in [review knowledge](references/review-knowledge.md).
 - Fix the source of test warnings where practical. Do not globally suppress logs,
   loosen expectations to current behavior, or claim unexecuted paths passed.
 
