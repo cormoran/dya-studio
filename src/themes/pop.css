@@ -23,11 +23,11 @@
     --color-text-secondary: #234472;
     --color-text-muted: #35547c;
     /* This token also fills information banners and hover backgrounds. */
-    --color-border: #ffd2a0;
-    --color-border-hover: #d86a08;
+    --color-border: #fff0b8;
+    --color-border-hover: #299bff;
 
-    --glass-bg: #ffdbaf;
-    --glass-border: #d86a08;
+    --glass-bg: #ffe995;
+    --glass-border: #e0ad21;
 
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
@@ -44,7 +44,7 @@
   text-shadow: none !important;
 }
 
-/* Apricot cards yield to explicit warning and destructive surfaces. */
+/* Lemon cards yield to explicit warning and destructive surfaces. */
 :root.pop
   :is(.glass-card, .glass-panel):not(.warning-banner):not(
     [class*="border-red-"],
@@ -399,9 +399,10 @@
   border-color: var(--glass-border);
 }
 
-/* Give ordinary white keycaps a warm, distinct edge without masking states. */
+/* Quiet key outlines let the vivid selection and modified states stand out. */
 :root.pop .physical-key[class~="border-[var(--color-border)]"] {
-  border-color: var(--glass-border);
+  border-color: #35628a;
+  border-width: 1px;
 }
 :root.pop .physical-key[class~="border-[var(--color-border)]"]:hover {
   border-color: var(--color-electric);
