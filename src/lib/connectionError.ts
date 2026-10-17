@@ -5,10 +5,10 @@ export function connectionErrorMessage(error: string): string {
       error,
     )
   ) {
-    return "Could not open the keyboard connection. Another DYA Studio tab or app may be using it. Disconnect or close that tab or app, then try again. If it still fails, check the device permissions and reconnect the USB cable.";
+    return "Could not open the keyboard connection.\nAnother DYA Studio tab or app may be using it.\nDisconnect or close that tab or app, then try again.\nIf it still fails, check the device permissions and reconnect the USB cable.";
   }
   if (/connection timed out/i.test(error)) {
-    return "The keyboard did not respond in time. Check the connection and that ZMK Studio is enabled on the keyboard, then try again.";
+    return "The keyboard did not respond in time.\nCheck the connection and that ZMK Studio is enabled on the keyboard, then try again.";
   }
-  return "Could not connect to the keyboard. Check the connection and browser permissions, then try again. See error details for more information.";
+  return "Could not connect to the keyboard.\nCheck the connection and browser permissions, then try again.\nSee error details for more information.";
 }

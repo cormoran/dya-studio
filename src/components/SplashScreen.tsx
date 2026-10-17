@@ -286,7 +286,7 @@ export function SplashScreen({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm text-red-500">
+          <p className="text-sm whitespace-pre-line text-red-500">
             {t(connectionErrorMessage(error))}
           </p>
           <details
