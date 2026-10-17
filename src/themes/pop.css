@@ -9,6 +9,7 @@
     --pop-leaf: #9ee5bd;
     --pop-sky: #65cafa;
     --pop-sky-hover: #4fbceb;
+    --pop-focus: #3797c4;
     --pop-soft: #e4f5ff;
     --pop-warning: #ffecad;
     --pop-leaf-hover: #83dba9;
@@ -138,8 +139,8 @@
   ):focus-visible,
 :root.pop .input-field:focus,
 :root.pop .select-field:focus {
-  outline: 3px solid var(--color-cyber);
-  outline-offset: 2px;
+  outline: 2px solid var(--pop-focus);
+  outline-offset: 1px;
 }
 
 :root.pop .app-tab-list {
@@ -293,7 +294,8 @@
 }
 
 :root.pop [class~="ring-2"]:focus-visible {
-  outline-width: 3px;
+  outline: 2px solid var(--pop-focus);
+  outline-offset: 1px;
 }
 
 :root.pop .border-glow-electric {
