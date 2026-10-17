@@ -41,7 +41,11 @@ jest.mock("@zmkfirmware/zmk-studio-ts-client/transport/gatt", () => ({
 }));
 
 // Test component to verify ConnectionContext values
-function TestComponent() {
+function TestComponent({
+  method = "serial",
+}: {
+  method?: "serial" | "ble" | "demo";
+}) {
   const connection = useContext(ConnectionContext);
 
   return (
@@ -52,13 +56,16 @@ function TestComponent() {
       {connection.deviceName && (
         <div data-testid="device-name">{connection.deviceName}</div>
       )}
+      {connection.connectionMethod && (
+        <div data-testid="connection-method">{connection.connectionMethod}</div>
+      )}
       {connection.isLoading && <div data-testid="loading">Loading...</div>}
       {connection.error && <div data-testid="error">{connection.error}</div>}
       {connection.isReconnecting && (
         <div data-testid="reconnecting">Reconnecting...</div>
       )}
       <button
-        onClick={() => connection.onConnect("serial")}
+        onClick={() => connection.onConnect(method)}
         data-testid="connect-button"
       >
         Connect
@@ -144,36 +151,42 @@ describe("DeviceConnection", () => {
   });
 
   describe("Connection Flow", () => {
-    test("successfully connects to keyboard", async () => {
-      const user = userEvent.setup();
+    test.each(["serial", "ble", "demo"] as const)(
+      "exposes the active %s connection method",
+      async (method) => {
+        const user = userEvent.setup();
 
-      // Configure mocks for successful connection
-      mocks.mockSuccessfulConnection({
-        deviceName: "DYA Keyboard",
-        subsystems: [],
-      });
+        // Configure mocks for successful connection
+        mocks.mockSuccessfulConnection({
+          deviceName: "DYA Keyboard",
+          subsystems: [],
+        });
 
-      render(
-        <DeviceConnectionProvider>
-          <TestComponent />
-        </DeviceConnectionProvider>,
-      );
-
-      const connectButton = screen.getByTestId("connect-button");
-      await user.click(connectButton);
-
-      // Wait for connection to complete
-      await waitFor(() => {
-        expect(screen.getByTestId("connection-status")).toHaveTextContent(
-          "Connected",
+        render(
+          <DeviceConnectionProvider>
+            <TestComponent method={method} />
+          </DeviceConnectionProvider>,
         );
-      });
 
-      // Verify device name is displayed
-      expect(screen.getByTestId("device-name")).toHaveTextContent(
-        "DYA Keyboard",
-      );
-    });
+        const connectButton = screen.getByTestId("connect-button");
+        await user.click(connectButton);
+
+        // Wait for connection to complete
+        await waitFor(() => {
+          expect(screen.getByTestId("connection-status")).toHaveTextContent(
+            "Connected",
+          );
+        });
+
+        // Verify device name is displayed
+        expect(screen.getByTestId("device-name")).toHaveTextContent(
+          "DYA Keyboard",
+        );
+        expect(screen.getByTestId("connection-method")).toHaveTextContent(
+          method,
+        );
+      },
+    );
 
     test("disconnects from keyboard", async () => {
       const user = userEvent.setup();
@@ -209,6 +222,7 @@ describe("DeviceConnection", () => {
       });
 
       expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("connection-method")).not.toBeInTheDocument();
     });
   });
 
@@ -415,6 +429,7 @@ describe("DeviceConnection", () => {
         "Disconnected",
       );
       expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("connection-method")).not.toBeInTheDocument();
       expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
       expect(screen.queryByTestId("error")).not.toBeInTheDocument();
     });
@@ -436,6 +451,7 @@ describe("DeviceConnection", () => {
           "Connected",
         );
       });
+      expect(screen.getByTestId("connection-method")).toHaveTextContent("demo");
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       expect(require("../../lib/transport/demo").connect).toHaveBeenCalled();
     });
@@ -478,6 +494,7 @@ describe("DeviceConnection", () => {
       });
       expect(screen.getByTestId("connect-button")).toBeInTheDocument();
       expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("connection-method")).not.toBeInTheDocument();
       expect(screen.queryByTestId("reconnecting")).not.toBeInTheDocument();
     });
 
@@ -502,6 +519,9 @@ describe("DeviceConnection", () => {
       });
       expect(screen.getByTestId("device-name")).toHaveTextContent(
         "Auto Reconnected Keyboard",
+      );
+      expect(screen.getByTestId("connection-method")).toHaveTextContent(
+        "serial",
       );
       expect(mockPort.open).toHaveBeenCalledWith({ baudRate: 12500 });
       expect(screen.queryByTestId("reconnecting")).not.toBeInTheDocument();
@@ -593,6 +613,7 @@ describe("DeviceConnection", () => {
         "Disconnected",
       );
       expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("connection-method")).not.toBeInTheDocument();
     });
 
     test("cancelling while the reconnect is awaiting the RPC handshake resets the loading state instead of leaving the connect screen stuck", async () => {

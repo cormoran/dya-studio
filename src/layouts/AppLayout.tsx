@@ -12,6 +12,7 @@ interface AppLayoutProps {
   children: ReactNode;
   isConnected: boolean;
   deviceName?: string;
+  connectionMethod?: ConnectionMethod;
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isConnecting?: boolean;
@@ -22,6 +23,7 @@ export function AppLayout({
   children,
   isConnected,
   deviceName,
+  connectionMethod,
   onConnect,
   onDisconnect,
   isConnecting,
@@ -63,12 +65,23 @@ export function AppLayout({
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="status-indicator connected flex-shrink-0" />
-                <span
-                  className="truncate text-sm text-[var(--color-text-secondary)]"
-                  title={deviceName}
-                >
-                  {deviceName || t("Connected")}
-                </span>
+                <div className="flex min-w-0 flex-col">
+                  <span
+                    className="truncate text-xs leading-4 text-[var(--color-text-secondary)]"
+                    title={deviceName}
+                  >
+                    {deviceName || t("Connected")}
+                  </span>
+                  <span className="text-[10px] leading-3 text-[var(--color-text-muted)] whitespace-nowrap">
+                    {connectionMethod === "serial"
+                      ? "USB"
+                      : connectionMethod === "ble"
+                        ? "Bluetooth"
+                        : connectionMethod === "demo"
+                          ? "Demo"
+                          : t("Connected")}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={onDisconnect}
