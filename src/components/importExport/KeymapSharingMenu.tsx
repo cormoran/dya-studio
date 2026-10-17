@@ -73,7 +73,7 @@ export function KeymapSharingMenu({
           <Popover.Content
             align="end"
             sideOffset={8}
-            className="z-40 glass-card w-[min(25rem,calc(100vw-1rem))] max-h-[min(38rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3 space-y-3 shadow-xl text-[var(--color-text)]"
+            className="keymap-sharing-menu z-40 glass-card w-[min(25rem,calc(100vw-1rem))] max-h-[min(38rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3 space-y-3 shadow-xl text-[var(--color-text)]"
             aria-label={t("Save/share keymap")}
           >
             {auth.isAuthenticated ? (
