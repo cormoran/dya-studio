@@ -1,4 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import * as Popover from "@radix-ui/react-popover";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -16,6 +22,16 @@ import { useAbyssBrowseUrl } from "../../hooks/useAbyssBrowseUrl";
 import { KeymapSharingPreview } from "./KeymapSharingPreview";
 import abyssIcon from "../../assets/keyboard-abyss.svg";
 import { ResponsiveButton } from "../ResponsiveButton";
+
+const mobileQuery = "(max-width: 639px)";
+function subscribeToMobile(onChange: () => void) {
+  const media = window.matchMedia(mobileQuery);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+function isMobileViewport() {
+  return window.matchMedia(mobileQuery).matches;
+}
 
 export function KeymapSharingMenu({
   disabled,
@@ -36,6 +52,15 @@ export function KeymapSharingMenu({
     auth.user?.username,
   );
   const [open, setOpen] = useState(false);
+  const mobile = useSyncExternalStore(
+    subscribeToMobile,
+    isMobileViewport,
+    () => false,
+  );
+  const MenuRoot = mobile ? Dialog.Root : Popover.Root;
+  const MenuTrigger = mobile ? Dialog.Trigger : Popover.Trigger;
+  const MenuPortal = mobile ? Dialog.Portal : Popover.Portal;
+  const MenuContent = mobile ? Dialog.Content : Popover.Content;
   const browseUrl = useAbyssBrowseUrl(open);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -53,13 +78,13 @@ export function KeymapSharingMenu({
 
   return (
     <>
-      <Popover.Root
+      <MenuRoot
         open={open}
         onOpenChange={(value) => {
           setOpen(value);
         }}
       >
-        <Popover.Trigger asChild>
+        <MenuTrigger asChild>
           <ResponsiveButton
             label={t("Save/share keymap")}
             title={t("Manage your keymaps in the cloud with Keyboard Abyss")}
@@ -69,14 +94,37 @@ export function KeymapSharingMenu({
           >
             <IconCloud size={16} />
           </ResponsiveButton>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            align="end"
-            sideOffset={8}
-            className="keymap-sharing-menu z-40 glass-card w-[min(25rem,calc(100vw-1rem))] max-h-[min(38rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3 space-y-3 shadow-xl text-[var(--color-text)]"
+        </MenuTrigger>
+        {mobile && (
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+          </Dialog.Portal>
+        )}
+        <MenuPortal>
+          <MenuContent
+            {...(!mobile
+              ? { align: "end" as const, sideOffset: 8 }
+              : { "aria-describedby": undefined })}
+            className={
+              mobile
+                ? "keymap-sharing-menu fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-card w-[calc(100%-2rem)] max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-3 space-y-3 shadow-xl text-[var(--color-text)] break-words"
+                : "keymap-sharing-menu z-40 glass-card w-[min(25rem,calc(100vw-1rem))] max-h-[min(38rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3 space-y-3 shadow-xl text-[var(--color-text)]"
+            }
             aria-label={t("Save/share keymap")}
           >
+            {mobile && (
+              <div className="flex items-center justify-between gap-2">
+                <Dialog.Title className="text-base font-medium">
+                  {t("Save/share keymap")}
+                </Dialog.Title>
+                <Dialog.Close
+                  className="btn-ghost min-w-11 min-h-11 shrink-0 flex items-center justify-center"
+                  aria-label={t("Close")}
+                >
+                  <IconX size={20} />
+                </Dialog.Close>
+              </div>
+            )}
             {auth.isAuthenticated ? (
               <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-3">
                 {auth.user?.avatarUrl ? (
@@ -285,9 +333,9 @@ export function KeymapSharingMenu({
                 {t(error)}
               </p>
             )}
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+          </MenuContent>
+        </MenuPortal>
+      </MenuRoot>
       <input
         ref={file}
         type="file"
