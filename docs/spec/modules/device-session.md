@@ -60,6 +60,8 @@ PopのsplashではUSBをスカイブルー、BLEをミント、Demoをクリー�
 
 接続前の splash 右上にも Theme dropdown を表示し、言語と独立して配色を選択できる。選択肢・即時反映・localStorage 保存は [SHELL-005](app-shell.md) に従う。接続操作は発生しない。
 
+- SESSION-016: splash の開発者ガイド・リリースノートは、それぞれ `/developer-guide`・`/release-notes` の `href` を持つ通常リンクとして表示する。通常の左クリックのみ既存 SPA navigation を使い、Ctrl / Command / Shift / Alt を伴うクリックと中クリックは browser の標準動作を妨げない。リンク先のコピー・別タブ表示ができる。表示順・テーマのクラス・接続処理は SESSION-013 のまま。根拠: ユーザー明示要求（2026-10-18）、[issue #303](https://github.com/cormoran/dya-studio/issues/303)、S4 `navigateLink`。検索メタ情報は [SHELL-018–020](app-shell.md) を参照する。
+
 ## 代表ユーザーフロー
 
 ### F1: explicit Demo 接続と切断（SESSION-002/003/007）

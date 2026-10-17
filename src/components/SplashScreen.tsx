@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
+import type { MouseEvent } from "react";
 import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
@@ -22,6 +23,23 @@ interface SplashScreenProps {
   onShowReleaseNotes: () => void;
   /** Navigate to the connection-free keyboard developer guide. */
   onShowDeveloperGuide: () => void;
+}
+
+/** Preserve native link actions while keeping ordinary clicks in the SPA. */
+function navigateLink(
+  event: MouseEvent<HTMLAnchorElement>,
+  navigate: () => void,
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  event.preventDefault();
+  navigate();
 }
 
 function LoadingDots() {
@@ -250,14 +268,15 @@ export function SplashScreen({
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
           >
-            <button
-              onClick={onShowReleaseNotes}
+            <a
+              href="/release-notes"
+              onClick={(event) => navigateLink(event, onShowReleaseNotes)}
               className="hover:text-[var(--color-electric)] transition-colors underline"
             >
               {version
                 ? t("Release notes ({{version}})", { version })
                 : t("Release notes")}
-            </button>
+            </a>
             <a
               href="https://dya-studio-dev.cormoran707.workers.dev"
               target="_blank"
@@ -308,12 +327,13 @@ export function SplashScreen({
         animate={{ opacity: 1 }}
         transition={{ delay: 1.1 }}
       >
-        <button
-          onClick={onShowDeveloperGuide}
+        <a
+          href="/developer-guide"
+          onClick={(event) => navigateLink(event, onShowDeveloperGuide)}
           className="hover:text-[var(--color-electric)] transition-colors underline"
         >
           {t("Keyboard developer guide")}
-        </button>
+        </a>
       </motion.div>
 
       {/* Tagline */}

@@ -125,3 +125,48 @@ test.each([
     expect(screen.getByText(error)).toBeInTheDocument();
   },
 );
+
+test.each([
+  ["Keyboard developer guide", "/developer-guide", "guide"],
+  [/Release notes/, "/release-notes", "releases"],
+] as const)(
+  "provides a native link for %s and intercepts only ordinary clicks",
+  (name, href, target) => {
+    const guide = jest.fn();
+    const releases = jest.fn();
+    render(
+      <SplashScreen
+        onConnect={jest.fn()}
+        isConnecting={false}
+        error={null}
+        onShowDeveloperGuide={guide}
+        onShowReleaseNotes={releases}
+      />,
+    );
+    const link = screen.getByRole("link", { name });
+    expect(link).toHaveAttribute("href", href);
+    const callback = target === "guide" ? guide : releases;
+    for (const modifiers of [
+      { ctrlKey: true },
+      { metaKey: true },
+      { shiftKey: true },
+      { altKey: true },
+      { button: 1 },
+    ]) {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        ...modifiers,
+      });
+      link.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+      expect(callback).not.toHaveBeenCalled();
+      // Prevent jsdom's asynchronous navigation after checking native semantics.
+      event.preventDefault();
+    }
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(callback).toHaveBeenCalledTimes(1);
+  },
+);

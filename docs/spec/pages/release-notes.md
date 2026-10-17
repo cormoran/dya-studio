@@ -32,6 +32,8 @@ route は AppContent の connection gate より前で return され、`/release-
 | released empty     | version/date と `No changes recorded for this release.` | 同上                                         |
 | hash target absent | card は通常表示                                         | no-op。error/notification はない             |
 
+公開ページの title / description / canonical / OGP と sitemap 掲載は [SHELL-018–020](../modules/app-shell.md) に従う。本文の静的生成・言語別 URL はこの段階では対象外。
+
 ## 現行の機能仕様
 
 REL-007: モバイル幅でBackの文字を隠してもaccessible name `Back`（翻訳に追従）を保持し、戻る操作を識別できる（S1のheader）。

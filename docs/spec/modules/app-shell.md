@@ -55,6 +55,14 @@
 
 2026-10-17 ユーザー要求に基づくテーマ追加。Pop のコンセプトは「クリーミーパステル × ポップ」。灰色を混ぜてくすませず、白を混ぜたような明るい発色と、小面積の鮮やかなアクセントを両立する。配色意図は [テーマのデザイン方針](../../../src/themes/README.md) に記録する。Pop は白い画面にアイスブルー（#f2faff）のカードを配置し、カードは枠線を表示せず背景との色差で区切る。通常の本文・説明文・アイコンは柔らかいチャコール系とし、通常の境界・hover背景もスカイブルー系に揃え、無効な操作はグレーで区別する。通常の白いキーも枠線を表示せず背景との色差で形を示し、hover・選択・変更状態の意味色とfocus outlineは維持する。ページ見出しアイコンと通常の説明パネルは淡い青（#e4f5ff）の背景とし、枠線は表示しない。補助操作・変更状態には明るいミント（#9ee5bd）を使う。説明に装飾的な黄色を使わず、緑・青の操作のhoverも同系色を維持する。主要ボタン・接続ボタンは塗りで区別し、濃い輪郭や太い枠を使わない。入力欄は白と薄い青の1px枠とする。警告は明るいクリームイエロー（#ffecad）、エラーは薄い赤（#fff0ee）の面と意味色の文字・アイコンで区別し、これらも強い外枠を付けない。Homeの注意書きやwarning tokenを使う操作も、濃い警告文字色の半透明背景ではなく同じ不透明クリーム色を使う。入力欄は白背景、主要ボタンと選択中の項目はミルキーなスカイブルー（#65cafa）と濃い文字で示す。主要操作は青系を維持し、選択中タブの下線には差し色として柔らかいクリーミーピンクを使う。削除・エラーは意味色と文言・アイコンで区別する。カード・ボタン・入力欄・見出しアイコン等の共通部品にもこの配色を適用し、半透明のくすんだアクセントや装飾的な影・発光を使わない。メインタブは背景を塗りつぶさず、選択中の下辺に5pxのクリーミーピンク（#ff91a6）のラインを表示する。入力欄・select等のfocusとキーボードfocusは影に依存せず、スカイブルー（#3797c4）の2px outline・offset 1pxで示す。明るい塗りの上は濃い文字・アイコン、白地のリンクやアクセント文字は同系統の濃色を使い、配色の明るさと可読性を両立する。Pop の本文・説明文は M PLUS Rounded 1c の400、見出しと選択中メインタブは700、通常タブ・ボタン・ヘッダーのDYA STUDIO文字は500を使い、入力欄・物理キーの刻印・コードは既存フォントを維持する。Pop が選択された時（保存済みPopでの起動を含む）だけ Google Fonts CDN の stylesheet を非同期で読み込み、font-display: swap により読み込み中・失敗時も既存フォントで操作できる。初期テーマが他のテーマの場合はPop用フォントをCDNへ要求しない（既存のInter等の読み込みは維持）。同一ページ内では読み込み中・成功済みのstylesheetを再利用し、stylesheet取得失敗後は次回Pop選択時に再試行する。別テーマへ切り替えると即座に既存フォントへ戻し、Pop用stylesheet自体も無効化する。Popへ戻すと再有効化して再利用する。Neutral は Light の青みを抜いた白主体の配色で、カード・ヘッダーは白とする。主要ボタンと選択中の操作は白背景と明瞭な黒枠で示し、グレーの塗りを選択のアクセントに使わない。無効な操作はグレーで区別する。選択レイヤーや接続画面のUSB・BLE・Demo等のアクセントボタンは、既存枠に内側の線を重ねず、細い1pxの枠とする（有効時は白背景と黒枠）。ページ見出しアイコンの枠は薄いグレーとし、アイコン本体も無彩色とする。選択中のメインタブの下線も無彩色とし、線幅は既存の2pxを維持する。ページ見出し・接続先のアイコン背景は白、説明パネルは白またはごく薄いグレーとし、警告・エラーの意味色は維持する。Pastel は削除し、旧保存値 `pastel` は未知値と同様に OS 設定へ fallback する。SHELL-005 の共通 selector は [ThemeSelect](../../../src/components/ThemeSelect.tsx)。接続前の SplashScreen・接続中の AppLayout、モバイル表示設定、Developer Guide で同じ選択肢を提供する。選択確定で即時保存し、dropdown を開くだけでは変更しない。トリガーはカラーパレットアイコンのみを表示し、テーマ名や下矢印は表示しない。accessible name は「Theme / テーマ」、title は現在のテーマ名を含む。カスタムポップオーバー内に4テーマ名と選択中のチェックを表示する。開くと選択中の項目へ focus し、上下矢印・Home/End で項目移動、Enter/Space で選択・保存して閉じる。項目移動だけでは保存しない。Escape・外側クリックで変更せず閉じ、選択・Escape 後はトリガーへ focus を戻す。モバイル表示設定内でも同じカスタムメニューを使用する。追加テーマはいずれも light color-scheme とし、GitHub ロゴは黒版を使用する。
 
+### 公開ページの検索メタ情報
+
+- SHELL-018: トップの初期 HTML は ZMK キーボードのキーマップ・設定エディターであることを title / meta description / OGP で説明する。JavaScript 実行後はトップ・既知の開発者ガイド11 route・リリースノートの title / description / og:title / og:description / og:url が現在のページと言語に追従し、SPA 遷移、Back/Forward、言語変更後にも前ページの値を残さない。guide の中文選択時は本文と同様に英語へ fallback する。根拠: ユーザー明示要求（2026-10-18）、[issue #303](https://github.com/cormoran/dya-studio/issues/303)、[metadata](../../../src/lib/seo.ts) `getPageMetadata`、[hook](../../../src/hooks/usePageMetadata.ts) `usePageMetadata`、S1/S2。
+- SHELL-019: canonical は既知の公開ページにだけ1個設定し、`https://studio.dya.cormoran.works` と現在の公開 pathname を使用する。query / hash は含めない。OAuth callback・接続必須画面・未知 route では前ページの canonical を削除し、OG URL は本番トップにする。初期 HTML に全 route 共通のトップ canonical を埋めず、JavaScript 実行後に設定する。本段階では本文の静的生成・言語別 URL / hreflang は提供しない。根拠: 同 issue、同 metadata/hook。
+- SHELL-020: `/sitemap.xml` は本番 URL のトップ・既知の開発者ガイド11 route・リリースノートのみを掲載する。接続必須画面・OAuth callback・未知 route・query / hash は含めない。`/robots.txt` は crawl を許可して本番 sitemap を案内する。sitemap 非掲載は noindex / アクセス制御を意味しない。ファイルは Web build に含まれるが、検索エンジンの登録・順位は保証しない。根拠: 同 issue、[sitemap](../../../public/sitemap.xml)、[robots](../../../public/robots.txt)、[metadata tests](../../../src/hooks/__tests__/usePageMetadata.test.tsx)。route 追加時には sitemap と公開 route 一覧も更新する。
+
+これらは document head と公開静的ファイルの表示契約であり、device RAM / flash や外部サービスへ書込まない。言語設定の保存範囲は SHELL-006 のまま。metadata の network fetch・loading・saving・retry UI は存在しない。検索エンジンによる JavaScript rendering / indexing は別途実測が必要。
+
 ## 代表ユーザーフロー
 
 1. Demo で Home → Keymap。URL `/keymap` と tab を確認（SHELL-001）。
@@ -62,6 +70,8 @@
 3. browser Back/Forward。履歴に対応した tab を確認（SHELL-003）。
 4. Home → 他のタブ → Home でヘッダーの中央・左端間の移動を確認する。1024px未満では常に左揃え、640px未満ではロゴのみとなること、動きを抑える設定では即時切替になることも確認する（SHELL-015）。
 5. 元の theme/language を記録する。言語ドロップダウンで3言語を直接選び、選択名・翻訳・html lang を確認する。browser reload 後の選択維持、Escape 取消しで値が変わらないことを確認し、元の言語に戻して再読込する（SHELL-005/006）。他 worker とは別 origin を使用。
+
+6. トップ → guide の module page → Release Notes → browser Back/Forward を移動し、各ページと言語に title / description / canonical / OGP が追従することを document head で確認する。query / hash 付きで直接開いても canonical に含まれないこと、公開ページから通常編集 route に移ると canonical が残らないことを確認する（SHELL-018/019）。`/sitemap.xml` と `/robots.txt` は HTTP で内容を確認し、検索登録済みとは扱わない（SHELL-020）。
 
 ## 不変条件
 

@@ -29,6 +29,8 @@
 | module guides         | `/modules/keymap`, `/modules/trackball`, `/modules/connection`, `/modules/settings`, `/modules/diagnostics` |
 | reference / recovery  | `/reference/keyboard-config`, `/troubleshooting`                                                            |
 
+公開ページの title / description / canonical / OGP と sitemap 掲載は [SHELL-018–020](../modules/app-shell.md) に従う。本文の静的生成・言語別 URL はこの段階では対象外。
+
 ## 現行の機能仕様
 
 | ID        | 前提 → 操作                                              | 観測できる結果                                                                                                         | 保存範囲・副作用                                            | 根拠        |
