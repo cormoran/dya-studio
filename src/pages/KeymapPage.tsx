@@ -909,7 +909,7 @@ export function KeymapPage() {
               data-editing={isEditingLayers}
             >
               <span className="text-sm font-medium text-[var(--color-text-muted)]">
-                Layer
+                {t("Layer")}
               </span>
               <KeymapLayerTabs
                 layers={keymap.keymap.layers}
@@ -1036,7 +1036,7 @@ export function KeymapPage() {
                 ) : (
                   <ResponsiveButton
                     label={t("Edit layers")}
-                    className="btn-ghost text-sm flex items-center gap-1.5"
+                    className="keymap-layer-edit btn-ghost text-sm flex items-center gap-1.5"
                     onClick={() =>
                       withUnlock(() => {
                         closeSelector();

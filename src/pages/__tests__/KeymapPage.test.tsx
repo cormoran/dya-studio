@@ -1718,8 +1718,12 @@ describe("KeymapPage", () => {
       await user.click(
         screen.getByRole("button", { name: "Finish layer editing" }),
       );
-      await user.click(lower);
-      expect(lower).toHaveAttribute("aria-pressed", "true");
+      const normalLower = screen.getByRole("button", {
+        name: "Lower",
+        exact: true,
+      });
+      await user.click(normalLower);
+      expect(normalLower).toHaveAttribute("aria-pressed", "true");
     });
 
     it("reorders using arrow keys and preserves the preview layer identity", async () => {

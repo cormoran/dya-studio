@@ -179,3 +179,11 @@
   border-color: var(--color-text);
   color: var(--color-text);
 }
+
+/* Match the original 20px line + 8px vertical padding + 1px border tabs. */
+.keymap-layer-toolbar[data-editing="false"] .keymap-layer-edit {
+  height: 2.375rem;
+  min-height: 2.375rem;
+  padding: 0.5rem 0.75rem;
+  line-height: 1.25rem;
+}

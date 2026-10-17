@@ -87,6 +87,22 @@ function LayerItem({
   const controls = useDragControls();
   const name = layer.name || t("Layer {{id}}", { id: index });
   const reorderLabel = t("Reorder layer {{layer}}", { layer: name });
+  if (!props.editing) {
+    return (
+      <button
+        type="button"
+        className={`keymap-layer px-4 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${
+          index === props.selectedIndex
+            ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+            : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-border)]"
+        }`}
+        onClick={() => props.onSelect(index)}
+        aria-pressed={index === props.selectedIndex}
+      >
+        {name}
+      </button>
+    );
+  }
   return (
     <Reorder.Item
       as="div"
