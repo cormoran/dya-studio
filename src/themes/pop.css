@@ -5,11 +5,11 @@
     font-family: "M PLUS Rounded 1c", var(--font-ui);
 
     /* Bright fills are separate from the darker accents used for text on white. */
-    --pop-sunshine: #ffe478;
     --pop-leaf: #83db9b;
     --pop-sky: #65cafa;
     --pop-sky-hover: #4fbceb;
-    --pop-coral: #ff9c86;
+    --pop-soft: #e4f5ff;
+    --pop-leaf-hover: #6bd28a;
 
     --color-electric: #155b91;
     --color-neon: #217238;
@@ -24,7 +24,7 @@
     --color-text-muted: #66584d;
     /* This token also fills information banners and hover backgrounds. */
     --color-border: #dcebf2;
-    --color-border-hover: #65cafa;
+    --color-border-hover: #c5e4f3;
 
     --glass-bg: #f2faff;
     --glass-border: #d4e8f2;
@@ -51,6 +51,8 @@
     [class*="bg-red-"],
     [class*="border-amber-"],
     [class*="bg-amber-"],
+    [class*="border-yellow-"],
+    [class*="bg-yellow-"],
     [class~="border-[var(--color-warning)]"],
     [class~="bg-[var(--color-warning)]/10"]
   ) {
@@ -59,7 +61,7 @@
 }
 
 :root.pop :is(.glass-card, .glass-panel)[class*="border-red-"] {
-  border-color: #f3b4ae;
+  border-color: transparent;
 }
 
 :root.pop :is(.glass-card, .glass-panel)[class*="bg-red-"] {
@@ -69,62 +71,52 @@
 :root.pop
   :is(.glass-card, .glass-panel):is(
     [class*="border-amber-"],
+    [class*="border-yellow-"],
     [class~="border-[var(--color-warning)]"]
   ) {
-  border-color: var(--color-warning);
+  border-color: transparent;
 }
 
 :root.pop
   :is(.glass-card, .glass-panel):is(
     [class*="bg-amber-"],
+    [class*="bg-yellow-"],
     [class~="bg-[var(--color-warning)]/10"]
   ) {
-  background: #fff3bf;
+  background: #fff7df;
 }
 
 :root.pop .btn-electric,
 :root.pop .btn-neon {
   color: var(--color-text);
-  border-width: 2px;
+  border-width: 1px;
 }
 
 :root.pop .btn-electric {
   background: var(--pop-sky);
-  border-color: var(--color-electric);
+  border-color: transparent;
 }
 
 :root.pop .btn-neon {
   background: var(--pop-leaf);
-  border-color: var(--color-neon);
+  border-color: transparent;
 }
 
 :root.pop .btn-electric:not(:disabled):hover {
   background: var(--pop-sky-hover);
-  border-color: var(--color-electric);
+  border-color: transparent;
 }
 
 :root.pop .btn-neon:not(:disabled):hover {
-  background: var(--pop-sunshine);
-  border-color: var(--color-neon);
+  background: var(--pop-leaf-hover);
+  border-color: transparent;
 }
 
-/* Thicken actual card/control borders, leaving keyboard geometry, switch
-   tracks/thumbs, badges and single-edge separators at their original sizes. */
-:root.pop
-  :is(button, a, input, select, textarea).border:not([role="switch"]):not(
-    .rounded-full
-  ),
-:root.pop div.border.rounded-lg,
-:root.pop div.border.rounded-xl,
-:root.pop section.border.rounded-lg,
+/* Inputs retain a quiet boundary; decorative frames do not compete with focus. */
 :root.pop .input-field,
 :root.pop .select-field {
-  border-width: 2px;
-}
-
-:root.pop .input-field,
-:root.pop .select-field {
-  border-color: var(--pop-sky);
+  border-color: var(--color-border);
+  border-width: 1px;
   background-color: #ffffff;
 }
 
@@ -230,7 +222,7 @@
 :root.pop [class~="hover:bg-[var(--color-neon)]/20"]:not(:disabled):hover,
 :root.pop [class~="hover:bg-[var(--color-neon)]/50"]:not(:disabled):hover,
 :root.pop [class~="hover:bg-[var(--color-neon)]/80"]:not(:disabled):hover {
-  background-color: var(--pop-sunshine);
+  background-color: var(--pop-leaf-hover);
   color: var(--color-text);
 }
 
@@ -254,7 +246,7 @@
 :root.pop [class~="hover:bg-[var(--color-cyber)]/20"]:not(:disabled):hover,
 :root.pop [class~="hover:bg-[var(--color-cyber)]/50"]:not(:disabled):hover,
 :root.pop [class~="hover:bg-[var(--color-cyber)]/80"]:not(:disabled):hover {
-  background-color: var(--pop-sunshine);
+  background-color: var(--pop-sky-hover);
   color: var(--color-text);
 }
 
@@ -309,7 +301,8 @@
 :root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"],
 :root.pop button.rounded-full[class~="bg-[var(--color-neon)]/10"],
 :root.pop button.rounded-full[class~="bg-[var(--color-cyber)]/10"] {
-  border-width: 3px;
+  border-width: 1px;
+  border-color: transparent;
 }
 
 :root.pop button.rounded-full[class~="bg-[var(--color-electric)]/10"] svg,
@@ -321,13 +314,13 @@
 /* Disabled controls lose their bright fill even if selected. */
 :root.pop :is(button, input, select, textarea):disabled {
   background-color: #ededed;
-  border-color: #a0a0a0;
+  border-color: transparent;
   color: #626262;
 }
 
 :root.pop .warning-banner {
-  border-color: var(--color-warning);
-  background-color: #fff3bf;
+  border-color: transparent;
+  background-color: #fff7df;
   color: #704500;
 }
 
@@ -352,16 +345,16 @@
   ):not(:disabled),
 :root.pop select.border:not(:disabled),
 :root.pop textarea.border:not(:disabled) {
-  border-color: var(--pop-sky);
+  border-color: var(--color-border);
+  border-width: 1px;
   background-color: #ffffff;
 }
 
-/* Neutral inline guidance panels use the fourth palette color. Semantic
-   warning/error banners use different classes and keep their meaning colors. */
+/* Explanations use the same soft blue as decorative icons, not warning yellow. */
 :root.pop
   div.rounded-lg[class~="bg-[var(--color-border)]"][class~="border-[var(--color-border-hover)]"] {
-  background-color: var(--pop-sunshine);
-  border-color: #a36a00;
+  background-color: var(--pop-soft);
+  border-color: transparent;
   color: var(--color-text);
 }
 
@@ -390,13 +383,13 @@
   font-family: var(--font-ui);
 }
 
-/* Coral marks page identity; blue remains the color of interactive selection. */
+/* Soft blue heading tiles stay quieter than interactive selection. */
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-electric)]/10"][class~="border-[var(--color-electric)]/20"],
 :root.pop
   div.p-2.rounded-lg[class~="bg-[var(--color-cyber)]/10"][class~="border-[var(--color-cyber)]/20"] {
-  background: var(--pop-coral);
-  border-color: #f0806c;
+  background: var(--pop-soft);
+  border-color: transparent;
 }
 
 /* Borderless white keys soften the surface; selection and focus stay clear. */
@@ -407,4 +400,8 @@
 :root.pop
   button.physical-key.border[class~="border-[var(--color-border)]"]:hover {
   border-color: var(--color-electric);
+}
+
+:root.pop .physical-key[aria-current="true"] {
+  border-width: 2px;
 }
