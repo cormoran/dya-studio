@@ -12,6 +12,8 @@ import type { MacroEditorController } from "./useMacroEditor";
 
 interface MacroEditorDialogProps {
   open: boolean;
+  /** Hide a retained editor without resetting its cancellation baseline. */
+  visible?: boolean;
   /** Creation edits stay local until Create macro is pressed. */
   mode: "create" | "edit";
   editSlot?: number;
@@ -26,6 +28,7 @@ interface MacroEditorDialogProps {
 /** Runtime macro editing from the key-binding selector. */
 export function MacroEditorDialog({
   open,
+  visible = true,
   mode,
   editSlot,
   onOpenChange,
@@ -87,7 +90,13 @@ export function MacroEditorDialog({
     }
   }, [baseline?.slot, editSlot, macro.loadedMacro, mode, open]);
 
+  useEffect(() => {
+    // Keep the editor draft/baseline, but return to editing after navigation.
+    if (!visible) setConfirmClose(false);
+  }, [visible]);
+
   const handleRequestOpenChange = (nextOpen: boolean) => {
+    if (!visible) return;
     if (nextOpen) {
       onOpenChange(true);
     } else if (isSaving || isRestoring || runtimeMacro.isLoading) {
@@ -135,10 +144,13 @@ export function MacroEditorDialog({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleRequestOpenChange}>
+    <Dialog.Root open={open && visible} onOpenChange={handleRequestOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
         <Dialog.Content
+          onCloseAutoFocus={(event) => {
+            if (!visible) event.preventDefault();
+          }}
           aria-describedby={undefined}
           className="fixed left-1/2 top-1/2 z-[60] flex h-[min(90dvh,760px)] w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
         >
@@ -246,14 +258,17 @@ export function MacroEditorDialog({
         </Dialog.Content>
       </Dialog.Portal>
       <Dialog.Root
-        open={confirmClose}
+        open={confirmClose && visible}
         onOpenChange={(nextOpen) => {
-          if (!isRestoring) setConfirmClose(nextOpen);
+          if (visible && !isRestoring) setConfirmClose(nextOpen);
         }}
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/60" />
           <Dialog.Content
+            onCloseAutoFocus={(event) => {
+              if (!visible) event.preventDefault();
+            }}
             aria-describedby={undefined}
             className="fixed left-1/2 top-1/2 z-[80] w-[min(90vw,440px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-2xl"
           >

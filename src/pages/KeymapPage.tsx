@@ -2049,6 +2049,7 @@ export function KeymapPage({
       {/* Restore-a-version diff modal (opened from the reset dropdown) */}
       <VersionDiffModal
         {...versionHistory.diffModalProps}
+        open={versionHistory.diffModalProps.open && isTabActive}
         labeler={versionHistory.labeler}
       />
 
@@ -2154,7 +2155,8 @@ export function KeymapPage({
       {/* Keycode Selector Dialog */}
       <MacroEditorDialog
         key={macroEditorSession}
-        open={macroEditorMode !== null && isTabActive}
+        open={macroEditorMode !== null}
+        visible={isTabActive}
         mode={macroEditorMode ?? "edit"}
         editSlot={macroEditorSlot}
         onOpenChange={(open) => {
