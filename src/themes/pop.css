@@ -492,3 +492,24 @@
   background-color: var(--pop-soft);
   border-color: transparent;
 }
+
+/* Three connection choices, echoed softly by the surrounding rings. */
+:root.pop button.splash-demo-button:not(:disabled) {
+  background-color: var(--pop-rose);
+}
+
+:root.pop button.splash-demo-button:not(:disabled):hover {
+  background-color: #ff7f98;
+}
+
+:root.pop .splash-ring-inner {
+  border-color: #bde9fc;
+}
+
+:root.pop .splash-ring-middle {
+  border-color: #c6eed8;
+}
+
+:root.pop .splash-ring-outer {
+  border-color: #ffd0d9;
+}

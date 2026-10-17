@@ -56,6 +56,8 @@
 
 - SESSION-014: splash の接続エラーは選択中の言語で原因・対処を表示し、文ごとに改行して読みやすくする。serial / WebUSB の open 失敗および CDC interface の claim 失敗は、別タブや他アプリの使用の可能性を示し、切断または終了後の再試行、アクセス権限と USB ケーブルの確認を案内する（占有とは断定しない）。接続 timeout は応答と ZMK Studio 有効化の確認、それ以外は一般的な接続・権限の確認を案内する。元のエラーは既定で閉じた `Error details`（日本語: `エラーの詳細`）で展開できる。表示中の言語切替にも追従する。エラーは自動消去せず、既存の接続ボタンから再試行でき、次の接続開始時に消える。診断用の原文・telemetry・接続処理・保存先は変更しない。根拠: ユーザー明示要求（2026-10-17）、S4 `SplashScreen`、[connectionError](../../../src/lib/connectionError.ts) `connectionErrorMessage`。
 
+PopのsplashではUSBをスカイブルー、BLEをミント、Demoをクリーミーピンクで表示し、周囲の3本の円は内側から淡い青・ミント・ピンクとする。接続ラベル・可用性・disabled表示・接続処理は維持する（SESSION-013、S4、2026-10-17ユーザー要求）。
+
 接続前の splash 右上にも Theme dropdown を表示し、言語と独立して配色を選択できる。選択肢・即時反映・localStorage 保存は [SHELL-005](app-shell.md) に従う。接続操作は発生しない。
 
 ## 代表ユーザーフロー
