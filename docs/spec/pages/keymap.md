@@ -39,7 +39,7 @@
 - selector の header は `layer · Key position 0: binding` のように、preview と同じ0始まりの位置と、開いた時点の binding を示す。floating の右側には選択中 behavior の説明を表示する。
 - loading: 進行ラベルを表示。キーが先に見えても背景の behavior/layer 読込が終わるまで待つ。Reload は読込中無効。
 - ready: layer ボタン群と keyboard preview。dirty: `Unsaved changes`、Save 有効。保存済みは `Saved`（初期値から変更された保存済み binding は別の色/tooltip）。
-- locked: Save/Reset に代えて `Locked`。閲覧/Reload は可能。編集は共有 unlock prompt を経由する。Demo で任意の lock/RPC failure を起こす UI は未確認。
+- locked: Save/Reset に代えて `Locked`。閲覧/Reload は可能。編集は共有 unlock prompt を経由する。解除キーの配置図と汎用説明へのフォールバックは [SESSION-015](../modules/device-session.md#ロック解除キー案内session-015) に従う。Demo で任意の lock/RPC failure を起こす UI は未確認。
 - unsupported: Stream は対応時のみ。物理 layout の select は複数 layout 時のみ。sensor rotation 非対応は警告と導入リンク。空の layer 一覧ではキー配列・保存状態・sensor 設定を表示しない。layer を対象とする up/down・Rename・Delete は無効。Add/Restore は既存の容量・削除済み ID 条件に従う。Reload と keymap/combo 全体の Save/Discard は既存の loading/dirty 条件に従い、空であることだけでは無効にしない。専用 empty メッセージはない。
 - combo subsystem があるときだけ sensor 設定の下に `Combos` card を表示する。keymap の全読込後に combo を読込む。未対応時は card と preview の combo 表示を出さない。combo の RAM 編集は keymap binding と別だが、Keymap header の Save/Discard/Reset が両方の保存・復帰境界になる（S1/S7）。
 

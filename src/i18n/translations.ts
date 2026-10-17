@@ -42,6 +42,21 @@ const ja: Record<string, string> = {
     "キーボードから利用可能なすべての診断情報を再読み込みします",
   "Copy the collected diagnostic information to the clipboard for support":
     "サポートに共有できるよう、収集済みの診断情報をクリップボードにコピーします",
+  "Unlock key positions": "ロック解除キーの位置",
+  cyan: "水色",
+  orange: "オレンジ色",
+  "bluish green": "青緑色",
+  purple: "紫色",
+  "{{color}} key marked {{marker}}": "{{color}}の「{{marker}}」キー",
+  "Hold the {{color}} key marked {{marker}} and keep holding.":
+    "{{color}}の「{{marker}}」キーを押し続けます。",
+  "Press and release the {{color}} key marked {{marker}}.":
+    "{{color}}の「{{marker}}」キーを押して離します。",
+  "Press the {{color}} key marked {{marker}} (Studio Unlock).":
+    "{{color}}の「{{marker}}」キー（Studio Unlock）を押します。",
+  "After unlocking, release any held keys. Click Retry if needed.":
+    "ロック解除後、押し続けていたキーを離してください。必要に応じて「再試行」を押してください。",
+
   "Update Abyss keymap": "Abyss のキーマップを更新",
   "Module settings for new layers require Keymap to be selected.":
     "新しいレイヤーのモジュール設定を転送するには、キーマップも選択してください。",
