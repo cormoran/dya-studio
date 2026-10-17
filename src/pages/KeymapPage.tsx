@@ -905,10 +905,10 @@ export function KeymapPage() {
           <>
             {/* The same layer toolbar is used on desktop and mobile. */}
             <div
-              className="keymap-layer-toolbar flex flex-wrap items-center gap-2 mb-4"
+              className="keymap-layer-toolbar flex items-center gap-2 mb-4"
               data-editing={isEditingLayers}
             >
-              <span className="text-sm font-medium text-[var(--color-text-muted)]">
+              <span className="keymap-layer-label text-sm font-medium text-[var(--color-text-muted)]">
                 {t("Layer")}
               </span>
               <KeymapLayerTabs
@@ -968,7 +968,7 @@ export function KeymapPage() {
                           }
                         >
                           <button
-                            className="keymap-layer-action"
+                            className="keymap-layer-action keymap-layer-restore"
                             disabled={
                               isMovingLayer ||
                               keymap.isLoading ||
@@ -1049,7 +1049,7 @@ export function KeymapPage() {
                       })
                     }
                   >
-                    <IconPencil size={16} />
+                    <IconPencil size={14} />
                   </ResponsiveButton>
                 )}
               </div>

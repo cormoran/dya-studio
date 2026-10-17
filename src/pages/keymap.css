@@ -46,8 +46,25 @@
   border-color: var(--color-border);
 }
 
-.keymap-layer {
+.keymap-layer-toolbar {
+  --keymap-layer-height: 2rem;
+}
+
+.keymap-layer-label {
   flex-shrink: 0;
+  padding-right: 0.5rem;
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.keymap-layer-toolbar .keymap-layer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: var(--keymap-layer-height);
+  min-height: 0;
+  padding: 0.25rem 0.75rem;
   line-height: 1.25rem;
 }
 
@@ -116,19 +133,21 @@
 }
 
 .keymap-layer-item {
+  height: var(--keymap-layer-height);
   position: relative;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   gap: 0.125rem;
 }
-.keymap-layer-item button {
-  min-height: 2.75rem;
+.keymap-layer-toolbar .keymap-layer-item button {
+  height: calc(var(--keymap-layer-height) - 2px);
+  min-height: 0;
 }
 .keymap-layer-item .keymap-layer {
   border: 0;
   background: transparent;
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem;
 }
 .keymap-layer-item[data-selected="true"] {
   color: var(--color-electric);
@@ -142,7 +161,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
+  min-width: 1.75rem;
   border-radius: 0.375rem;
 }
 .keymap-layer-icon:hover {
@@ -163,9 +182,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  min-height: 2.75rem;
-  min-width: 2.75rem;
-  padding: 0.5rem;
+  height: var(--keymap-layer-height);
+  min-height: var(--keymap-layer-height);
+  min-width: var(--keymap-layer-height);
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   background: var(--color-surface);
@@ -182,9 +202,6 @@
   cursor: not-allowed;
 }
 @media (max-width: 639px) {
-  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-tabs {
-    flex-basis: calc(100% - 4rem);
-  }
   .keymap-layer-actions {
     margin-left: auto;
   }
@@ -200,10 +217,11 @@
   color: var(--color-text);
 }
 
-/* Match the original 20px line + 8px vertical padding + 1px border tabs. */
-.keymap-layer-toolbar[data-editing="false"] .keymap-layer-edit {
-  height: 2.375rem;
-  min-height: 2.375rem;
-  padding: 0.5rem 0.75rem;
-  line-height: 1.25rem;
+.keymap-layer-actions .keymap-layer-edit {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.keymap-layer-actions .keymap-layer-restore {
+  padding-inline: 0.625rem;
 }
