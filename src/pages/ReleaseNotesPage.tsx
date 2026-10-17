@@ -185,7 +185,13 @@ export function ReleaseNotesPage({ onBack }: { onBack: () => void }) {
   // Deep links (e.g. #2026.04.01.0) — scroll the target into view once the
   // sections have rendered client-side.
   useEffect(() => {
-    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    let hash: string;
+    try {
+      hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    } catch {
+      // An invalid percent-encoded hash is not a page error; ignore it.
+      return;
+    }
     if (hash) {
       document.getElementById(hash)?.scrollIntoView({ block: "start" });
     }
