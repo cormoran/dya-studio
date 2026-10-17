@@ -24,7 +24,7 @@
 
 ## 前提・状態
 
-通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。Developer Guide は keyboard providers の外、Release Notes/OAuth callback は接続 gate より前に分岐する。独立 Import/Export タブは廃止し、Keymap 内の共有メニューへ移転。旧 `/import-export` は `/keymap` に正規化する。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
+通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。紹介・Developer Guide・Release Notes・OAuth callback は独立した公開 route。直接 entry では keyboard providers を起動せず、既存 session があれば非表示のまま保持する（SHELL-021/022）。独立 Import/Export タブは廃止し、Keymap 内の共有メニューへ移転。旧 `/import-export` は `/keymap` に正規化する。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
 
 ## 現行の機能仕様
 
