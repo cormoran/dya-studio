@@ -378,7 +378,8 @@
   font-weight: 700;
 }
 
-:root.pop :is(button:not(.physical-key), .tab-trigger, [role="tab"]) {
+:root.pop :is(button:not(.physical-key), .tab-trigger, [role="tab"]),
+:root.pop .app-header-brand span {
   font-family: "M PLUS Rounded 1c", var(--font-ui);
   font-weight: 500;
 }
