@@ -99,9 +99,16 @@ export function KeymapSharingPreview({
           <Dialog.Content className="diff-sheet fixed left-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
             <div className="shrink-0 flex items-start gap-3 p-3 tablet:p-4 border-b border-[var(--color-border)]">
               <div className="flex-1 min-w-0">
-                <Dialog.Title className="text-base font-medium break-words">
-                  {t("Preview {{name}}", { name })}
-                </Dialog.Title>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Dialog.Title className="min-w-0 text-base font-medium break-words">
+                    {t("Preview {{name}}", { name })}
+                  </Dialog.Title>
+                  {review.record?.visibility === "public" && (
+                    <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
+                      public
+                    </span>
+                  )}
+                </div>
                 <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
                   {description}
                 </Dialog.Description>
