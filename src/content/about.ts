@@ -23,308 +23,309 @@ type AboutContent = {
   startTitle: string;
   steps: { title: string; description: string }[];
   privacy: string;
-  sourcesTitle: string;
-  sourcesNote: string;
+  resourcesTitle: string;
+  resourcesNote: string;
 };
 
 /** Public compatibility copy is shared with metadata; it is not device discovery. */
 export const aboutContent: Record<Language, AboutContent> = {
   en: {
     aboutLabel: "About DYA Studio",
-    title: "Your ZMK keyboard, configured in your browser",
+    title: "Make your keyboard feel like yours",
     description:
-      "DYA Studio is a keymap and settings editor for DYA and other compatible ZMK keyboards. Explore with Demo, then connect your keyboard when you are ready.",
+      "Customize keymaps, layers and supported keyboard settings in your browser. DYA Studio works with the DYA series and compatible ZMK keyboards. Start with Demo to explore without a keyboard.",
     connect: "Open connection screen",
     guide: "Developer guide",
     releases: "Release notes",
-    featuresTitle: "What can you change?",
+    featuresTitle: "From everyday keymaps to fine-tuning",
     features: [
       {
-        title: "Keymaps · Standard ZMK Studio firmware",
+        title: "Keys and layers",
         description:
-          "Assign behaviors built into your firmware, edit layer names and use available layouts and reserved layers. ZMK Studio support and an unlock binding must be configured on the keyboard; the UI cannot add arbitrary firmware behaviors.",
+          "Change key assignments, rename layers and switch between the layouts available on your keyboard. These features work with firmware that supports ZMK Studio.",
       },
       {
-        title: "Macros, combos and encoders · Additional firmware support",
+        title: "Macros, combos and encoders",
         description:
-          "Runtime macro/combo editing and encoder configuration require the corresponding custom subsystems. Standard Studio support alone does not enable these editors.",
+          "Create sequences of keystrokes, assign actions to key combinations and configure rotary encoders. These features require the corresponding DYA Studio firmware modules.",
       },
       {
-        title:
-          "Trackball, connections and settings · Additional firmware modules",
+        title: "Trackball and keyboard settings",
         description:
-          "Tune pointing input, manage connection profiles and change supported settings when your firmware exposes the matching subsystems. Availability is determined after connection.",
+          "Adjust pointing sensitivity and scrolling, manage connection profiles and customize supported settings. Available controls depend on the modules included in your firmware.",
       },
       {
-        title: "Preview and share",
+        title: "Try, save and share",
         description:
-          "Try the interface with a simulated keyboard, or exchange compatible keymaps through JSON and sharing tools. Abyss account features require separate sign-in. Demo does not verify your hardware or flash persistence.",
+          "Explore the editor with Demo, then use JSON files and sharing tools to exchange compatible keymaps. Abyss sharing offers additional account features when you sign in.",
       },
     ],
-    keyboardsTitle: "Will my keyboard work?",
+    keyboardsTitle: "Find the right setup for your keyboard",
     keyboards:
-      "DYA Dash and DYA2 are examples of the DYA series. A model name alone does not guarantee every feature: the installed firmware, Studio configuration, transport and advertised capabilities determine what is available. Other ZMK keyboards can use the standard keymap features when Studio is enabled. Advanced features need additional modules; see the developer guide before changing firmware.",
+      "DYA Studio supports the DYA series, including DYA Dash and DYA2, as well as other ZMK keyboards with ZMK Studio enabled. Keymap editing is the starting point; macros, combos, trackball controls and advanced settings need additional firmware modules. After you connect, DYA Studio shows the features your keyboard provides. See the developer guide if you need to enable Studio or add modules.",
     imageAlt: "DYA2 split keyboard with an integrated trackball",
-    imageCaption:
-      "Product example: DYA2. Photo from this project's Home gallery; it is not a compatibility certification.",
+    imageCaption: "DYA2 — a split keyboard with an integrated trackball.",
     compatibilityTitle: "Browser and connection requirements",
     compatibilityIntro:
-      "Reading this page and using Demo do not require Web Serial, WebUSB or Web Bluetooth. The table describes connection prerequisites, not a tested list of every device and browser version. Use an up-to-date browser with JavaScript enabled.",
-    columns: ["Environment", "Read / Demo", "USB", "BLE"],
+      "You can read the guide and explore Demo without a keyboard. To connect a real keyboard, choose a browser and connection method below. Desktop Chrome or Edge over USB is a good place to start.",
+    columns: [
+      "Your environment",
+      "Read / Demo",
+      "USB connection",
+      "BLE connection",
+    ],
     environments: [
       [
         "Windows / macOS / ChromeOS · Chrome or Edge",
-        "Available without hardware APIs",
-        "Web Serial; serial permission and Studio USB firmware required",
-        "Web Bluetooth API may be available; ZMK transport and OS compatibility must also be checked",
+        "Available",
+        "Web Serial with serial-port permission",
+        "Requires Web Bluetooth and compatible Studio BLE firmware",
       ],
       [
         "Linux · Chrome or Edge",
-        "Available without hardware APIs",
-        "Web Serial; OS serial-port permissions may be needed",
-        "Browser configuration and ZMK BLE support vary; unverified here",
+        "Available",
+        "Web Serial; you may need to grant OS serial-port access",
+        "Depends on browser configuration and firmware; use USB if BLE is unavailable",
       ],
       [
         "Android · Chrome",
-        "Available without hardware APIs",
-        "DYA Studio uses WebUSB; USB host/OTG, a data cable and an accessible CDC interface are required. Interface claim may fail",
-        "Requires Web Bluetooth and compatible Studio BLE firmware; device/OS combination unverified",
+        "Available",
+        "WebUSB; requires USB host/OTG, a data cable and an accessible keyboard USB interface",
+        "Requires Web Bluetooth and compatible Studio BLE firmware",
       ],
       [
-        "iOS / iPadOS · Safari and other browsers",
-        "Reading / Demo require no hardware APIs; browser combination unverified",
-        "No supported USB path documented here",
-        "Safari has no Web Bluetooth path. Specialized browsers such as Bluefy are unverified; do not assume compatibility",
+        "iOS / iPadOS · Safari",
+        "Read and explore without a keyboard",
+        "Not supported in Safari",
+        "Not supported in Safari",
       ],
       [
         "Firefox / Safari · desktop",
-        "Available without hardware APIs",
-        "No supported Web Serial path",
-        "No supported Web Bluetooth path",
+        "Read and explore without a keyboard",
+        "Use Chrome or Edge to connect",
+        "Use a browser with Web Bluetooth support",
       ],
     ],
     caveat:
-      "Hardware connections require a secure context (HTTPS or local development), OS permission and matching firmware. API presence alone does not prove connectivity. USB/BLE connections, all OS/browser combinations and third-party browsers have not been physically verified for this page. Demo changes are simulated, not writes to a real keyboard.",
+      "USB and BLE require a secure connection to this site, browser permission and firmware that supports the selected transport. Browser support and OS settings can vary. If your keyboard does not appear or the connection fails, check the connection-screen guidance and the developer guide. On Android, the OS may prevent access to the USB interface.",
     startTitle: "Get started",
     steps: [
       {
-        title: "Demo · Explore without a keyboard",
+        title: "1. Explore with Demo",
         description:
-          "Open the connection screen and choose Demo. It starts only when you choose it, except when the connection screen resumes an existing saved session.",
+          "Open the connection screen and select Demo. You can try the editor with a simulated keyboard before connecting your own.",
       },
       {
-        title: "USB · Connect with a data cable",
+        title: "2. Connect your keyboard",
         description:
-          "Open the connection screen, choose USB, read the notice and select your keyboard in the browser picker. Your firmware must expose the Studio USB endpoint; unlock the keyboard when prompted.",
+          "For USB, connect a data cable, select USB and choose your keyboard in the browser picker. For BLE, check that your firmware supports Studio over BLE, then select BLE and choose your keyboard. Read the connection notice and unlock the keyboard when prompted.",
       },
       {
-        title: "BLE · Check firmware and browser support",
+        title: "3. Customize and save",
         description:
-          "Open the connection screen, choose BLE, read the notice and select a compatible keyboard. A Bluetooth keyboard connection to your OS alone is not enough to enable the Studio service.",
+          "Choose a page to edit your keymap or available settings. Keymap changes are applied to keyboard memory; use Save to keep them after a restart. Follow the save guidance on each settings page. Demo lets you practise without changing a real keyboard.",
       },
     ],
     privacy:
-      "Reading this introduction does not start a connection, request device permission, update firmware or save/discard keyboard edits. Returning to the connection screen can resume a saved session. An already running connection continues while you read; same-tab navigation preserves its session and edits. A new tab or Reload starts a separate app instance.",
-    sourcesTitle: "Sources and further reading",
-    sourcesNote:
-      "Requirements reviewed on 18 October 2026 against the app's USB/BLE implementation, developer guide and the official references below. Browser API documentation is not a hardware test. The developer guide currently provides Japanese and English; Chinese readers see its English fallback.",
+      "Opening this guide does not connect to a keyboard or save or discard edits. Use the connection screen when you are ready. If you are already connected, you can read this page and return to your session. The connection screen can also resume a saved session.",
+    resourcesTitle: "Keep exploring",
+    resourcesNote:
+      "The developer guide explains firmware setup, optional modules and connection troubleshooting. Release notes introduce new features and improvements. The developer guide is available in Japanese and English; Chinese readers see its English version.",
   },
   ja: {
     aboutLabel: "DYA Studio について",
-    title: "ZMK キーボードを、ブラウザから自分好みに",
+    title: "いつものキーボードを、もっと自分好みに",
     description:
-      "DYA Studio は DYA シリーズと対応する ZMK キーボードのキーマップ・設定エディターです。まずは Demo で試し、準備ができたらキーボードを接続できます。",
+      "キーの割り当てやレイヤー、キーボードの設定をブラウザから変更できます。DYA シリーズはもちろん、対応する ZMK キーボードでも利用できます。まずはキーボード不要の Demo で操作を試してみてください。",
     connect: "接続画面へ",
     guide: "開発者ガイド",
     releases: "リリースノート",
-    featuresTitle: "どんなことができる？",
+    featuresTitle: "キーの割り当てから、使い心地の調整まで",
     features: [
       {
-        title: "キーマップ · 標準 ZMK Studio 対応 firmware",
+        title: "キーとレイヤー",
         description:
-          "firmware に組み込まれた動作の割当、レイヤー名の編集、利用可能な配列・予約レイヤーの選択ができます。キーボード側の Studio 有効化と unlock キーの設定が必要です。任意の firmware 動作を新規追加するものではありません。",
+          "キーの割り当てやレイヤー名を変更し、キーボードに用意された配列を選べます。ZMK Studio 対応の firmware で利用できます。",
       },
       {
-        title: "マクロ・コンボ・エンコーダー · 追加 firmware 対応",
+        title: "マクロ・コンボ・エンコーダー",
         description:
-          "実行時のマクロ・コンボ編集やエンコーダー設定には、対応する custom subsystem が必要です。標準 Studio 対応だけではこれらの編集機能は有効になりません。",
+          "一連のキー操作をマクロにまとめたり、同時押しに動作を割り当てたり、ロータリーエンコーダーを設定できます。利用する機能に対応した DYA Studio 用 firmware モジュールが必要です。",
       },
       {
-        title: "トラックボール・接続先・各種設定 · 追加 firmware モジュール",
+        title: "トラックボールとキーボードの設定",
         description:
-          "対応する subsystem を firmware が公開している場合に、ポインティング入力の調整、接続プロファイル管理、各種設定を利用できます。実際の可用性は接続後に判定します。",
+          "ポインターの感度やスクロールを調整し、接続先のプロファイルや各種設定を変更できます。利用できる項目は firmware に組み込まれたモジュールによって変わります。",
       },
       {
-        title: "試用と共有",
+        title: "試す・保存する・共有する",
         description:
-          "擬似キーボードの Demo で操作を試し、互換性のあるキーマップを JSON や共有ツールで交換できます。Abyss のアカウント機能には別途ログインが必要です。Demo は実機動作や flash 保存の検証にはなりません。",
+          "Demo で操作を試し、JSON ファイルや共有機能で互換性のあるキーマップを交換できます。Abyss にログインすると、アカウントを使った共有機能も利用できます。",
       },
     ],
-    keyboardsTitle: "自分のキーボードで使える？",
+    keyboardsTitle: "自分のキーボードで使うには",
     keyboards:
-      "DYA Dash・DYA2 は DYA シリーズの一例です。機種名だけで全機能対応を保証するものではありません。搭載 firmware、Studio 設定、接続方式、公開される capability により利用可能な機能が決まります。一般の ZMK キーボードでも Studio を有効にしていれば標準のキーマップ機能を利用できます。高度な機能には追加モジュールが必要です。firmware を変更する前に開発者ガイドを参照してください。",
+      "DYA Dash・DYA2 をはじめとする DYA シリーズと、ZMK Studio を有効にした ZMK キーボードで利用できます。基本のキーマップ編集に加え、マクロ・コンボ・トラックボール・高度な設定には、それぞれに対応する firmware モジュールが必要です。接続すると、そのキーボードで使える機能が画面に表示されます。Studio の有効化やモジュールの追加は、開発者ガイドを参照してください。",
     imageAlt: "トラックボールを搭載した左右分割キーボード DYA2",
-    imageCaption:
-      "製品例: DYA2。本プロジェクトの Home ギャラリーの写真を再利用しています。対応を認証する画像ではありません。",
-    compatibilityTitle: "ブラウザと接続の条件",
+    imageCaption: "DYA2 — トラックボールを搭載した左右分割キーボード。",
+    compatibilityTitle: "使える環境と接続方法",
     compatibilityIntro:
-      "紹介の閲覧と Demo には Web Serial・WebUSB・Web Bluetooth は不要です。下表は接続の前提条件であり、全機種・ブラウザの検証済み一覧ではありません。JavaScript を有効にした最新のブラウザを使用してください。",
-    columns: ["環境", "閲覧 / Demo", "USB", "BLE"],
+      "紹介の閲覧や Demo は、キーボードを接続せずに利用できます。実機を接続するときは、お使いの環境に合う方法を選んでください。初めての接続には、パソコンの Chrome または Edge と USB をおすすめします。",
+    columns: ["お使いの環境", "閲覧・Demo", "USB 接続", "BLE 接続"],
     environments: [
       [
         "Windows / macOS / ChromeOS · Chrome・Edge",
-        "接続 API なしで利用可",
-        "Web Serial。シリアルポートの権限と Studio USB 対応 firmware が必要",
-        "Web Bluetooth API があっても、ZMK の接続方式と OS の互換性確認が必要",
+        "利用できます",
+        "Web Serial を使用。シリアルポートへのアクセスを許可してください",
+        "Web Bluetooth と Studio BLE 対応 firmware が必要です",
       ],
       [
         "Linux · Chrome・Edge",
-        "接続 API なしで利用可",
-        "Web Serial。OS 側のシリアルポート権限が必要な場合あり",
-        "ブラウザ設定と ZMK BLE 対応に依存。このページでは未検証",
+        "利用できます",
+        "Web Serial を使用。OS 側でシリアルポートの権限設定が必要な場合があります",
+        "ブラウザ設定と firmware に依存します。利用できない場合は USB をお使いください",
       ],
       [
         "Android · Chrome",
-        "接続 API なしで利用可",
-        "DYA Studio は WebUSB を使用。USB ホスト/OTG・データケーブル・アクセス可能な CDC interface が必要。claim に失敗する場合あり",
-        "Web Bluetooth と Studio BLE 対応 firmware が必要。端末・OS の組合せは未検証",
+        "利用できます",
+        "WebUSB を使用。USB ホスト/OTG・データケーブル・アクセス可能なキーボードの USB interface が必要です",
+        "Web Bluetooth と Studio BLE 対応 firmware が必要です",
       ],
       [
-        "iOS / iPadOS · Safari 等",
-        "閲覧 / Demo は接続 API 不要。ブラウザの組合せは未検証",
-        "ここでは対応 USB 経路を案内していません",
-        "Safari は Web Bluetooth 非対応。Bluefy 等の専用ブラウザは未検証で、対応を保証しません",
+        "iOS / iPadOS · Safari",
+        "接続なしで閲覧・体験できます",
+        "Safari では対応していません",
+        "Safari では対応していません",
       ],
       [
-        "Firefox / Safari · desktop",
-        "接続 API なしで利用可",
-        "対応する Web Serial 経路なし",
-        "対応する Web Bluetooth 経路なし",
+        "Firefox / Safari · パソコン",
+        "接続なしで閲覧・体験できます",
+        "接続には Chrome または Edge をお使いください",
+        "Web Bluetooth 対応ブラウザをお使いください",
       ],
     ],
     caveat:
-      "実機接続には安全なコンテキスト（HTTPS またはローカル開発）、OS の権限、対応 firmware が必要です。API の存在だけでは接続成功を保証できません。このページでは USB/BLE 実機接続、全 OS・ブラウザの組合せ、専用ブラウザの動作は未確認です。Demo の変更は擬似デバイス内のもので、実機への書込みではありません。",
+      "USB・BLE 接続には、このサイトへの安全な接続、ブラウザのアクセス許可、選択した接続方法に対応する firmware が必要です。利用できる接続方法はブラウザや OS の設定によって異なります。キーボードが表示されない・接続できない場合は、接続画面の案内や開発者ガイドを確認してください。Android では OS によって USB interface へのアクセスが制限される場合があります。",
     startTitle: "始め方",
     steps: [
       {
-        title: "Demo · キーボードなしで試す",
+        title: "1. Demo で試す",
         description:
-          "接続画面で Demo を選びます。保存済み session を接続画面で再開する場合を除き、自分で選択するまで開始しません。",
+          "接続画面を開き、Demo を選びます。擬似キーボードで、実機を用意する前にエディターの操作を体験できます。",
       },
       {
-        title: "USB · データケーブルで接続",
+        title: "2. キーボードを接続する",
         description:
-          "接続画面で USB を選び、注意事項を読んでブラウザの選択画面からキーボードを指定します。firmware の Studio USB endpoint 対応が必要です。求められたらキーボードを unlock してください。",
+          "USB の場合はデータケーブルをつなぎ、接続画面で USB を選んでキーボードを指定します。BLE の場合は firmware の Studio BLE 対応を確認してから BLE を選びます。接続時の注意事項を読み、求められたらキーボードを unlock してください。",
       },
       {
-        title: "BLE · firmware とブラウザの対応を確認",
+        title: "3. 設定して保存する",
         description:
-          "接続画面で BLE を選び、注意事項を読んで対応キーボードを指定します。OS に Bluetooth キーボードとして接続しただけでは Studio のサービスは有効になりません。",
+          "使いたい機能のページを開き、キーマップや設定を変更します。キーマップの変更はキーボードのメモリに反映され、Save で再起動後も残せます。各設定ページの保存案内に従って操作してください。Demo なら実機の設定を変えずに練習できます。",
       },
     ],
     privacy:
-      "この紹介を読むだけで接続・権限要求・firmware 更新・編集の保存や破棄は行いません。接続画面へ戻ると保存済み session を再開する場合があります。すでに進行中の接続は閲覧中も継続し、同じタブ内の移動では session と編集を保持します。別タブや Reload は別のアプリ instance になります。",
-    sourcesTitle: "根拠と詳しい資料",
-    sourcesNote:
-      "2026年10月18日に、本アプリの USB/BLE 実装・開発者ガイドと以下の公式資料を照合しました。ブラウザ API の説明は実機の動作検証ではありません。開発者ガイドは現在日本語・英語で提供し、中国語では英語へフォールバックします。",
+      "この紹介を開くだけで、キーボードへの接続や編集の保存・破棄は行いません。準備ができたら接続画面へ進んでください。接続済みの場合は、そのまま説明を読んで編集に戻れます。接続画面では、前回の接続を再開することもできます。",
+    resourcesTitle: "もっと詳しく知る",
+    resourcesNote:
+      "firmware の準備、追加モジュール、接続で困ったときの対処は開発者ガイドへ。新機能や改善点はリリースノートで紹介しています。開発者ガイドは日本語・英語で提供しており、中国語を選択している場合は英語で表示します。",
   },
   zh: {
     aboutLabel: "关于 DYA Studio",
-    title: "在浏览器中定制你的 ZMK 键盘",
+    title: "让日常使用的键盘更合你心意",
     description:
-      "DYA Studio 是适用于 DYA 系列和兼容 ZMK 键盘的键位与设置编辑器。先通过演示模式体验，再连接你的键盘。",
+      "在浏览器中修改键位、层和键盘设置。DYA Studio 适用于 DYA 系列和兼容的 ZMK 键盘。先用无需键盘的演示模式体验操作。",
     connect: "打开连接页面",
     guide: "开发者指南",
     releases: "发行说明",
-    featuresTitle: "可以修改什么？",
+    featuresTitle: "从键位分配到使用手感调整",
     features: [
       {
-        title: "键位 · 标准 ZMK Studio 固件",
+        title: "键位与层",
         description:
-          "分配固件中已有的行为，编辑层名称，并使用可用布局和预留层。键盘必须启用 Studio 并配置解锁按键；界面无法添加任意固件行为。",
+          "修改按键分配和层名称，选择键盘中提供的布局。这些功能适用于支持 ZMK Studio 的固件。",
       },
       {
-        title: "宏、组合键和编码器 · 需要附加固件支持",
+        title: "宏、组合键与编码器",
         description:
-          "运行时宏与组合键编辑、编码器设置需要对应的自定义子系统。仅支持标准 Studio 并不代表这些编辑功能可用。",
+          "将一连串按键操作组合为宏，为同时按下的按键分配行为，并设置旋转编码器。需要安装对应功能的 DYA Studio 固件模块。",
       },
       {
-        title: "轨迹球、连接和设置 · 需要附加固件模块",
+        title: "轨迹球与键盘设置",
         description:
-          "固件公开对应子系统后，才能调整指针输入、管理连接配置和修改支持的设置。实际可用功能在连接后判断。",
+          "调整指针灵敏度和滚动方式，管理连接配置和各项设置。可用选项取决于固件中包含的模块。",
       },
       {
-        title: "体验与分享",
+        title: "体验、保存与分享",
         description:
-          "使用模拟键盘体验界面，通过 JSON 和分享工具交换兼容键位。Abyss 账户功能需要单独登录。演示模式无法验证硬件或闪存持久性。",
+          "通过演示模式熟悉操作，使用 JSON 文件和分享功能交换兼容键位。登录 Abyss 后，还可使用账户分享功能。",
       },
     ],
-    keyboardsTitle: "我的键盘能用吗？",
+    keyboardsTitle: "如何用于你的键盘",
     keyboards:
-      "DYA Dash 和 DYA2 是 DYA 系列的示例。型号名称并不保证所有功能可用：安装的固件、Studio 配置、连接方式和公开能力共同决定实际功能。其他 ZMK 键盘启用 Studio 后也可使用标准键位功能。高级功能需要附加模块；修改固件前请阅读开发者指南。",
+      "DYA Dash、DYA2 等 DYA 系列，以及已启用 ZMK Studio 的 ZMK 键盘均可使用。基础键位编辑之外，宏、组合键、轨迹球和高级设置需要对应的固件模块。连接后，DYA Studio 会显示键盘提供的功能。如需启用 Studio 或添加模块，请阅读开发者指南。",
     imageAlt: "配有轨迹球的 DYA2 分体键盘",
-    imageCaption:
-      "产品示例：DYA2。照片来自本项目的主页图库，不代表兼容性认证。",
-    compatibilityTitle: "浏览器与连接条件",
+    imageCaption: "DYA2 — 配有轨迹球的分体键盘。",
+    compatibilityTitle: "使用环境与连接方式",
     compatibilityIntro:
-      "阅读本页和使用演示模式无需 Web Serial、WebUSB 或 Web Bluetooth。下表说明连接前提，并非所有设备与浏览器版本的测试清单。请使用启用 JavaScript 的新版浏览器。",
-    columns: ["环境", "阅读 / 演示", "USB", "BLE"],
+      "无需连接键盘即可阅读介绍或体验演示模式。连接真实键盘时，请选择适合当前环境的方式。首次连接建议使用电脑上的 Chrome 或 Edge 及 USB。",
+    columns: ["你的环境", "阅读与演示", "USB 连接", "BLE 连接"],
     environments: [
       [
         "Windows / macOS / ChromeOS · Chrome 或 Edge",
-        "无需硬件 API",
-        "需要 Web Serial、串口权限和支持 Studio USB 的固件",
-        "即使提供 Web Bluetooth API，仍需确认 ZMK 连接方式和操作系统兼容性",
+        "可使用",
+        "通过 Web Serial 连接；请允许串口访问",
+        "需要 Web Bluetooth 和支持 Studio BLE 的固件",
       ],
       [
         "Linux · Chrome 或 Edge",
-        "无需硬件 API",
-        "Web Serial；可能需要操作系统串口权限",
-        "取决于浏览器配置和 ZMK BLE 支持；本页未验证",
+        "可使用",
+        "通过 Web Serial 连接；可能需要设置系统串口权限",
+        "取决于浏览器设置和固件；不可用时请使用 USB",
       ],
       [
         "Android · Chrome",
-        "无需硬件 API",
-        "DYA Studio 使用 WebUSB。需要 USB 主机/OTG、数据线和可访问的 CDC 接口；接口占用可能失败",
-        "需要 Web Bluetooth 和兼容的 Studio BLE 固件；设备与系统组合未验证",
+        "可使用",
+        "通过 WebUSB 连接；需要 USB 主机/OTG、数据线和可访问的键盘 USB 接口",
+        "需要 Web Bluetooth 和支持 Studio BLE 的固件",
       ],
       [
-        "iOS / iPadOS · Safari 等浏览器",
-        "阅读 / 演示无需硬件 API；浏览器组合未验证",
-        "本页未提供受支持的 USB 路径",
-        "Safari 不提供 Web Bluetooth。Bluefy 等专用浏览器未验证，请勿假定兼容",
+        "iOS / iPadOS · Safari",
+        "无需连接即可阅读与体验",
+        "Safari 不支持",
+        "Safari 不支持",
       ],
       [
-        "Firefox / Safari · 桌面",
-        "无需硬件 API",
-        "无受支持的 Web Serial 路径",
-        "无受支持的 Web Bluetooth 路径",
+        "Firefox / Safari · 电脑",
+        "无需连接即可阅读与体验",
+        "连接时请使用 Chrome 或 Edge",
+        "请使用支持 Web Bluetooth 的浏览器",
       ],
     ],
     caveat:
-      "实机连接需要安全上下文（HTTPS 或本地开发）、操作系统权限及兼容固件。API 存在并不保证连接成功。本页未实机验证 USB/BLE、全部操作系统与浏览器组合或第三方专用浏览器。演示中的修改仅作用于模拟设备，不会写入真实键盘。",
+      "USB 和 BLE 连接需要与本站建立安全连接、获得浏览器访问权限，并使用支持相应连接方式的固件。可用方式因浏览器和操作系统设置而异。如果键盘未出现或连接失败，请查看连接页面的提示和开发者指南。Android 系统可能限制对 USB 接口的访问。",
     startTitle: "如何开始",
     steps: [
       {
-        title: "演示 · 无需键盘即可体验",
+        title: "1. 使用演示模式体验",
         description:
-          "打开连接页面并选择 Demo。除连接页面恢复已保存的会话外，仅在你主动选择后启动。",
+          "打开连接页面并选择 Demo。通过模拟键盘，在准备真实设备之前熟悉编辑器。",
       },
       {
-        title: "USB · 使用数据线连接",
+        title: "2. 连接键盘",
         description:
-          "在连接页面选择 USB，阅读注意事项，并在浏览器选择器中指定键盘。固件必须提供 Studio USB 端点；出现提示时请解锁键盘。",
+          "使用 USB 时，连接数据线，在连接页面选择 USB 并指定键盘。使用 BLE 时，先确认固件支持 Studio BLE，再选择 BLE。请阅读连接注意事项，并在提示时解锁键盘。",
       },
       {
-        title: "BLE · 确认固件和浏览器支持",
+        title: "3. 设置并保存",
         description:
-          "在连接页面选择 BLE，阅读注意事项并指定兼容键盘。仅将蓝牙键盘连接到操作系统，并不能启用 Studio 服务。",
+          "打开所需功能页面，修改键位或设置。键位修改先应用到键盘内存，点击 Save 后可在重启后保留。其他设置请遵循各页面的保存提示。演示模式可用于练习，不会修改真实键盘。",
       },
     ],
     privacy:
-      "阅读本介绍不会发起连接、请求设备权限、更新固件或保存/丢弃键盘编辑。返回连接页面可能恢复已保存会话。正在进行的连接会在阅读期间继续；同一标签页内的导航保留会话与编辑。新标签页或重新加载会启动独立应用实例。",
-    sourcesTitle: "依据与更多资料",
-    sourcesNote:
-      "于2026年10月18日对照本应用 USB/BLE 实现、开发者指南及以下官方资料核对。浏览器 API 文档不等于硬件测试。开发者指南目前提供日语和英语；中文选择下显示英语回退内容。",
+      "仅阅读本介绍不会连接键盘，也不会保存或丢弃编辑。准备好后再进入连接页面。已连接时，可直接阅读介绍并返回编辑。连接页面也可以恢复上次会话。",
+    resourcesTitle: "了解更多",
+    resourcesNote:
+      "固件准备、附加模块和连接故障排查请参阅开发者指南；新功能与改进请查看发行说明。开发者指南提供日语与英语，选择中文时显示英语版本。",
   },
 };

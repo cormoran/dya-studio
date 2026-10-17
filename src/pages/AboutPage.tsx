@@ -193,37 +193,30 @@ export function AboutPage() {
             </p>
           </section>
           <section
-            aria-labelledby="sources"
+            aria-labelledby="resources"
             className="border-t border-[var(--color-border)] pt-6"
           >
-            <h2 id="sources" className="text-lg font-semibold">
-              {copy.sourcesTitle}
+            <h2 id="resources" className="text-lg font-semibold">
+              {copy.resourcesTitle}
             </h2>
             <p className="mt-3 text-sm leading-7 text-[var(--color-text-secondary)]">
-              {copy.sourcesNote}
+              {copy.resourcesNote}
             </p>
-            <ul className="mt-3 space-y-3 text-sm">
-              {[
-                ["https://zmk.dev/docs/features/studio", "ZMK Studio"],
-                [
-                  "https://developer.chrome.com/docs/capabilities/serial",
-                  "Web Serial · Chrome for Developers",
-                ],
-                [
-                  "https://developer.chrome.com/docs/capabilities/bluetooth",
-                  "Web Bluetooth · Chrome for Developers",
-                ],
-              ].map(([href, label]) => (
-                <li key={href}>
-                  <a
-                    href={href}
-                    className="text-[var(--color-electric)] underline underline-offset-4"
-                  >
-                    {label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <nav
+              aria-label={copy.resourcesTitle}
+              className="mt-4 flex flex-wrap gap-3"
+            >
+              <a
+                href="/developer-guide"
+                onClick={navigate}
+                className={linkClass}
+              >
+                {copy.guide}
+              </a>
+              <a href="/release-notes" onClick={navigate} className={linkClass}>
+                {copy.releases}
+              </a>
+            </nav>
           </section>
         </main>
       </div>
