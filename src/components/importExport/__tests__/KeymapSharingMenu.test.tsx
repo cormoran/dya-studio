@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { KeymapSharingMenu } from "../KeymapSharingMenu";
 import { LanguageProvider } from "../../../contexts/LanguageContext";
 jest.mock("../../../hooks/useAbyssAuth", () => ({
@@ -157,4 +164,90 @@ it("keeps the last saved record accessible if automatic opening was blocked", ()
   const link = screen.getByRole("link", { name: "Open on Abyss" });
   expect(link).toHaveAttribute("href", mockSharing.savedKeymapUrl);
   expect(link).toHaveAttribute("target", "_blank");
+});
+
+describe("mobile sharing dialog", () => {
+  let mobile: boolean;
+  let onChange: () => void;
+  beforeEach(() => {
+    mobile = true;
+    const original = (window.matchMedia as jest.Mock).getMockImplementation()!;
+    jest.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      ...original(query),
+      matches: query === "(max-width: 639px)" && mobile,
+      addEventListener: (_event, listener) => {
+        onChange = listener as () => void;
+      },
+      removeEventListener: jest.fn(),
+    }));
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it("offers all signed-out actions and dismisses without writes, returning focus", async () => {
+    const user = userEvent.setup();
+    show();
+    const trigger = screen.getByRole("button", {
+      name: "Save/share keymap",
+      hidden: true,
+    });
+    expect(
+      screen.getByRole("heading", { name: "Save/share keymap" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Apply from file" }),
+    ).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Save/share keymap" });
+    await user.click(dialog.previousElementSibling as Element);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(mockSharing.prepare).not.toHaveBeenCalled();
+    expect(mockSharing.confirm).not.toHaveBeenCalled();
+    expect(mockSharing.create).not.toHaveBeenCalled();
+  });
+
+  it("can open and cancel the new-map dialog above the mobile menu", async () => {
+    const user = userEvent.setup();
+    mockAuth.isAuthenticated = true;
+    mockAuth.user = { username: "tester" };
+    show();
+    await user.click(screen.getByRole("button", { name: "Save new to Abyss" }));
+    expect(
+      screen.getByRole("dialog", { name: "Save new to Abyss" }),
+    ).toBeVisible();
+    await user.keyboard("{Escape}");
+    expect(
+      screen.getByRole("dialog", { name: "Save/share keymap" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("dialog", { name: "Save new to Abyss" }),
+    ).toBeNull();
+    expect(mockSharing.create).not.toHaveBeenCalled();
+  });
+
+  it("switches to a nonmodal popover when resized without refreshing the account again", () => {
+    mockAuth.isAuthenticated = true;
+    mockAuth.user = { username: "tester" };
+    mockSharing.keymaps = [record];
+    show();
+    expect(
+      screen.getByRole("heading", { name: "Save/share keymap" }),
+    ).toBeVisible();
+    act(() => {
+      mobile = false;
+      onChange();
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Save/share keymap" }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    expect(screen.getByRole("button", { name: "My layout" })).toBeEnabled();
+    expect(mockSharing.refresh).toHaveBeenCalledTimes(1);
+  });
 });
