@@ -10,6 +10,8 @@ export const languageLabels: Record<Language, string> = {
 
 const ja: Record<string, string> = {
   "Update Abyss keymap": "Abyss のキーマップを更新",
+  "Module settings for new layers require Keymap to be selected.":
+    "新しいレイヤーのモジュール設定を転送するには、キーマップも選択してください。",
   // Keymap sharing preview
   "Save/share keymap": "キーマップ保存/共有",
   "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.":
@@ -1655,6 +1657,8 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Module settings for new layers require Keymap to be selected.":
+    "传输新层的模块设置需要同时选择键位映射。",
   // Keymap sharing preview
   "Save/share keymap": "保存/分享键位",
   "Keyboard Abyss is a keymap sharing service developed by @cormoran707, the developer of DYA Studio.":

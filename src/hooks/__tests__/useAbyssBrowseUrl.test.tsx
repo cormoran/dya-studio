@@ -66,3 +66,30 @@ it("falls back to Discover when the public API fails", async () => {
   });
   expect(result.current).toBe(abyssDiscoverUrl());
 });
+it("keeps an in-flight catalog lookup and its result across closing and reopening", async () => {
+  let finish!: (value: unknown) => void;
+  mockFetch.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { result, rerender } = renderHook(
+    ({ open }) => useAbyssBrowseUrl(open),
+    { initialProps: { open: true }, wrapper },
+  );
+  const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+  rerender({ open: false });
+  expect(signal.aborted).toBe(false);
+  await act(async () => {
+    finish({
+      ok: true,
+      json: async () => [{ name: "DYA", slug: "cached-board" }],
+    });
+  });
+  rerender({ open: true });
+  await waitFor(() =>
+    expect(result.current).toMatch(/\/keyboard\/cached-board$/),
+  );
+  expect(mockFetch).toHaveBeenCalledTimes(1);
+});

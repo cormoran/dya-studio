@@ -1,7 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { useKeymapSharing } from "../useKeymapSharing";
-import { EMPTY_DIFF } from "../../lib/abyss/abyssDiff";
+// Use the pure production comparator (type-only dependencies) to assert exact payloads.
+import { compareKeyboardHubKeymaps as compareActual } from "../../../node_modules/@keyboard-hub/adapter-common/src/schema/diff";
+import { ALL_SHARING_PARTS } from "../../lib/abyss/keymapSharing";
 import {
   loadZmkConnection,
   writeZmkKeymapDiff,
@@ -48,18 +50,6 @@ const app = {
     customSubsystems: { subsystems: [] },
   },
 };
-const changed = {
-  ...EMPTY_DIFF,
-  bindingChanges: [
-    {
-      layerIndex: 0,
-      layerName: "Base",
-      keyIndex: 0,
-      from: { type: "trans" },
-      to: { type: "none" },
-    },
-  ],
-};
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
     <ZMKAppContext.Provider value={app as never}>
@@ -87,11 +77,7 @@ beforeEach(() => {
   client.getKeymap.mockResolvedValue(record);
   client.updateKeymap.mockResolvedValue({ id: "one", version: 2 });
   (getAbyssClient as jest.Mock).mockReturnValue(client);
-  mockCompare.mockImplementation((a, b) =>
-    JSON.stringify(a.layers) === JSON.stringify(b.layers)
-      ? EMPTY_DIFF
-      : changed,
-  );
+  mockCompare.mockImplementation(compareActual);
 });
 it("previews a file without authentication and never writes on prepare or cancel", async () => {
   const { result } = renderHook(() => useKeymapSharing(false, applied), {
@@ -392,4 +378,197 @@ it("keeps a direct link and completes creation when the browser blocks the tab",
     "https://abyss.keyboard-hub.com/keymap/new-record",
   );
   expect(mockTab.location.replace).not.toHaveBeenCalled();
+});
+
+it("reuses remote layouts, lists, and full records on menu reopen, but refresh forces requests", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  mockCall.mockResolvedValue({
+    keymapIdentifier: { identifier: await keymapIdentifier("one") },
+  });
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+  });
+  client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
+  client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.refresh(false);
+  });
+  expect(result.current.current?.id).toBe("one");
+  const captures = mockLoad.mock.calls.length;
+  await act(async () => {
+    await result.current.refresh(false);
+  });
+  expect(mockLoad.mock.calls.length).toBe(captures + 1); // device stays fresh
+  expect(client.resolveLayout).toHaveBeenCalledTimes(1);
+  expect(client.listMyKeymaps).toHaveBeenCalledTimes(1);
+  expect(client.getKeymap).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  expect(client.getKeymap).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    await result.current.refresh();
+  });
+  expect(client.resolveLayout).toHaveBeenCalledTimes(2);
+  expect(client.listMyKeymaps).toHaveBeenCalledTimes(2);
+  expect(client.getKeymap).toHaveBeenCalledTimes(2);
+});
+
+it("does not reuse another account's cached record", async () => {
+  const { result, rerender } = renderHook(
+    ({ account }) =>
+      useKeymapSharing(true, applied, undefined, undefined, account),
+    { wrapper, initialProps: { account: "a" } },
+  );
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  act(() => result.current.setReview(null));
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  expect(client.getKeymap).toHaveBeenCalledTimes(1);
+  rerender({ account: "b" });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  expect(client.getKeymap).toHaveBeenCalledTimes(2);
+});
+
+it("uploads only selected modules and preserves exclusions in the actual API payload", async () => {
+  const ball = (scaleX: number) => ({
+    name: "ball",
+    type: "trackball",
+    scaleX,
+  });
+  const remote = {
+    ...record,
+    data: {
+      ...target,
+      modules: [ball(1)],
+      layers: [{ ...target.layers[0], modules: [ball(2)] }],
+    },
+  };
+  const local = {
+    ...device,
+    modules: [ball(9)],
+    layers: [{ ...device.layers[0], modules: [ball(8)] }],
+  };
+  client.getKeymap.mockResolvedValue(remote);
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("save", record as never);
+  });
+  act(() =>
+    result.current.selectParts({ ...ALL_SHARING_PARTS, keymap: false }),
+  );
+  expect(result.current.review?.diff.bindingChanges).toHaveLength(0);
+  expect(result.current.review?.diff.moduleChanges).toHaveLength(2);
+  act(() => result.current.selectDirection("apply"));
+  expect(result.current.review?.selection.keymap).toBe(false);
+  act(() => result.current.selectDirection("save"));
+  await act(async () => {
+    await result.current.confirm();
+  });
+  expect(client.updateKeymap).toHaveBeenCalledWith(
+    "one",
+    expect.objectContaining({
+      data: expect.objectContaining({
+        layers: [{ ...target.layers[0], modules: [ball(8)] }],
+        modules: [ball(9)],
+      }),
+    }),
+  );
+});
+
+it("applies the selected keymap without excluded global/layer modules and clears full-map identity", async () => {
+  const ball = (scaleX: number) => ({
+    name: "ball",
+    type: "trackball",
+    scaleX,
+  });
+  const local = {
+    ...device,
+    modules: [ball(1)],
+    layers: [{ ...device.layers[0], modules: [ball(2)] }],
+  };
+  const remote = {
+    ...target,
+    modules: [ball(9)],
+    layers: [{ ...target.layers[0], modules: [ball(8)] }],
+  };
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  let identifier = "aB_9";
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  client.getKeymap.mockResolvedValue({ ...record, data: remote });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  act(() =>
+    result.current.selectParts({
+      ...ALL_SHARING_PARTS,
+      modules: { ball: false },
+    }),
+  );
+  expect(result.current.review?.diff.moduleChanges).toHaveLength(0);
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: local } })
+    .mockResolvedValueOnce({
+      state: {
+        currentKeymap: {
+          ...local,
+          layers: [{ ...local.layers[0], bindings: remote.layers[0].bindings }],
+        },
+      },
+    });
+  await act(async () => {
+    await result.current.confirm();
+  });
+  expect(mockWrite).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({
+      moduleChanges: [],
+      bindingChanges: expect.any(Array),
+    }),
+  );
+  expect(result.current.error).toBeNull();
+  expect(identifier).toBe("");
+});
+
+it("does not write or open a tab with every part excluded", async () => {
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("save", record as never);
+  });
+  act(() =>
+    result.current.selectParts({
+      keymap: false,
+      combos: false,
+      macros: false,
+      modules: {},
+    }),
+  );
+  expect(result.current.review?.diff.bindingChanges).toHaveLength(0);
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(false);
+  });
+  expect(client.updateKeymap).not.toHaveBeenCalled();
+  expect(openTab).not.toHaveBeenCalled();
 });

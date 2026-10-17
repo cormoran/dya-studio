@@ -1,3 +1,4 @@
+import { ALL_SHARING_PARTS } from "../../../lib/abyss/keymapSharing";
 import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -98,6 +99,7 @@ function Harness({
         error={null}
         onClose={close}
         onConfirm={confirm}
+        onSelectionChange={jest.fn()}
         onDirectionChange={(kind) =>
           setReview((current) => ({
             ...current,
@@ -249,10 +251,55 @@ it("omits the Abyss page link for file previews", () => {
         error={null}
         canSave={false}
         onClose={close}
+        onSelectionChange={jest.fn()}
         onDirectionChange={() => {}}
         onConfirm={confirm}
       />
     </LanguageProvider>,
   );
   expect(screen.queryByRole("link", { name: "Open on Abyss" })).toBeNull();
+});
+
+it("starts with every section/module on and preserves selection when cancelling confirmation", async () => {
+  const parts = jest.fn();
+  const module = { name: "ball", type: "trackball", scaleX: 2 };
+  function SelectedPreview() {
+    const [selection, setSelection] = useState(ALL_SHARING_PARTS);
+    return (
+      <LanguageProvider>
+        <KeymapSharingPreview
+          review={{
+            ...base,
+            remote: { ...base.remote, modules: [module] },
+            selection,
+          }}
+          busy={false}
+          error={null}
+          canSave
+          onClose={close}
+          onDirectionChange={() => {}}
+          onSelectionChange={(next) => {
+            setSelection(next);
+            parts(next);
+          }}
+          onConfirm={confirm}
+        />
+      </LanguageProvider>
+    );
+  }
+  render(<SelectedPreview />);
+  for (const box of screen.getAllByRole("checkbox")) expect(box).toBeChecked();
+  await userEvent.click(screen.getByRole("checkbox", { name: "Module: ball" }));
+  expect(parts).toHaveBeenLastCalledWith({
+    ...ALL_SHARING_PARTS,
+    modules: { ball: false },
+  });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.getByRole("checkbox", { name: "Module: ball" }),
+  ).not.toBeChecked();
+  expect(confirm).not.toHaveBeenCalled();
 });

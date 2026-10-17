@@ -11,6 +11,9 @@ import {
   KEYMAP_SCHEMA,
   parseSharedKeymap,
   buildApplyTarget,
+  selectSharingTarget,
+  ALL_SHARING_PARTS,
+  type SharingSelection,
 } from "../lib/abyss/keymapSharing";
 import type {
   AbyssKeymapSummary,
@@ -66,6 +69,7 @@ export type ShareReview = {
   after: KeymapDocument;
   diff: KeymapDiff;
   checks: ReturnType<typeof runPreflight>;
+  selection: SharingSelection;
 };
 const documentOf = (loaded: ZmkLoadedConnection) =>
   loaded.state.currentKeymap as unknown as KeymapDocument;
@@ -81,16 +85,18 @@ function buildReview(
   remote: KeymapDocument,
   record?: AbyssKeymapSummary,
   resolved: AbyssLayoutResolveResult | null = null,
+  selection: SharingSelection = ALL_SHARING_PARTS,
 ): ShareReview {
   const device = documentOf(loaded);
   const before = kind === "save" ? remote : device;
-  const after =
+  const target =
     kind === "save"
       ? {
           ...buildExportData(device, remote, ALL_SECTIONS),
           layers: device.layers,
         }
       : buildApplyTarget(device, remote);
+  const after = selectSharingTarget(before, target, selection);
   const diff = compare(after, before);
   const checks =
     kind === "apply"
@@ -119,6 +125,7 @@ function buildReview(
     after,
     diff,
     checks,
+    selection,
   };
 }
 
@@ -127,6 +134,7 @@ export function useKeymapSharing(
   onApplied: () => Promise<unknown>,
   onUnauthorized?: () => Promise<void>,
   beforeRead?: () => Promise<void>,
+  accountId?: string,
 ) {
   const app = useContext(ZMKAppContext);
   const { runWithUnlock } = useStudioUnlock();
@@ -142,6 +150,11 @@ export function useKeymapSharing(
   const [identity, setIdentity] = useState<
     "unknown" | "unsupported" | "unset" | "known"
   >("unknown");
+  const cache = useRef({
+    layouts: new Map<string, AbyssLayoutResolveResult | null>(),
+    lists: new Map<string, AbyssKeymapSummary[]>(),
+    records: new Map<string, AbyssKeymapSummary>(),
+  });
   const [review, setReview] = useState<ShareReview | null>(null);
   // A connection change invalidates every captured diff, including async completions.
   const connection = app?.state.connection;
@@ -150,6 +163,9 @@ export function useKeymapSharing(
   useEffect(() => {
     session.current = connection;
     generation.current += 1;
+    cache.current.layouts.clear();
+    cache.current.lists.clear();
+    cache.current.records.clear();
     setReview(null);
     setSavedKeymapUrl(null);
     setKeymaps([]);
@@ -160,7 +176,7 @@ export function useKeymapSharing(
     return () => {
       generation.current += 1;
     };
-  }, [connection, authenticated]);
+  }, [connection, authenticated, accountId]);
 
   async function operation(action: (valid: () => void) => Promise<void>) {
     if (busyRef.current) return false;
@@ -221,13 +237,21 @@ export function useKeymapSharing(
     );
     valid();
     const layout = loaded.state.detectedLayout;
-    const resolved =
-      resolve && layout
-        ? ((await getAbyssClient()?.resolveLayout({
+    let resolved: AbyssLayoutResolveResult | null = null;
+    if (resolve && layout) {
+      const key = JSON.stringify([loaded.state.currentKeymap.keyboard, layout]);
+      if (cache.current.layouts.has(key)) {
+        resolved = cache.current.layouts.get(key) ?? null;
+      } else {
+        resolved =
+          (await getAbyssClient()?.resolveLayout({
             keyboard: loaded.state.currentKeymap.keyboard,
             layout: layout as unknown as AbyssLayoutDefinition,
-          })) ?? null)
-        : null;
+          })) ?? null;
+        valid();
+        cache.current.layouts.set(key, resolved);
+      }
+    }
     valid();
     return { loaded, resolved };
   }
@@ -276,14 +300,29 @@ export function useKeymapSharing(
       );
   }
 
+  async function readRecord(id: string, valid: () => void, force = false) {
+    const cached = cache.current.records.get(id);
+    if (cached && !force) return cached;
+    const client = getAbyssClient();
+    if (!client) throw new Error("Keymap data unavailable");
+    const record = await client.getKeymap(id);
+    valid();
+    cache.current.records.set(id, record);
+    return record;
+  }
+
   async function refreshList(valid: () => void) {
     const client = getAbyssClient();
     if (!client || !authenticated) return;
     const { loaded, resolved } = await capture(valid, true);
     // Do not widen to unrelated keyboards in the compact menu.
-    const owned = resolved?.layout
-      ? await listMatchingKeymaps(client, resolved.layout.id)
-      : [];
+    const layoutId = resolved?.layout?.id;
+    let owned = layoutId ? cache.current.lists.get(layoutId) : [];
+    if (!owned) {
+      owned = await listMatchingKeymaps(client, layoutId!);
+      valid();
+      cache.current.lists.set(layoutId!, owned);
+    }
     valid();
     setKeymaps(owned);
     setCurrent(null);
@@ -306,11 +345,11 @@ export function useKeymapSharing(
       remembered &&
       (await keymapIdentifier(remembered)) === identifier
     ) {
-      record = await client.getKeymap(remembered);
+      record = await readRecord(remembered, valid);
       valid();
     }
     if (!record) return;
-    const full = await client.getKeymap(record.id);
+    const full = await readRecord(record.id, valid);
     valid();
     if (!full.data) throw new Error("Keymap data unavailable");
     setCurrent(full);
@@ -321,7 +360,15 @@ export function useKeymapSharing(
     setIdentity("known");
   }
 
-  const refresh = () => operation(refreshList);
+  const refresh = (force = true) =>
+    operation(async (valid) => {
+      if (force) {
+        cache.current.layouts.clear();
+        cache.current.lists.clear();
+        cache.current.records.clear();
+      }
+      await refreshList(valid);
+    });
   const prepare = (
     kind: "apply" | "save",
     record?: AbyssKeymapSummary,
@@ -333,7 +380,7 @@ export function useKeymapSharing(
       const client = getAbyssClient();
       const target =
         file ??
-        (record && client ? (await client.getKeymap(record.id)).data : null);
+        (record && client ? (await readRecord(record.id, valid)).data : null);
       valid();
       if (!target) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
@@ -350,6 +397,21 @@ export function useKeymapSharing(
         review.remote,
         review.record,
         review.resolved,
+        review.selection,
+      ),
+    );
+  };
+
+  const selectParts = (selection: SharingSelection) => {
+    if (busyRef.current || !review) return;
+    setReview(
+      buildReview(
+        review.kind,
+        review.loaded,
+        review.remote,
+        review.record,
+        review.resolved,
+        selection,
       ),
     );
   };
@@ -373,7 +435,12 @@ export function useKeymapSharing(
   }
 
   const confirm = () => {
-    if (busyRef.current || !review || isBlocked(review.checks))
+    if (
+      busyRef.current ||
+      !review ||
+      isBlocked(review.checks) ||
+      isEmptyDiff(review.diff)
+    )
       return Promise.resolve(false);
     const tab = review.kind === "save" ? reserveKeymapTab() : null;
     return operation(async (valid) => {
@@ -393,7 +460,7 @@ export function useKeymapSharing(
       if (pending.kind === "save") {
         const client = getAbyssClient();
         if (!client || !pending.record) return;
-        const latest = (await client.getKeymap(pending.record.id)).data;
+        const latest = (await readRecord(pending.record.id, valid, true)).data;
         valid();
         if (
           !snapshotsEqual(
@@ -409,6 +476,8 @@ export function useKeymapSharing(
           message: "Saved from DYA Studio",
         });
         valid();
+        cache.current.records.delete(pending.record.id);
+        cache.current.lists.clear();
         tab?.show(pending.record.id);
         await associate(pending.record.id, valid);
       } else {
@@ -421,7 +490,13 @@ export function useKeymapSharing(
           throw new Error(
             "The keyboard does not yet match this keymap. Review and try again.",
           );
-        await associate(pending.record?.id ?? null, valid);
+        // A partial transfer cannot claim the complete Abyss identity.
+        const complete =
+          pending.selection.keymap &&
+          pending.selection.combos &&
+          pending.selection.macros &&
+          Object.values(pending.selection.modules).every(Boolean);
+        await associate(complete ? (pending.record?.id ?? null) : null, valid);
         await onApplied();
         valid();
       }
@@ -457,6 +532,8 @@ export function useKeymapSharing(
         ? await client.createKeymap(resolved.layout.variation.id, input)
         : await client.importKeymap(input);
       valid();
+      cache.current.lists.clear();
+      cache.current.records.delete(written.id);
       tab.show(written.id);
       // Once the record exists, a metadata/list failure must not invite a duplicate create.
       setMessage("Saved to Abyss.");
@@ -509,6 +586,7 @@ export function useKeymapSharing(
     review,
     setReview,
     selectDirection,
+    selectParts,
     refresh,
     prepare,
     confirm,

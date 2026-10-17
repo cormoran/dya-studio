@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { useSharedBindingLabel } from "../../hooks/useSharedBindingLabel";
+import { ModuleChangeDetails } from "./ModuleChangeDetails";
 import { SectionCard } from "../troubleshooting/SectionCard";
 import {
   BINDING_ROW_LIMIT,
@@ -125,12 +126,7 @@ function LayerCard({
       )}
 
       {layer.moduleChanges.map((change) => (
-        <p
-          key={change.moduleName}
-          className="text-xs text-[var(--color-text-muted)]"
-        >
-          {t("Module")}: {change.moduleName}
-        </p>
+        <ModuleChangeDetails key={change.moduleName} change={change} />
       ))}
     </SectionCard>
   );
@@ -225,12 +221,7 @@ export function KeymapDiffView({
             {t("Module settings")}
           </h4>
           {globals.map((change) => (
-            <p
-              key={change.moduleName}
-              className="text-xs text-[var(--color-text-muted)]"
-            >
-              {change.moduleName}
-            </p>
+            <ModuleChangeDetails key={change.moduleName} change={change} />
           ))}
         </div>
       )}

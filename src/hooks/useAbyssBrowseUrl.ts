@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import {
   abyssDiscoverUrl,
@@ -15,20 +15,28 @@ export function useAbyssBrowseUrl(open: boolean) {
     name: string;
     url: string;
   } | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const pending = useRef<AbortSignal | null>(null);
+  useEffect(() => {
+    const next = new AbortController();
+    controller.current = next;
+    return () => next.abort();
+  }, [connection, deviceName]);
   useEffect(() => {
     if (!open || !connection || !deviceName) return;
-    const controller = new AbortController();
-    void findAbyssKeyboardUrl(deviceName, controller.signal)
+    if (result?.connection === connection && result.name === deviceName) return;
+    const signal = controller.current!.signal;
+    if (pending.current === signal) return;
+    pending.current = signal;
+    void findAbyssKeyboardUrl(deviceName, signal)
       .then((url) => {
-        if (!controller.signal.aborted)
-          setResult({ connection, name: deviceName, url });
+        if (!signal.aborted) setResult({ connection, name: deviceName, url });
       })
       .catch(() => {
-        if (!controller.signal.aborted)
+        if (!signal.aborted)
           setResult({ connection, name: deviceName, url: abyssDiscoverUrl() });
       });
-    return () => controller.abort();
-  }, [open, connection, deviceName]);
+  }, [open, connection, deviceName, result]);
   return result &&
     result.connection === connection &&
     result.name === deviceName

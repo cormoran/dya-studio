@@ -9,6 +9,11 @@ import {
   isEmptyDiff,
   type KeymapDiff,
 } from "../../lib/abyss/abyssDiff";
+import {
+  ALL_SHARING_PARTS,
+  sharingModuleNames,
+  type SharingSelection,
+} from "../../lib/abyss/keymapSharing";
 import { abyssKeymapUrl } from "../../lib/abyss/abyssConfig";
 import { isBlocked } from "../../lib/abyss/abyssPreflight";
 import { EditorTooltip } from "../EditorTooltip";
@@ -24,6 +29,7 @@ export function KeymapSharingPreview({
   canSave,
   onClose,
   onDirectionChange,
+  onSelectionChange,
   onConfirm,
 }: {
   review: ShareReview;
@@ -32,6 +38,7 @@ export function KeymapSharingPreview({
   canSave: boolean;
   onClose: () => void;
   onDirectionChange: (kind: ShareReview["kind"]) => void;
+  onSelectionChange: (selection: SharingSelection) => void;
   onConfirm: () => Promise<unknown>;
 }) {
   const { t } = useLanguage();
@@ -48,6 +55,11 @@ export function KeymapSharingPreview({
   );
   const helpSave = t(
     "Update this Abyss keymap with the keyboard's current settings as a new version.",
+  );
+  const selection = review.selection ?? ALL_SHARING_PARTS;
+  const modules = sharingModuleNames(
+    review.remote,
+    review.loaded.state.currentKeymap as unknown as typeof review.remote,
   );
   const counts = countDiff(review.diff);
   const empty = isEmptyDiff(review.diff);
@@ -137,6 +149,70 @@ export function KeymapSharingPreview({
                   </Tabs.List>
                 </Tabs.Root>
               )}
+              <fieldset
+                disabled={busy || confirming}
+                className="shrink-0 max-h-36 overflow-auto px-3 py-2 border-b border-[var(--color-border)]"
+              >
+                <legend className="text-xs text-[var(--color-text-muted)] px-1">
+                  {t("Include")}
+                </legend>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  {(["keymap", "combos", "macros"] as const).map((part) => (
+                    <label
+                      key={part}
+                      className="flex items-center gap-2 text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-[var(--color-electric)]"
+                        checked={selection[part]}
+                        onChange={(event) =>
+                          onSelectionChange({
+                            ...selection,
+                            [part]: event.target.checked,
+                          })
+                        }
+                      />
+                      {t(
+                        part === "keymap"
+                          ? "Keymap (layers & key bindings)"
+                          : part === "combos"
+                            ? "Combos"
+                            : "Macros",
+                      )}
+                    </label>
+                  ))}
+                  {modules.map((name) => (
+                    <label
+                      key={name}
+                      className="flex items-center gap-2 text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-[var(--color-electric)]"
+                        checked={selection.modules[name] !== false}
+                        onChange={(event) =>
+                          onSelectionChange({
+                            ...selection,
+                            modules: {
+                              ...selection.modules,
+                              [name]: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      {t("Module")}: {name}
+                    </label>
+                  ))}
+                </div>
+                {!selection.keymap && (
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                    {t(
+                      "Module settings for new layers require Keymap to be selected.",
+                    )}
+                  </p>
+                )}
+              </fieldset>
               <div className="shrink-0 px-3 py-2 border-b border-[var(--color-border)]">
                 <Tabs.List
                   aria-label={t("Preview format")}
@@ -268,9 +344,7 @@ export function KeymapSharingPreview({
                 <EditorTooltip content={save ? helpSave : helpApply}>
                   <button
                     className="btn-electric text-sm"
-                    disabled={
-                      busy || blocked || (empty && (save || !review.record))
-                    }
+                    disabled={busy || blocked || empty}
                     onClick={() => setConfirming(true)}
                   >
                     {save ? t("Update Abyss keymap") : t("Apply to keyboard")}
@@ -301,6 +375,17 @@ export function KeymapSharingPreview({
             <p className="text-sm">
               {t("{{count}} changes", { count: counts.total })}
             </p>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {t("Include")}:{" "}
+              {[
+                selection.keymap && t("Keymap"),
+                selection.combos && t("Combos"),
+                selection.macros && t("Macros"),
+                ...modules.filter((name) => selection.modules[name] !== false),
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </p>
             {!save && (
               <p className="text-xs text-[var(--color-text-muted)]">
                 {t(
@@ -320,9 +405,7 @@ export function KeymapSharingPreview({
               </Dialog.Close>
               <button
                 className="btn-electric text-sm"
-                disabled={
-                  busy || blocked || (empty && (save || !review.record))
-                }
+                disabled={busy || blocked || empty}
                 onClick={() => void onConfirm()}
               >
                 {save ? t("Save to Abyss") : t("Apply to keyboard")}

@@ -33,6 +33,7 @@ export function KeymapSharingMenu({
     onApplied,
     auth.logout,
     beforeRead,
+    auth.user?.username,
   );
   const [open, setOpen] = useState(false);
   const browseUrl = useAbyssBrowseUrl(open);
@@ -44,7 +45,7 @@ export function KeymapSharingMenu({
   const review = sharing.review;
   const error = sharing.error ?? auth.error;
   const refreshOnOpen = useEffectEvent(() => {
-    void sharing.refresh();
+    void sharing.refresh(false);
   });
   useEffect(() => {
     if (open && auth.isAuthenticated) refreshOnOpen();
@@ -315,6 +316,7 @@ export function KeymapSharingMenu({
           }
           onClose={() => sharing.setReview(null)}
           onDirectionChange={sharing.selectDirection}
+          onSelectionChange={sharing.selectParts}
           onConfirm={sharing.confirm}
         />
       )}
