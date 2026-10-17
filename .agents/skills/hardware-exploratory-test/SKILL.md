@@ -121,6 +121,11 @@ report unavailable defaults before choosing a supported model. Escalate reasonin
 for a difficult verdict, not an inaccessible browser. Give each device owner
 only 1–2 editing pages and bounded 3–5 charters. Do not launch simultaneous DUT
 workers to speed up a single-keyboard run.
+After terminal reuse, verify the current model/effort again and require an
+acknowledgement of the full current Task/Dispatch brief before granting a DUT
+lease. Accepted input without an observed turn is not delivery proof. Inspect
+the existing attempt and use the orchestration guide's recovery procedure;
+never create a duplicate device worker from a timeout alone.
 Keep smaller-model assignments narrow. Keymap plus file sharing, history,
 connected Home and a visual matrix can overload one assignment despite sharing
 a route; split that work before dispatch or use the workhorse for the combined
