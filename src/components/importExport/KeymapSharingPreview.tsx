@@ -103,9 +103,10 @@ export function KeymapSharingPreview({
                   <Dialog.Title className="min-w-0 text-base font-medium break-words">
                     {t("Preview {{name}}", { name })}
                   </Dialog.Title>
-                  {review.record?.visibility === "public" && (
+                  {(review.record?.visibility === "private" ||
+                    review.record?.visibility === "public") && (
                     <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
-                      public
+                      {review.record.visibility}
                     </span>
                   )}
                 </div>
