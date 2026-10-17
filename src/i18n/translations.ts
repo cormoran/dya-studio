@@ -404,6 +404,8 @@ const ja: Record<string, string> = {
   "Reorder layer {{layer}}": "{{layer}} を並べ替え",
   "Drag to reorder. Use Left or Right arrow keys to move a layer.":
     "ドラッグで並べ替え。左右矢印キーでも移動できます。",
+  "Drag to reorder. Use Up or Down arrow keys to move a layer.":
+    "ドラッグで並べ替え。上下矢印キーでも移動できます。",
   "Current layer": "現在のレイヤー",
   "Layer actions": "レイヤー操作",
   "Layout and display": "配列と表示",
@@ -2018,6 +2020,8 @@ const zh: Record<string, string> = {
   "Reorder layer {{layer}}": "调整层 {{layer}} 的顺序",
   "Drag to reorder. Use Left or Right arrow keys to move a layer.":
     "拖动以调整顺序。也可以使用左右方向键移动层。",
+  "Drag to reorder. Use Up or Down arrow keys to move a layer.":
+    "拖动以调整顺序。也可以使用上下方向键移动层。",
   "Current layer": "当前层",
   "Layer actions": "层操作",
   "Layout and display": "布局与显示",

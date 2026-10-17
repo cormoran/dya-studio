@@ -167,7 +167,8 @@
 .keymap-layer-icon:hover {
   background: var(--color-border);
 }
-.keymap-layer-icon:disabled {
+.keymap-layer-icon:disabled,
+.keymap-layer-icon[aria-disabled="true"] {
   opacity: 0.3;
 }
 .keymap-layer-drag {
@@ -202,6 +203,29 @@
   cursor: not-allowed;
 }
 @media (max-width: 639px) {
+  .keymap-layer-toolbar[data-editing="true"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-label {
+    display: none;
+  }
+  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-tabs {
+    flex-direction: column;
+    flex: none;
+    width: 100%;
+    overflow: visible;
+  }
+  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-item {
+    width: 100%;
+  }
+  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-item .keymap-layer {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
   .keymap-layer-actions {
     margin-left: auto;
   }

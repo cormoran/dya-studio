@@ -1,8 +1,16 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { Reorder, useDragControls } from "framer-motion";
 import { IconGripVertical, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { EditorTooltip } from "./EditorTooltip";
+
+const mobileLayerQuery = "(max-width: 639px)";
+const subscribeToMobileLayout = (onChange: () => void) => {
+  const query = window.matchMedia(mobileLayerQuery);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
+const isMobileLayout = () => window.matchMedia(mobileLayerQuery).matches;
 
 type Layer = { id: number; name: string };
 type Props = {
@@ -18,11 +26,22 @@ type Props = {
 
 export function KeymapLayerTabs(props: Props) {
   const { t } = useLanguage();
+  const mobile = useSyncExternalStore(
+    subscribeToMobileLayout,
+    isMobileLayout,
+    () => false,
+  );
+  const axis = props.editing && mobile ? "y" : "x";
   const ids = props.layers.map((layer) => layer.id);
   const [order, setOrder] = useState(ids);
   const [dragging, setDragging] = useState(false);
   const [committing, setCommitting] = useState(false);
   const orderRef = useRef(order);
+  const [previousAxis, setPreviousAxis] = useState(axis);
+  if (previousAxis !== axis) {
+    setPreviousAxis(axis);
+    setDragging(false);
+  }
   // External reload/discard can replace the list. A failed move also resets the
   // optimistic order when the commit finishes; device order remains authoritative.
   if (!dragging && !committing && order.join() !== ids.join()) {
@@ -32,7 +51,8 @@ export function KeymapLayerTabs(props: Props) {
   const busy = props.busy || committing;
   return (
     <Reorder.Group
-      axis="x"
+      key={axis}
+      axis={axis}
       values={order}
       onReorder={(next) => {
         orderRef.current = next;
@@ -52,6 +72,7 @@ export function KeymapLayerTabs(props: Props) {
             key={id}
             {...props}
             busy={busy}
+            axis={axis}
             layer={props.layers[index]}
             index={index}
             onDragStart={() => setDragging(true)}
@@ -76,15 +97,19 @@ function LayerItem({
   index,
   onDragStart,
   onDragEnd,
+  axis,
   ...props
 }: Props & {
   layer: Layer;
   index: number;
+  axis: "x" | "y";
   onDragStart: () => void;
   onDragEnd: () => void;
 }) {
   const { t } = useLanguage();
   const controls = useDragControls();
+  const previousKey = axis === "y" ? "ArrowUp" : "ArrowLeft";
+  const nextKey = axis === "y" ? "ArrowDown" : "ArrowRight";
   const name = layer.name || t("Layer {{id}}", { id: index });
   const reorderLabel = t("Reorder layer {{layer}}", { layer: name });
   if (!props.editing) {
@@ -110,7 +135,7 @@ function LayerItem({
       layout="position"
       dragListener={false}
       dragControls={controls}
-      drag={props.editing && !props.busy ? "x" : false}
+      drag={props.editing && !props.busy ? axis : false}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       data-selected={index === props.selectedIndex}
@@ -120,25 +145,27 @@ function LayerItem({
       {props.editing && (
         <EditorTooltip
           content={t(
-            "Drag to reorder. Use Left or Right arrow keys to move a layer.",
+            axis === "y"
+              ? "Drag to reorder. Use Up or Down arrow keys to move a layer."
+              : "Drag to reorder. Use Left or Right arrow keys to move a layer.",
           )}
         >
           <button
             type="button"
             className="keymap-layer-icon keymap-layer-drag"
             aria-label={reorderLabel}
-            disabled={props.busy}
+            aria-disabled={props.busy}
             onPointerDown={(event) => {
               if (!props.busy) controls.start(event);
             }}
             onKeyDown={(event) => {
               const to =
-                event.key === "ArrowLeft"
+                event.key === previousKey
                   ? index - 1
-                  : event.key === "ArrowRight"
+                  : event.key === nextKey
                     ? index + 1
                     : index;
-              if (event.key === "ArrowLeft" || event.key === "ArrowRight")
+              if (event.key === previousKey || event.key === nextKey)
                 event.preventDefault();
               if (
                 !props.busy &&

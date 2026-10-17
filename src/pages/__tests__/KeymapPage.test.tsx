@@ -1755,6 +1755,72 @@ describe("KeymapPage", () => {
       ).toBeInTheDocument();
     });
 
+    it("uses vertical keyboard reordering on mobile and switches axes when resized", async () => {
+      const user = userEvent.setup();
+      const originalMatchMedia = window.matchMedia;
+      let mobile = true;
+      let changed = () => {};
+      window.matchMedia = jest.fn((query: string) => ({
+        ...originalMatchMedia(query),
+        matches: query === "(max-width: 639px)" && mobile,
+        addEventListener: (_event: string, listener: () => void) => {
+          changed = listener;
+        },
+        removeEventListener: jest.fn(),
+      }));
+      let reversed = false;
+      const moveLayer = jest.fn(async () => {
+        reversed = !reversed;
+        replaceKeymap({
+          keymap: {
+            ...mockKeymap,
+            layers: reversed
+              ? [...mockKeymap.layers].reverse()
+              : mockKeymap.layers,
+          },
+        });
+        return true;
+      });
+      const { replaceKeymap } = renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          moveLayer,
+        },
+      );
+      try {
+        await user.click(screen.getByRole("button", { name: "Edit layers" }));
+        screen.getByRole("button", { name: "Reorder layer Base" }).focus();
+        await user.keyboard("{ArrowRight}");
+        expect(moveLayer).not.toHaveBeenCalled();
+        await user.keyboard("{ArrowDown}");
+        expect(moveLayer).toHaveBeenCalledWith(0, 1);
+        expect(
+          screen.getByRole("button", { name: "Base", exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+        await act(async () => {
+          mobile = false;
+          changed();
+        });
+        expect(moveLayer).toHaveBeenCalledTimes(1);
+        screen.getByRole("button", { name: "Reorder layer Base" }).focus();
+        await user.keyboard("{ArrowUp}");
+        expect(moveLayer).toHaveBeenCalledTimes(1);
+        await user.keyboard("{ArrowLeft}");
+        expect(moveLayer).toHaveBeenLastCalledWith(1, 0);
+        expect(
+          screen.getByRole("button", { name: "Base", exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+        expect(
+          screen.getByRole("button", { name: "Reorder layer Base" }),
+        ).toHaveFocus();
+      } finally {
+        window.matchMedia = originalMatchMedia;
+      }
+    });
+
     it("blocks duplicate moves while pending and keeps selection on a failed move", async () => {
       const user = userEvent.setup();
       let finish!: (result: boolean) => void;
