@@ -131,14 +131,18 @@ export function RuntimeEditorModal({
           aria-describedby={undefined}
           className="fixed left-1/2 top-1/2 z-[60] flex max-h-[90dvh] w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--color-border)] p-4 sm:flex sm:flex-wrap sm:justify-between">
             <Dialog.Title className="min-w-0 flex-1 text-lg font-medium text-[var(--color-text)]">
               {title}
             </Dialog.Title>
-            {actions}
+            {actions && (
+              <div className="col-span-2 row-start-2 flex flex-wrap items-center gap-3 sm:contents">
+                {actions}
+              </div>
+            )}
             <Dialog.Close
               disabled={busy}
-              className="btn-ghost p-1"
+              className="btn-ghost col-start-2 row-start-1 p-1"
               aria-label={t("Close")}
             >
               <IconX size={20} />
