@@ -33,17 +33,9 @@
     --glass-bg: #f2faff;
     --glass-border: #d4e8f2;
 
-    --scrollbar-size: 4px;
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
     --scrollbar-thumb-hover: var(--pop-leaf);
-  }
-}
-
-@supports not selector(::-webkit-scrollbar) {
-  :root.pop,
-  :root.pop * {
-    scrollbar-width: thin;
   }
 }
 
