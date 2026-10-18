@@ -891,9 +891,12 @@ export function KeycodeSelector({
                         aria-label={t("Close on select")}
                         aria-pressed={closeOnSelect}
                         onClick={() => setCloseOnSelect((enabled) => !enabled)}
-                        className={`p-1 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                        className={`inline-flex items-center gap-1.5 p-1 sm:px-2 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
                       >
                         <IconBolt size={16} />
+                        <span className="hidden whitespace-nowrap text-xs sm:inline">
+                          {t("Close on select")}
+                        </span>
                       </button>
                     </EditorTooltip>
                   )}

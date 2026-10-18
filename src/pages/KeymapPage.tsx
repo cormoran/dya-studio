@@ -1765,11 +1765,14 @@ export function KeymapPage() {
               >
                 <button
                   type="button"
-                  className="p-1 rounded hover:bg-[var(--color-border)]"
+                  className="inline-flex items-center gap-1.5 p-1 sm:px-2 rounded hover:bg-[var(--color-border)]"
                   aria-label={t(mobile ? "Sheet mode" : "Floating mode")}
                   onClick={() => setSelectorMode("floating")}
                 >
                   <IconAppWindow size={16} />
+                  <span className="hidden whitespace-nowrap text-xs sm:inline">
+                    {t("Floating mode")}
+                  </span>
                 </button>
               </EditorTooltip>
             )}
@@ -1819,9 +1822,12 @@ export function KeymapPage() {
                     aria-pressed={autoAdvance}
                     disabled={isApplyingBinding}
                     onClick={() => setAutoAdvance(!autoAdvance)}
-                    className={`p-1 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                    className={`inline-flex items-center gap-1.5 p-1 sm:px-2 rounded disabled:opacity-40 ${autoAdvance ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
                   >
                     <IconPlayerTrackNext size={16} />
+                    <span className="hidden whitespace-nowrap text-xs sm:inline">
+                      {t("Auto advance")}
+                    </span>
                   </button>
                 </EditorTooltip>
                 <EditorTooltip content={t("Edit the previous key")}>
@@ -1882,7 +1888,7 @@ export function KeymapPage() {
             >
               <button
                 type="button"
-                className="p-1 rounded hover:bg-[var(--color-border)]"
+                className="inline-flex items-center gap-1.5 p-1 sm:px-2 rounded hover:bg-[var(--color-border)]"
                 aria-label={t(mobile ? "Sheet mode" : "Floating mode")}
                 onClick={() => {
                   selectionRevision.current += 1;
@@ -1890,6 +1896,9 @@ export function KeymapPage() {
                 }}
               >
                 <IconAppWindow size={16} />
+                <span className="hidden whitespace-nowrap text-xs sm:inline">
+                  {t("Floating mode")}
+                </span>
               </button>
             </EditorTooltip>
           )
