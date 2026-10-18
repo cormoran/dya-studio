@@ -151,6 +151,8 @@ Rename の失敗変形: Demo で ASCII 32文字（advertised max length）を入
 1. Runtime Macro 対応時、key selector の `New macro` を開く。入力だけで device 値が変わらないことを確認し、作成後に param1 と `Macro` category の候補へ反映されることを確認する。
 2. `Edit macros` で変更して Close を選び、discard 確認から `Keep editing` / `Discard edits and close` の双方を確認する。検証で作った macro は削除せず残存値を記録する。
 
+横並びレイヤー行ではスクロールバーの領域を常に確保し、横スクロールの有無で行の高さ・レイヤー・右側操作の縦位置が変化しないようにする。上下の余白を揃え、レイヤーと右側操作の中心を合わせる。モバイルの編集中は縦リストのためこの横スクロール領域を持たない（KM-018、2026-10-18ユーザー明示要求）。
+
 ## 不変条件
 
 - KM-I01: 別の layer/position に binding を誤適用しない。前後 2 キーと別 layer を比較（KM-R01、S1）。

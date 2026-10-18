@@ -66,13 +66,7 @@ export function AppLayout({
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="status-indicator connected flex-shrink-0" />
                 <div className="flex min-w-0 flex-col">
-                  <span
-                    className="truncate text-xs leading-4 text-[var(--color-text-secondary)]"
-                    title={deviceName}
-                  >
-                    {deviceName || t("Connected")}
-                  </span>
-                  <span className="text-[10px] leading-3 text-[var(--color-text-muted)] whitespace-nowrap">
+                  <span className="text-[10px] leading-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
                     {connectionMethod === "serial"
                       ? "USB"
                       : connectionMethod === "ble"
@@ -80,6 +74,12 @@ export function AppLayout({
                         : connectionMethod === "demo"
                           ? "Demo"
                           : t("Connected")}
+                  </span>
+                  <span
+                    className="truncate text-base leading-5 text-[var(--color-text-secondary)]"
+                    title={deviceName}
+                  >
+                    {deviceName || t("Connected")}
                   </span>
                 </div>
               </div>
