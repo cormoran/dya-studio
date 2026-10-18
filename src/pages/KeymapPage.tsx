@@ -1548,7 +1548,7 @@ export function KeymapPage() {
                     {t("No runtime combos configured")}
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {runtimeCombo.combos.map((combo, position) => {
                       const status = comboEditStatus(
                         combo.source,
@@ -1562,7 +1562,7 @@ export function KeymapPage() {
                           key={combo.index}
                           type="button"
                           data-testid={`combo-list-item-${combo.index}`}
-                          className={`min-w-56 max-w-full flex-[1_1_14rem] p-3 rounded-lg border text-left transition-colors ${
+                          className={`min-w-0 w-full p-3 rounded-lg border text-left transition-colors ${
                             isUnsaved
                               ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
                               : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/60"

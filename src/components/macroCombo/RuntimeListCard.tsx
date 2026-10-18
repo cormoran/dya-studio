@@ -96,14 +96,14 @@ export function RuntimeListCard({
           {t("No items")}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {items.map((item) => (
           <button
             key={item.id}
             type="button"
             disabled={busy}
             onClick={item.onClick}
-            className={`min-w-0 max-w-full flex-[1_1_14rem] p-3 rounded-lg border text-left transition-colors disabled:opacity-40 ${item.dirty ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 text-[var(--color-neon)]" : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/60"}`}
+            className={`min-w-0 w-full p-3 rounded-lg border text-left transition-colors disabled:opacity-40 ${item.dirty ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 text-[var(--color-neon)]" : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/60"}`}
           >
             <span className="flex items-center gap-2 text-sm font-medium">
               <span className="truncate">{item.name}</span>

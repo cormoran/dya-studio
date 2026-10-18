@@ -1040,7 +1040,12 @@ describe("KeymapPage", () => {
       );
 
       const item = screen.getByTestId("combo-list-item-0");
-      expect(item).toHaveClass("min-w-56", "flex-[1_1_14rem]");
+      expect(item).toHaveClass("min-w-0", "w-full");
+      expect(item.parentElement).toHaveClass(
+        "grid",
+        "grid-cols-2",
+        "sm:grid-cols-3",
+      );
       expect(item).toHaveTextContent("0 + 1");
       expect(item).toHaveTextContent("Layers: Base, Lower, Raise");
       expect(item).not.toHaveTextContent("0x7");
