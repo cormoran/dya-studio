@@ -83,6 +83,8 @@ KM-017: ページ全体の横スクロール防止と主要操作の狭幅表示
 
 KM-026: モバイル（640px未満）では Floating mode の入口を Sheet mode と表示する。`keymapSelectorMode` が未設定の場合はモバイルでsheet、640px以上ではmodalを初期値とする。保存済みのmodal/floating設定は画面幅より優先し、設定を読めない場合も同じviewport別の初期値を使う。通常キーまたはpreviewのcombo selectorをsheetで開いている間、ページ見出し・Save/Reload等の操作・layer選択より上の通知/読込表示を隠し、上側workspaceの先頭をlayer選択とkeyboard previewにする。sheetを開いた時/モバイル幅に切替えた時は上側を先頭へscrollし、previewのキー/comboから対象を変更できる。layer変更では既存の契約どおりselectorを閉じ、次にキーを選ぶと保存済みmodeで再び開く。両selectorは排他で、切替えてもsheetは1枚だけ。既存の自動適用・次キー移動・layer変更・エラー・RAM/flash保存条件は維持する。通知は通常表示へ復帰すれば再表示され、binding適用エラーはsheet内にも表示する。Close/Escapeでsheetを閉じるかDialog modeへ戻すと通常のheader/tab/ページ操作が復帰する。詳細は[BIND-025](../modules/binding-editor.md)と[SHELL-023](../modules/app-shell.md)。根拠は2026-10-18ユーザー明示要求、S1/S3/S4。
 
+KM-027: floating / sheet の Auto advance がONで次キーへ移った際、移動先のキーがpreviewまたは上側workspaceの表示範囲外なら、そのキーが見える位置まで縦/横のscroll領域を必要最小限だけ動かす。すでに見えるキーではscroll位置を動かさず、editorのfocusを維持する。連続適用でscroll animationを積み重ねない。OFF時や適用失敗で選択が進まない場合は次キーへのscrollを行わない。末尾でeditorを閉じる動作と保存境界はKM-004/005のまま。根拠は2026-10-18ユーザー明示要求、S1の選択キーに対する `scrollIntoView`（縦横 `nearest`）。
+
 ## 代表ユーザーフロー
 
 削除済みlayerの復元メニューもviewport端から8px以上を確保し、高さを超える項目はメニュー内で縦スクロールする。外側タップ/Escapeで閉じ、項目選択まで復元を実行しない（KM-011/017、S1のPopover）。
@@ -98,7 +100,7 @@ KM-026: モバイル（640px未満）では Floating mode の入口を Sheet mod
 ### F2: 連続編集の境界（KM-003/004/005/006）
 
 1. キーを開き `Floating mode`。header の対象 `Key position` を記録し、behavior の説明を表示しないことを確認。
-2. Auto advance の押下状態を確認し ON にする。異なる binding を選ぶ → `Key position` が次へ進み、selector は開いたまま。
+2. Auto advance の押下状態を確認し ON にする。異なる binding を選ぶ → `Key position` が次へ進み、selector は開いたまま。次キーが上側workspaceやpreviewの表示範囲外になる配置でも続け、必要な縦/横scroll後に選択キー全体が見えることを確認する。すでに見えるキーではscroll位置が変わらず、focusはeditorに残る（KM-027）。
 3. OFF にして別 binding を選ぶ → `Key position` が変わらない。Next → 次の `Key position`（binding は適用しない）。
 4. preview の最後のキーを選び、Next 無効を確認。ON で適用 → selector が閉じ、layer は変わらない。
 5. 再度開いて mode を往復し、floating の状態で Escape → 未適用値が書かれていないことを確認。modal の Close/Escape は適用して閉じるため取消として使わない。編集は Reset → Discard で破棄し、元の mode/auto advance を復帰。

@@ -536,6 +536,39 @@ describe("KeymapPage", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
+    it("reveals the next selected key with minimal scrolling only while auto advance is on", async () => {
+      const { user } = await setup();
+      const keys = screen.getAllByRole("button", { name: /Key position \d+:/ });
+      const revealNext = jest.fn();
+      const revealLast = jest.fn();
+      keys[1].scrollIntoView = revealNext;
+      keys[2].scrollIntoView = revealLast;
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(keys[1]).toHaveAttribute("aria-current", "true");
+      expect(revealNext).toHaveBeenCalledWith({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "instant",
+      });
+      expect(revealLast).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button", { name: "Auto advance" }));
+      revealNext.mockClear();
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(keys[1]).toHaveAttribute("aria-current", "true");
+      expect(revealNext).not.toHaveBeenCalled();
+      expect(revealLast).not.toHaveBeenCalled();
+    });
+
+    it("does not reveal a next key after a failed binding application", async () => {
+      const { user } = await setup(jest.fn().mockResolvedValue(false));
+      const keys = screen.getAllByRole("button", { name: /Key position \d+:/ });
+      const revealNext = jest.fn();
+      keys[1].scrollIntoView = revealNext;
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(keys[0]).toHaveAttribute("aria-current", "true");
+      expect(revealNext).not.toHaveBeenCalled();
+    });
+
     it("advances on keycode and parameterless behavior selection without closing", async () => {
       const { user, setBinding } = await setup();
       await user.click(screen.getByRole("button", { name: "B", exact: true }));

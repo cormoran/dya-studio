@@ -738,6 +738,34 @@ export function KeymapPage() {
     if (sheetOpen && mobile && pageRef.current) pageRef.current.scrollTop = 0;
   }, [sheetOpen, mobile]);
 
+  useLayoutEffect(() => {
+    if (
+      !sheetOpen ||
+      !showKeycodeSelector ||
+      !autoAdvance ||
+      selectedKeyPosition === null
+    )
+      return;
+    // Reveal only as far as needed in each scrollable ancestor, including the
+    // preview's horizontal scroller and the workspace above a mobile sheet.
+    // Keep focus in the binding editor and avoid queued scroll animations.
+    pageRef.current
+      ?.querySelector<HTMLElement>(
+        `[data-key-position="${selectedKeyPosition}"]`,
+      )
+      ?.scrollIntoView?.({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "instant",
+      });
+  }, [
+    sheetOpen,
+    showKeycodeSelector,
+    autoAdvance,
+    selectedKeyPosition,
+    mobile,
+  ]);
+
   return (
     <div
       ref={pageRef}
