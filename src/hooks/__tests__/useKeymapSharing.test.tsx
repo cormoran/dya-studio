@@ -606,3 +606,48 @@ it("keeps the Abyss preview busy during writing and closes it only after verifie
   expect(result.current.review).toBeNull();
   expect(result.current.message).toBe("Applied to keyboard.");
 });
+
+it.each(["success", "rejected", "mismatched"] as const)(
+  "stores the Abyss identifier after verified application: %s",
+  async (outcome) => {
+    const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+    const expected = await keymapIdentifier(record.id);
+    let identifier = "";
+    mockCall.mockImplementation(async (request) => {
+      if (request.setKeymapIdentifier) {
+        if (outcome === "rejected") return { error: { code: 0 } };
+        if (outcome === "success")
+          identifier = request.setKeymapIdentifier.identifier;
+        return { setKeymapIdentifier: {} };
+      }
+      return { keymapIdentifier: { identifier } };
+    });
+    const { result } = renderHook(() => useKeymapSharing(false, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", record as never);
+    });
+    expect(mockCall).not.toHaveBeenCalled();
+    mockLoad
+      .mockResolvedValueOnce({ state: { currentKeymap: device } })
+      .mockResolvedValueOnce({ state: { currentKeymap: target } });
+    await act(async () => {
+      await result.current.confirm();
+    });
+    expect(mockCall).toHaveBeenCalledWith({
+      setKeymapIdentifier: { identifier: expected },
+    });
+    if (outcome === "success") {
+      expect(identifier).toBe(expected);
+      expect(result.current.review).toBeNull();
+      expect(result.current.error).toBeNull();
+      expect(applied).toHaveBeenCalledTimes(1);
+    } else {
+      expect(result.current.review).not.toBeNull();
+      expect(result.current.error).toMatch(/identity could not be/);
+      expect(result.current.message).toBeNull();
+      expect(applied).not.toHaveBeenCalled();
+    }
+  },
+);
