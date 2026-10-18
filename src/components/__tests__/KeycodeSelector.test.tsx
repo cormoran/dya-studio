@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { KeycodeValueSelector } from "../KeycodeValueSelector";
@@ -591,4 +591,69 @@ it("applies a saved macro shortcut as a Runtime Macro binding", async () => {
     param1: 4,
     param2: 0,
   });
+});
+
+it("switches a floating editor to a fixed mobile sheet without applying or resetting its target", () => {
+  let mobile = false;
+  const listeners = new Set<() => void>();
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = jest.fn((query: string) => ({
+    ...originalMatchMedia(query),
+    matches: query === "(max-width: 639px)" && mobile,
+    addEventListener: (_event: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_event: string, listener: () => void) =>
+      listeners.delete(listener),
+  }));
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  try {
+    render(
+      <KeycodeSelector
+        open
+        presentation="floating"
+        targetLabel="Base · Key position 2: C"
+        floatingPosition={{ left: 220, top: 170 }}
+        onFloatingPositionChange={jest.fn()}
+        onClose={onClose}
+        onSelect={onSelect}
+        currentBinding={{ behaviorId: 1, param1: 0x70006, param2: 0 }}
+        behaviors={new Map([[1, BEHAVIORS[0]]])}
+        layers={[]}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toHaveStyle({
+      left: "220px",
+      top: "170px",
+    });
+    act(() => {
+      mobile = true;
+      listeners.forEach((notify) => notify());
+    });
+    expect(screen.getByRole("dialog")).toHaveAttribute(
+      "data-presentation",
+      "sheet",
+    );
+    expect(screen.getByRole("dialog").style.left).toBe("");
+    expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+      "Base · Key position 2: C",
+    );
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => {
+      mobile = false;
+      listeners.forEach((notify) => notify());
+    });
+    expect(screen.getByRole("dialog")).toHaveAttribute(
+      "data-presentation",
+      "floating",
+    );
+    expect(screen.getByRole("dialog")).toHaveStyle({
+      left: "220px",
+      top: "170px",
+    });
+    expect(onSelect).not.toHaveBeenCalled();
+  } finally {
+    window.matchMedia = originalMatchMedia;
+  }
 });

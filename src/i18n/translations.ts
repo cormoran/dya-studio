@@ -9,6 +9,9 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Sheet mode": "シートモード",
+  "Edit in a bottom sheet below the keyboard preview":
+    "キーボードのプレビューの下に固定したシートで編集します",
   // Explain the result of toolbar actions without repeating their labels.
   "Highlight keys pressed on your keyboard when turned on":
     "ON にすると押したキーボードのキーをハイライトします",
@@ -1724,6 +1727,9 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Sheet mode": "底部面板模式",
+  "Edit in a bottom sheet below the keyboard preview":
+    "在键盘预览下方固定的底部面板中编辑",
   // Explain the result of toolbar actions without repeating their labels.
   "Highlight keys pressed on your keyboard when turned on":
     "开启后，高亮显示键盘上按下的按键",

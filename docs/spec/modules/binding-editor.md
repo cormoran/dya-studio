@@ -30,7 +30,7 @@ caller が open、currentBinding、behaviors、layers と onSelect を渡す。`
 
 ## 現行の機能仕様
 
-BIND-011: floating editor は680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
+BIND-011: floating editor は640px以上で680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。640px未満の表示はBIND-025のsheetとする。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
 
 BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モバイルブラウザのfocus時自動拡大を避ける。modalの選択済みbehavior名と説明は1行を維持し、利用可能幅を超える部分をellipsisで省略する。完全な文言はaccessible nameに保持する。根拠はS4/S5。ユーザーのモバイル最適化要求（2026-09-20）による。
 
@@ -53,6 +53,8 @@ BIND-021: `Edit macros` の step 追加・削除は、同じ macro への待機�
 BIND-022: caller が modal 内から selector を開く場合、selector の overlay と content は caller modal より前面に表示する。Combo Editor の Behavior 選択では selector を背後に隠さず操作でき、右上の link icon は selector を閉じて Combo Editor を表示する。Keymap preview の combo control から開く selector も同じ icon で Combo Editor を開ける。この selector は重なり順を維持したまま modal/floating を切替でき、通常キー selector と同時に開かず同じ floating anchor とドラッグ済み位置を共有する。どちらも閉じた後は次回を既定位置から開始する。通常の caller は既存の overlay 順を使う。根拠はS1、2026-09-24ユーザー要求。
 
 BIND-024: keycode の名前は HID usage page と usage code の組合せで解決する。keyboard page（0x07）と legacy page-zero だけに keyboard 名と OS Layout の JIS/US/US for JP 表記を適用する。consumer brightness `0xC006F` / `0xC0070` は `☀+` / `☀-`（selector の Brightness Up / Brightness Down）、keyboard `0x7006F` / `0x70070` または legacy `0x6F` / `0x70` は `F20` / `F21` と区別する。modifier は `LC(☀+)` 等の prefix に保持し、未知 usage は modifier を除いた page を含む16進数で表示する（例 `0x1006F`、`LC(0x1006F)`）。parameter の詳細表示は元の完全な数値も併記する。Keymap preview/header、sensor の可視/accessible name、macro step、combo binding は同じ名前解決を使い、表示だけでは binding/RPC/保存状態を変更しない。キーマップ共有の物理 preview・変更一覧・combo/macro 差分も [useSharedBindingLabel](../../../src/hooks/useSharedBindingLabel.ts) 経由で OS Layout と同じ名前解決を使う（[IE-026](../pages/import-export.md)）。根拠はS6、[#259](https://github.com/cormoran/dya-studio/issues/259) 明示要求。
+
+BIND-025: Floating mode は640px未満で Sheet mode となり、viewport下端に幅100%・高さ45dvhのsheetを固定表示する。下端のsafe area余白を含み、内容はsheet内でscrollできる。headerをドラッグしてもsheetは移動せず、desktopの位置指定を適用しない。640px境界でeditorをremountせずにsheet/浮動windowを切替え、対象・draft・適用条件・Close/Escapeの未完draft破棄を維持する。上側workspaceの確保とheader非表示は[KM-025](../pages/keymap.md) / [SHELL-023](app-shell.md)に従う。根拠は2026-10-18ユーザー明示要求、S1、[sheet CSS](../../../src/components/binding-editor.css)、[useMobileLayout](../../../src/hooks/useMobileLayout.ts)。sheet表示自体はRPCやflash保存を行わず、表示形式の保存には既存のfloating設定値を使う。
 
 | ID       | 前提 → 操作                                                   | 観測できる結果                                                                                                                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
 | -------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |

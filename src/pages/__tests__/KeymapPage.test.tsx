@@ -403,9 +403,41 @@ describe("KeymapPage", () => {
       await user.click(
         screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
       );
-      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      await user.click(
+        screen.getByRole("button", { name: /^(Floating|Sheet) mode$/ }),
+      );
       return { user, setBinding };
     };
+
+    it("releases the mobile sheet workspace when switching to a dialog or closing", async () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = jest.fn((query: string) => ({
+        ...originalMatchMedia(query),
+        matches: query === "(max-width: 639px)",
+      }));
+      try {
+        const { user, setBinding } = await setup();
+        const page = document.querySelector(".keymap-page")!;
+        expect(screen.getByRole("dialog")).toHaveAttribute(
+          "data-presentation",
+          "sheet",
+        );
+        expect(page).toHaveAttribute("data-mobile-sheet-open", "true");
+        await user.click(screen.getByRole("button", { name: "Dialog mode" }));
+        expect(page).toHaveAttribute("data-mobile-sheet-open", "false");
+        await user.click(screen.getByRole("button", { name: "Sheet mode" }));
+        expect(page).toHaveAttribute("data-mobile-sheet-open", "true");
+        await user.click(
+          screen.getByRole("button", {
+            name: "Close without applying unfinished edits",
+          }),
+        );
+        expect(page).toHaveAttribute("data-mobile-sheet-open", "false");
+        expect(setBinding).not.toHaveBeenCalled();
+      } finally {
+        window.matchMedia = originalMatchMedia;
+      }
+    });
 
     it("applies once, advances through every key, and closes at the end", async () => {
       const { user, setBinding } = await setup();

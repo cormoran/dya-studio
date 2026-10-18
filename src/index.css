@@ -7,6 +7,8 @@
 
 @layer base {
   :root {
+    --binding-sheet-height: 45dvh;
+
     /* Accent colors - same for both themes */
     --color-electric: #00d4ff;
     --color-neon: #00ffcc;
@@ -271,6 +273,53 @@
   .app-page {
     overflow-x: clip;
     overflow-y: visible;
+  }
+}
+
+/* The retained Keymap page owns the sheet marker; it is false off-tab and
+   after close/disconnect. Reserve real layout space rather than covering the
+   bottom of the page with a floating panel. */
+@media (max-width: 639px) {
+  .app-connected-shell:has(.keymap-page[data-mobile-sheet-open="true"]) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) {
+    height: calc(100dvh - var(--binding-sheet-height));
+    min-height: 0;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-header,
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-tab-list {
+    display: none;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-main,
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-tab-panels {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"])
+    :is(.app-tabs, .app-tab-panel, .app-page-transition) {
+    height: 100%;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] {
+    height: 100%;
+    padding: 0.5rem;
+    overflow-y: auto;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] .keymap-before-layers {
+    display: none;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] .keymap-layer-toolbar {
+    margin-bottom: 0.5rem;
   }
 }
 

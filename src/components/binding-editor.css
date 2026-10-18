@@ -1,0 +1,11 @@
+/* The same height token reserves the upper workspace in the app shell. */
+@media (max-width: 639px) {
+  .binding-editor-floating {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: var(--binding-sheet-height);
+    border-radius: 0.75rem 0.75rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
