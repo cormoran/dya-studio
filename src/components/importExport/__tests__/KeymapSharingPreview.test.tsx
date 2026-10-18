@@ -303,3 +303,95 @@ it("starts with every section/module on and preserves selection when cancelling 
   ).not.toBeChecked();
   expect(confirm).not.toHaveBeenCalled();
 });
+
+it("shows a busy spinner in both action buttons and prevents dismissal until apply finishes", async () => {
+  const { rerender } = render(<Harness />);
+  const previewAction = screen.getByRole("button", {
+    name: "Apply to keyboard",
+  });
+  expect(previewAction).toHaveAttribute("aria-busy", "false");
+  expect(previewAction.querySelector(".animate-spin")).toBeNull();
+  fireEvent.click(previewAction);
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
+  rerender(<Harness busy />);
+  const confirmation = screen.getByRole("dialog", { name: "Apply My map" });
+  const action = within(confirmation).getByRole("button", {
+    name: "Apply to keyboard",
+  });
+  for (const button of screen.getAllByRole("button", {
+    name: "Apply to keyboard",
+    hidden: true,
+  })) {
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button.querySelector(".animate-spin")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  }
+  expect(
+    within(confirmation).getByRole("button", { name: "Cancel" }),
+  ).toBeDisabled();
+  await userEvent.keyboard("{Escape}");
+  expect(confirmation).toBeInTheDocument();
+  fireEvent.click(action);
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(close).not.toHaveBeenCalled();
+  rerender(<Harness />);
+  const retry = screen.getByRole("button", { name: "Apply to keyboard" });
+  expect(retry).toBeEnabled();
+  expect(retry).toHaveAttribute("aria-busy", "false");
+  expect(retry.querySelector(".animate-spin")).toBeNull();
+});
+
+it("allows identifier-only confirmation for a complete Abyss apply but blocks partial empty transfers", () => {
+  const props = {
+    busy: false,
+    error: null,
+    canSave: true,
+    onClose: close,
+    onDirectionChange: jest.fn(),
+    onSelectionChange: jest.fn(),
+    onConfirm: confirm,
+  };
+  const { rerender } = render(
+    <LanguageProvider>
+      <KeymapSharingPreview
+        {...props}
+        review={{
+          ...base,
+          selection: ALL_SHARING_PARTS,
+          diff: EMPTY_DIFF,
+          identityMismatch: true,
+        }}
+      />
+    </LanguageProvider>,
+  );
+  expect(
+    screen.getByText("Only the keymap identifier will be updated."),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  ).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
+  expect(
+    screen.getByRole("dialog", { name: "Apply My map" }),
+  ).toHaveTextContent("Only the keymap identifier will be updated.");
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  rerender(
+    <LanguageProvider>
+      <KeymapSharingPreview
+        {...props}
+        review={{
+          ...base,
+          selection: { ...ALL_SHARING_PARTS, macros: false },
+          diff: EMPTY_DIFF,
+          identityMismatch: true,
+        }}
+      />
+    </LanguageProvider>,
+  );
+  expect(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  ).toBeDisabled();
+});

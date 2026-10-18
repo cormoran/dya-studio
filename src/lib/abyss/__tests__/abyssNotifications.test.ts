@@ -58,8 +58,37 @@ describe("createAbyssNotificationSource", () => {
     });
 
     source.subscribe(() => {})();
+    source.dispose();
 
     expect(unsubscribes[0]).toHaveBeenCalledTimes(1);
     expect(unsubscribes[1]).toHaveBeenCalledTimes(1);
   });
+});
+
+it("replays notifications delivered before the adapter starts collecting and releases the capture", () => {
+  let deliver!: (notification: CustomNotification) => void;
+  const unsubscribe = jest.fn();
+  const source = createAbyssNotificationSource({
+    subsystemIndexes: [3],
+    onNotification: ({ callback }) => {
+      deliver = callback;
+      return unsubscribe;
+    },
+  });
+  // The firmware sends these while listInputProcessors is still resolving.
+  const early = customNotification(3);
+  deliver(early);
+  const receive = jest.fn();
+  const stop = source.subscribe(receive);
+  expect(receive).toHaveBeenCalledWith({
+    custom: { customNotification: early },
+  });
+  deliver(early);
+  expect(receive).toHaveBeenCalledTimes(2);
+  stop();
+  source.dispose();
+  source.dispose();
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
+  source.subscribe(receive);
+  expect(receive).toHaveBeenCalledTimes(2);
 });

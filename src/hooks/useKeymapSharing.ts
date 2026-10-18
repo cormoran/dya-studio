@@ -13,6 +13,7 @@ import {
   buildApplyTarget,
   selectSharingTarget,
   ALL_SHARING_PARTS,
+  isCompleteSharingSelection,
   type SharingSelection,
 } from "../lib/abyss/keymapSharing";
 import type {
@@ -55,6 +56,22 @@ import {
   rememberedKeymap,
 } from "../lib/abyss/keymapIdentity";
 
+import {
+  splitWritableKeymapDiff,
+  withoutSkippedChanges,
+  type KeymapApplyResult,
+} from "../lib/abyss/keymapApplyResult";
+import { abyssPointerScaleCorrections } from "../lib/abyss/abyssPointerScales";
+import {
+  Request as ProcessorRequest,
+  Response as ProcessorResponse,
+} from "../proto/zmk/runtime_input_processor/runtime_input_processor";
+
+const processorCodec = {
+  encode: (request: ProcessorRequest) =>
+    ProcessorRequest.encode(request).finish(),
+  decode: (payload: Uint8Array) => ProcessorResponse.decode(payload),
+};
 const codec = {
   encode: (r: Request) => Request.encode(r).finish(),
   decode: (p: Uint8Array) => Response.decode(p),
@@ -70,6 +87,7 @@ export type ShareReview = {
   diff: KeymapDiff;
   checks: ReturnType<typeof runPreflight>;
   selection: SharingSelection;
+  identityMismatch?: boolean;
 };
 const documentOf = (loaded: ZmkLoadedConnection) =>
   loaded.state.currentKeymap as unknown as KeymapDocument;
@@ -86,6 +104,7 @@ function buildReview(
   record?: AbyssKeymapSummary,
   resolved: AbyssLayoutResolveResult | null = null,
   selection: SharingSelection = ALL_SHARING_PARTS,
+  identityMismatch = false,
 ): ShareReview {
   const device = documentOf(loaded);
   const before = kind === "save" ? remote : device;
@@ -126,6 +145,7 @@ function buildReview(
     diff,
     checks,
     selection,
+    identityMismatch,
   };
 }
 
@@ -139,6 +159,7 @@ export function useKeymapSharing(
   const app = useContext(ZMKAppContext);
   const { runWithUnlock } = useStudioUnlock();
   const rpc = useCustomSubsystem("cormoran__fast_keymap", codec);
+  const processorRpc = useCustomSubsystem("cormoran_rip", processorCodec);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +177,9 @@ export function useKeymapSharing(
     records: new Map<string, AbyssKeymapSummary>(),
   });
   const [review, setReview] = useState<ShareReview | null>(null);
+  const [applyResult, setApplyResult] = useState<KeymapApplyResult | null>(
+    null,
+  );
   // A connection change invalidates every captured diff, including async completions.
   const connection = app?.state.connection;
   const session = useRef(connection);
@@ -167,6 +191,7 @@ export function useKeymapSharing(
     cache.current.lists.clear();
     cache.current.records.clear();
     setReview(null);
+    setApplyResult(null);
     setSavedKeymapUrl(null);
     setKeymaps([]);
     setCurrent(null);
@@ -218,23 +243,29 @@ export function useKeymapSharing(
     if (!connection) throw new Error("No keyboard connected.");
     await beforeRead?.();
     valid();
-    const loaded = await runWithUnlock(() =>
-      loadZmkConnection(
-        createAbyssZmkConnection({
-          rpcConnection: connection,
-          deviceName: app?.state.deviceInfo?.name,
-          method: "serial",
-          notificationSource: app?.onNotification
-            ? createAbyssNotificationSource({
-                subsystemIndexes: (
-                  app.state.customSubsystems?.subsystems ?? []
-                ).map((s) => s.index),
-                onNotification: app.onNotification,
-              })
-            : undefined,
-        }),
-      ),
-    );
+    const notificationSource = app?.onNotification
+      ? createAbyssNotificationSource({
+          subsystemIndexes: (app.state.customSubsystems?.subsystems ?? []).map(
+            (s) => s.index,
+          ),
+          onNotification: app.onNotification,
+        })
+      : undefined;
+    let loaded: ZmkLoadedConnection;
+    try {
+      loaded = await runWithUnlock(() =>
+        loadZmkConnection(
+          createAbyssZmkConnection({
+            rpcConnection: connection,
+            deviceName: app?.state.deviceInfo?.name,
+            method: "serial",
+            notificationSource,
+          }),
+        ),
+      );
+    } finally {
+      notificationSource?.dispose();
+    }
     valid();
     const layout = loaded.state.detectedLayout;
     let resolved: AbyssLayoutResolveResult | null = null;
@@ -316,7 +347,7 @@ export function useKeymapSharing(
     if (!client || !authenticated) return;
     const { loaded, resolved } = await capture(valid, true);
     // Do not widen to unrelated keyboards in the compact menu.
-    const layoutId = resolved?.layout?.id;
+    const layoutId = resolved?.layout?.id ?? resolved?.compatibleLayout?.id;
     let owned = layoutId ? cache.current.lists.get(layoutId) : [];
     if (!owned) {
       owned = await listMatchingKeymaps(client, layoutId!);
@@ -376,6 +407,7 @@ export function useKeymapSharing(
   ) =>
     operation(async (valid) => {
       setReview(null);
+      setApplyResult(null);
       const { loaded, resolved } = await capture(valid);
       const client = getAbyssClient();
       const target =
@@ -384,7 +416,22 @@ export function useKeymapSharing(
       valid();
       if (!target) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
-      setReview(buildReview(kind, loaded, remote, record, resolved));
+      const identifier = record ? await readIdentity(valid) : null;
+      const expectedIdentifier = record
+        ? await keymapIdentifier(record.id)
+        : null;
+      valid();
+      setReview(
+        buildReview(
+          kind,
+          loaded,
+          remote,
+          record,
+          resolved,
+          ALL_SHARING_PARTS,
+          identifier !== null && identifier !== expectedIdentifier,
+        ),
+      );
     });
 
   const selectDirection = (kind: ShareReview["kind"]) => {
@@ -398,6 +445,7 @@ export function useKeymapSharing(
         review.record,
         review.resolved,
         review.selection,
+        review.identityMismatch,
       ),
     );
   };
@@ -412,6 +460,7 @@ export function useKeymapSharing(
         review.record,
         review.resolved,
         selection,
+        review.identityMismatch,
       ),
     );
   };
@@ -439,72 +488,190 @@ export function useKeymapSharing(
       busyRef.current ||
       !review ||
       isBlocked(review.checks) ||
-      isEmptyDiff(review.diff)
+      (isEmptyDiff(review.diff) &&
+        !(
+          review.kind === "apply" &&
+          review.identityMismatch &&
+          isCompleteSharingSelection(review.selection)
+        ))
     )
       return Promise.resolve(false);
     const tab = review.kind === "save" ? reserveKeymapTab() : null;
     return operation(async (valid) => {
       const pending = review;
       if (!pending || isBlocked(pending.checks)) return;
-      // Freeze the reviewed payload; never silently replace it with a new snapshot.
-      const fresh = await capture(valid);
-      const expectedDevice =
-        pending.kind === "apply" ? pending.before : documentOf(pending.loaded);
-      if (
-        !isEmptyDiff(compare(documentOf(fresh.loaded), expectedDevice)) ||
-        !isEmptyDiff(compare(expectedDevice, documentOf(fresh.loaded)))
-      )
-        throw new Error(
-          "The keyboard changed. Close this preview and open it again.",
-        );
-      if (pending.kind === "save") {
-        const client = getAbyssClient();
-        if (!client || !pending.record) return;
-        const latest = (await readRecord(pending.record.id, valid, true)).data;
-        valid();
+      const { writable, skipped } = splitWritableKeymapDiff(pending.diff);
+      const outcome: KeymapApplyResult = {
+        name: pending.record?.name ?? pending.remote.name ?? "Keymap",
+        skipped,
+        remaining: null,
+        unverified: null,
+        verified: false,
+        attempted: false,
+        error: null,
+      };
+      try {
+        // Freeze the reviewed payload; never silently replace it with a new snapshot.
+        const fresh = await capture(valid);
+        const expectedDevice =
+          pending.kind === "apply"
+            ? pending.before
+            : documentOf(pending.loaded);
         if (
-          !snapshotsEqual(
-            JSON.parse(JSON.stringify(latest)) as JsonValue,
-            JSON.parse(JSON.stringify(pending.before)) as JsonValue,
-          )
+          !isEmptyDiff(compare(documentOf(fresh.loaded), expectedDevice)) ||
+          !isEmptyDiff(compare(expectedDevice, documentOf(fresh.loaded)))
         )
           throw new Error(
-            "The Abyss keymap changed. Close this preview and open it again.",
+            "The keyboard changed. Close this preview and open it again.",
           );
-        await client.updateKeymap(pending.record.id, {
-          data: pending.after as AbyssKeymapData,
-          message: "Saved from DYA Studio",
-        });
-        valid();
-        cache.current.records.delete(pending.record.id);
-        cache.current.lists.clear();
-        tab?.show(pending.record.id);
-        await associate(pending.record.id, valid);
-      } else {
-        await runWithUnlock(() =>
-          writeZmkKeymapDiff(fresh.loaded, pending.diff as never),
+        if (pending.kind === "save") {
+          const client = getAbyssClient();
+          if (!client || !pending.record) return;
+          const latest = (await readRecord(pending.record.id, valid, true))
+            .data;
+          valid();
+          if (
+            !snapshotsEqual(
+              JSON.parse(JSON.stringify(latest)) as JsonValue,
+              JSON.parse(JSON.stringify(pending.before)) as JsonValue,
+            )
+          )
+            throw new Error(
+              "The Abyss keymap changed. Close this preview and open it again.",
+            );
+          await client.updateKeymap(pending.record.id, {
+            data: pending.after as AbyssKeymapData,
+            message: "Saved from DYA Studio",
+          });
+          valid();
+          cache.current.records.delete(pending.record.id);
+          cache.current.lists.clear();
+          tab?.show(pending.record.id);
+          await associate(pending.record.id, valid);
+        } else {
+          const failures: string[] = [];
+          const failureText = (caught: unknown) =>
+            studioLockErrorText(caught) ??
+            (caught instanceof Error
+              ? caught.message
+              : abyssErrorMessageKey(caught));
+          try {
+            if (!isEmptyDiff(writable)) {
+              outcome.attempted = true;
+              await runWithUnlock(() =>
+                writeZmkKeymapDiff(fresh.loaded, writable as never),
+              );
+            }
+            valid();
+            // adapter-zmk rounds scales to /1000. Restore exactly representable
+            // firmware fractions (e.g. 1/60) before verifying the actual device.
+            for (const correction of abyssPointerScaleCorrections(writable)) {
+              for (const request of [
+                {
+                  setScaleMultiplier: {
+                    id: correction.id,
+                    value: correction.multiplier,
+                  },
+                },
+                {
+                  setScaleDivisor: {
+                    id: correction.id,
+                    value: correction.divisor,
+                  },
+                },
+              ]) {
+                valid();
+                const response = await processorRpc.call(
+                  ProcessorRequest.create(request),
+                );
+                valid();
+                if (
+                  !response ||
+                  response.error ||
+                  !(response.setScaleMultiplier || response.setScaleDivisor)
+                )
+                  throw new Error(
+                    "The pointer scale could not be stored. Reopen this preview and try again.",
+                  );
+              }
+            }
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          valid();
+          outcome.unverified = writable;
+          // Even an encoder/RPC failure can leave a partial write. Read the device
+          // again rather than guessing which changes were applied from the error.
+          try {
+            const readback = await capture(valid);
+            outcome.remaining = withoutSkippedChanges(
+              compare(pending.after, documentOf(readback.loaded)),
+              skipped,
+            );
+            outcome.unverified = null;
+            if (!isEmptyDiff(outcome.remaining) && !failures.length)
+              failures.push(
+                "The keyboard does not yet match this keymap. Review and try again.",
+              );
+            outcome.verified = isEmptyDiff(outcome.remaining);
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          // A failed settings write must not prevent storing the selected source.
+          // Revalidate the session before starting any independent metadata write.
+          valid();
+          const complete = isCompleteSharingSelection(pending.selection);
+          try {
+            if (!failures.length || (complete && pending.record))
+              await associate(
+                complete ? (pending.record?.id ?? null) : null,
+                valid,
+              );
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          valid();
+          try {
+            await onApplied();
+            valid();
+            if (authenticated) await refreshList(valid);
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          if (failures.length) throw new Error(failures.join("\n"));
+        }
+        if (pending.kind === "save") setReview(null);
+        setMessage(
+          pending.kind === "save"
+            ? "Saved to Abyss."
+            : isEmptyDiff(skipped)
+              ? "Applied to keyboard."
+              : "Finished with skipped changes.",
         );
-        valid();
-        const readback = await capture(valid);
-        if (!isEmptyDiff(compare(pending.after, documentOf(readback.loaded))))
-          throw new Error(
-            "The keyboard does not yet match this keymap. Review and try again.",
-          );
-        // A partial transfer cannot claim the complete Abyss identity.
-        const complete =
-          pending.selection.keymap &&
-          pending.selection.combos &&
-          pending.selection.macros &&
-          Object.values(pending.selection.modules).every(Boolean);
-        await associate(complete ? (pending.record?.id ?? null) : null, valid);
-        await onApplied();
-        valid();
+        if (pending.kind === "save" && authenticated) await refreshList(valid);
+      } catch (caught) {
+        if (pending.kind === "apply") setMessage(null);
+        outcome.error =
+          studioLockErrorText(caught) ??
+          (caught instanceof Error
+            ? caught.message
+            : abyssErrorMessageKey(caught));
+        throw caught;
+      } finally {
+        if (pending.kind === "apply") {
+          // Do not let an old device/account operation replace a new session's UI.
+          let active = true;
+          try {
+            valid();
+          } catch {
+            active = false;
+          }
+          if (active) {
+            setReview(null);
+            setApplyResult(outcome);
+          }
+        }
       }
-      setReview(null);
-      setMessage(
-        pending.kind === "save" ? "Saved to Abyss." : "Applied to keyboard.",
-      );
-      if (authenticated) await refreshList(valid);
     }).finally(() => tab?.close());
   };
 
@@ -585,6 +752,8 @@ export function useKeymapSharing(
     identity,
     review,
     setReview,
+    applyResult,
+    setApplyResult,
     selectDirection,
     selectParts,
     refresh,

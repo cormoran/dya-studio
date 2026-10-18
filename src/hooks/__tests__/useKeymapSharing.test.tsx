@@ -119,7 +119,7 @@ it("blocks oversized layouts at confirm even if called directly", async () => {
   });
   expect(mockWrite).not.toHaveBeenCalled();
 });
-it("revalidates keyboard state before applying and retains the diff on conflict", async () => {
+it("revalidates keyboard state before applying and reports conflicts in the result", async () => {
   const { result } = renderHook(() => useKeymapSharing(false, applied), {
     wrapper,
   });
@@ -131,7 +131,9 @@ it("revalidates keyboard state before applying and retains the diff on conflict"
     await result.current.confirm();
   });
   expect(result.current.error).toMatch(/keyboard changed/);
-  expect(result.current.review).not.toBeNull();
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult?.error).toMatch(/keyboard changed/);
+  expect(result.current.applyResult?.attempted).toBe(false);
   expect(mockWrite).not.toHaveBeenCalled();
 });
 it("requires matching readback before reporting success on old firmware", async () => {
@@ -146,7 +148,13 @@ it("requires matching readback before reporting success on old firmware", async 
   });
   expect(mockWrite).toHaveBeenCalledTimes(1);
   expect(result.current.error).toMatch(/does not yet match/);
-  expect(applied).not.toHaveBeenCalled();
+  expect(applied).toHaveBeenCalledTimes(1);
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult?.verified).toBe(false);
+  expect(result.current.applyResult?.remaining?.bindingChanges).toHaveLength(1);
+  await act(async () => {
+    await result.current.prepare("apply", undefined, target);
+  });
   mockLoad
     .mockResolvedValueOnce({ state: { currentKeymap: device } })
     .mockResolvedValueOnce({ state: { currentKeymap: target } });
@@ -572,3 +580,454 @@ it("does not write or open a tab with every part excluded", async () => {
   expect(client.updateKeymap).not.toHaveBeenCalled();
   expect(openTab).not.toHaveBeenCalled();
 });
+
+it("keeps the Abyss preview busy during writing and closes it only after verified application", async () => {
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  let finishWrite!: () => void;
+  mockWrite.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finishWrite = resolve;
+      }),
+  );
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: device } })
+    .mockResolvedValueOnce({ state: { currentKeymap: target } });
+  let pending!: Promise<boolean>;
+  await act(async () => {
+    pending = result.current.confirm();
+  });
+  expect(result.current.busy).toBe(true);
+  expect(result.current.review?.record?.id).toBe("one");
+  expect(applied).not.toHaveBeenCalled();
+  await act(async () => {
+    finishWrite();
+    expect(await pending).toBe(true);
+  });
+  expect(applied).toHaveBeenCalledTimes(1);
+  expect(result.current.busy).toBe(false);
+  expect(result.current.review).toBeNull();
+  expect(result.current.message).toBe("Applied to keyboard.");
+});
+
+it.each(["success", "rejected", "mismatched"] as const)(
+  "stores the Abyss identifier after verified application: %s",
+  async (outcome) => {
+    const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+    const expected = await keymapIdentifier(record.id);
+    let identifier = "";
+    mockCall.mockImplementation(async (request) => {
+      if (request.setKeymapIdentifier) {
+        if (outcome === "rejected") return { error: { code: 0 } };
+        if (outcome === "success")
+          identifier = request.setKeymapIdentifier.identifier;
+        return { setKeymapIdentifier: {} };
+      }
+      return { keymapIdentifier: { identifier } };
+    });
+    const { result } = renderHook(() => useKeymapSharing(false, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", record as never);
+    });
+    expect(mockCall).not.toHaveBeenCalledWith(
+      expect.objectContaining({ setKeymapIdentifier: expect.anything() }),
+    );
+    mockLoad
+      .mockResolvedValueOnce({ state: { currentKeymap: device } })
+      .mockResolvedValueOnce({ state: { currentKeymap: target } });
+    await act(async () => {
+      await result.current.confirm();
+    });
+    expect(mockCall).toHaveBeenCalledWith({
+      setKeymapIdentifier: { identifier: expected },
+    });
+    if (outcome === "success") {
+      expect(identifier).toBe(expected);
+      expect(result.current.review).toBeNull();
+      expect(result.current.error).toBeNull();
+      expect(applied).toHaveBeenCalledTimes(1);
+    } else {
+      expect(result.current.review).toBeNull();
+      expect(result.current.applyResult?.verified).toBe(true);
+      expect(result.current.applyResult?.error).toMatch(
+        /identity could not be/,
+      );
+      expect(result.current.error).toMatch(/identity could not be/);
+      expect(result.current.message).toBeNull();
+      expect(applied).toHaveBeenCalledTimes(1);
+    }
+  },
+);
+
+it("updates only the supported Abyss identifier when keyboard settings already match", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  const expected = await keymapIdentifier(record.id);
+  let identifier = "old_";
+  mockLoad.mockResolvedValue({ state: { currentKeymap: target } });
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  expect(result.current.review?.diff.bindingChanges).toHaveLength(0);
+  expect(result.current.review?.identityMismatch).toBe(true);
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).not.toHaveBeenCalled();
+  expect(identifier).toBe(expected);
+  expect(result.current.review).toBeNull();
+});
+
+it("lists keymaps for an Abyss compatible layout when there is no exact variation", async () => {
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+  });
+  client.resolveLayout.mockResolvedValueOnce({
+    layout: null,
+    compatibleLayout: { id: "layout-one" },
+  });
+  client.listMyKeymaps.mockResolvedValueOnce({ items: [record], pageCount: 1 });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.refresh();
+  });
+  expect(result.current.keymaps).toEqual([record]);
+  expect(client.listMyKeymaps).toHaveBeenCalledWith(
+    expect.objectContaining({ layoutId: "layout-one" }),
+  );
+});
+
+it("restores exact pointer scale fractions before readback and identifier storage", async () => {
+  const pointer = (scaleX: number) => ({
+    name: "scroll",
+    type: "trackball",
+    scaleX,
+    scaleY: scaleX,
+    firmwareDialect: { zmk: { cormoran_rip: { processorId: 1 } } },
+  });
+  const local = { ...device, modules: [pointer(0.017)] };
+  const remote = { ...target, modules: [pointer(1 / 60)] };
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  client.getKeymap.mockResolvedValueOnce({ ...record, data: remote });
+  mockCall.mockImplementation(async (request) => {
+    if (request.setScaleMultiplier) return { setScaleMultiplier: {} };
+    if (request.setScaleDivisor) return { setScaleDivisor: {} };
+    return { error: { code: 0 } }; // old identity firmware
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: local } })
+    .mockResolvedValueOnce({ state: { currentKeymap: remote } });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockCall).toHaveBeenCalledWith(
+    expect.objectContaining({ setScaleMultiplier: { id: 1, value: 1 } }),
+  );
+  expect(mockCall).toHaveBeenCalledWith(
+    expect.objectContaining({ setScaleDivisor: { id: 1, value: 60 } }),
+  );
+  expect(result.current.review).toBeNull();
+  expect(result.current.error).toBeNull();
+});
+
+it("skips raw changes, applies supported bindings, and stores the selected Abyss identity", async () => {
+  const local = {
+    ...device,
+    layers: [
+      { name: "Base", bindings: [{ type: "trans" }, { type: "trans" }] },
+    ],
+  };
+  const remote = {
+    ...target,
+    layers: [
+      {
+        name: "Base",
+        bindings: [
+          { type: "raw", label: "Custom", zmk: "&custom" },
+          { type: "key", usage: 4 },
+        ],
+      },
+    ],
+  };
+  const actual = {
+    ...remote,
+    layers: [
+      {
+        ...remote.layers[0],
+        bindings: [local.layers[0].bindings[0], remote.layers[0].bindings[1]],
+      },
+    ],
+  };
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  client.getKeymap.mockResolvedValueOnce({ ...record, data: remote });
+  let identifier = "old_";
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: local } })
+    .mockResolvedValueOnce({ state: { currentKeymap: actual } });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({
+      bindingChanges: [expect.objectContaining({ keyIndex: 1 })],
+    }),
+  );
+  expect(result.current.applyResult).toMatchObject({
+    verified: true,
+    error: null,
+    skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
+  });
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  expect(identifier).toBe(await keymapIdentifier(record.id));
+  expect(result.current.review).toBeNull();
+  expect(result.current.message).toBe("Finished with skipped changes.");
+});
+
+it("closes the preview and reports write errors without claiming verification", async () => {
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", undefined, target);
+  });
+  mockWrite.mockRejectedValueOnce(new Error("RPC write failed"));
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(false);
+  });
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult).toMatchObject({
+    verified: false,
+    attempted: true,
+    error: "RPC write failed",
+    remaining: expect.objectContaining({
+      bindingChanges: [
+        expect.objectContaining({ keyIndex: 0, to: { type: "none" } }),
+      ],
+    }),
+    unverified: null,
+  });
+  expect(applied).toHaveBeenCalledTimes(1);
+});
+
+it("stores the selected Abyss identity even when all raw changes are skipped", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  const expected = await keymapIdentifier(record.id);
+  let identifier = "old_";
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const rawTarget = {
+    ...target,
+    layers: [
+      {
+        name: "Base",
+        bindings: [{ type: "raw", label: "Custom", zmk: "&custom" }],
+      },
+    ],
+  };
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    client.getKeymap.mockResolvedValueOnce({ ...record, data: rawTarget });
+    await result.current.prepare("apply", record as never);
+  });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).not.toHaveBeenCalled();
+  expect(identifier).toBe(expected);
+  expect(mockCall).toHaveBeenCalledWith({
+    setKeymapIdentifier: { identifier: expected },
+  });
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult).toMatchObject({
+    verified: true,
+    attempted: false,
+    error: null,
+    skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
+  });
+});
+
+it.each(["write", "readback", "write-and-identity"] as const)(
+  "stores and refreshes the selected source independently of a %s failure",
+  async (failure) => {
+    const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+    const expected = await keymapIdentifier(record.id);
+    let identifier = "old_";
+    mockCall.mockImplementation(async (request) => {
+      if (request.setKeymapIdentifier) {
+        if (failure === "write-and-identity") return { error: { code: 0 } };
+        identifier = request.setKeymapIdentifier.identifier;
+        return { setKeymapIdentifier: {} };
+      }
+      return { keymapIdentifier: { identifier } };
+    });
+    mockLoad.mockResolvedValue({
+      state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+    });
+    client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
+    client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+    if (failure !== "readback")
+      mockWrite.mockRejectedValueOnce(
+        new Error(
+          "ZMK behavior is unavailable: Mouse Button Press / Mouse Button.",
+        ),
+      );
+    const { result } = renderHook(() => useKeymapSharing(true, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", record as never);
+    });
+    await act(async () => {
+      expect(await result.current.confirm()).toBe(false);
+    });
+    expect(mockCall).toHaveBeenCalledWith({
+      setKeymapIdentifier: { identifier: expected },
+    });
+    expect(result.current.review).toBeNull();
+    expect(result.current.applyResult?.verified).toBe(false);
+    expect(result.current.message).toBeNull();
+    if (failure === "write-and-identity") {
+      expect(identifier).toBe("old_");
+      expect(result.current.applyResult?.error).toMatch(/Mouse Button Press/);
+      expect(result.current.applyResult?.error).toMatch(
+        /identity could not be stored/,
+      );
+    } else {
+      expect(identifier).toBe(expected);
+      expect(result.current.current?.id).toBe(record.id);
+      expect(result.current.changed).toBe(true);
+      expect(result.current.identity).toBe("known");
+      expect(result.current.applyResult?.error).toMatch(
+        failure === "write" ? /Mouse Button Press/ : /does not yet match/,
+      );
+    }
+  },
+);
+
+it.each([false, true])(
+  "reads back after partial write failure (readback fails: %s)",
+  async (readbackFails) => {
+    const local = {
+      ...device,
+      layers: [
+        {
+          name: "Base",
+          bindings: [{ type: "trans" }, { type: "trans" }, { type: "trans" }],
+        },
+      ],
+    };
+    const remote = {
+      ...target,
+      layers: [
+        {
+          name: "Base",
+          bindings: [
+            { type: "key", usage: 4 },
+            { type: "mouse_button", button: 1 },
+            { type: "raw", label: "Custom", zmk: "&custom" },
+          ],
+        },
+      ],
+    };
+    const partial = {
+      ...local,
+      layers: [
+        {
+          name: "Base",
+          bindings: [
+            remote.layers[0].bindings[0],
+            local.layers[0].bindings[1],
+            local.layers[0].bindings[2],
+          ],
+        },
+      ],
+    };
+    mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+    const { result } = renderHook(() => useKeymapSharing(false, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", undefined, remote);
+    });
+    const writeError =
+      "ZMK behavior is unavailable: Mouse Button Press / Mouse Button.";
+    mockWrite.mockRejectedValueOnce(new Error(writeError));
+    mockLoad.mockResolvedValueOnce({ state: { currentKeymap: local } });
+    if (readbackFails)
+      mockLoad.mockRejectedValueOnce(new Error("Readback disconnected"));
+    else mockLoad.mockResolvedValueOnce({ state: { currentKeymap: partial } });
+    await act(async () => {
+      expect(await result.current.confirm()).toBe(false);
+    });
+    expect(result.current.review).toBeNull();
+    expect(result.current.applyResult?.error).toContain(writeError);
+    expect(result.current.applyResult?.skipped.bindingChanges).toEqual([
+      expect.objectContaining({ keyIndex: 2 }),
+    ]);
+    if (readbackFails) {
+      expect(result.current.applyResult?.remaining).toBeNull();
+      expect(
+        result.current.applyResult?.unverified?.bindingChanges.map(
+          (c) => c.keyIndex,
+        ),
+      ).toEqual([0, 1]);
+      expect(result.current.applyResult?.error).toContain(
+        "Readback disconnected",
+      );
+    } else {
+      expect(result.current.applyResult?.unverified).toBeNull();
+      expect(result.current.applyResult?.remaining?.bindingChanges).toEqual([
+        expect.objectContaining({
+          keyIndex: 1,
+          from: { type: "trans" },
+          to: { type: "mouse_button", button: 1 },
+        }),
+      ]);
+    }
+  },
+);

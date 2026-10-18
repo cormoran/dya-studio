@@ -41,6 +41,33 @@ const ja: Record<string, string> = {
     "このタップダンスを削除しますか？このスロットを使うキーのタップダンスは動作しなくなります。",
   "Run different actions for single, double, or triple taps":
     "シングル・ダブル・トリプルタップで異なるアクションを実行",
+  "Keyboard write result": "キーボードへの反映結果",
+  "Finished with errors.":
+    "処理が完了しました。エラーの内容を確認してください。",
+  "Finished with skipped changes.":
+    "処理が完了しました。一部の変更はスキップされました。",
+  "Supported changes match the keyboard readback.":
+    "対応している変更は、キーボードからの再読取で一致を確認しました。",
+  "Some settings may have been written. Reopen the preview to check the keyboard before retrying.":
+    "一部の設定は書き込まれた可能性があります。再試行する前にプレビューを開き直して、キーボードの状態を確認してください。",
+  "No keymap settings were written.":
+    "キーマップ設定の書き込みは行われませんでした。",
+  "Skipped changes": "スキップした変更",
+  "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
+    "未対応の raw・macro 形式の割り当てをスキップし、該当する既存設定を保持しました。",
+  "Changes not applied": "適用されなかった変更",
+  "Changes not verified": "適用を確認できなかった変更",
+  "These changes still differ from the requested settings after reading the keyboard again. The error above describes the write operation, not the cause of each individual change.":
+    "キーボードを再読取した結果、以下の変更が反映されていません。上のエラーは書き込み処理全体のもので、各変更の失敗原因を示すものではありません。",
+  "The keyboard could not be read back. These requested changes may or may not have been applied. Reopen the preview to check before retrying.":
+    "キーボードを再読取できなかったため、以下の変更が反映されたか確認できません。再試行前にプレビューを開き直して確認してください。",
+  "{{count}} unsupported changes will be skipped and shown in the result.":
+    "未対応の変更 {{count}} 件をスキップし、反映結果に表示します。",
+
+  "The pointer scale could not be stored. Reopen this preview and try again.":
+    "ポインターの感度を保存できませんでした。プレビューを閉じて開き直し、再試行してください。",
+  "Only the keymap identifier will be updated.":
+    "キーマップの識別情報のみ更新します。",
   "Sheet mode": "シートモード",
   "Edit in a bottom sheet below the keyboard preview":
     "キーボードのプレビューの下に固定したシートで編集します",
@@ -1789,6 +1816,29 @@ const zh: Record<string, string> = {
     "删除此踢踏舞？使用此槽位的按键将不再触发踢踏舞动作。",
   "Run different actions for single, double, or triple taps":
     "单击、双击和三击执行不同动作",
+  "Keyboard write result": "键盘写入结果",
+  "Finished with errors.": "处理已结束，请查看错误详情。",
+  "Finished with skipped changes.": "处理已结束，部分更改已跳过。",
+  "Supported changes match the keyboard readback.":
+    "支持的更改已通过键盘回读验证。",
+  "Some settings may have been written. Reopen the preview to check the keyboard before retrying.":
+    "部分设置可能已写入。重试前请重新打开预览以检查键盘状态。",
+  "No keymap settings were written.": "未写入键映射设置。",
+  "Skipped changes": "已跳过的更改",
+  "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
+    "已跳过不支持的 raw 和 macro 绑定，并保留其原有设置。",
+  "Changes not applied": "未应用的更改",
+  "Changes not verified": "未能确认的更改",
+  "These changes still differ from the requested settings after reading the keyboard again. The error above describes the write operation, not the cause of each individual change.":
+    "重新读取键盘后，以下更改仍未应用。上方错误描述整个写入操作，并非每项更改的具体失败原因。",
+  "The keyboard could not be read back. These requested changes may or may not have been applied. Reopen the preview to check before retrying.":
+    "无法重新读取键盘，不能确认以下更改是否已应用。重试前请重新打开预览进行检查。",
+  "{{count}} unsupported changes will be skipped and shown in the result.":
+    "将跳过 {{count}} 项不支持的更改并在结果中显示。",
+
+  "The pointer scale could not be stored. Reopen this preview and try again.":
+    "无法保存指针灵敏度。请关闭预览后重新打开并重试。",
+  "Only the keymap identifier will be updated.": "仅更新键映射标识信息。",
   "Sheet mode": "底部面板模式",
   "Edit in a bottom sheet below the keyboard preview":
     "在键盘预览下方固定的底部面板中编辑",

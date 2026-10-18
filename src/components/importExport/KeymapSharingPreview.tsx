@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { IconX } from "@tabler/icons-react";
+import { IconLoader2, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { ShareReview } from "../../hooks/useKeymapSharing";
 import {
@@ -11,6 +11,7 @@ import {
 } from "../../lib/abyss/abyssDiff";
 import {
   ALL_SHARING_PARTS,
+  isCompleteSharingSelection,
   sharingModuleNames,
   type SharingSelection,
 } from "../../lib/abyss/keymapSharing";
@@ -20,6 +21,7 @@ import { EditorTooltip } from "../EditorTooltip";
 import { JsonDiffPanel } from "./JsonDiffModal";
 import { KeymapDiffPreview } from "./KeymapDiffPreview";
 import { KeymapDiffView } from "./KeymapDiffView";
+import { splitWritableKeymapDiff } from "../../lib/abyss/keymapApplyResult";
 import type { PreviewPosition } from "./KeymapLayerPreview";
 
 export function KeymapSharingPreview({
@@ -47,6 +49,19 @@ export function KeymapSharingPreview({
   const [confirming, setConfirming] = useState(false);
   const name = review.record?.name ?? review.remote.name ?? t("Keymap");
   const save = review.kind === "save";
+  const skippedCount = useMemo(
+    () => countDiff(splitWritableKeymapDiff(review.diff).skipped).total,
+    [review.diff],
+  );
+  const skipNotice =
+    !save && skippedCount > 0 ? (
+      <p className="text-xs text-[var(--color-warning)]">
+        {t(
+          "{{count}} unsupported changes will be skipped and shown in the result.",
+          { count: skippedCount },
+        )}
+      </p>
+    ) : null;
   const description = save
     ? t("Compare the Abyss keymap with the keyboard settings to save.")
     : t("Compare the current keyboard with the keymap to apply.");
@@ -62,7 +77,9 @@ export function KeymapSharingPreview({
     review.loaded.state.currentKeymap as unknown as typeof review.remote,
   );
   const counts = countDiff(review.diff);
-  const empty = isEmptyDiff(review.diff);
+  const identityOnly =
+    !save && review.identityMismatch && isCompleteSharingSelection(selection);
+  const empty = isEmptyDiff(review.diff) && !identityOnly;
   const blocked = isBlocked(review.checks);
   const selected = Number(layer);
   const filtered: KeymapDiff =
@@ -325,6 +342,12 @@ export function KeymapSharingPreview({
               </Tabs.Content>
             </Tabs.Root>
             <div className="shrink-0 p-3 border-t border-[var(--color-border)] space-y-2">
+              {identityOnly && isEmptyDiff(review.diff) && (
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {t("Only the keymap identifier will be updated.")}
+                </p>
+              )}
+              {skipNotice}
               {checks}
               {error && (
                 <p role="alert" className="text-xs text-[var(--color-danger)]">
@@ -351,10 +374,18 @@ export function KeymapSharingPreview({
                 </button>
                 <EditorTooltip content={save ? helpSave : helpApply}>
                   <button
-                    className="btn-electric text-sm"
+                    className="btn-electric text-sm inline-flex items-center justify-center gap-2"
+                    aria-busy={busy}
                     disabled={busy || blocked || empty}
                     onClick={() => setConfirming(true)}
                   >
+                    {busy && (
+                      <IconLoader2
+                        size={16}
+                        className="animate-spin shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     {save ? t("Update Abyss keymap") : t("Apply to keyboard")}
                   </button>
                 </EditorTooltip>
@@ -401,6 +432,12 @@ export function KeymapSharingPreview({
                 )}
               </p>
             )}
+            {identityOnly && isEmptyDiff(review.diff) && (
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {t("Only the keymap identifier will be updated.")}
+              </p>
+            )}
+            {skipNotice}
             {checks}
             {error && (
               <p role="alert" className="text-xs text-[var(--color-danger)]">
@@ -412,10 +449,18 @@ export function KeymapSharingPreview({
                 {t("Cancel")}
               </Dialog.Close>
               <button
-                className="btn-electric text-sm"
+                className="btn-electric text-sm inline-flex items-center justify-center gap-2"
+                aria-busy={busy}
                 disabled={busy || blocked || empty}
                 onClick={() => void onConfirm()}
               >
+                {busy && (
+                  <IconLoader2
+                    size={16}
+                    className="animate-spin shrink-0"
+                    aria-hidden="true"
+                  />
+                )}
                 {save ? t("Save to Abyss") : t("Apply to keyboard")}
               </button>
             </div>
