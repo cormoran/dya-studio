@@ -737,10 +737,13 @@ it("uses named parameter choices above the tapdance actions and follows the stan
     name: "Navigation",
     exact: true,
   });
-  const actions = screen.getByRole("tab", { name: "Single" });
-  expect(
-    choice.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBeTruthy();
+  expect(screen.queryByRole("tab", { name: "Single" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "New tapdance" })).toHaveClass(
+    "border-dashed",
+  );
+  expect(screen.getByRole("button", { name: "Edit tapdance" })).not.toHaveClass(
+    "border-dashed",
+  );
   expect(screen.getByText("Parameters")).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "param1: Alphabet" }),
@@ -755,9 +758,18 @@ it("uses named parameter choices above the tapdance actions and follows the stan
   expect(
     screen.getByRole("button", { name: "param1: Navigation" }),
   ).toBeInTheDocument();
+  expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Edit tapdance" }));
+  const editDialog = screen.getByRole("dialog", {
+    name: "Edit tapdance · Navigation",
+  });
   expect(
-    within(screen.getByRole("tabpanel")).getByRole("button", { name: "D" }),
+    within(editDialog).getByRole("tab", { name: "Single" }),
   ).toBeInTheDocument();
+  expect(
+    within(editDialog).getByRole("button", { name: "D" }),
+  ).toBeInTheDocument();
+  await user.click(within(editDialog).getByRole("button", { name: "Close" }));
   expect(onSelect).not.toHaveBeenCalled();
   expect(onClose).not.toHaveBeenCalled();
   await user.click(

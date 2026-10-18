@@ -1237,7 +1237,7 @@ export function KeycodeSelector({
                           )
                         : null}
                     {tapDance && open && (
-                      <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                      <div className="mt-3">
                         <TapDanceEditor
                           key={selectedBehavior}
                           runtime={runtimeTapDance}

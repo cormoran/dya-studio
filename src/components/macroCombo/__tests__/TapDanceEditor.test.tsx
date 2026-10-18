@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { TapDanceEditor } from "../TapDanceEditor";
+import { TapDanceEditor, TapDanceDraft } from "../TapDanceEditor";
 import {
   Config,
   State,
@@ -96,7 +96,14 @@ beforeEach(() => {
   mockSave.mockResolvedValue(true);
 });
 it("edits a shared action locally, discards, then saves the draft through an explicit action", async () => {
-  render(<TapDanceEditor {...props} slot={0} currentSlot={0} />);
+  render(
+    <TapDanceDraft
+      {...props}
+      config={props.runtime.entries[0].config}
+      slot={0}
+      currentSlot={0}
+    />,
+  );
   expect(screen.getByText(/updates 1 other tapdance/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "Double" }));
   fireEvent.click(
@@ -125,7 +132,13 @@ it("edits a shared action locally, discards, then saves the draft through an exp
   expect(await screen.findByRole("status")).toHaveTextContent("Tapdance saved");
 });
 it("rejects a Triple action without Double", () => {
-  render(<TapDanceEditor {...props} slot={0} />);
+  render(
+    <TapDanceDraft
+      {...props}
+      config={props.runtime.entries[0].config}
+      slot={0}
+    />,
+  );
   fireEvent.click(screen.getByRole("tab", { name: "Double" }));
   fireEvent.click(screen.getByRole("button", { name: "Clear" }));
   expect(screen.getByRole("alert")).toHaveTextContent(
