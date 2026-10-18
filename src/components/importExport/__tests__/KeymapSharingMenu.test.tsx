@@ -251,3 +251,20 @@ describe("mobile sharing dialog", () => {
     expect(mockSharing.refresh).toHaveBeenCalledTimes(1);
   });
 });
+
+it("shows differences and opens each current-map action in its selected direction only", () => {
+  mockAuth.isAuthenticated = true;
+  mockSharing.current = record;
+  mockSharing.keymaps = [record, { id: "two", name: "Other map" }];
+  mockSharing.changed = true;
+  show();
+  expect(screen.getByText("Differences found")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Sync to Abyss" }));
+  expect(mockSharing.prepare).toHaveBeenLastCalledWith("save", record);
+  fireEvent.click(screen.getByRole("button", { name: "Overwrite from Abyss" }));
+  expect(mockSharing.prepare).toHaveBeenLastCalledWith("apply", record);
+  expect(screen.getAllByRole("button", { name: "Sync to Abyss" })).toHaveLength(
+    1,
+  );
+  expect(mockSharing.confirm).not.toHaveBeenCalled();
+});

@@ -6,6 +6,9 @@
  * into one collapsible card per layer so a collapsed card still says how much
  * it contains, and the row list is capped until the user asks for all of it.
  */
+import { splitWritableKeymapDiff } from "../../lib/abyss/keymapApplyResult";
+import { isEmptyDiff } from "../../lib/abyss/abyssDiff";
+import { IconAdjustments } from "@tabler/icons-react";
 import { useState } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { useSharedBindingLabel } from "../../hooks/useSharedBindingLabel";
@@ -14,7 +17,6 @@ import { SectionCard } from "../troubleshooting/SectionCard";
 import {
   BINDING_ROW_LIMIT,
   countDiff,
-  globalModuleChanges,
   groupByLayer,
   type CollectionChange,
   type KeymapDiff,
@@ -64,10 +66,7 @@ function LayerCard({
 }) {
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
-  const changeCount =
-    layer.bindingChanges.length +
-    layer.moduleChanges.length +
-    (layer.nameChange ? 1 : 0);
+  const changeCount = layer.bindingChanges.length + (layer.nameChange ? 1 : 0);
   const visible = showAll
     ? layer.bindingChanges
     : layer.bindingChanges.slice(0, 50);
@@ -124,10 +123,6 @@ function LayerCard({
           )}
         </div>
       )}
-
-      {layer.moduleChanges.map((change) => (
-        <ModuleChangeDetails key={change.moduleName} change={change} />
-      ))}
     </SectionCard>
   );
 }
@@ -163,15 +158,38 @@ function CollectionList({
 export function KeymapDiffView({
   diff,
   defaultExpanded = false,
+  markUnsupported = false,
 }: {
   diff: KeymapDiff;
   defaultExpanded?: boolean;
+  markUnsupported?: boolean;
 }) {
   const { t } = useLanguage();
   const [showLargeDiff, setShowLargeDiff] = useState(false);
   const counts = countDiff(diff);
-  const layers = groupByLayer(diff);
-  const globals = globalModuleChanges(diff);
+  const layers = groupByLayer({ ...diff, moduleChanges: [] });
+  const moduleNames = [
+    ...new Set(diff.moduleChanges.map((change) => change.moduleName)),
+  ];
+  const { writable, skipped } = splitWritableKeymapDiff(diff);
+  if (markUnsupported && !isEmptyDiff(skipped)) {
+    return (
+      <div className="space-y-4">
+        {!isEmptyDiff(writable) && (
+          <KeymapDiffView diff={writable} defaultExpanded={defaultExpanded} />
+        )}
+        <section
+          className="rounded-lg border border-[var(--color-warning)] p-3 space-y-3"
+          aria-label={t("Unsupported changes (will be skipped)")}
+        >
+          <h4 className="text-sm font-medium text-[var(--color-warning)]">
+            {t("Unsupported changes (will be skipped)")}
+          </h4>
+          <KeymapDiffView diff={skipped} defaultExpanded={defaultExpanded} />
+        </section>
+      </div>
+    );
+  }
   // A full keymap replacement is several hundred rows; rendering them all is
   // slow and tells the user nothing they cannot get from the counts.
   const isLarge =
@@ -215,16 +233,27 @@ export function KeymapDiffView({
       <CollectionList title={t("Combos")} changes={diff.comboChanges} />
       <CollectionList title={t("Macros")} changes={diff.macroChanges} />
 
-      {globals.length > 0 && (
-        <div className="glass-card p-6">
-          <h4 className="text-sm font-medium text-[var(--color-text)] mb-2">
-            {t("Module settings")}
-          </h4>
-          {globals.map((change) => (
-            <ModuleChangeDetails key={change.moduleName} change={change} />
-          ))}
-        </div>
-      )}
+      {moduleNames.map((name) => (
+        <SectionCard
+          key={name}
+          icon={<IconAdjustments size={16} />}
+          title={`${t("Module")}: ${name}`}
+          defaultOpen={defaultExpanded}
+        >
+          {diff.moduleChanges
+            .filter((change) => change.moduleName === name)
+            .map((change) => (
+              <div key={`${change.scope}:${change.layerIndex ?? "global"}`}>
+                <h4 className="text-xs text-[var(--color-text-muted)] mt-2">
+                  {change.scope === "global"
+                    ? t("Global settings")
+                    : t("Layer {{index}}", { index: change.layerIndex ?? 0 })}
+                </h4>
+                <ModuleChangeDetails change={change} />
+              </div>
+            ))}
+        </SectionCard>
+      ))}
     </div>
   );
 }

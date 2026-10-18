@@ -186,22 +186,55 @@ export function KeymapSharingMenu({
                     {t("Current keymap")}
                   </h3>
                   {sharing.current ? (
-                    <button
-                      className="btn-ghost w-full text-left flex items-center justify-between gap-2"
-                      disabled={busy}
-                      onClick={() =>
-                        void sharing.prepare("apply", sharing.current!)
-                      }
-                    >
-                      <span className="text-sm break-words min-w-0">
-                        {sharing.current.name}
-                      </span>
-                      {!sharing.changed && (
-                        <span className="text-xs text-[var(--color-text-muted)]">
-                          {t("In sync")}
+                    <div className="rounded-lg border border-[var(--color-border)] p-2 space-y-2">
+                      <button
+                        className="btn-ghost w-full text-left flex items-center justify-between gap-2"
+                        disabled={busy}
+                        onClick={() =>
+                          void sharing.prepare("apply", sharing.current!)
+                        }
+                      >
+                        <span className="text-sm break-words min-w-0">
+                          {sharing.current.name}
                         </span>
-                      )}
-                    </button>
+                        <span
+                          role="status"
+                          className="text-xs text-[var(--color-text-muted)] shrink-0"
+                        >
+                          {t(
+                            sharing.checking
+                              ? "Checking differences..."
+                              : sharing.changed
+                                ? "Differences found"
+                                : "In sync",
+                          )}
+                        </span>
+                      </button>
+                      <div className="flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-2">
+                        {sharing.keymaps.some(
+                          (item) => item.id === sharing.current?.id,
+                        ) && (
+                          <button
+                            className="btn-ghost flex-1 text-xs"
+                            disabled={busy}
+                            onClick={() =>
+                              void sharing.prepare("save", sharing.current!)
+                            }
+                          >
+                            {t("Sync to Abyss")}
+                          </button>
+                        )}
+                        <button
+                          className="btn-ghost flex-1 text-xs"
+                          disabled={busy}
+                          onClick={() =>
+                            void sharing.prepare("apply", sharing.current!)
+                          }
+                        >
+                          {t("Overwrite from Abyss")}
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <p className="text-xs text-[var(--color-text-muted)]">
                       {t(
@@ -311,7 +344,7 @@ export function KeymapSharingMenu({
                   className="animate-spin shrink-0"
                   aria-hidden="true"
                 />
-                {t("Loading...")}
+                {t(sharing.checking ? "Checking differences..." : "Loading...")}
               </p>
             )}
             {sharing.message && (

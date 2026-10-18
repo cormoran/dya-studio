@@ -120,6 +120,12 @@ const ja: Record<string, string> = {
   "Current keymap": "現在のキーマップ",
   "Your keymaps": "自分のキーマップ",
   "In sync": "同期済み",
+  "Differences found": "差分あり",
+  "Checking differences...": "差分を確認中...",
+  "Sync to Abyss": "Abyss へ同期",
+  "Overwrite from Abyss": "Abyss から上書き",
+  "Unsupported changes (will be skipped)": "未対応の変更（スキップされます）",
+  "Global settings": "全体設定",
   "This keyboard cannot identify its current keymap. Keymap identity RPC is not supported.":
     "このキーボードはキーマップ識別 RPC に未対応のため、現在のキーマップを判定できません。",
   "No keymap identity is stored on this keyboard.":

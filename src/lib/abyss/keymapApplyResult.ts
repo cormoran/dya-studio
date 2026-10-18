@@ -1,4 +1,4 @@
-import { EMPTY_DIFF, type KeymapDiff } from "./abyssDiff";
+import { EMPTY_DIFF, type KeymapDiff, type ModuleChange } from "./abyssDiff";
 
 export interface KeymapApplyResult {
   name: string;
@@ -20,6 +20,15 @@ function hasUnsupportedBinding(value: unknown): boolean {
   return Object.values(value).some(hasUnsupportedBinding);
 }
 
+/** Known adapter module routes; metadata/value validation still happens at writeback. */
+function hasUnsupportedModuleRoute(change: ModuleChange): boolean {
+  const value = change.to ?? change.from;
+  if (!value || typeof value !== "object" || !("type" in value)) return false;
+  return change.scope === "global"
+    ? !["trackball", "touch_pad", "custom"].includes(String(value.type))
+    : value.type !== "rotary_encoder";
+}
+
 /** Skip the whole containing change so collection entries/modules stay intact. */
 export function splitWritableKeymapDiff(diff: KeymapDiff) {
   const writable = { ...EMPTY_DIFF };
@@ -36,6 +45,13 @@ export function splitWritableKeymapDiff(diff: KeymapDiff) {
     Object.assign(skipped, { [key]: blocked });
     Object.assign(writable, { [key]: supported });
   }
+  const unsupportedModules = writable.moduleChanges.filter(
+    hasUnsupportedModuleRoute,
+  );
+  skipped.moduleChanges = [...skipped.moduleChanges, ...unsupportedModules];
+  writable.moduleChanges = writable.moduleChanges.filter(
+    (change) => !hasUnsupportedModuleRoute(change),
+  );
   return { writable, skipped };
 }
 

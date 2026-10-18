@@ -22,6 +22,7 @@ it("links a confirmed public catalog keyboard using its canonical slug without a
   );
 });
 it("uses Discover when missing, ambiguous, or the catalog is unavailable", async () => {
+  let variant = 0;
   for (const items of [
     [],
     [{ name: "Other", slug: "other" }],
@@ -32,13 +33,16 @@ it("uses Discover when missing, ambiguous, or the catalog is unavailable", async
   ]) {
     mockFetch.mockResolvedValue({ ok: true, json: async () => items });
     expect(
-      await findAbyssKeyboardUrl("DYA", new AbortController().signal),
+      await findAbyssKeyboardUrl(
+        "DYA" + " ".repeat(variant++),
+        new AbortController().signal,
+      ),
     ).toBe(abyssDiscoverUrl());
   }
   mockFetch.mockResolvedValue({ ok: false });
-  expect(await findAbyssKeyboardUrl("DYA", new AbortController().signal)).toBe(
-    abyssDiscoverUrl(),
-  );
+  expect(
+    await findAbyssKeyboardUrl("Unavailable", new AbortController().signal),
+  ).toBe(abyssDiscoverUrl());
 });
 it("preserves Japanese names rather than matching unrelated non-Latin names", async () => {
   mockFetch.mockResolvedValue({
@@ -48,4 +52,19 @@ it("preserves Japanese names rather than matching unrelated non-Latin names", as
   expect(
     await findAbyssKeyboardUrl("キーボード", new AbortController().signal),
   ).toBe(abyssDiscoverUrl());
+});
+
+it("reuses a resolved keyboard URL without another catalog request", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [{ name: "Cached board", slug: "cached-board" }],
+  });
+  const first = await findAbyssKeyboardUrl(
+    "Cached board",
+    new AbortController().signal,
+  );
+  expect(
+    await findAbyssKeyboardUrl("Cached board", new AbortController().signal),
+  ).toBe(first);
+  expect(mockFetch).toHaveBeenCalledTimes(1);
 });

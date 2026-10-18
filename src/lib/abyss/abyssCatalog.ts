@@ -2,6 +2,8 @@ import { abyssBaseUrl, abyssKeyboardUrl } from "./abyssConfig";
 
 export const abyssDiscoverUrl = () => `${abyssBaseUrl()}/discover`;
 
+const keyboardUrls = new Map<string, string>();
+
 /** Public catalog lookup: never sends OAuth tokens/cookies or guesses a slug.
  * Only a unique exact name/slug match is safe; ambiguous search results use Discover.
  */
@@ -9,6 +11,9 @@ export async function findAbyssKeyboardUrl(
   deviceName: string,
   signal: AbortSignal,
 ): Promise<string> {
+  const cacheKey = JSON.stringify([abyssBaseUrl(), deviceName]);
+  const cached = keyboardUrls.get(cacheKey);
+  if (cached) return cached;
   const query = new URLSearchParams({ q: deviceName, page: "1", limit: "20" });
   const response = await fetch(
     `${abyssBaseUrl()}/api/v1/keyboards/search?${query}`,
@@ -29,7 +34,10 @@ export async function findAbyssKeyboardUrl(
       typeof item?.slug === "string" &&
       (normalize(item.name) === name || normalize(item.slug) === name),
   );
-  return matches.length === 1
-    ? abyssKeyboardUrl(matches[0].slug)
-    : abyssDiscoverUrl();
+  const url =
+    matches.length === 1
+      ? abyssKeyboardUrl(matches[0].slug)
+      : abyssDiscoverUrl();
+  if (!signal.aborted) keyboardUrls.set(cacheKey, url);
+  return url;
 }

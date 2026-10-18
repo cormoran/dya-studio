@@ -149,6 +149,20 @@ function buildReview(
   };
 }
 
+function createRemoteCache() {
+  return {
+    layouts: new Map<string, AbyssLayoutResolveResult | null>(),
+    lists: new Map<string, AbyssKeymapSummary[]>(),
+    records: new Map<string, AbyssKeymapSummary>(),
+  };
+}
+// Document-lifetime only: remounting the menu or reconnecting does not fetch
+// unchanged cloud data again. Never share private records across accounts/clients.
+const remoteCaches = new WeakMap<
+  object,
+  Map<string, ReturnType<typeof createRemoteCache>>
+>();
+
 export function useKeymapSharing(
   authenticated: boolean,
   onApplied: () => Promise<unknown>,
@@ -171,11 +185,32 @@ export function useKeymapSharing(
   const [identity, setIdentity] = useState<
     "unknown" | "unsupported" | "unset" | "known"
   >("unknown");
-  const cache = useRef({
-    layouts: new Map<string, AbyssLayoutResolveResult | null>(),
-    lists: new Map<string, AbyssKeymapSummary[]>(),
-    records: new Map<string, AbyssKeymapSummary>(),
-  });
+  const cache = useRef(createRemoteCache());
+  const [checking, setChecking] = useState(false);
+  const previouslyAuthenticated = useRef(false);
+  useEffect(() => {
+    const client = getAbyssClient();
+    if (!client) return;
+    const signedOut = previouslyAuthenticated.current && !authenticated;
+    previouslyAuthenticated.current = authenticated;
+    if (!authenticated) {
+      if (signedOut) remoteCaches.delete(client);
+      cache.current = createRemoteCache();
+      return;
+    }
+    let accounts = remoteCaches.get(client);
+    if (!accounts) {
+      accounts = new Map();
+      remoteCaches.set(client, accounts);
+    }
+    const key = accountId ?? "";
+    let stored = accounts.get(key);
+    if (!stored) {
+      stored = createRemoteCache();
+      accounts.set(key, stored);
+    }
+    cache.current = stored;
+  }, [authenticated, accountId]);
   const [review, setReview] = useState<ShareReview | null>(null);
   const [applyResult, setApplyResult] = useState<KeymapApplyResult | null>(
     null,
@@ -187,9 +222,6 @@ export function useKeymapSharing(
   useEffect(() => {
     session.current = connection;
     generation.current += 1;
-    cache.current.layouts.clear();
-    cache.current.lists.clear();
-    cache.current.records.clear();
     setReview(null);
     setApplyResult(null);
     setSavedKeymapUrl(null);
@@ -357,7 +389,6 @@ export function useKeymapSharing(
     valid();
     setKeymaps(owned);
     setCurrent(null);
-    setChanged(false);
     const identifier = await readIdentity(valid);
     if (!identifier) return;
     const ids = await Promise.all(
@@ -393,12 +424,17 @@ export function useKeymapSharing(
 
   const refresh = (force = true) =>
     operation(async (valid) => {
+      setChecking(!force && cache.current.layouts.size > 0);
       if (force) {
         cache.current.layouts.clear();
         cache.current.lists.clear();
         cache.current.records.clear();
       }
-      await refreshList(valid);
+      try {
+        await refreshList(valid);
+      } finally {
+        setChecking(false);
+      }
     });
   const prepare = (
     kind: "apply" | "save",
@@ -743,6 +779,7 @@ export function useKeymapSharing(
     });
   return {
     busy,
+    checking,
     error,
     message,
     savedKeymapUrl,

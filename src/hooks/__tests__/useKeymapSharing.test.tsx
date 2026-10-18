@@ -76,7 +76,7 @@ beforeEach(() => {
   mockWrite.mockResolvedValue(undefined);
   client.getKeymap.mockResolvedValue(record);
   client.updateKeymap.mockResolvedValue({ id: "one", version: 2 });
-  (getAbyssClient as jest.Mock).mockReturnValue(client);
+  (getAbyssClient as jest.Mock).mockReturnValue({ ...client });
   mockCompare.mockImplementation(compareActual);
 });
 it("previews a file without authentication and never writes on prepare or cancel", async () => {
@@ -1031,3 +1031,50 @@ it.each([false, true])(
     }
   },
 );
+
+it("keeps remote data through remount and reconnect while comparing fresh keyboard data", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  mockCall.mockResolvedValue({
+    keymapIdentifier: { identifier: await keymapIdentifier("one") },
+  });
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: target, detectedLayout: { name: "DYA2" } },
+  });
+  client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
+  client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+  const first = renderHook(
+    () => useKeymapSharing(true, applied, undefined, undefined, "tester"),
+    { wrapper },
+  );
+  await act(async () => {
+    await first.result.current.refresh(false);
+  });
+  expect(first.result.current.changed).toBe(false);
+  first.unmount();
+  const originalConnection = app.state.connection;
+  app.state.connection = {};
+  const next = renderHook(
+    ({ authenticated }) =>
+      useKeymapSharing(
+        authenticated,
+        applied,
+        undefined,
+        undefined,
+        authenticated ? "tester" : undefined,
+      ),
+    { wrapper, initialProps: { authenticated: false } },
+  );
+  next.rerender({ authenticated: true });
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+  });
+  await act(async () => {
+    await next.result.current.refresh(false);
+  });
+  expect(next.result.current.changed).toBe(true);
+  expect(client.resolveLayout).toHaveBeenCalledTimes(1);
+  expect(client.listMyKeymaps).toHaveBeenCalledTimes(1);
+  expect(client.getKeymap).toHaveBeenCalledTimes(1);
+  next.unmount();
+  app.state.connection = originalConnection;
+});
