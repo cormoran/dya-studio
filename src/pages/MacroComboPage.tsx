@@ -1,3 +1,4 @@
+import { useIsTabActive } from "../hooks/useIsTabActive";
 import { TapDanceEditor } from "../components/macroCombo/TapDanceEditor";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 /**
@@ -66,6 +67,15 @@ export function MacroComboPage() {
   const keymap = useKeymap();
   const runtimeMacro = useRuntimeMacro();
   const runtimeCombo = useRuntimeCombo();
+  const tabActive = useIsTabActive();
+  const wasTabActive = useRef(tabActive);
+  const reloadKeymapForTapDance = keymap.loadKeymapData;
+  useEffect(() => {
+    const returning = tabActive && !wasTabActive.current;
+    wasTabActive.current = tabActive;
+    if (returning && connection.isConnected) void reloadKeymapForTapDance();
+  }, [tabActive, connection.isConnected, reloadKeymapForTapDance]);
+
   // Proactive lock state: show a lock badge in place of Save/Discard when
   // Studio is locked. Editing is guarded by the shared unlock gate below.
   const { locked } = useStudioLockState();

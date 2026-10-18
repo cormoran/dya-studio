@@ -19,6 +19,11 @@ import {
 } from "../../components/macroCombo/macroStepUtils";
 
 const mockCall = jest.fn();
+const mockReloadKeymap = jest.fn();
+let mockTabActive = true;
+jest.mock("../../hooks/useIsTabActive", () => ({
+  useIsTabActive: () => mockTabActive,
+}));
 const mockUnlock = jest.fn(() => true);
 const mockCapture = jest.fn();
 let mockMacroAvailable = true;
@@ -50,7 +55,11 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => ({
   useStudioLockState: () => ({ locked: false }),
 }));
 jest.mock("../../hooks/useKeymap", () => ({
-  useKeymap: () => ({ behaviors: new Map(), keymap: null }),
+  useKeymap: () => ({
+    behaviors: new Map(),
+    keymap: null,
+    loadKeymapData: mockReloadKeymap,
+  }),
 }));
 jest.mock("../../hooks/useRuntimeCombo", () => ({
   useRuntimeCombo: () => mockCombo,
@@ -75,6 +84,7 @@ let deferWrites: boolean;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockTabActive = true;
   mockUnlock.mockReturnValue(true);
   mockMacroAvailable = true;
   mockCombo.isLoading = false;
@@ -422,4 +432,32 @@ it("renders one tapdance section alongside the macro/combo editors", async () =>
   expect(
     screen.getAllByText("Runtime tapdance subsystem is unavailable."),
   ).toHaveLength(1);
+});
+
+it("refreshes shared tapdance reference counts when returning to the retained tab", async () => {
+  mockTabActive = false;
+  const value = {
+    isConnected: true,
+    deviceName: "Test",
+    onConnect: () => {},
+    onDisconnect: () => {},
+    isLoading: false,
+    error: null,
+    isReconnecting: false,
+    onCancelReconnect: () => {},
+  };
+  const view = render(
+    <ConnectionContext.Provider value={value}>
+      <MacroComboPage />
+    </ConnectionContext.Provider>,
+  );
+  await screen.findByDisplayValue("aa");
+  expect(mockReloadKeymap).not.toHaveBeenCalled();
+  mockTabActive = true;
+  view.rerender(
+    <ConnectionContext.Provider value={value}>
+      <MacroComboPage />
+    </ConnectionContext.Provider>,
+  );
+  expect(mockReloadKeymap).toHaveBeenCalledTimes(1);
 });
