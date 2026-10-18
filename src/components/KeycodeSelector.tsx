@@ -20,6 +20,7 @@ import {
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  IconBolt,
   IconCheck,
   IconRestore,
   IconX,
@@ -893,7 +894,7 @@ export function KeycodeSelector({
                         onClick={() => setCloseOnSelect((enabled) => !enabled)}
                         className={`p-1 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
                       >
-                        <IconCheck size={16} />
+                        <IconBolt size={16} />
                       </button>
                     </EditorTooltip>
                   )}

@@ -14,7 +14,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconArrowsMaximize,
-  IconWindow,
+  IconAppWindow,
   IconPlayerTrackNext,
   IconDeviceFloppy,
   IconAlertCircle,
@@ -1722,7 +1722,7 @@ export function KeymapPage() {
                   aria-label={t("Floating mode")}
                   onClick={() => setSelectorMode("floating")}
                 >
-                  <IconWindow size={16} />
+                  <IconAppWindow size={16} />
                 </button>
               </EditorTooltip>
             )}
@@ -1840,7 +1840,7 @@ export function KeymapPage() {
                   setSelectorMode("floating");
                 }}
               >
-                <IconWindow size={16} />
+                <IconAppWindow size={16} />
               </button>
             </EditorTooltip>
           )

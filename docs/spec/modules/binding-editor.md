@@ -22,6 +22,8 @@
 | BIND-R03 | editor の表示だけから、現在編集する caller 固有の対象を判定できる                      | [#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求 |
 | BIND-R04 | 終了操作の accessible name と実際の適用/破棄を一致させ、無変更では callback を送らない | [#210](https://github.com/cormoran/dya-studio/issues/210) 明示要求 |
 
+BIND-R05: 自動適用（Close on select）は稲妻、確定（Apply changes and close）はチェックで区別する。Keymap の Floating mode はタイトルバー付きウィンドウのアイコンで示す。Quick Select のラベルは640px未満で非表示、640px以上では通常表示し、compact表示は引き続き読み上げ専用にする。候補ボタンと設定操作はモバイルでも残す。根拠は2026-10-18ユーザー明示要求、S1/S4、[KeymapPage](../../../src/pages/KeymapPage.tsx) の通常キー・combo selector toolbar。表示変更による適用条件・保存先の変更はない。
+
 ## 前提・状態
 
 caller が open、currentBinding、behaviors、layers と onSelect を渡す。`targetLabel` は caller が持つ対象 ID（keymap の layer/position/binding、sensor の回転方向、macro step、combo 等）で、modal/floating の header に表示する。parameter 型で keycode、layer、数値等の入力が変わる。候補は device の behavior metadata と fallback に依存する。未接続/unsupported は caller の表示条件で制御し、この component 単独の接続画面はない。busy 時 fieldset 無効、error prop があると editor 内に alert。保存は caller の責務。
