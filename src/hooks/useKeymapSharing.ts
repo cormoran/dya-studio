@@ -548,63 +548,87 @@ export function useKeymapSharing(
           tab?.show(pending.record.id);
           await associate(pending.record.id, valid);
         } else {
-          if (!isEmptyDiff(writable)) {
-            outcome.attempted = true;
-            await runWithUnlock(() =>
-              writeZmkKeymapDiff(fresh.loaded, writable as never),
-            );
-          }
-          valid();
-          // adapter-zmk rounds scales to /1000. Restore exactly representable
-          // firmware fractions (e.g. 1/60) before verifying the actual device.
-          for (const correction of abyssPointerScaleCorrections(writable)) {
-            for (const request of [
-              {
-                setScaleMultiplier: {
-                  id: correction.id,
-                  value: correction.multiplier,
-                },
-              },
-              {
-                setScaleDivisor: {
-                  id: correction.id,
-                  value: correction.divisor,
-                },
-              },
-            ]) {
-              valid();
-              const response = await processorRpc.call(
-                ProcessorRequest.create(request),
+          const failures: string[] = [];
+          const failureText = (caught: unknown) =>
+            studioLockErrorText(caught) ??
+            (caught instanceof Error
+              ? caught.message
+              : abyssErrorMessageKey(caught));
+          try {
+            if (!isEmptyDiff(writable)) {
+              outcome.attempted = true;
+              await runWithUnlock(() =>
+                writeZmkKeymapDiff(fresh.loaded, writable as never),
               );
-              valid();
-              if (
-                !response ||
-                response.error ||
-                !(response.setScaleMultiplier || response.setScaleDivisor)
-              )
-                throw new Error(
-                  "The pointer scale could not be stored. Reopen this preview and try again.",
-                );
             }
-          }
-          const readback = await capture(valid);
-          outcome.remaining = withoutSkippedChanges(
-            compare(pending.after, documentOf(readback.loaded)),
-            skipped,
-          );
-          if (!isEmptyDiff(outcome.remaining))
-            throw new Error(
-              "The keyboard does not yet match this keymap. Review and try again.",
+            valid();
+            // adapter-zmk rounds scales to /1000. Restore exactly representable
+            // firmware fractions (e.g. 1/60) before verifying the actual device.
+            for (const correction of abyssPointerScaleCorrections(writable)) {
+              for (const request of [
+                {
+                  setScaleMultiplier: {
+                    id: correction.id,
+                    value: correction.multiplier,
+                  },
+                },
+                {
+                  setScaleDivisor: {
+                    id: correction.id,
+                    value: correction.divisor,
+                  },
+                },
+              ]) {
+                valid();
+                const response = await processorRpc.call(
+                  ProcessorRequest.create(request),
+                );
+                valid();
+                if (
+                  !response ||
+                  response.error ||
+                  !(response.setScaleMultiplier || response.setScaleDivisor)
+                )
+                  throw new Error(
+                    "The pointer scale could not be stored. Reopen this preview and try again.",
+                  );
+              }
+            }
+            const readback = await capture(valid);
+            outcome.remaining = withoutSkippedChanges(
+              compare(pending.after, documentOf(readback.loaded)),
+              skipped,
             );
-          outcome.verified = true;
-          // Identity records the selected source even when unsupported bindings are skipped.
-          const complete = isCompleteSharingSelection(pending.selection);
-          await associate(
-            complete ? (pending.record?.id ?? null) : null,
-            valid,
-          );
-          await onApplied();
+            if (!isEmptyDiff(outcome.remaining))
+              throw new Error(
+                "The keyboard does not yet match this keymap. Review and try again.",
+              );
+            outcome.verified = true;
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          // A failed settings write must not prevent storing the selected source.
+          // Revalidate the session before starting any independent metadata write.
           valid();
+          const complete = isCompleteSharingSelection(pending.selection);
+          try {
+            if (!failures.length || (complete && pending.record))
+              await associate(
+                complete ? (pending.record?.id ?? null) : null,
+                valid,
+              );
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          valid();
+          try {
+            await onApplied();
+            valid();
+            if (authenticated) await refreshList(valid);
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          if (failures.length) throw new Error(failures.join("\n"));
         }
         if (pending.kind === "save") setReview(null);
         setMessage(
@@ -614,7 +638,7 @@ export function useKeymapSharing(
               ? "Applied to keyboard."
               : "Finished with skipped changes.",
         );
-        if (authenticated) await refreshList(valid);
+        if (pending.kind === "save" && authenticated) await refreshList(valid);
       } catch (caught) {
         if (pending.kind === "apply") setMessage(null);
         outcome.error =

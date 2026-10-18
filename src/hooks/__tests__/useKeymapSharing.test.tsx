@@ -148,7 +148,7 @@ it("requires matching readback before reporting success on old firmware", async 
   });
   expect(mockWrite).toHaveBeenCalledTimes(1);
   expect(result.current.error).toMatch(/does not yet match/);
-  expect(applied).not.toHaveBeenCalled();
+  expect(applied).toHaveBeenCalledTimes(1);
   expect(result.current.review).toBeNull();
   expect(result.current.applyResult?.verified).toBe(false);
   expect(result.current.applyResult?.remaining?.bindingChanges).toHaveLength(1);
@@ -661,7 +661,7 @@ it.each(["success", "rejected", "mismatched"] as const)(
       );
       expect(result.current.error).toMatch(/identity could not be/);
       expect(result.current.message).toBeNull();
-      expect(applied).not.toHaveBeenCalled();
+      expect(applied).toHaveBeenCalledTimes(1);
     }
   },
 );
@@ -839,7 +839,7 @@ it("closes the preview and reports write errors without claiming verification", 
     error: "RPC write failed",
     remaining: null,
   });
-  expect(applied).not.toHaveBeenCalled();
+  expect(applied).toHaveBeenCalledTimes(1);
 });
 
 it("stores the selected Abyss identity even when all raw changes are skipped", async () => {
@@ -885,3 +885,61 @@ it("stores the selected Abyss identity even when all raw changes are skipped", a
     skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
   });
 });
+
+it.each(["write", "readback", "write-and-identity"] as const)(
+  "stores and refreshes the selected source independently of a %s failure",
+  async (failure) => {
+    const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+    const expected = await keymapIdentifier(record.id);
+    let identifier = "old_";
+    mockCall.mockImplementation(async (request) => {
+      if (request.setKeymapIdentifier) {
+        if (failure === "write-and-identity") return { error: { code: 0 } };
+        identifier = request.setKeymapIdentifier.identifier;
+        return { setKeymapIdentifier: {} };
+      }
+      return { keymapIdentifier: { identifier } };
+    });
+    mockLoad.mockResolvedValue({
+      state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+    });
+    client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
+    client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+    if (failure !== "readback")
+      mockWrite.mockRejectedValueOnce(
+        new Error(
+          "ZMK behavior is unavailable: Mouse Button Press / Mouse Button.",
+        ),
+      );
+    const { result } = renderHook(() => useKeymapSharing(true, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", record as never);
+    });
+    await act(async () => {
+      expect(await result.current.confirm()).toBe(false);
+    });
+    expect(mockCall).toHaveBeenCalledWith({
+      setKeymapIdentifier: { identifier: expected },
+    });
+    expect(result.current.review).toBeNull();
+    expect(result.current.applyResult?.verified).toBe(false);
+    expect(result.current.message).toBeNull();
+    if (failure === "write-and-identity") {
+      expect(identifier).toBe("old_");
+      expect(result.current.applyResult?.error).toMatch(/Mouse Button Press/);
+      expect(result.current.applyResult?.error).toMatch(
+        /identity could not be stored/,
+      );
+    } else {
+      expect(identifier).toBe(expected);
+      expect(result.current.current?.id).toBe(record.id);
+      expect(result.current.changed).toBe(true);
+      expect(result.current.identity).toBe("known");
+      expect(result.current.applyResult?.error).toMatch(
+        failure === "write" ? /Mouse Button Press/ : /does not yet match/,
+      );
+    }
+  },
+);
