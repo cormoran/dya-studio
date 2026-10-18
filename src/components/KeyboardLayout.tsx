@@ -402,7 +402,8 @@ export function KeyboardLayout({
               isSelected={selectedKey === position}
               isHighlighted={
                 highlightedKeys?.has(position) ||
-                drag?.positions.includes(position)
+                (drag?.positions.length === 2 &&
+                  drag.positions.includes(position))
               }
               onClick={() => onKeyClick(position)}
               onReset={() => onKeyReset(position)}
