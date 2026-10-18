@@ -1130,7 +1130,7 @@ export function KeymapPage() {
                           type="button"
                           aria-label={t("Layout and display")}
                           aria-description={`${t("Physical Layout")}: ${currentLayout.name || t("Physical Layout")}; ${t("OS Layout")}: ${getLayoutLabel(keyboardLayoutContext.layout)}`}
-                          className="flex h-9 max-w-full items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50 sm:h-7 sm:gap-2 sm:px-2.5"
+                          className="flex h-9 max-w-full items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50 min-[360px]:max-sm:pl-3 sm:h-7 sm:gap-2 sm:px-2.5"
                         >
                           <IconKeyboard
                             size={14}
