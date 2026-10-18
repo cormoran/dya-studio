@@ -6,7 +6,8 @@ import {
   type ReactNode,
 } from "react";
 
-type Theme = "dark" | "light";
+import { setPopFontEnabled } from "../themes/loadPopFont";
+import { isTheme, themeOptions, type Theme } from "../themes/themes";
 
 interface ThemeContextValue {
   theme: Theme;
@@ -26,7 +27,7 @@ function getInitialTheme(): Theme {
   // Check localStorage first
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "light" || stored === "dark") {
+    if (isTheme(stored)) {
       return stored;
     }
     // Check system preference
@@ -47,9 +48,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove(...themeOptions.map((option) => option.value));
     root.classList.add(theme);
+    root.style.colorScheme = theme === "dark" ? "dark" : "light";
     localStorage.setItem(STORAGE_KEY, theme);
+    setPopFontEnabled(theme === "pop");
   }, [theme]);
 
   // Listen for system theme changes

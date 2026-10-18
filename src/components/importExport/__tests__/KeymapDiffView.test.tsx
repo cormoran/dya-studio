@@ -109,3 +109,38 @@ describe("KeymapDiffView", () => {
     expect(screen.queryByText(/bindings/)).not.toBeInTheDocument();
   });
 });
+
+it("shows nested before/after module fields at global and layer scope", () => {
+  render(
+    <KeymapDiffView
+      defaultExpanded
+      diff={{
+        ...EMPTY_DIFF,
+        moduleChanges: [
+          {
+            scope: "global",
+            moduleName: "ball",
+            from: { settings: { speed: 2, enabled: true } },
+            to: { settings: { speed: 0, enabled: false } },
+          },
+          {
+            scope: "layer",
+            layerIndex: 0,
+            moduleName: "encoder",
+            from: { values: [1, 2] },
+            to: { values: [3] },
+          },
+        ],
+      }}
+    />,
+  );
+  expect(
+    screen.getByRole("region", { name: "Module: ball" }),
+  ).toHaveTextContent('$["settings"]["speed"]2 → 0');
+  expect(
+    screen.getByRole("region", { name: "Module: ball" }),
+  ).toHaveTextContent("true → false");
+  expect(
+    screen.getByRole("region", { name: "Module: encoder" }),
+  ).toHaveTextContent('$["values"][1]2 → Not set');
+});

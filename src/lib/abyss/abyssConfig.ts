@@ -69,3 +69,8 @@ export function abyssKeyboardUrl(slug: string): string {
 export function abyssRegisterUrl(): string {
   return `${abyssBaseUrl()}/keymaps/register`;
 }
+
+/** Public page for a saved keymap on the configured Abyss instance. */
+export function abyssKeymapUrl(id: string): string {
+  return `${abyssBaseUrl()}/keymap/${encodeURIComponent(id)}`;
+}

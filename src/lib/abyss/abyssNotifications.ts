@@ -38,20 +38,37 @@ export interface NotificationBridgeInput {
 export function createAbyssNotificationSource({
   subsystemIndexes,
   onNotification,
-}: NotificationBridgeInput): ZmkNotificationSource {
+}: NotificationBridgeInput): ZmkNotificationSource & { dispose: () => void } {
+  // The adapter sends listInputProcessors before subscribing. Firmware can
+  // deliver its notifications before the request resolves, so start listening
+  // before the load and replay those early responses to the collector.
+  const buffered: StudioNotification[] = [];
+  const listeners = new Set<(notification: StudioNotification) => void>();
+  const unsubscribes = subsystemIndexes.map((subsystemIndex) =>
+    onNotification({
+      type: "custom",
+      subsystemIndex,
+      callback: (customNotification) => {
+        const notification = {
+          custom: { customNotification },
+        } as StudioNotification;
+        if (listeners.size === 0) buffered.push(notification);
+        else listeners.forEach((listener) => listener(notification));
+      },
+    }),
+  );
   return {
     subscribe(listener) {
-      const unsubscribes = subsystemIndexes.map((subsystemIndex) =>
-        onNotification({
-          type: "custom",
-          subsystemIndex,
-          callback: (customNotification) =>
-            listener({
-              custom: { customNotification },
-            } as StudioNotification),
-        }),
-      );
-      return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+      listeners.add(listener);
+      buffered.splice(0).forEach((notification) => listener(notification));
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    dispose() {
+      unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
+      buffered.length = 0;
+      listeners.clear();
     },
   };
 }

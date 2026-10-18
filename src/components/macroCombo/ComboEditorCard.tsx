@@ -232,7 +232,7 @@ export function ComboEditorCard({
 
       {/* Keyboard layout preview */}
       {currentLayout && previewLayer && keymap.keymap && (
-        <div className="rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] p-3 overflow-x-auto mb-4">
+        <div className="combo-position-preview rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] p-3 overflow-x-auto mb-4">
           <KeyboardLayout
             layout={currentLayout}
             layer={previewLayer}

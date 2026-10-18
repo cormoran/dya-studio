@@ -67,21 +67,20 @@ describe("DeveloperGuidePage navigation", () => {
   });
 
   it("offers theme switching and a link back to DYA Studio", () => {
-    const toggleTheme = jest.fn();
+    const setTheme = jest.fn();
 
     render(
       <ThemeContext.Provider
-        value={{ theme: "dark", toggleTheme, setTheme: jest.fn() }}
+        value={{ theme: "dark", toggleTheme: jest.fn(), setTheme }}
       >
         <DeveloperGuidePage page={page} />
       </ThemeContext.Provider>,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Switch to light mode" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Pop" }));
 
-    expect(toggleTheme).toHaveBeenCalledTimes(1);
+    expect(setTheme).toHaveBeenCalledWith("pop");
     expect(
       screen.getByRole("link", { name: "Back to DYA Studio" }),
     ).toHaveAttribute("href", "/");

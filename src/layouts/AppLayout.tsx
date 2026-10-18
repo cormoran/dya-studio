@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { IconSun, IconMoon, IconPlugConnectedX } from "@tabler/icons-react";
+import { IconPlugConnectedX } from "@tabler/icons-react";
 import DyaLogo from "../assets/dya.svg?react";
-import { useTheme } from "../hooks/useTheme";
+import { ThemeSelect } from "../components/ThemeSelect";
 import { useLanguage } from "../hooks/useLanguage";
 import type { ConnectionMethod } from "../components/DeviceConnection";
 import { LanguageToggle } from "../components/LanguageToggle";
@@ -12,26 +12,32 @@ interface AppLayoutProps {
   children: ReactNode;
   isConnected: boolean;
   deviceName?: string;
+  connectionMethod?: ConnectionMethod;
   onConnect: (method: ConnectionMethod) => void;
   onDisconnect: () => void;
   isConnecting?: boolean;
+  isHome: boolean;
 }
 
 export function AppLayout({
   children,
   isConnected,
   deviceName,
+  connectionMethod,
   onConnect,
   onDisconnect,
   isConnecting,
+  isHome,
 }: AppLayoutProps) {
-  const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
 
   return (
     <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
-      <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header
+        data-home={isHome}
+        className="app-header relative flex shrink-0 items-center justify-end px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300"
+      >
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -41,7 +47,7 @@ export function AppLayout({
           </span>
         )}
         {/* Logo & Brand */}
-        <div className="flex items-center gap-4 flex-shrink-0 mr-4">
+        <div className="app-header-brand flex items-center gap-4">
           <DyaLogo className="w-8 h-8 [&_polygon]:fill-[var(--color-text)]" />
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
@@ -54,17 +60,28 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="app-header-controls flex min-w-0 items-center gap-2">
           {isConnected ? (
             <>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="status-indicator connected flex-shrink-0" />
-                <span
-                  className="truncate text-sm text-[var(--color-text-secondary)]"
-                  title={deviceName}
-                >
-                  {deviceName || t("Connected")}
-                </span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-[10px] leading-[10px] text-[var(--color-text-muted)] whitespace-nowrap">
+                    {connectionMethod === "serial"
+                      ? "USB"
+                      : connectionMethod === "ble"
+                        ? "Bluetooth"
+                        : connectionMethod === "demo"
+                          ? "Demo"
+                          : t("Connected")}
+                  </span>
+                  <span
+                    className="truncate text-base leading-5 text-[var(--color-text-secondary)]"
+                    title={deviceName}
+                  >
+                    {deviceName || t("Connected")}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={onDisconnect}
@@ -94,24 +111,9 @@ export function AppLayout({
           <div className="sm:hidden shrink-0">
             <MobileDisplaySettings />
           </div>
-          <div className="hidden sm:flex items-center gap-4 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <LanguageToggle />
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle shrink-0"
-              aria-label={
-                theme === "dark"
-                  ? t("Switch to light mode")
-                  : t("Switch to dark mode")
-              }
-            >
-              {theme === "dark" ? (
-                <IconSun size={18} />
-              ) : (
-                <IconMoon size={18} />
-              )}
-            </button>
+            <ThemeSelect />
           </div>
         </div>
       </header>

@@ -39,9 +39,10 @@ export interface KeymapListResult {
 async function fetchAll(
   client: AbyssClient,
   filter: KeymapListFilter,
+  maxPages = MAX_PAGES,
 ): Promise<AbyssKeymapSummary[]> {
   const collected: AbyssKeymapSummary[] = [];
-  for (let page = 1; page <= MAX_PAGES; page += 1) {
+  for (let page = 1; page <= maxPages; page += 1) {
     const result = await client.listMyKeymaps({
       visibility: "all",
       ...(filter.layoutId ? { layoutId: filter.layoutId } : {}),
@@ -83,4 +84,12 @@ export async function listCandidateKeymaps(
     return { items: filtered, widened: false };
   }
   return { items: await fetchAll(client, {}), widened: true };
+}
+
+/** Menu lists only this resolved layout, without widening to unrelated boards. */
+export async function listMatchingKeymaps(
+  client: AbyssClient,
+  layoutId: string,
+): Promise<AbyssKeymapSummary[]> {
+  return fetchAll(client, { layoutId }, Number.MAX_SAFE_INTEGER);
 }

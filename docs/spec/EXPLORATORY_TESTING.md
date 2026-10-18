@@ -8,6 +8,7 @@
 - `playwright-cli` を使う場合は、開始前に [Playwright CLI 向けガイド](browser-tools/playwright-cli.md) を読む。
 - その他の環境では、提供されているブラウザ操作ツールとその skill/手順を使う。別ツールのコマンドや戻り値の形式を流用しない。必要な操作ができなければ制約を報告する。
 - Demo では再現できない firmware capability、RPC、保存・再読込を対象にする場合は repository の `renode-exploratory-test` skill を読み、shim を初回 navigation 前に注入できるブラウザツールを選ぶ。Renode を実機 WebSerial と同一視せず、ELF と emulator の条件を記録する。
+- DYA2 実機テストを依頼された場合は [hardware-exploratory-test](../../.agents/skills/hardware-exploratory-test/SKILL.md) を使う。実 transport、容量・resource 負荷、flash/再起動、split/sensor の観点を選び、実機は worker 一人ずつ占有する。RPC reboot と物理電源断の証拠は分ける。
 
 coordinator は worker にも利用するツールと環境別手順を渡し、同じ URL に到達できることを確認する。ブラウザが別ホストで動く場合、その localhost はアプリのホストと同じとは限らない。
 
@@ -19,11 +20,15 @@ coordinator は worker にも利用するツールと環境別手順を渡し、
 4. 日時、アプリ commit、仕様 commit、URL、言語、viewport、モデル/effort、Demo/Renode/実機、初期値を記録する。Renode では DUT ELF の出典・commit、locking/topology、Renode version、shim 境界、boot/connection 回数も記録する。並列 worker は専用のタブ/ブラウザセッションを持ち、各操作の対象を明示する。localStorage 等は同じ origin で共有され得るので、設定変更は担当を分ける。
 5. 観測 → 操作 → 再観測を繰り返す。要素参照は snapshot 後に取得し、画面変化後は再取得する。UI 操作を DOM/React 状態への書き込みで代用しない。
 
+全体探索では [skill の計画・受入手順](../../.agents/skills/exploratory-ui-test/references/whole-app.md) に従い、全入口の batch と必須観測を dispatch 前に決める。同時実行数と総 batch 数は別であり、最初の2〜3 workerが終了しても未着手の計画済み batch を残して完了にしない。各 worker の最初の charter 後に途中レビューし、`worker_done` 前にも report/checklist の受入確認を依頼する。15〜25分は計画の目安で、必須操作を省くための打切り期限ではない。利用者の明示予算・期限は優先する。
+
 この作業で Demo または割当済み Renode DUT 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save や Renode の一時 NVS を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。Renode の再起動後は erased NVS から始まるため、物理的な電源断をまたぐ永続性の証拠にはしない。実機・外部アカウントは別条件。
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。
 
 保存される表示設定も後始末の対象。modal → floating は localStorage を変更するので、元の mode に戻したことを観測して記録する。
+
+report の言語・theme と screenshot が食い違う場合は、同じ page ID の新しい DOM/選択値と画像を照合する。食い違いが未解決なら復帰確認・見た目の pass を保留し、ツールの対応付けを含む証拠不足として記録する。画像取得時に生ログとローカル画像を保存し、terminal 終了後の transcript 回収だけに依存しない。
 
 言語の「復元」は最初に観測した言語へ戻すこと。英語は一律の初期値ではない。最終値が初期値と違えば「永続変更なし」と書かない。未接続なだけで Demo 接続が許可されているページを blocked にせず、Try Demo Mode と接続完了まで試し、失敗した場合はエラー/待機状態と復帰操作を残す。
 
@@ -54,6 +59,19 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 4. 不具合候補は初期状態に戻して 1 回再現を試し、期待 ID と実測差分を残す。仕様が曖昧なら仕様不足とする。
 5. 変更を復帰し、できなければ残存状態を報告。Demo の再接続/ブラウザ reload は実機の電源断と同義ではない。
 
+## テーマの一貫性確認
+
+UIレビュー・探索テストでは、担当ページと共有部品を**利用可能な全カラーテーマ**で実際に表示して比較する。現在は Light / Dark / Pop / Neutral。選択肢は実UIと [SHELL-005](modules/app-shell.md)、配色・書体の意図は [テーマのデザイン方針](../../src/themes/README.md) を基準にし、テーマが増えたら対象も増やす。変更集中型は影響ページと共有consumer、全体探索は割当ページが対象。配色確認だけのために保存・RPCの基準フローを全テーマで繰り返す必要はない。
+
+1. 元のテーマを記録し、テーマメニューから切り替える。非同期フォント読み込み・画面遷移・色のtransitionが落ち着いてから、可視画面のスクリーンショットと必要なcomputed styleを新しく取得する。html classだけが変わった状態や切替前のcomputed styleを合格証拠にしない。描画が安定しなければtool/environmentの制約としてblockedを記録する。
+2. 各テーマで通常・選択/active・hover・keyboard focus・disabledを確認し、開いたdropdown/dialog/tooltipも含める。警告・成功・エラーは安全に到達できる状態で確認し、未到達はnot-run/blockedとする。表示専用要素は操作可能に見えるhover色を付けず、仕様上のtooltipは残ることを確かめる。
+3. **配色と面の区別:** 背景、カード、入力、キー、アイコン背景、状態ラベル、タブ下線、枠、スクロールバーがテーマの役割・明るさ・彩度と整合するか。固定色や枠線用tokenの背景流用によるくすみ、別テーマ由来の色、強すぎる枠/影、背景と同化するキー・浮動メニュー、隣接キーの境界消失を探す。意味色は文字・アイコン/状態とも対応し、単に全要素を同色へ揃えない。
+4. **書体と切替漏れ:** 見出し、本文/説明、ボタン/タブ、ロゴ、入力、キー刻印、コードのfont-family・weightと実際の表示を確認する。Popの丸ゴシックはロード後の適用を確認し、意図した入力/キー/コードの例外を不具合扱いしない。Popから他の全テーマへ切り替えて元の書体へ戻ることも確認する。CSSのfont-family指定だけでCDNフォントの読み込み成功とはしない。フォント未取得時のfallbackとロード後を区別し、offline未実施を合格にしない。
+5. 各テーマについて「ページ/部品・状態・期待するテーマの役割・観測した色/書体/境界・証拠・判定」を残す。DOM snapshotや自動テストの成功だけで見た目を確認済みにしない。見た目の好みや新しい提案と、文書化されたコンセプト/仕様との不一致は分ける。
+6. 元のテーマへUIで戻し、選択値と表示を再観測する。同一originのlocalStorageを共有する他worker/userと競合させない。担当者ごとの別originを優先し、各テーマの未実施状態や未復帰を報告する。
+
+テーマ確認の結果は `テーマ × ページ/部品 × 状態` の表で要約する。全テーマを一括passにせず、確認した範囲と、source-only・blocked・not-runを分ける。予算や時間で省いたテーマは省略理由と残作業を明示する。
+
 ## 判定
 
 | 結果              | 判定基準                                                |
@@ -80,6 +98,7 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 環境: 日時、app/spec commit、URL、Demo/Renode/実機、言語、viewport、model/effort（Renode は DUT/ELF 出典、version、shim、boot/connection 回数も）
 初期状態:
 対象仕様 ID:
+テーマ別確認: テーマ × ページ/部品 × 状態、色/書体/境界の期待と実測、証拠・判定
 操作と観測: 各操作直後の具体的な値/文言
 期待 / 実際:
 結果: pass / product-candidate / spec-gap / blocked / not-run
@@ -100,6 +119,8 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 
 必須ケースを時間都合で not-run にした report は、正直な途中報告ではあるが合格ではない。次セッションの対象をその未実行ケースだけに絞り、済んだ baseline を繰り返さない。曖昧な「再読み込み」は避け、アプリの Reload ボタンか browser reload コマンドかと操作後の URL/接続状態を必ず記録する。想定外の画面遷移が起きたら実際に押した ref/ラベルを再確認し、ガイドに存在しない復帰手順を存在したように記述しない。
 
+worker は未実行の必須操作を残したまま成功 settlement を送らない。active Task 内の途中レビューで不足を解消し、完了前に coordinator の受入 reply を得る。実行不能なら具体的 blocker と残存値を示して失敗 settlement とする。settlement 後の狭い証拠補足は run 全体で1回（利用者指定があれば優先）とし、事前に割り当てた未着手 batch の初回実行とは区別する。終了した担当の抜けを新しい初回 batch と呼び替えたり、worker ごとに補足回数を増やしたりしない。
+
 ## テスト agent への依頼ひな形
 
 ```text
@@ -108,8 +129,12 @@ low-effort agent への初回割当は、編集を伴うページなら 1–2 �
 ブラウザツール: <この環境で利用するツールと環境別手順>。開始前に手順を読む。
 アプリコードを読まず、仕様を使って3つのcharter+変形操作を行う。
 専用tab/セッションを使い、すべての操作の対象を明示する。
+担当ページ/共有部品を全テーマで確認する。探索ガイドのテーマ一貫性確認に従い、色・書体・各状態と切替漏れの表を残す。
 Demo内の編集・保存・復帰は許可範囲。実機/外部サービスは操作しない。
 出力: <一時ディレクトリ内の専有report>（通常commitしない）。
+必須観測: <coordinatorがdispatch前に確定したchecklist。baseline、独立した変形、保存/復帰の各段階、theme/state、初期/最終表示設定>。
+最初のcharter後に進捗と証拠を送り、active Task中に不足を修正する。
+worker_done前にreport/checklistのレビューをaskし、coordinatorの受入replyを待つ。必須not-runを残して成功終了しない。
 操作単位で仕様ID、期待/実測、証拠、判定。完了報告/PRには要約を残す。
 承認していないconfirm後の動作、未実行、実機依存はpassにしない。
 UIの値とブラウザ設定を元へ戻し、未復帰なら残存値を報告する。

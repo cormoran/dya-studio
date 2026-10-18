@@ -7,7 +7,7 @@
  * before the callback page could read it — a failure that only shows up as
  * "login silently does nothing". These tests pin that down.
  */
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import App from "../App";
 import { DEVELOPER_GUIDE_PATH } from "../content/developerGuide";
 import { OAUTH_CALLBACK_PATH } from "../lib/abyss/abyssOAuth";
@@ -88,5 +88,37 @@ describe("App routing", () => {
     render(<App />);
 
     await waitFor(() => expect(window.location.pathname).toBe("/"));
+    expect(
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href,
+    ).toBe("https://studio.dya.cormoran.works/");
   });
+});
+
+it("keeps metadata aligned with SPA navigation, history notifications, and unknown-route normalization", async () => {
+  goTo("/developer-guide/modules/keymap?source=test#example");
+  render(<App />);
+  const guideTitle = document.title;
+  expect(
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href,
+  ).toBe("https://studio.dya.cormoran.works/developer-guide/modules/keymap");
+  act(() => {
+    window.history.pushState(null, "", "/release-notes#2026.09.20.0");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  expect(await screen.findByTestId("release-notes")).toBeInTheDocument();
+  expect(document.title).not.toBe(guideTitle);
+  act(() => {
+    window.history.replaceState(null, "", "/developer-guide/modules/keymap");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  expect(document.title).toBe(guideTitle);
+  act(() => {
+    window.history.pushState(null, "", "/not-a-real-tab");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await waitFor(() =>
+    expect(
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href,
+    ).toBe("https://studio.dya.cormoran.works/"),
+  );
 });

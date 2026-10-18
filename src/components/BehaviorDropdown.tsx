@@ -556,7 +556,7 @@ export function BehaviorDropdown({
         className={`items-center gap-1 overflow-x-auto flex ${compact ? "min-w-0" : "mt-2 pl-2"}`}
       >
         <span
-          className={`${compact ? "sr-only" : "text-xs text-[var(--color-text-muted)] mr-1 flex-shrink-0"}`}
+          className={`${compact ? "sr-only" : "hidden sm:inline text-xs text-[var(--color-text-muted)] mr-1 flex-shrink-0"}`}
         >
           {t("Quick Select")}:
         </span>

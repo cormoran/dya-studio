@@ -22,13 +22,15 @@
 | BIND-R03 | editor の表示だけから、現在編集する caller 固有の対象を判定できる                      | [#211](https://github.com/cormoran/dya-studio/issues/211) 明示要求 |
 | BIND-R04 | 終了操作の accessible name と実際の適用/破棄を一致させ、無変更では callback を送らない | [#210](https://github.com/cormoran/dya-studio/issues/210) 明示要求 |
 
+BIND-R05: 自動適用（Close on select）は稲妻、確定（Apply changes and close）はチェックで区別する。Keymap の Floating mode はタイトルバー付きウィンドウのアイコンで示す。Quick Select のラベルは640px未満で非表示、640px以上では通常表示し、compact表示は引き続き読み上げ専用にする。候補ボタンと設定操作はモバイルでも残す。根拠は2026-10-18ユーザー明示要求、S1/S4、[KeymapPage](../../../src/pages/KeymapPage.tsx) の通常キー・combo selector toolbar。表示変更による適用条件・保存先の変更はない。
+
 ## 前提・状態
 
 caller が open、currentBinding、behaviors、layers と onSelect を渡す。`targetLabel` は caller が持つ対象 ID（keymap の layer/position/binding、sensor の回転方向、macro step、combo 等）で、modal/floating の header に表示する。parameter 型で keycode、layer、数値等の入力が変わる。候補は device の behavior metadata と fallback に依存する。未接続/unsupported は caller の表示条件で制御し、この component 単独の接続画面はない。busy 時 fieldset 無効、error prop があると editor 内に alert。保存は caller の責務。
 
 ## 現行の機能仕様
 
-BIND-011: floating editor は680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
+BIND-011: floating editor は640px以上で680pxを上限にviewport幅内へ収まり、狭幅でも左右のtoolbarへ到達できる。640px未満の表示はBIND-025のsheetとする。keyboard候補は内部で横スクロールし、検索結果はモバイルで2列、640px以上で4列、tabletで5列になる。表示幅によってmode・draft・device値を変更しない。各操作の長押し説明は[共通画面 SHELL-011](app-shell.md)に従う。根拠はS1/S2。ユーザーのモバイル最適化要求（2026-09-20）による。
 
 BIND-012: behavior 検索inputは狭幅で16px以上のfont sizeを使い、モバイルブラウザのfocus時自動拡大を避ける。modalの選択済みbehavior名と説明は1行を維持し、利用可能幅を超える部分をellipsisで省略する。完全な文言はaccessible nameに保持する。根拠はS4/S5。ユーザーのモバイル最適化要求（2026-09-20）による。
 
@@ -36,7 +38,7 @@ BIND-013: caller が `targetLabel` を渡すと、modal/floating の header は�
 
 BIND-016: modal/floating の parameter タブは、firmware が単一の名前を定義していればその名前を表示し、複数の名前がある場合は `param1` / `param2` に戻す。タブ列の右側には現在選択中の parameter の説明を一つだけ表示し、param1/param2 を切り替えると更新する。標準 behavior は操作の意味（例: Layer-Tap の layer は「長押し中のレイヤー」）、それ以外は parameter 型に応じた選択案内を表示する。modal の `Parameters` 見出しには説明を重複表示しない。根拠はS1/S3、2026-09-23ユーザー要求。
 
-BIND-017: floating の header は選択中 behavior の説明を表示する。behavior を変更すれば説明も更新される。操作アイコン群（caller の toolbar、Revert、Close）は右端にまとめる。modal は behavior dropdown の選択表示で説明を示す。説明を持たない未知の behavior には説明を追加しない。根拠はS1/S4、2026-09-23ユーザー要求。
+BIND-017: floating / sheet の header は編集対象と操作アイコン群を表示し、behavior の説明を表示しない。操作アイコン群（caller の toolbar、Revert、Close）は右端にまとめる。modal は behavior dropdown の選択表示で説明を示す。根拠はS1/S4、2026-10-18ユーザー修正要求。
 
 BIND-018: keycode selector は開くたびにキー配列表示から始める。配列下に「その他のキーは右上のカテゴリ別表示ボタンから選択できます」と案内し、右上の表示切替ボタンは通常色にする。Keymap の OS Layout が JIS のときは同じ browser localStorage の `keyboardLayout` 値から JIS の物理配列（半角/全角、変換/無変換、ISO Enter を含む）と JIS のキー表記を表示し、US (ANSI) for JP のときは ANSI の物理配列のまま US for JP のキー表記を使う。修飾キー表示ボタンは選択中の修飾キー名を含めず、修飾キーが一つ以上選択されている場合だけ修飾キートグルと同じ紫で示す。behavior dropdown の「選択したカテゴリを維持」は未設定時 ON で、明示的に OFF にした設定は保持する。根拠はS2、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、[KeyboardLayoutProvider](../../../src/contexts/KeyboardLayoutProvider.tsx)、2026-09-27ユーザー要求。
 
@@ -50,7 +52,11 @@ BIND-021: `Edit macros` の step 追加・削除は、同じ macro への待機�
 
 BIND-022: caller が modal 内から selector を開く場合、selector の overlay と content は caller modal より前面に表示する。Combo Editor の Behavior 選択では selector を背後に隠さず操作でき、右上の link icon は selector を閉じて Combo Editor を表示する。Keymap preview の combo control から開く selector も同じ icon で Combo Editor を開ける。この selector は重なり順を維持したまま modal/floating を切替でき、通常キー selector と同時に開かず同じ floating anchor とドラッグ済み位置を共有する。どちらも閉じた後は次回を既定位置から開始する。通常の caller は既存の overlay 順を使う。根拠はS1、2026-09-24ユーザー要求。
 
-BIND-024: keycode の名前は HID usage page と usage code の組合せで解決する。keyboard page（0x07）と legacy page-zero だけに keyboard 名と OS Layout の JIS/US/US for JP 表記を適用する。consumer brightness `0xC006F` / `0xC0070` は `☀+` / `☀-`（selector の Brightness Up / Brightness Down）、keyboard `0x7006F` / `0x70070` または legacy `0x6F` / `0x70` は `F20` / `F21` と区別する。modifier は `LC(☀+)` 等の prefix に保持し、未知 usage は modifier を除いた page を含む16進数で表示する（例 `0x1006F`、`LC(0x1006F)`）。parameter の詳細表示は元の完全な数値も併記する。Keymap preview/header、sensor の可視/accessible name、macro step、combo binding は同じ名前解決を使い、表示だけでは binding/RPC/保存状態を変更しない。根拠はS6、[#259](https://github.com/cormoran/dya-studio/issues/259) 明示要求。
+BIND-024: keycode の名前は HID usage page と usage code の組合せで解決する。keyboard page（0x07）と legacy page-zero だけに keyboard 名と OS Layout の JIS/US/US for JP 表記を適用する。consumer brightness `0xC006F` / `0xC0070` は `☀+` / `☀-`（selector の Brightness Up / Brightness Down）、keyboard `0x7006F` / `0x70070` または legacy `0x6F` / `0x70` は `F20` / `F21` と区別する。modifier は `LC(☀+)` 等の prefix に保持し、未知 usage は modifier を除いた page を含む16進数で表示する（例 `0x1006F`、`LC(0x1006F)`）。parameter の詳細表示は元の完全な数値も併記する。Keymap preview/header、sensor の可視/accessible name、macro step、combo binding は同じ名前解決を使い、表示だけでは binding/RPC/保存状態を変更しない。キーマップ共有の物理 preview・変更一覧・combo/macro 差分も [useSharedBindingLabel](../../../src/hooks/useSharedBindingLabel.ts) 経由で OS Layout と同じ名前解決を使う（[IE-026](../pages/import-export.md)）。根拠はS6、[#259](https://github.com/cormoran/dya-studio/issues/259) 明示要求。
+
+BIND-025: Floating mode は640px未満で Sheet mode となり、viewport下端に幅100%・高さ45dvhのsheetを固定表示する。下端のsafe area余白を含み、内容はsheet内でscrollできる。headerをドラッグしてもsheetは移動せず、desktopの位置指定を適用しない。640px境界でeditorをremountせずにsheet/浮動windowを切替え、対象・draft・適用条件・Close/Escapeの未完draft破棄を維持する。上側workspaceの確保とheader非表示は[KM-028](../pages/keymap.md) / [SHELL-023](app-shell.md)に従う。根拠は2026-10-18ユーザー明示要求、S1、[sheet CSS](../../../src/components/binding-editor.css)、[useMobileLayout](../../../src/hooks/useMobileLayout.ts)。sheet表示自体はRPCやflash保存を行わず、表示形式の保存には既存のfloating設定値を使う。
+
+BIND-026: 640px以上ではmodal headerの `Floating mode` と `Close on select`、floating headerの `Auto advance` をアイコンと翻訳済み文字labelで表示する。通常キーとcomboのmodalは同じモード切替labelを使用する。640px未満では文字labelを隠し、既存のaccessible name・tooltipを持つicon-only操作を維持する。toggleの押下状態、適用/終了条件、localStorage保存は表示labelの追加では変更しない。根拠は2026-10-18ユーザー明示要求、S1、[KeymapPage](../../../src/pages/KeymapPage.tsx)のselector toolbar。
 
 | ID       | 前提 → 操作                                                   | 観測できる結果                                                                                                                                                                                                                                 | 保存範囲・副作用                                                            | 根拠                       |
 | -------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------- |

@@ -6,13 +6,11 @@ import {
   IconHome,
   IconLink,
   IconMenu2,
-  IconMoon,
   IconPhoto,
-  IconSun,
 } from "@tabler/icons-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useLanguage } from "../../hooks/useLanguage";
-import { useTheme } from "../../hooks/useTheme";
+import { ThemeSelect } from "../ThemeSelect";
 import type {
   DeveloperGuideLink,
   DeveloperGuideNavigationItem,
@@ -365,7 +363,6 @@ export function DeveloperGuidePage({
   page: DeveloperGuidePageDefinition;
 }) {
   const { language, setLanguage, t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const isJa = language === "ja";
   const guideLabel = isJa ? "開発者ガイド" : "Developer guide";
   const onThisPageLabel = isJa ? "このページの内容" : "On this page";
@@ -515,22 +512,7 @@ export function DeveloperGuidePage({
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="theme-toggle"
-                aria-label={
-                  theme === "dark"
-                    ? t("Switch to light mode")
-                    : t("Switch to dark mode")
-                }
-              >
-                {theme === "dark" ? (
-                  <IconSun size={18} aria-hidden="true" />
-                ) : (
-                  <IconMoon size={18} aria-hidden="true" />
-                )}
-              </button>
+              <ThemeSelect />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)] tablet:text-3xl">
               {page.title}

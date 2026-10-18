@@ -1,10 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @import "tailwindcss";
+@import "./themes/pop.css";
+@import "./themes/neutral.css";
 @config "../tailwind.config.js";
 
 @layer base {
   :root {
+    --binding-sheet-height: 45dvh;
+
     /* Accent colors - same for both themes */
     --color-electric: #00d4ff;
     --color-neon: #00ffcc;
@@ -26,6 +30,7 @@
     --glass-border: rgba(255, 255, 255, 0.14);
 
     /* Scrollbar */
+    --scrollbar-size: 4px;
     --scrollbar-track: #2a2a2a;
     --scrollbar-thumb: #4a4a4a;
     --scrollbar-thumb-hover: #5a5a5a;
@@ -93,8 +98,8 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
   }
 
   ::-webkit-scrollbar-track {
@@ -153,6 +158,55 @@
   border: 1px solid color-mix(in srgb, var(--color-electric) 35%, transparent);
   transition: all 0.3s ease-out;
   cursor: pointer;
+}
+
+.app-header-brand {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translate(0, -50%);
+}
+
+.app-header-controls {
+  max-width: calc(100% - 3rem);
+}
+
+@media (min-width: 640px) {
+  .app-header-brand {
+    left: 1.5rem;
+  }
+
+  .app-header-controls {
+    max-width: calc(100% - 11rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header-brand {
+    transition:
+      left 420ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-header-controls {
+    transition: max-width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-header[data-home="true"] .app-header-brand {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .app-header[data-home="true"] .app-header-controls {
+    max-width: calc(50% - 5.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header-brand,
+  .app-header-controls {
+    transition: none;
+  }
 }
 
 .app-page {
@@ -220,6 +274,53 @@
   .app-page {
     overflow-x: clip;
     overflow-y: visible;
+  }
+}
+
+/* The retained Keymap page owns the sheet marker; it is false off-tab and
+   after close/disconnect. Reserve real layout space rather than covering the
+   bottom of the page with a floating panel. */
+@media (max-width: 639px) {
+  .app-connected-shell:has(.keymap-page[data-mobile-sheet-open="true"]) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) {
+    height: calc(100dvh - var(--binding-sheet-height));
+    min-height: 0;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-header,
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-tab-list {
+    display: none;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-main,
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"]) .app-tab-panels {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-layout:has(.keymap-page[data-mobile-sheet-open="true"])
+    :is(.app-tabs, .app-tab-panel, .app-page-transition) {
+    height: 100%;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] {
+    height: 100%;
+    padding: 0.5rem;
+    overflow-y: auto;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] .keymap-before-layers {
+    display: none;
+  }
+
+  .keymap-page[data-mobile-sheet-open="true"] .keymap-layer-toolbar {
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -291,6 +392,38 @@
 }
 
 @media (max-width: 639px) {
+  .page-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: 0.5rem;
+    row-gap: 0.5rem;
+  }
+
+  .page-header:has(.page-header-actions) {
+    justify-content: flex-end;
+  }
+
+  .page-header:has(.page-header-actions) > :first-child {
+    margin-right: auto;
+  }
+
+  .page-header-description {
+    display: none;
+  }
+
+  .page-header-actions {
+    display: contents;
+  }
+
+  .page-header-secondary-action {
+    order: 1;
+  }
+
+  .page-header-selector {
+    order: 2;
+    flex-basis: 100%;
+  }
+
   .responsive-action {
     min-width: 2.75rem;
     min-height: 2.75rem;
@@ -540,18 +673,6 @@
   transform: scale(0.95);
 }
 
-.language-toggle {
-  width: auto;
-  min-width: 3.75rem;
-  gap: 0.375rem;
-  padding: 0 0.625rem;
-}
-
-.language-toggle span {
-  display: block;
-  line-height: 1;
-}
-
 /* Warning banner — readable in both dark and light themes */
 .warning-banner {
   border-color: rgba(245, 158, 11, 0.4);
@@ -666,5 +787,34 @@
   .diff-sheet {
     border-radius: 0;
     border-width: 0;
+  }
+}
+
+/* Keep adjacent combo keys distinct without moving their physical positions. */
+.combo-position-preview .physical-key-position {
+  padding: 2px;
+}
+
+/* Product images stay the focus; keep the horizontal scroll affordance quiet. */
+.home-product-gallery {
+  padding-bottom: 4px;
+}
+
+.home-product-gallery::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  :root,
+  :root * {
+    scrollbar-width: thin;
+  }
+
+  .home-product-gallery {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .home-product-gallery:hover {
+    scrollbar-color: var(--scrollbar-thumb-hover) transparent;
   }
 }

@@ -1,16 +1,20 @@
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
+import type { MouseEvent } from "react";
 import type { ConnectionMethod } from "../contexts/DeviceConnectionContext";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 import { LanguageToggle } from "./LanguageToggle";
+import { ThemeSelect } from "./ThemeSelect";
 import { useLanguage } from "../hooks/useLanguage";
 import { getCurrentVersion } from "../i18n/releaseNotes";
 import { EditorTooltip } from "./EditorTooltip";
+import { connectionErrorMessage } from "../lib/connectionError";
 import { useTheme } from "../hooks/useTheme";
 import githubMarkBlack from "../assets/github/GitHub_Invertocat_Black.svg";
 import githubMarkWhite from "../assets/github/GitHub_Invertocat_White.svg";
+import maintainerAvatar from "../assets/maintainer/cormoran707.jpg";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -20,6 +24,23 @@ interface SplashScreenProps {
   onShowReleaseNotes: () => void;
   /** Navigate to the connection-free keyboard developer guide. */
   onShowDeveloperGuide: () => void;
+}
+
+/** Preserve native link actions while keeping ordinary clicks in the SPA. */
+function navigateLink(
+  event: MouseEvent<HTMLAnchorElement>,
+  navigate: () => void,
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  event.preventDefault();
+  navigate();
 }
 
 function LoadingDots() {
@@ -112,25 +133,26 @@ export function SplashScreen({
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-cyber opacity-30" />
-      <div className="absolute right-6 top-6 z-20">
+      <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5">
         <LanguageToggle />
+        <ThemeSelect />
       </div>
 
       {/* Animated rings */}
       <motion.div
-        className="absolute w-[400px] h-[400px] rounded-full border border-[var(--color-electric)]/20"
+        className="splash-ring-inner absolute w-[400px] h-[400px] rounded-full border border-[var(--color-electric)]/20"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       />
       <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full border border-[var(--color-electric)]/10"
+        className="splash-ring-middle absolute w-[500px] h-[500px] rounded-full border border-[var(--color-electric)]/10"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
       />
       <motion.div
-        className="absolute w-[600px] h-[600px] rounded-full border border-[var(--color-electric)]/5"
+        className="splash-ring-outer absolute w-[600px] h-[600px] rounded-full border border-[var(--color-electric)]/5"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
@@ -220,7 +242,7 @@ export function SplashScreen({
                 <button
                   onClick={() => handleConnectClick("demo")}
                   disabled={isConnecting}
-                  className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                  className="splash-demo-button relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                   aria-label={t("Try Demo Mode")}
                   title={t("Try Demo Mode (no device required)")}
                 >
@@ -247,14 +269,15 @@ export function SplashScreen({
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
           >
-            <button
-              onClick={onShowReleaseNotes}
+            <a
+              href="/release-notes"
+              onClick={(event) => navigateLink(event, onShowReleaseNotes)}
               className="hover:text-[var(--color-electric)] transition-colors underline"
             >
               {version
                 ? t("Release notes ({{version}})", { version })
                 : t("Release notes")}
-            </button>
+            </a>
             <a
               href="https://dya-studio-dev.cormoran707.workers.dev"
               target="_blank"
@@ -280,11 +303,21 @@ export function SplashScreen({
       {/* Error message */}
       {error && (
         <motion.div
-          className="mt-4 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30"
+          role="alert"
+          className="relative z-10 mt-4 mx-4 max-w-lg max-h-[30vh] overflow-y-auto px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-sm whitespace-pre-line text-red-500">
+            {t(connectionErrorMessage(error))}
+          </p>
+          <details
+            key={error}
+            className="mt-2 text-sm text-[var(--color-text-secondary)]"
+          >
+            <summary className="cursor-pointer">{t("Error details")}</summary>
+            <p className="mt-2 whitespace-pre-wrap break-words">{error}</p>
+          </details>
         </motion.div>
       )}
 
@@ -295,12 +328,13 @@ export function SplashScreen({
         animate={{ opacity: 1 }}
         transition={{ delay: 1.1 }}
       >
-        <button
-          onClick={onShowDeveloperGuide}
+        <a
+          href="/developer-guide"
+          onClick={(event) => navigateLink(event, onShowDeveloperGuide)}
           className="hover:text-[var(--color-electric)] transition-colors underline"
         >
           {t("Keyboard developer guide")}
-        </button>
+        </a>
       </motion.div>
 
       {/* Tagline */}
@@ -319,7 +353,7 @@ export function SplashScreen({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity"
           >
             <img
-              src={theme === "light" ? githubMarkBlack : githubMarkWhite}
+              src={theme === "dark" ? githubMarkWhite : githubMarkBlack}
               width={24}
               height={24}
               className="object-contain"
@@ -350,6 +384,24 @@ export function SplashScreen({
           </a>
           .
         </p>
+        <EditorTooltip content="https://x.com/cormoran707">
+          <a
+            href="https://x.com/cormoran707"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="@cormoran707 on X"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:opacity-80 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+          >
+            <img
+              src={maintainerAvatar}
+              width={24}
+              height={24}
+              className="rounded-full object-cover"
+              alt=""
+              aria-hidden="true"
+            />
+          </a>
+        </EditorTooltip>
       </motion.div>
 
       {/* Connection Notice Dialog */}

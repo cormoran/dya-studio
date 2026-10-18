@@ -3,7 +3,7 @@
  *
  * ## Why a popup rather than a plain redirect
  *
- * The Import/Export tab only renders while a keyboard is connected, so the user
+ * The Keymap page only renders while a keyboard is connected, so the user
  * is *by construction* connected when they press "Log in". A full-page
  * navigation to abyss.keyboard-hub.com tears down the Web Serial / WebUSB / BLE
  * session; on BLE they would have to re-pick the device from the browser picker
@@ -35,7 +35,7 @@ import { navigateTo } from "../navigate";
 export const OAUTH_CALLBACK_PATH = "/oauth/callback";
 
 /** Path the user is sent back to after a full-page redirect login. */
-export const IMPORT_EXPORT_PATH = "/import-export";
+export const IMPORT_EXPORT_PATH = "/keymap";
 
 const CHANNEL_NAME = "dya-studio-abyss-oauth";
 const MSG_CALLBACK = "dya-studio:abyss-oauth-callback";
@@ -53,7 +53,7 @@ const POPUP_POLL_MS = 500;
 const POPUP_FEATURES = "width=520,height=760,menubar=no,toolbar=no";
 const POPUP_NAME = "abyss-oauth";
 
-/** Outcome of a login attempt started from the Import/Export tab. */
+/** Outcome of a login attempt started from Keymap sharing. */
 export type AbyssLoginOutcome =
   /** Tokens are stored; the caller should refresh its auth state. */
   | { status: "authorized" }
@@ -99,7 +99,7 @@ export function saveReturnPath(path: string): void {
   }
 }
 
-/** The stashed return path, defaulting to the Import/Export tab. */
+/** The stashed return path, defaulting to Keymap. */
 export function takeReturnPath(): string {
   try {
     const path = window.sessionStorage.getItem(RETURN_PATH_KEY);

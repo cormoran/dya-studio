@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { IconSettings, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { useTheme } from "../hooks/useTheme";
+import { themeOptions, type Theme } from "../themes/themes";
 import { languageLabels, type Language } from "../i18n/translations";
 
 export function MobileDisplaySettings() {
@@ -70,12 +71,13 @@ export function MobileDisplaySettings() {
                 id={themeId}
                 className="select-field w-full min-w-0 min-h-11 text-base"
                 value={theme}
-                onChange={(event) =>
-                  setTheme(event.target.value === "light" ? "light" : "dark")
-                }
+                onChange={(event) => setTheme(event.target.value as Theme)}
               >
-                <option value="light">{t("Light")}</option>
-                <option value="dark">{t("Dark")}</option>
+                {themeOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {t(label)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

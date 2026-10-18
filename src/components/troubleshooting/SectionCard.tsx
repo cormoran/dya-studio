@@ -173,7 +173,8 @@ export function SectionSummaryBadge({
 }) {
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-[10px] font-medium normal-case ${SUMMARY_TONE_CLASSES[tone]}`}
+      className={`diagnostic-summary-badge px-1.5 py-0.5 rounded text-[10px] font-medium normal-case ${SUMMARY_TONE_CLASSES[tone]}`}
+      data-tone={tone}
     >
       {children}
     </span>

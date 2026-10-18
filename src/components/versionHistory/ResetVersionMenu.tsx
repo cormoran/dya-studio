@@ -45,6 +45,8 @@ export interface ResetVersionMenuProps<T extends JsonValue = JsonValue> {
    * so the button says what the menu actually offers.
    */
   label?: string;
+  /** Explanation of the restore choices available in this menu. */
+  title?: string;
   /** Disables the trigger entirely (loading, disconnected, ...). */
   disabled?: boolean;
   /** Shows the trigger in a busy state (a capture or restore is running). */
@@ -57,6 +59,7 @@ export function ResetVersionMenu<T extends JsonValue = JsonValue>({
   resetToDefault,
   discard,
   label,
+  title,
   disabled = false,
   isBusy = false,
 }: ResetVersionMenuProps<T>) {
@@ -73,6 +76,14 @@ export function ResetVersionMenu<T extends JsonValue = JsonValue>({
       <Popover.Trigger asChild>
         <ResponsiveButton
           label={label ?? t("Reset")}
+          title={
+            title ??
+            t(
+              resetToDefault || discard
+                ? "Choose how to restore settings from previous versions or defaults"
+                : "Choose a previous version to compare and restore",
+            )
+          }
           type="button"
           className="btn-ghost text-sm flex items-center gap-1.5"
           disabled={disabled}

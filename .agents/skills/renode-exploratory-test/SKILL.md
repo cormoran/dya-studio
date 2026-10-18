@@ -10,6 +10,12 @@ real ZMK firmware without physical hardware. The app, Studio client, framing,
 RPC handlers, and firmware are real; only the browser-to-OS serial layer is a
 WebSocket-backed `navigator.serial` shim. Report that boundary explicitly.
 
+For requested physical DYA2 coverage beyond this boundary, use
+[hardware-exploratory-test](../hardware-exploratory-test/SKILL.md). Its
+[risk matrix](../hardware-exploratory-test/references/charters.md) distinguishes
+emulated capacity/RPC coverage from physical transport, flash, split timing,
+watchdog, sensors and power conditions.
+
 Before starting, read the repository [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md), [specification sitemap](../../../docs/spec/README.md), affected page/module specifications, the relevant browser-tool guide, and the [Renode harness guide](../../../e2e/renode/README.md). These rules extend rather than replace the normal specification, evidence, and restoration requirements.
 
 ## Select the DUT

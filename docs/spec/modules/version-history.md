@@ -41,6 +41,8 @@ record identity は `deviceKey`（ConnectionContext の deviceName、欠けれ�
 
 ## 現行の機能仕様
 
+HIST-013: メニュー入口の tooltip はボタン名の繰返しではなく、以前の版の比較・復元を説明する。初期値への復元のある consumer ではその選択肢も説明し、以前の版だけを提供する consumer では初期値への復元を案内しない。consumer 固有の説明を指定できる。Keymap、Macro&Combo、Settings、Connection、Trackball の復元・保存契約は変更しない（2026-10-17 ユーザー要求、S4/S5）。
+
 狭幅での履歴triggerは[共通画面 SHELL-010/011](app-shell.md)に従う。Reset/Versionsメニューはviewportの端から8px以上を確保し、利用可能な高さを超える内容はメニュー内で縦スクロールする。外側のpointer操作またはEscapeで閉じる。根拠: [ResetVersionMenu](../../../src/components/versionHistory/ResetVersionMenu.tsx) のRadix Popover。メニューを開く・閉じるだけでは復元/保存しない。
 
 | ID       | 前提 → 操作                         | 観測できる結果                                                                                                                                                                                                                                              | 保存範囲・副作用                                                                                  | 根拠     |

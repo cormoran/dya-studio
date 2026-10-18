@@ -144,13 +144,13 @@ describe("bindingLabel", () => {
   });
 
   it("renders the common binding types", () => {
-    expect(bindingLabel({ type: "key", usage: 0x04 })).toBe("0x4");
+    expect(bindingLabel({ type: "key", usage: 0x04 })).toBe("A");
     expect(bindingLabel({ type: "key", usage: 0x04, mods: ["LSHIFT"] })).toBe(
-      "LSHIFT+0x4",
+      "LSHIFT+A",
     );
     expect(bindingLabel({ type: "mo", layer: 2 })).toBe("MO(2)");
     expect(bindingLabel({ type: "lt", layer: 1, usage: 0x2c })).toBe(
-      "LT(1, 0x2c)",
+      "LT(1, Space)",
     );
     expect(bindingLabel({ type: "trans" })).toBe("▽");
     expect(bindingLabel({ type: "none" })).toBe("✕");
@@ -166,4 +166,17 @@ describe("bindingLabel", () => {
     );
     expect(bindingLabel({})).toBe("—");
   });
+});
+
+it("resolves shared bindings using OS layout and HID page names", () => {
+  expect(bindingLabel({ type: "key", usage: 0x23 })).toBe("6^");
+  expect(bindingLabel({ type: "key", usage: 0x70004 })).toBe("A");
+  expect(bindingLabel({ type: "key", usage: 0xc006f })).toBe("☀+");
+  expect(bindingLabel({ type: "key", usage: 0x1006f })).toBe("0x1006F");
+  expect(bindingLabel({ type: "key", usage: 0x2f }, "JIS")).toBe("@`");
+  expect(bindingLabel({ type: "key", usage: 0x2f }, "US")).toBe("[{");
+  expect(bindingLabel({ type: "mt", mod: "LCTRL", usage: 4 })).toBe(
+    "MT(LCTRL, A)",
+  );
+  expect(bindingLabel({ type: "sticky_key", usage: 4 })).toBe("SK(A)");
 });

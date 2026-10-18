@@ -22,30 +22,30 @@
 
 ## 前提・状態
 
-この route は `DeviceConnectionProvider` 等を mount した後に、接続 UI gate より前で render される（guide と違い provider 自体の外ではない）。正常 popup は initiating tab が sessionStorage 内 PKCE transaction を使い code を交換する。callback window は BroadcastChannel を主、同 origin `window.opener.postMessage` を補助に relay し、ack を 1.5 秒待つ。full-page fallback は callback document 自身が exchange し、return path（なければ `/import-export`）を sessionStorage から consume して history replace で戻る。
+この route は `DeviceConnectionProvider` 等を mount した後に、接続 UI gate より前で render される（guide と違い provider 自体の外ではない）。正常 popup は initiating tab が sessionStorage 内 PKCE transaction を使い code を交換する。callback window は BroadcastChannel を主、同 origin `window.opener.postMessage` を補助に relay し、ack を 1.5 秒待つ。full-page fallback は callback document 自身が exchange し、return path（なければ `/keymap`）を sessionStorage から consume して history replace で戻る。
 
-| 状態              | 表示                                                    | 副作用 / 終了                                                     |
-| ----------------- | ------------------------------------------------------- | ----------------------------------------------------------------- |
-| working           | `Completing Abyss sign-in...`                           | relay または client exchange 中                                   |
-| relayed popup     | `Signed in to Abyss` / `You can close this window.`     | callback は exchange せず close を試行                            |
-| full-page success | callback UI を残さず onDone                             | token exchange 後、spent code の URL を replace                   |
-| error             | `Abyss sign-in failed` と message、`Back to DYA Studio` | code は再利用せず、button で `/import-export` への replace を要求 |
+| 状態              | 表示                                                    | 副作用 / 終了                                              |
+| ----------------- | ------------------------------------------------------- | ---------------------------------------------------------- |
+| working           | `Completing Abyss sign-in...`                           | relay または client exchange 中                            |
+| relayed popup     | `Signed in to Abyss` / `You can close this window.`     | callback は exchange せず close を試行                     |
+| full-page success | callback UI を残さず onDone                             | token exchange 後、spent code の URL を replace            |
+| error             | `Abyss sign-in failed` と message、`Back to DYA Studio` | code は再利用せず、button で `/keymap` への replace を要求 |
 
 ## 現行の機能仕様
 
-| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                                                                              | 根拠        |
-| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                                                                        | S1/S4       |
-| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage                                                                   | S2/S3/S4    |
-| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token は localStorage、PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない                                        | S1/S2/S3/S5 |
-| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                                                                        | S2/S4       |
-| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `IMPORT_EXPORT_PATH`（`/import-export`）を history replace。接続 gate・tab 可用性は app-shell に従う | S2/S4       |
+| ID        | 前提 → 操作                                                | 観測できる結果                                                                                           | 保存範囲・副作用                                                                                                                       | 根拠        |
+| --------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| OAUTH-001 | `/oauth/callback?code=…&state=…` を開く                    | App は Home に canonicalize せず callback を connection 無関係に mount                                   | query は callback が `window.location.href` として読む                                                                                 | S1/S4       |
+| OAUTH-002 | originating popup login の callback → state が一致する ack | callback は relay 済み表示、`window.close()` を試行する                                                  | code exchange は opener だけ。PKCE verifier は opener tab の sessionStorage                                                            | S2/S3/S4    |
+| OAUTH-003 | popup が block され full-page redirect                     | callback は 1.5 秒後に自身で `handleRedirectCallback` し、stashed return path を一回 remove して replace | token は localStorage、PKCE transaction は tab-scoped sessionStorage、history に spent code を残さない                                 | S1/S2/S3/S5 |
+| OAUTH-004 | callback component が StrictMode で effect 再実行          | `startedRef` により一つの relay/exchange だけを開始                                                      | second single-use-code exchange を防ぐ                                                                                                 | S2/S4       |
+| OAUTH-005 | client 未設定または exchange reject                        | error title/message と `Back to DYA Studio`                                                              | 自動 retry/rollback はしない。戻る操作は `IMPORT_EXPORT_PATH`（`/keymap`）を history replace。接続 gate・tab 可用性は app-shell に従う | S2/S4       |
 
 ## 代表ユーザーフロー
 
-1. initiating tab の Import/Export から login を始める。popup callback は relay 後に close message となり、callback 自身が exchange しないことを test または network log で確認する（OAUTH-002）。
-2. popup blocker で full-page redirect にし、callback の success が `/import-export`（保存失敗時は既定 path）に replace することを確認する（OAUTH-003）。
-3. provider error/state 欠落/client 未設定で error を確認し、`Back to DYA Studio` で Import/Export への遷移を要求し、未接続なら接続 gate を表示する（OAUTH-005）。callback の code URL が履歴に残らないことは別に確認する。
+1. initiating tab の Keymap の共有メニュー から login を始める。popup callback は relay 後に close message となり、callback 自身が exchange しないことを test または network log で確認する（OAUTH-002）。
+2. popup blocker で full-page redirect にし、callback の success が `/keymap`（保存失敗時は既定 path）に replace することを確認する（OAUTH-003）。
+3. provider error/state 欠落/client 未設定で error を確認し、`Back to DYA Studio` で Keymap の共有メニュー への遷移を要求し、未接続なら接続 gate を表示する（OAUTH-005）。callback の code URL が履歴に残らないことは別に確認する。
 
 ## 不変条件
 
@@ -55,7 +55,7 @@
 
 ## エラーと復帰
 
-relay failure は 1.5 秒後 full-page mode と区別できないため callback 自身が exchange を試みる。config 不足、provider error、network/error response は `abyssErrorMessageKey` の文言となり、再試行は Import/Export から新しい login を開始する。popup close が browser policy で拒否されても relayed 表示を残す。認証情報や provider account の変更はこの画面から行わない。
+relay failure は 1.5 秒後 full-page mode と区別できないため callback 自身が exchange を試みる。config 不足、provider error、network/error response は `abyssErrorMessageKey` の文言となり、再試行は Keymap の共有メニュー から新しい login を開始する。popup close が browser policy で拒否されても relayed 表示を残す。認証情報や provider account の変更はこの画面から行わない。
 
 ## 探索の観点
 

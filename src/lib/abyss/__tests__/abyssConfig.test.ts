@@ -93,3 +93,12 @@ describe("isAbyssTabVisible", () => {
     expect(isAbyssTabVisible()).toBe(true);
   });
 });
+
+describe("abyssKeymapUrl", () => {
+  it("links to the configured instance and encodes the record id", async () => {
+    const { abyssKeymapUrl } = await loadConfig({ baseUrl: DEV_INSTANCE });
+    expect(abyssKeymapUrl("map/a b")).toBe(
+      `${DEV_INSTANCE}/keymap/map%2Fa%20b`,
+    );
+  });
+});

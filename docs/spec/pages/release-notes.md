@@ -2,7 +2,7 @@
 
 ## 範囲・根拠
 
-`/release-notes` の接続不要なリリース一覧、locale 表示、version hash anchor、PR link と Back を対象にする。route の接続 gate 例外は[共通画面](../modules/app-shell.md)を参照する。コード確認: 2026-09-20、`8627e4d`。UI 実測は未実施。
+`/release-notes` の接続不要なリリース一覧、locale 表示、version hash anchor、PR link と Back を対象にする。route の接続 gate 例外は[共通画面](../modules/app-shell.md)を参照する。コード確認: 2026-09-20、`8627e4d`。issue #190 の malformed-hash 修正を Orca preview で 2026-10-16 に確認。
 
 | 根拠 | ソース / symbol                                                                                                                                                         |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -32,18 +32,20 @@ route は AppContent の connection gate より前で return され、`/release-
 | released empty     | version/date と `No changes recorded for this release.` | 同上                                         |
 | hash target absent | card は通常表示                                         | no-op。error/notification はない             |
 
+公開ページの title / description / canonical / OGP と sitemap 掲載は [SHELL-018–020](../modules/app-shell.md) に従う。本文の静的生成・言語別 URL はこの段階では対象外。
+
 ## 現行の機能仕様
 
 REL-007: モバイル幅でBackの文字を隠してもaccessible name `Back`（翻訳に追従）を保持し、戻る操作を識別できる（S1のheader）。
 
-| ID      | 前提 → 操作                         | 観測できる結果                                                                          | 保存範囲・副作用                           | 根拠     |
-| ------- | ----------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------ | -------- |
-| REL-001 | `/release-notes` を直接開く         | standalone page、brand、Back、LanguageToggle、全 release card                           | connection を開始せず、Back は `/` を push | S1/S3/S4 |
-| REL-002 | nonempty release                    | optional summary lead/highlights の後に `Major`→`Minor`→`Patch`。空 category は出さない | JSON data を読むのみ                       | S1/S2    |
-| REL-003 | `upcoming` / summary・change とも空 | `Upcoming` と empty 文言。released empty は別文言                                       | data の `version`/date を変えない          | S1/S2    |
-| REL-004 | `#<version>` を持つ URL             | matching `<section id={version}>` を render 後 scroll                                   | browser scroll のみ。invalid hash は無視   | S1       |
-| REL-005 | change に `pr` number または array  | `#N` external link を new tab、`noopener noreferrer` で表示                             | GitHub は開くが app data は変更しない      | S1/S2    |
-| REL-006 | language toggle                     | localizeText/change が active language（欠ければ en）を表示                             | language persistence は app-shell の契約   | S1/S2    |
+| ID      | 前提 → 操作                         | 観測できる結果                                                                                                                       | 保存範囲・副作用                                       | 根拠     |
+| ------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | -------- |
+| REL-001 | `/release-notes` を直接開く         | standalone page、brand、Back、LanguageToggle、全 release card                                                                        | connection を開始せず、Back は `/` を push             | S1/S3/S4 |
+| REL-002 | nonempty release                    | optional summary lead/highlights の後に `Major`→`Minor`→`Patch`。空 category は出さない                                              | JSON data を読むのみ                                   | S1/S2    |
+| REL-003 | `upcoming` / summary・change とも空 | `Upcoming` と empty 文言。released empty は別文言                                                                                    | data の `version`/date を変えない                      | S1/S2    |
+| REL-004 | `#<version>` を持つ URL             | matching `<section id={version}>` を render 後 scroll。存在しない target または decode 不能な hash は無視し、release list を表示する | browser scroll のみ。hash や release data は変更しない | S1       |
+| REL-005 | change に `pr` number または array  | `#N` external link を new tab、`noopener noreferrer` で表示                                                                          | GitHub は開くが app data は変更しない                  | S1/S2    |
+| REL-006 | 言語ドロップダウンで選択            | localizeText/change が active language（欠ければ en）を表示                                                                          | language persistence は app-shell の契約               | S1/S2    |
 
 ## 代表ユーザーフロー
 
@@ -60,7 +62,7 @@ REL-007: モバイル幅でBackの文字を隠してもaccessible name `Back`（
 
 ## エラーと復帰
 
-runtime の data fetch・検索 API・明示 error state は存在しない。decode 可能だが存在しない hash は no-op。壊れた percent encoding（例 `%ZZ`）は `decodeURIComponent` が例外を投げ得て、この effect 内に catch はない。REL-004 の無視は「存在しない ID」の範囲であり、不正 encoding の安全な復帰は未検証。外部 PR link の network failure は browser の責務でアプリ内の復帰 UI はない。JSON import failure は build/runtime failure でありこの page が捕捉しない。
+runtime の data fetch・検索 API・明示 error state は存在しない。存在しない target または `decodeURIComponent` が失敗する malformed hash（例 `%ZZ`、不正 UTF-8）は no-op で、mount 後も release list を表示する。invalid hash 向けの通知や URL 修復はない。外部 PR link の network failure は browser の責務でアプリ内の復帰 UI はない。JSON import failure は build/runtime failure でありこの page が捕捉しない。
 
 ## 探索の観点
 
@@ -76,4 +78,4 @@ runtime の data fetch・検索 API・明示 error state は存在しない。de
 
 hash scroll の layout/animation 後の位置、external link、全 locale と狭幅 UI は未実測。ユーザーが入力して絞り込む search/filter control は現行実装にないため、その要件は未定義である。
 
-不具合候補（REL-R02 / REL-004、受け入れ根拠なし・未修正）: 2026-09-20、app source `bcfa786`、ローカル Vite / Orca / JA で `/release-notes#%ZZ` を初回表示または browser Reload すると、body text が空になり console に `An error occurred in the <ReleaseNotesPage> component.` が出ることを2回確認した。同一 document の hash 変更のみでは再現しなかった。mount effect の未捕捉 `decodeURIComponent` がコード上の根拠。hash なし `/release-notes` への遷移で一覧に復帰できる。修正時は同条件の初回表示・Reload・hash変更を再検証する。
+decode 不能な hash は component mount 時に無視する（S1）。自動テストは malformed percent encoding と UTF-8、unmatched valid target、通常・encoded existing target を対象とする。2026-10-16 の JA Orca preview (`http://127.0.0.1:6290`) では、直接開いた `#%ZZ` と `#%C3%28`、それぞれの browser Reload 後も 5 release sections を表示した。unmatched valid hash は list を保ち、通常 `#2026.09.20.0` と encoded `#2026%2E09%2E20%2E0` は同じ target へ scroll した（scroll container `scrollTop=664`、target top `24.25px`）。同一 document で malformed hash に変えた後も list は表示され、`performance.timeOrigin` は変化しなかった。console messages はなかった。layout/animation 後の位置、valid hashchange の scroll、全 locale と狭幅 UI は未実測。hashchange による後続 hash scroll はこの mount-only effect の契約に含めない。

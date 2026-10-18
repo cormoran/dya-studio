@@ -20,11 +20,14 @@ import {
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  IconBolt,
   IconCheck,
   IconRestore,
   IconX,
   IconGripVertical,
 } from "@tabler/icons-react";
+import { useMobileLayout } from "../hooks/useMobileLayout";
+import "./binding-editor.css";
 import { MOUSE_KEYCODES } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
@@ -282,6 +285,8 @@ export function KeycodeSelector({
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
+  const mobile = useMobileLayout();
+  const sheet = floating && mobile;
   const resolvedModalLayerClassName =
     modalLayer === "nested" ? "z-[10001]" : modalLayerClassName;
   const activePresentation = useRef(presentation);
@@ -289,7 +294,7 @@ export function KeycodeSelector({
     activePresentation.current = presentation;
   }, [presentation]);
   const floatingWindow = useFloatingWindow(
-    floating,
+    floating && !sheet,
     open,
     floatingAnchorRef,
     floatingPosition,
@@ -811,7 +816,8 @@ export function KeycodeSelector({
         >
           <Dialog.Content
             ref={floatingWindow.ref}
-            style={floatingWindow.style}
+            style={sheet ? undefined : floatingWindow.style}
+            data-presentation={sheet ? "sheet" : presentation}
             aria-describedby={undefined}
             onCloseAutoFocus={(event) => {
               // A mode switch replaces the Radix focus scope. Its delayed
@@ -824,7 +830,7 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
+                ? `binding-editor-floating pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
                 : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
             }
           >
@@ -839,10 +845,10 @@ export function KeycodeSelector({
             >
               {/* Header with mode-specific ending action */}
               <div
-                {...floatingWindow.handleProps}
-                className={`flex items-center border-b border-[var(--color-border)] shrink-0 ${floating ? "gap-1 px-2 py-1 cursor-move touch-none select-none" : "gap-3 p-4"}`}
+                {...(sheet ? {} : floatingWindow.handleProps)}
+                className={`flex items-center border-b border-[var(--color-border)] shrink-0 ${floating ? `gap-1 px-2 py-1 select-none ${sheet ? "" : "cursor-move touch-none"}` : "gap-3 p-4"}`}
               >
-                {floating && (
+                {floating && !sheet && (
                   <IconGripVertical
                     size={14}
                     className="shrink-0 text-[var(--color-text-muted)]"
@@ -869,12 +875,6 @@ export function KeycodeSelector({
                     </p>
                   )}
                 </div>
-                {floating &&
-                  selectedBehaviorInfo?.overrideMetadata?.description && (
-                    <span className="min-w-0 truncate text-xs text-[var(--color-text-muted)]">
-                      {t(selectedBehaviorInfo.overrideMetadata.description)}
-                    </span>
-                  )}
                 <div
                   data-testid="binding-editor-actions"
                   className="ml-auto flex shrink-0 items-center gap-1"
@@ -891,9 +891,12 @@ export function KeycodeSelector({
                         aria-label={t("Close on select")}
                         aria-pressed={closeOnSelect}
                         onClick={() => setCloseOnSelect((enabled) => !enabled)}
-                        className={`p-1 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                        className={`inline-flex items-center gap-1.5 p-1 sm:px-2 rounded transition-colors ${closeOnSelect ? "bg-[var(--color-electric)]/15 text-[var(--color-electric)]" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
                       >
-                        <IconCheck size={16} />
+                        <IconBolt size={16} />
+                        <span className="hidden whitespace-nowrap text-xs sm:inline">
+                          {t("Close on select")}
+                        </span>
                       </button>
                     </EditorTooltip>
                   )}
@@ -979,7 +982,7 @@ export function KeycodeSelector({
               {/* Parameter Selection - Horizontal Layout */}
               {selectedBehaviorInfo && needsAnyParam && (
                 <div
-                  className={`flex-1 flex flex-col overflow-hidden ${floating ? "min-h-[240px]" : "min-h-0"}`}
+                  className={`flex-1 flex flex-col overflow-hidden ${floating && !sheet ? "min-h-[240px]" : "min-h-0"}`}
                 >
                   {/* Parameters Label */}
                   <div

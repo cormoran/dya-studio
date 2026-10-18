@@ -188,9 +188,9 @@ export function ConnectionPage() {
     <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+        <div className="page-header flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
+            <div className="hidden sm:block p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPlugConnected
                 size={24}
                 className="text-[var(--color-cyber)]"
@@ -200,17 +200,20 @@ export function ConnectionPage() {
               <h1 className="text-xl font-medium text-[var(--color-text)]">
                 {t("Connection")}
               </h1>
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="page-header-description text-sm text-[var(--color-text-muted)]">
                 {t("Manage connections, default layers and OS detection")}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="page-header-actions flex flex-wrap items-center gap-2">
             {/* Refresh Button */}
             {connection.isConnected && (
               <>
                 <ResponsiveButton
                   label={t("Refresh")}
+                  title={t(
+                    "Read connection profiles and settings from the keyboard again",
+                  )}
                   className="btn-ghost flex items-center gap-2"
                   onClick={() => void reload()}
                   disabled={isLoading}
@@ -444,7 +447,7 @@ export function ConnectionPage() {
                     <div key="usb" className="glass-card p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+                          <div className="connection-target-icon w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
                             <IconUsb
                               size={18}
                               className="text-[var(--color-text-muted)]"
@@ -536,7 +539,7 @@ export function ConnectionPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            className={`connection-target-icon w-10 h-10 rounded-full flex items-center justify-center ${
                               profile.isActive
                                 ? "bg-[var(--color-cyber)]/20 border border-[var(--color-cyber)]/40"
                                 : "bg-[var(--color-border)] border border-[var(--color-border-hover)]"
@@ -764,7 +767,7 @@ export function ConnectionPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+                        <div className="connection-target-icon w-10 h-10 rounded-full flex items-center justify-center bg-[var(--color-border)] border border-[var(--color-border-hover)]">
                           <IconBluetooth
                             size={18}
                             className="text-[var(--color-text-muted)]"
