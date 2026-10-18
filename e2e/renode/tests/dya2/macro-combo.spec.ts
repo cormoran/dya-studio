@@ -55,22 +55,19 @@ test("dya2 Keymap: runtime macro create -> persist -> round-trip -> delete", asy
   const before = await items.count();
   const name = `E2E${Date.now().toString().slice(-8)}`;
   await macros.getByRole("button", { name: "New macro", exact: true }).click();
-  let modal = page.getByRole("dialog");
+  const modal = page.getByRole("dialog", { name: "Edit macros", exact: true });
   await modal.getByRole("textbox").fill(name);
   await modal.getByRole("button", { name: "Step", exact: true }).click();
   await modal.getByRole("combobox").selectOption("delay");
   await modal.getByRole("spinbutton").fill("25");
   await modal.getByRole("spinbutton").press("Tab");
-  await modal
-    .getByRole("button", { name: "Create macro", exact: true })
-    .click();
+  await modal.getByRole("button", { name: "Close", exact: true }).click();
   await expect(modal).toHaveCount(0, { timeout: 90_000 });
   const macroButton = items.filter({
     has: page.getByText(name, { exact: true }),
   });
   await expect(macroButton).toBeVisible({ timeout: 90_000 });
   await macroButton.click();
-  modal = page.getByRole("dialog");
   await expect(modal.getByRole("spinbutton")).toHaveValue("25", {
     timeout: 90_000,
   });
@@ -88,8 +85,12 @@ test("dya2 Keymap: runtime macro create -> persist -> round-trip -> delete", asy
     modal.getByRole("button", { name: "Delete", exact: true }),
   ).toBeEnabled({ timeout: 60_000 });
   await modal.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Delete", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(macroButton).toHaveCount(0, { timeout: 90_000 });
-  await modal.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(modal).toHaveCount(0, { timeout: 90_000 });
   if (await save.isEnabled()) {
     await save.click();
     await expect(save).toBeDisabled({ timeout: 120_000 });

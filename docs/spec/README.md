@@ -37,14 +37,14 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 
 ## 共有モジュール
 
-| 契約                            | 仕様                                            | 主な consumer                                        |
-| ------------------------------- | ----------------------------------------------- | ---------------------------------------------------- |
-| route、tab 保持、言語・theme    | [app shell](modules/app-shell.md)               | 全画面                                               |
-| transport、再接続、unlock、Demo | [device session](modules/device-session.md)     | 接続画面・全編集ページ                               |
-| binding の選択/終了/適用        | [binding editor](modules/binding-editor.md)     | Keymap、sensor、macro/combo、入力処理                |
-| 共通設定値・debounce・保存表示  | [settings write](modules/settings-write.md)     | Settings、Connection、Trackball 等                   |
-| ポインティング入力変換          | [input processing](modules/input-processing.md) | Trackball                                            |
-| capture・diff・復元             | [version history](modules/version-history.md)   | Keymap、Macro&Combo、Trackball、Connection、Settings |
+| 契約                            | 仕様                                            | 主な consumer                           |
+| ------------------------------- | ----------------------------------------------- | --------------------------------------- |
+| route、tab 保持、言語・theme    | [app shell](modules/app-shell.md)               | 全画面                                  |
+| transport、再接続、unlock、Demo | [device session](modules/device-session.md)     | 接続画面・全編集ページ                  |
+| binding の選択/終了/適用        | [binding editor](modules/binding-editor.md)     | Keymap、sensor、macro/combo、入力処理   |
+| 共通設定値・debounce・保存表示  | [settings write](modules/settings-write.md)     | Settings、Connection、Trackball 等      |
+| ポインティング入力変換          | [input processing](modules/input-processing.md) | Trackball                               |
+| capture・diff・復元             | [version history](modules/version-history.md)   | Keymap、Trackball、Connection、Settings |
 
 ## 判定の原則
 

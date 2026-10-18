@@ -29,6 +29,8 @@ export function useRuntimeTapDance(active = true) {
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const savedEntries = useRef(new Map<number, State | null>());
+  const savedInterval = useRef<number | null>(null);
   const inFlight = useRef(false);
   const rpc = useCallback(
     async (request: Request): Promise<Response> => {
@@ -48,6 +50,8 @@ export function useRuntimeTapDance(active = true) {
   const readGlobal = useCallback(async () => {
     const response = await rpc(Request.create({ getGlobal: {} }));
     if (response.global?.apiVersion !== 2) throw new Error(UPDATE_REQUIRED);
+    if (savedInterval.current === null || !response.global.hasUnsavedChanges)
+      savedInterval.current = response.global.intervalMs;
     setGlobalSettings(response.global);
     return response.global;
   }, [rpc]);
@@ -72,7 +76,18 @@ export function useRuntimeTapDance(active = true) {
         );
         if (!detail.state?.config || detail.state.index !== summary.index)
           throw new Error("Firmware returned no tapdance state.");
-        loaded.push(detail.state);
+        const entry = detail.state;
+        if (!entry.hasUnsavedChanges)
+          savedEntries.current.set(
+            entry.index,
+            JSON.parse(JSON.stringify(entry)),
+          );
+        const baseline = savedEntries.current.get(entry.index);
+        const restored =
+          baseline &&
+          baseline.name === entry.name &&
+          JSON.stringify(baseline.config) === JSON.stringify(entry.config);
+        loaded.push(restored ? { ...entry, hasUnsavedChanges: false } : entry);
       }
       if (!response.list.hasMore) break;
       if (
@@ -150,14 +165,15 @@ export function useRuntimeTapDance(active = true) {
     return true;
   };
   const create = async (name: string): Promise<number | null> =>
-    run(
-      async () =>
-        stateOf(
-          await rpc(
-            Request.create({ create: { name: name.trim(), persist: false } }),
-          ),
-        ).index,
-    );
+    run(async () => {
+      const entry = stateOf(
+        await rpc(
+          Request.create({ create: { name: name.trim(), persist: false } }),
+        ),
+      );
+      savedEntries.current.set(entry.index, null);
+      return entry.index;
+    });
   const rename = async (index: number, name: string): Promise<boolean> =>
     (await run(async () => {
       stateOf(
@@ -189,7 +205,11 @@ export function useRuntimeTapDance(active = true) {
               set: {
                 index,
                 tapCount: action + 1,
-                binding: config[field],
+                binding: config[field] ?? {
+                  behaviorId: 0,
+                  param1: 0,
+                  param2: 0,
+                },
                 persist: false,
               },
             }),
@@ -220,10 +240,28 @@ export function useRuntimeTapDance(active = true) {
       async () => statusOf(await rpc(Request.create({ discard: {} }))),
       true,
     )) === true;
+  const discardEntry = async (index: number): Promise<boolean> => {
+    if (!savedEntries.current.has(index)) {
+      setError(
+        "The saved value of this item is unavailable. Other items were left unchanged.",
+      );
+      return false;
+    }
+    const baseline = savedEntries.current.get(index);
+    if (!baseline) return remove(index);
+    if (
+      entries.find((entry) => entry.index === index)?.name !== baseline.name &&
+      !(await rename(index, baseline.name))
+    )
+      return false;
+    return !!baseline.config && save(index, baseline.config, false);
+  };
   const loadedFor = useRef<number | undefined>(undefined);
   const index = subsystem?.index;
   useEffect(() => {
     if (!ready) {
+      savedEntries.current.clear();
+      savedInterval.current = null;
       loadedFor.current = undefined;
       setEntries([]);
       setGlobalSettings(null);
@@ -243,7 +281,8 @@ export function useRuntimeTapDance(active = true) {
     globalSettings,
     intervalMs: globalSettings?.intervalMs ?? 200,
     hasUnsavedChanges:
-      !!globalSettings?.hasUnsavedChanges ||
+      (savedInterval.current !== null &&
+        globalSettings?.intervalMs !== savedInterval.current) ||
       entries.some((entry) => entry.hasUnsavedChanges),
     revision,
     busy,
@@ -256,6 +295,7 @@ export function useRuntimeTapDance(active = true) {
     saveInterval,
     saveChanges,
     discardChanges,
+    discardEntry,
   };
 }
 export type RuntimeTapDance = ReturnType<typeof useRuntimeTapDance>;

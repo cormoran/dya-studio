@@ -44,6 +44,7 @@ interface ComboEditorCardProps {
   layers: Array<{ id: number; name: string }>;
   keyboardLayout: KeyboardLayoutType;
   runtimeMacros: MacroSummary[];
+  hideHeader?: boolean;
 }
 
 export function ComboEditorCard({
@@ -53,6 +54,7 @@ export function ComboEditorCard({
   layers,
   keyboardLayout,
   runtimeMacros,
+  hideHeader = false,
 }: ComboEditorCardProps) {
   const { t } = useLanguage();
   const draft = combo.draft;
@@ -69,62 +71,9 @@ export function ComboEditorCard({
 
   return (
     <section className="glass-card p-4 tablet:p-6 min-w-0 overflow-hidden">
-      {/* Editor header */}
-      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-sm font-medium text-[var(--color-text)]">
-              {t("Combo Editor")}
-            </h2>
-            <StatusDot
-              status={comboEditStatus(
-                combo.editorSource,
-                draft.index,
-                combo.modifiedIndices,
-              )}
-            />
-          </div>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            {combo.selectedComboExists ? t("Existing slot") : t("New slot")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {(combo.editorSource === ComboSource.COMBO_SOURCE_DEFAULT ||
-            combo.editorSource === ComboSource.COMBO_SOURCE_OVERRIDDEN) && (
-            <button
-              className="btn-ghost text-sm flex items-center gap-1.5"
-              onClick={combo.handleResetCombo}
-              disabled={runtimeCombo.isLoading}
-            >
-              <IconRestore size={16} />
-              {t("Reset to Default")}
-            </button>
-          )}
-          {/* Enabled toggle inline with action buttons */}
-          <div className="flex items-center gap-2 px-2">
-            <span className="text-xs text-[var(--color-text-muted)]">
-              {t("Enabled")}
-            </span>
-            <Switch.Root
-              checked={draft.enabled}
-              onCheckedChange={(enabled) =>
-                combo.applyDraftChange({ ...draft, enabled }, true)
-              }
-              className="w-8 h-4 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors"
-            >
-              <Switch.Thumb className="block w-3 h-3 rounded-full transition-transform data-[state=checked]:translate-x-4 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-            </Switch.Root>
-          </div>
-          <button
-            className="btn-ghost text-sm flex items-center gap-1.5"
-            onClick={combo.handleDeleteCombo}
-            disabled={!combo.selectedComboExists || runtimeCombo.isLoading}
-          >
-            <IconTrash size={16} />
-            {t("Delete")}
-          </button>
-        </div>
-      </div>
+      {!hideHeader && (
+        <ComboEditorHeader combo={combo} runtimeCombo={runtimeCombo} />
+      )}
 
       {combo.validationError && (
         <div className="mb-4 p-3 rounded-lg border warning-banner text-sm flex items-center gap-2">
@@ -373,5 +322,76 @@ export function ComboEditorCard({
         }
       />
     </section>
+  );
+}
+
+export function ComboEditorHeader({
+  combo,
+  runtimeCombo,
+  compact = false,
+}: Pick<ComboEditorCardProps, "combo" | "runtimeCombo"> & {
+  compact?: boolean;
+}) {
+  const { t } = useLanguage();
+  const draft = combo.draft;
+  return (
+    <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-sm font-medium text-[var(--color-text)]">
+            {t("Combo Editor")}
+          </h2>
+          <StatusDot
+            status={comboEditStatus(
+              combo.editorSource,
+              draft.index,
+              combo.modifiedIndices,
+            )}
+          />
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)]">
+          {combo.selectedComboExists ? t("Existing slot") : t("New slot")}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {!compact &&
+          (combo.editorSource === ComboSource.COMBO_SOURCE_DEFAULT ||
+            combo.editorSource === ComboSource.COMBO_SOURCE_OVERRIDDEN) && (
+            <button
+              className="btn-ghost text-sm flex items-center gap-1.5"
+              onClick={combo.handleResetCombo}
+              disabled={runtimeCombo.isLoading}
+            >
+              <IconRestore size={16} />
+              {t("Reset to Default")}
+            </button>
+          )}
+        {/* Enabled toggle inline with action buttons */}
+        <div className="flex items-center gap-2 px-2">
+          <span className="text-xs text-[var(--color-text-muted)]">
+            {t("Enabled")}
+          </span>
+          <Switch.Root
+            checked={draft.enabled}
+            onCheckedChange={(enabled) =>
+              combo.applyDraftChange({ ...draft, enabled }, true)
+            }
+            className="w-8 h-4 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors"
+          >
+            <Switch.Thumb className="block w-3 h-3 rounded-full transition-transform data-[state=checked]:translate-x-4 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+          </Switch.Root>
+        </div>
+        {!compact && (
+          <button
+            className="btn-ghost text-sm flex items-center gap-1.5"
+            onClick={combo.handleDeleteCombo}
+            disabled={!combo.selectedComboExists || runtimeCombo.isLoading}
+          >
+            <IconTrash size={16} />
+            {t("Delete")}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

@@ -229,6 +229,8 @@ describe("KeymapPage", () => {
       isLoading: false,
       error: null,
       hasPendingChanges: false,
+      isComboUnsaved: jest.fn().mockReturnValue(false),
+      discardCombo: jest.fn().mockResolvedValue(true),
       reload: jest.fn(),
     } as never);
 
@@ -735,6 +737,8 @@ describe("KeymapPage", () => {
     it("highlights a RAM-only combo item with the green unsaved treatment", () => {
       mockUseRuntimeCombo.mockReturnValue({
         isAvailable: true,
+        isComboUnsaved: jest.fn().mockReturnValue(false),
+        discardCombo: jest.fn().mockResolvedValue(true),
         combos: [
           {
             index: 0,
@@ -858,6 +862,8 @@ describe("KeymapPage", () => {
       const user = userEvent.setup();
       mockUseRuntimeCombo.mockReturnValue({
         isAvailable: true,
+        isComboUnsaved: jest.fn().mockReturnValue(false),
+        discardCombo: jest.fn().mockResolvedValue(true),
         combos: [
           {
             index: 0,
@@ -931,6 +937,8 @@ describe("KeymapPage", () => {
       const user = userEvent.setup();
       mockUseRuntimeCombo.mockReturnValue({
         isAvailable: true,
+        isComboUnsaved: jest.fn().mockReturnValue(false),
+        discardCombo: jest.fn().mockResolvedValue(true),
         combos: [
           {
             index: 0,
@@ -990,6 +998,8 @@ describe("KeymapPage", () => {
     it("lists named combo layers on a separate line in a wrapping card", () => {
       mockUseRuntimeCombo.mockReturnValue({
         isAvailable: true,
+        isComboUnsaved: jest.fn().mockReturnValue(false),
+        discardCombo: jest.fn().mockResolvedValue(true),
         combos: [
           {
             index: 0,
@@ -2269,33 +2279,16 @@ describe("KeymapPage", () => {
     };
     afterEach(() => jest.restoreAllMocks());
 
-    it("keeps runtime history ready while collection reads toggle loading", async () => {
-      const runtime = {
-        ...mockUseRuntimeCombo(),
-        isAvailable: true,
-        globalSettings: {},
-        loadCombos: jest.fn(),
-      };
-      mockUseRuntimeCombo.mockReturnValue(runtime as never);
-      const view = renderComponent({ isConnected: true }, readyKeymap);
-      const historyReady = () =>
+    it("does not capture macro/combo history or show its menu", () => {
+      renderComponent({ isConnected: true }, readyKeymap);
+      expect(
         jest
           .mocked(useVersionHistory)
-          .mock.calls.filter(([options]) => options.tabId === "macro-combo")
-          .at(-1)?.[0].isLoaded;
-      await waitFor(() => expect(historyReady()).toBe(true));
-      mockUseRuntimeCombo.mockReturnValue({
-        ...runtime,
-        isLoading: true,
-      } as never);
-      view.replaceKeymap({});
-      expect(historyReady()).toBe(true);
-      mockUseRuntimeCombo.mockReturnValue({
-        ...runtime,
-        isLoading: false,
-      } as never);
-      view.replaceKeymap({});
-      expect(historyReady()).toBe(true);
+          .mock.calls.some(([options]) => options.tabId === "macro-combo"),
+      ).toBe(false);
+      expect(
+        screen.queryByRole("button", { name: "Macro and combo versions" }),
+      ).not.toBeInTheDocument();
     });
 
     it("opens a named tapdance in a modal and preserves RAM changes when closed", async () => {
@@ -2306,7 +2299,7 @@ describe("KeymapPage", () => {
       await user.click(within(card).getByRole("button", { name: "Alphabet" }));
       expect(screen.getByRole("dialog", { name: "Tapdances" })).toBeVisible();
       expect(
-        screen.getByRole("button", { name: "Delete tapdance" }),
+        screen.getByRole("button", { name: "Delete", exact: true }),
       ).toBeVisible();
       await user.click(
         screen.getByRole("button", { name: "Close", exact: true }),
@@ -2346,7 +2339,7 @@ describe("KeymapPage", () => {
       expect(runtime.discardChanges).toHaveBeenCalledTimes(1);
     });
 
-    it("opens macro creation locally without allocating until Create", async () => {
+    it("creates the macro in RAM before opening without a Create button", async () => {
       const user = userEvent.setup();
       setupTapDance({ isAvailable: false });
       const runtime = {
@@ -2371,18 +2364,23 @@ describe("KeymapPage", () => {
         maxMacroBytes: 256,
         maxNameLength: 24,
         loadMacros: jest.fn(),
-        createMacro: jest.fn(),
+        createMacro: jest.fn().mockResolvedValue(true),
       };
       jest.spyOn(macroHook, "useRuntimeMacro").mockReturnValue(runtime);
       renderComponent({ isConnected: true }, readyKeymap);
       await user.click(screen.getByRole("button", { name: "New macro" }));
-      expect(screen.getByRole("dialog", { name: "New macro" })).toBeVisible();
-      expect(runtime.createMacro).not.toHaveBeenCalled();
+      expect(
+        await screen.findByRole("dialog", { name: "Edit macros" }),
+      ).toBeVisible();
+      expect(runtime.createMacro).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole("button", { name: "Create macro", exact: true }),
+      ).not.toBeInTheDocument();
       await user.click(
         screen.getByRole("button", { name: "Close", exact: true }),
       );
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      expect(runtime.createMacro).not.toHaveBeenCalled();
+      expect(runtime.createMacro).toHaveBeenCalledTimes(1);
     });
   });
 

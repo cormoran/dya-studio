@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconPlus, IconSettings, IconX } from "@tabler/icons-react";
+import {
+  IconPlus,
+  IconSettings,
+  IconX,
+  IconDeviceFloppy,
+  IconTrash,
+  IconRestore,
+} from "@tabler/icons-react";
 import { StatusDot } from "../EditStatusIndicator";
 import { useLanguage } from "../../hooks/useLanguage";
 
@@ -14,9 +21,7 @@ export function RuntimeListCard({
   items,
   onAdd,
   onSettings,
-  actions,
 }: {
-  actions?: ReactNode;
   title: string;
   addLabel: string;
   settingsLabel: string;
@@ -40,7 +45,6 @@ export function RuntimeListCard({
           {title}
         </h2>
         <div className="flex items-center gap-2">
-          {actions}
           <button
             type="button"
             className="btn-ghost p-1"
@@ -103,18 +107,22 @@ export function RuntimeEditorModal({
   title,
   onClose,
   children,
+  actions,
+  busy = false,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  actions?: ReactNode;
+  busy?: boolean;
 }) {
   const { t } = useLanguage();
   return (
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next && !busy) onClose();
       }}
     >
       <Dialog.Portal>
@@ -123,11 +131,16 @@ export function RuntimeEditorModal({
           aria-describedby={undefined}
           className="fixed left-1/2 top-1/2 z-[60] flex max-h-[90dvh] w-[95vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] p-4">
-            <Dialog.Title className="text-lg font-medium text-[var(--color-text)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] p-4">
+            <Dialog.Title className="min-w-0 flex-1 text-lg font-medium text-[var(--color-text)]">
               {title}
             </Dialog.Title>
-            <Dialog.Close className="btn-ghost p-1" aria-label={t("Close")}>
+            {actions}
+            <Dialog.Close
+              disabled={busy}
+              className="btn-ghost p-1"
+              aria-label={t("Close")}
+            >
               <IconX size={20} />
             </Dialog.Close>
           </div>
@@ -135,5 +148,60 @@ export function RuntimeEditorModal({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+export function RuntimeModalActions({
+  busy,
+  mutationBusy = false,
+  dirty,
+  saveDisabled,
+  onSave,
+  onDiscard,
+  onDelete,
+}: {
+  busy: boolean;
+  dirty: boolean;
+  mutationBusy?: boolean;
+  saveDisabled?: boolean;
+  onSave: () => void;
+  onDiscard?: () => void;
+  onDelete?: () => void;
+}) {
+  const { t } = useLanguage();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {onDelete && (
+        <button
+          type="button"
+          className="btn-ghost text-sm text-red-400"
+          aria-label={t("Delete")}
+          disabled={busy || mutationBusy}
+          onClick={onDelete}
+        >
+          <IconTrash size={18} />
+        </button>
+      )}
+      {dirty && onDiscard && (
+        <button
+          type="button"
+          className="btn-ghost text-sm flex items-center gap-1"
+          disabled={busy || mutationBusy}
+          onClick={onDiscard}
+        >
+          <IconRestore size={16} />
+          {t("Discard")}
+        </button>
+      )}
+      <button
+        type="button"
+        className="btn-electric text-sm flex items-center gap-1"
+        disabled={busy || saveDisabled}
+        onClick={onSave}
+      >
+        <IconDeviceFloppy size={16} />
+        {t("Save and close")}
+      </button>
+    </div>
   );
 }

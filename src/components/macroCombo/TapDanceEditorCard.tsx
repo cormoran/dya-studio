@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { useDebouncedMemoryWrite } from "../../hooks/useDebouncedMemoryWrite";
 import { TapDanceDraft } from "./TapDanceEditor";
 import type { RuntimeTapDance } from "../../hooks/useRuntimeTapDance";
 import type { BehaviorDefinition, Keymap } from "../../hooks/useKeymap";
@@ -13,6 +14,7 @@ type Props = {
   keymap: Keymap | null;
   keyboardLayout: KeyboardLayoutType;
   onDeleted: () => void;
+  hideActions?: boolean;
   onPendingChange?: (pending: boolean) => void;
 };
 
@@ -21,6 +23,7 @@ export function TapDanceEditorCard({
   slot,
   onDeleted,
   onPendingChange,
+  hideActions = false,
   ...props
 }: Props) {
   const { t } = useLanguage();
@@ -38,34 +41,48 @@ export function TapDanceEditorCard({
       (candidate) =>
         candidate.index !== slot && candidate.name === nameDraft.trim(),
     );
+  const nameWrite = useDebouncedMemoryWrite<string>(async (next) => {
+    await runtime.rename(slot, next);
+  }, 0);
   useEffect(() => {
     onPendingChange?.(
-      actionsPending || (name !== null && nameDraft.trim() !== entry?.name),
+      actionsPending ||
+        nameWrite.state !== "idle" ||
+        (name !== null && nameDraft.trim() !== entry?.name),
     );
-  }, [actionsPending, entry?.name, name, nameDraft, onPendingChange]);
+  }, [
+    actionsPending,
+    entry?.name,
+    name,
+    nameDraft,
+    onPendingChange,
+    nameWrite.state,
+  ]);
   if (!config) return null;
   return (
     <section className="glass-card p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-medium text-[var(--color-text)]">{entry?.name}</h2>
-        <button
-          type="button"
-          className="btn-ghost text-sm"
-          disabled={runtime.busy}
-          onClick={async () => {
-            if (
-              window.confirm(
-                t(
-                  "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.",
-                ),
-              ) &&
-              (await runtime.remove(slot))
-            )
-              onDeleted();
-          }}
-        >
-          {t("Delete tapdance")}
-        </button>
+        {!hideActions && (
+          <button
+            type="button"
+            className="btn-ghost text-sm"
+            disabled={runtime.busy}
+            onClick={async () => {
+              if (
+                window.confirm(
+                  t(
+                    "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.",
+                  ),
+                ) &&
+                (await runtime.remove(slot))
+              )
+                onDeleted();
+            }}
+          >
+            {t("Delete tapdance")}
+          </button>
+        )}
       </div>
       {runtime.error && (
         <p role="alert" className="text-sm text-red-500">
@@ -78,21 +95,41 @@ export function TapDanceEditorCard({
           id={nameId}
           className="min-w-0 flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text)]"
           value={nameDraft}
-          disabled={runtime.busy}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <button
-          type="button"
-          className="btn-ghost text-sm"
-          disabled={
-            runtime.busy || !validName || nameDraft.trim() === entry?.name
-          }
-          onClick={async () => {
-            if (await runtime.rename(slot, nameDraft)) setName(null);
+          disabled={!hideActions && runtime.busy}
+          onChange={(event) => {
+            const next = event.target.value;
+            setName(next);
+            const trimmed = next.trim();
+            if (
+              hideActions &&
+              trimmed &&
+              new TextEncoder().encode(trimmed).length <=
+                (runtime.globalSettings?.maxNameLength ?? 0) &&
+              !runtime.entries.some(
+                (candidate) =>
+                  candidate.index !== slot && candidate.name === trimmed,
+              )
+            )
+              nameWrite.queue(trimmed);
           }}
-        >
-          {t("Rename")}
-        </button>
+          onBlur={() => {
+            if (hideActions) void nameWrite.flush();
+          }}
+        />
+        {!hideActions && (
+          <button
+            type="button"
+            className="btn-ghost text-sm"
+            disabled={
+              runtime.busy || !validName || nameDraft.trim() === entry?.name
+            }
+            onClick={async () => {
+              if (await runtime.rename(slot, nameDraft)) setName(null);
+            }}
+          >
+            {t("Rename")}
+          </button>
+        )}
       </div>
       <TapDanceDraft
         key={`${slot}:${runtime.revision}`}
@@ -100,14 +137,17 @@ export function TapDanceEditorCard({
         slot={slot}
         runtime={runtime}
         applyToMemory
+        hideActions={hideActions}
         onPendingChange={setActionsPending}
         {...props}
       />
-      <p className="text-sm text-[var(--color-text-muted)]">
-        {t(
-          "Actions are applied to memory. Use Save above to keep tapdance changes after restart.",
-        )}
-      </p>
+      {!hideActions && (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {t(
+            "Actions are applied to memory. Use Save above to keep tapdance changes after restart.",
+          )}
+        </p>
+      )}
     </section>
   );
 }

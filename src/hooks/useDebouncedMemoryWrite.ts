@@ -49,6 +49,10 @@ export function useDebouncedMemoryWrite<T>(
   }, []);
 
   const runWrite = useCallback(async () => {
+    // Serialize RAM writes; immediate mode still keeps the latest queued edit.
+    while (inFlightRef.current.size) {
+      await Promise.all([...inFlightRef.current]);
+    }
     const pending = pendingRef.current;
     if (!pending) return;
     pendingRef.current = null;

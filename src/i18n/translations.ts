@@ -9,6 +9,24 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
+    "変更はすぐにメモリへ反映されますが、保存ボタンを押すまで永続化されません。",
+  "Save persists all unsaved changes in this feature. Discard affects only this item.":
+    "保存はこの機能のすべての未保存変更を永続化します。破棄は開いている項目だけに適用されます。",
+  "Close and restore the settings from when this dialog opened?":
+    "この画面を開いたときの設定に戻して閉じますか？",
+  "Discard this item’s unsaved changes and restore its saved value?":
+    "この項目だけの未保存変更を破棄し、保存済みの値に戻しますか？",
+  "Delete this item from keyboard memory?":
+    "この項目をキーボードのメモリから削除しますか？",
+  "The operation failed. Your changes remain available; retry or reload.":
+    "操作に失敗しました。編集内容は残っています。再試行するか再読み込みしてください。",
+  "The saved value of this item is unavailable. Other items were left unchanged.":
+    "この項目の保存済みの値を取得できません。ほかの項目は変更していません。",
+  "Enter a whole number within the displayed range.":
+    "表示された範囲内の整数を入力してください。",
+  "Discard and close": "破棄して閉じる",
+  "Discard changes?": "変更を破棄しますか？",
   "Could not apply macro edits to memory.":
     "マクロの編集をメモリに適用できませんでした。",
   "Macro and combo versions": "マクロ・コンボの履歴",
@@ -1827,6 +1845,23 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
+    "更改会立即应用到内存，点击保存后才会永久保存。",
+  "Save persists all unsaved changes in this feature. Discard affects only this item.":
+    "保存会持久化此功能的所有未保存更改，丢弃仅影响当前项目。",
+  "Close and restore the settings from when this dialog opened?":
+    "恢复打开此窗口时的设置并关闭？",
+  "Discard this item’s unsaved changes and restore its saved value?":
+    "仅丢弃此项目的未保存更改并恢复已保存的值？",
+  "Delete this item from keyboard memory?": "从键盘内存中删除此项目？",
+  "The operation failed. Your changes remain available; retry or reload.":
+    "操作失败。编辑仍然保留，请重试或重新加载。",
+  "The saved value of this item is unavailable. Other items were left unchanged.":
+    "无法获取此项目已保存的值。其他项目未改变。",
+  "Enter a whole number within the displayed range.":
+    "请输入显示范围内的整数。",
+  "Discard and close": "丢弃并关闭",
+  "Discard changes?": "丢弃更改？",
   "Could not apply macro edits to memory.": "无法将宏编辑应用到内存。",
   "Macro and combo versions": "宏和组合键历史",
   "No items": "暂无项目",

@@ -43,6 +43,7 @@ type TranslateFn = (key: string, params?: TranslationParams) => string;
 export type MacroGlobalField = "tapMs";
 
 export interface UseMacroEditorArgs {
+  immediate?: boolean;
   runtimeMacro: UseRuntimeMacroReturn;
   keymap: UseKeymapReturn;
   layers: Array<{ id: number; name: string }>;
@@ -57,6 +58,7 @@ export interface UseMacroEditorArgs {
 }
 
 export function useMacroEditor({
+  immediate = false,
   runtimeMacro,
   keymap,
   layers,
@@ -458,18 +460,21 @@ export function useMacroEditor({
       },
       [commitRename, trackWrite],
     ),
+    immediate ? 0 : undefined,
   );
 
   const delayDebounce = useDebouncedMemoryWrite<number>(
     useCallback(async () => {
       await trackWrite("delay", commitDelay);
     }, [commitDelay, trackWrite]),
+    immediate ? 0 : undefined,
   );
 
   const stringDebounce = useDebouncedMemoryWrite<void>(
     useCallback(async () => {
       await trackWrite("string", commitStringChange);
     }, [commitStringChange, trackWrite]),
+    immediate ? 0 : undefined,
   );
 
   const tapMsDebounce = useDebouncedMemoryWrite<number>(
@@ -484,6 +489,7 @@ export function useMacroEditor({
       },
       [requireUnlocked, runtimeMacro, trackWrite],
     ),
+    immediate ? 0 : undefined,
   );
 
   const handleRenameChange = useCallback(

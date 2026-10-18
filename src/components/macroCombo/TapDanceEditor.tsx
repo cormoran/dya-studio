@@ -32,6 +32,7 @@ export function TapDanceDraft({
   applyToMemory = false,
   onPendingChange,
   saveDisabled = false,
+  hideActions = false,
   ...props
 }: Props & {
   config: Config;
@@ -42,6 +43,7 @@ export function TapDanceDraft({
   applyToMemory?: boolean;
   onPendingChange?: (pending: boolean) => void;
   saveDisabled?: boolean;
+  hideActions?: boolean;
 }) {
   const { t } = useLanguage();
   const panelId = useId();
@@ -61,7 +63,10 @@ export function TapDanceDraft({
       : Math.max(0, usage - (props.currentSlot === slot ? 1 : 0));
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
   const valid =
-    !!draft.singleBinding?.behaviorId &&
+    (!!draft.singleBinding?.behaviorId ||
+      (applyToMemory &&
+        !draft.doubleBinding?.behaviorId &&
+        !draft.tripleBinding?.behaviorId)) &&
     (!draft.tripleBinding?.behaviorId || !!draft.doubleBinding?.behaviorId);
   useEffect(() => {
     onPendingChange?.(dirty || !valid);
@@ -198,38 +203,40 @@ export function TapDanceDraft({
             {t("A Triple action requires a Double action.")}
           </p>
         )}
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          className="btn-ghost"
-          disabled={runtime.busy || !dirty}
-          onClick={() => {
-            setDraft(Config.create(config));
-            setSaved(false);
-          }}
-        >
-          {t("Discard edits")}
-        </button>
-        <button
-          type="button"
-          className="btn-electric"
-          disabled={
-            runtime.busy ||
-            !valid ||
-            (!dirty && (applyToMemory || !runtime.hasUnsavedChanges)) ||
-            saveDisabled
-          }
-          onClick={() => void save()}
-        >
-          {t(
-            runtime.busy
-              ? "Saving..."
-              : applyToMemory
-                ? "Apply to memory"
-                : "Save tapdance",
-          )}
-        </button>
-      </div>
+      {!hideActions && (
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            className="btn-ghost"
+            disabled={runtime.busy || !dirty}
+            onClick={() => {
+              setDraft(Config.create(config));
+              setSaved(false);
+            }}
+          >
+            {t("Discard edits")}
+          </button>
+          <button
+            type="button"
+            className="btn-electric"
+            disabled={
+              runtime.busy ||
+              !valid ||
+              (!dirty && (applyToMemory || !runtime.hasUnsavedChanges)) ||
+              saveDisabled
+            }
+            onClick={() => void save()}
+          >
+            {t(
+              runtime.busy
+                ? "Saving..."
+                : applyToMemory
+                  ? "Apply to memory"
+                  : "Save tapdance",
+            )}
+          </button>
+        </div>
+      )}
       {saved && (
         <p role="status" className="text-sm text-[var(--color-electric)]">
           {t(
