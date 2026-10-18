@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
 import { IconLoader2, IconX } from "@tabler/icons-react";
@@ -21,6 +21,7 @@ import { EditorTooltip } from "../EditorTooltip";
 import { JsonDiffPanel } from "./JsonDiffModal";
 import { KeymapDiffPreview } from "./KeymapDiffPreview";
 import { KeymapDiffView } from "./KeymapDiffView";
+import { splitWritableKeymapDiff } from "../../lib/abyss/keymapApplyResult";
 import type { PreviewPosition } from "./KeymapLayerPreview";
 
 export function KeymapSharingPreview({
@@ -48,6 +49,19 @@ export function KeymapSharingPreview({
   const [confirming, setConfirming] = useState(false);
   const name = review.record?.name ?? review.remote.name ?? t("Keymap");
   const save = review.kind === "save";
+  const skippedCount = useMemo(
+    () => countDiff(splitWritableKeymapDiff(review.diff).skipped).total,
+    [review.diff],
+  );
+  const skipNotice =
+    !save && skippedCount > 0 ? (
+      <p className="text-xs text-[var(--color-warning)]">
+        {t(
+          "{{count}} unsupported changes will be skipped and shown in the result.",
+          { count: skippedCount },
+        )}
+      </p>
+    ) : null;
   const description = save
     ? t("Compare the Abyss keymap with the keyboard settings to save.")
     : t("Compare the current keyboard with the keymap to apply.");
@@ -333,6 +347,7 @@ export function KeymapSharingPreview({
                   {t("Only the keymap identifier will be updated.")}
                 </p>
               )}
+              {skipNotice}
               {checks}
               {error && (
                 <p role="alert" className="text-xs text-[var(--color-danger)]">
@@ -422,6 +437,7 @@ export function KeymapSharingPreview({
                 {t("Only the keymap identifier will be updated.")}
               </p>
             )}
+            {skipNotice}
             {checks}
             {error && (
               <p role="alert" className="text-xs text-[var(--color-danger)]">

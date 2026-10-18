@@ -20,6 +20,7 @@ import { useAbyssAuth } from "../../hooks/useAbyssAuth";
 import { useKeymapSharing } from "../../hooks/useKeymapSharing";
 import { useAbyssBrowseUrl } from "../../hooks/useAbyssBrowseUrl";
 import { KeymapSharingPreview } from "./KeymapSharingPreview";
+import { KeymapApplyResultModal } from "./KeymapApplyResultModal";
 import abyssIcon from "../../assets/keyboard-abyss.svg";
 import { ResponsiveButton } from "../ResponsiveButton";
 
@@ -374,6 +375,12 @@ export function KeymapSharingMenu({
           onDirectionChange={sharing.selectDirection}
           onSelectionChange={sharing.selectParts}
           onConfirm={sharing.confirm}
+        />
+      )}
+      {sharing.applyResult && (
+        <KeymapApplyResultModal
+          result={sharing.applyResult}
+          onClose={() => sharing.setApplyResult(null)}
         />
       )}
       <Dialog.Root

@@ -119,7 +119,7 @@ it("blocks oversized layouts at confirm even if called directly", async () => {
   });
   expect(mockWrite).not.toHaveBeenCalled();
 });
-it("revalidates keyboard state before applying and retains the diff on conflict", async () => {
+it("revalidates keyboard state before applying and reports conflicts in the result", async () => {
   const { result } = renderHook(() => useKeymapSharing(false, applied), {
     wrapper,
   });
@@ -131,7 +131,9 @@ it("revalidates keyboard state before applying and retains the diff on conflict"
     await result.current.confirm();
   });
   expect(result.current.error).toMatch(/keyboard changed/);
-  expect(result.current.review).not.toBeNull();
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult?.error).toMatch(/keyboard changed/);
+  expect(result.current.applyResult?.attempted).toBe(false);
   expect(mockWrite).not.toHaveBeenCalled();
 });
 it("requires matching readback before reporting success on old firmware", async () => {
@@ -147,6 +149,12 @@ it("requires matching readback before reporting success on old firmware", async 
   expect(mockWrite).toHaveBeenCalledTimes(1);
   expect(result.current.error).toMatch(/does not yet match/);
   expect(applied).not.toHaveBeenCalled();
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult?.verified).toBe(false);
+  expect(result.current.applyResult?.remaining?.bindingChanges).toHaveLength(1);
+  await act(async () => {
+    await result.current.prepare("apply", undefined, target);
+  });
   mockLoad
     .mockResolvedValueOnce({ state: { currentKeymap: device } })
     .mockResolvedValueOnce({ state: { currentKeymap: target } });
@@ -646,7 +654,11 @@ it.each(["success", "rejected", "mismatched"] as const)(
       expect(result.current.error).toBeNull();
       expect(applied).toHaveBeenCalledTimes(1);
     } else {
-      expect(result.current.review).not.toBeNull();
+      expect(result.current.review).toBeNull();
+      expect(result.current.applyResult?.verified).toBe(true);
+      expect(result.current.applyResult?.error).toMatch(
+        /identity could not be/,
+      );
       expect(result.current.error).toMatch(/identity could not be/);
       expect(result.current.message).toBeNull();
       expect(applied).not.toHaveBeenCalled();
@@ -740,4 +752,120 @@ it("restores exact pointer scale fractions before readback and identifier storag
   );
   expect(result.current.review).toBeNull();
   expect(result.current.error).toBeNull();
+});
+
+it("skips raw changes, applies supported bindings, and opens a partial result without claiming full identity", async () => {
+  const local = {
+    ...device,
+    layers: [
+      { name: "Base", bindings: [{ type: "trans" }, { type: "trans" }] },
+    ],
+  };
+  const remote = {
+    ...target,
+    layers: [
+      {
+        name: "Base",
+        bindings: [
+          { type: "raw", label: "Custom", zmk: "&custom" },
+          { type: "key", usage: 4 },
+        ],
+      },
+    ],
+  };
+  const actual = {
+    ...remote,
+    layers: [
+      {
+        ...remote.layers[0],
+        bindings: [local.layers[0].bindings[0], remote.layers[0].bindings[1]],
+      },
+    ],
+  };
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  client.getKeymap.mockResolvedValueOnce({ ...record, data: remote });
+  let identifier = "old_";
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: local } })
+    .mockResolvedValueOnce({ state: { currentKeymap: actual } });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({
+      bindingChanges: [expect.objectContaining({ keyIndex: 1 })],
+    }),
+  );
+  expect(result.current.applyResult).toMatchObject({
+    verified: true,
+    error: null,
+    skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
+  });
+  expect(identifier).toBe("");
+  expect(result.current.review).toBeNull();
+  expect(result.current.message).toBe("Finished with skipped changes.");
+});
+
+it("closes the preview and reports write errors without claiming verification", async () => {
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", undefined, target);
+  });
+  mockWrite.mockRejectedValueOnce(new Error("RPC write failed"));
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(false);
+  });
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult).toMatchObject({
+    verified: false,
+    attempted: true,
+    error: "RPC write failed",
+    remaining: null,
+  });
+  expect(applied).not.toHaveBeenCalled();
+});
+
+it("finishes an all-raw apply with a skipped result and no settings write", async () => {
+  const rawTarget = {
+    ...target,
+    layers: [
+      {
+        name: "Base",
+        bindings: [{ type: "raw", label: "Custom", zmk: "&custom" }],
+      },
+    ],
+  };
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", undefined, rawTarget);
+  });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).not.toHaveBeenCalled();
+  expect(result.current.review).toBeNull();
+  expect(result.current.applyResult).toMatchObject({
+    verified: true,
+    attempted: false,
+    error: null,
+    skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
+  });
 });

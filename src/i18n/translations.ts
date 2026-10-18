@@ -9,6 +9,26 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Keyboard write result": "キーボードへの反映結果",
+  "Finished with errors.":
+    "処理が完了しました。エラーの内容を確認してください。",
+  "Finished with skipped changes.":
+    "処理が完了しました。一部の変更はスキップされました。",
+  "Supported changes match the keyboard readback.":
+    "対応している変更は、キーボードからの再読取で一致を確認しました。",
+  "Some settings may have been written. Reopen the preview to check the keyboard before retrying.":
+    "一部の設定は書き込まれた可能性があります。再試行する前にプレビューを開き直して、キーボードの状態を確認してください。",
+  "No keymap settings were written.":
+    "キーマップ設定の書き込みは行われませんでした。",
+  "Skipped changes": "スキップした変更",
+  "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
+    "未対応の raw・macro 形式の割り当てをスキップし、該当する既存設定を保持しました。",
+  "Skipped changes do not associate the keyboard with the complete Abyss keymap.":
+    "スキップがあるため、Abyss のキーマップ全体を反映済みとして識別情報を関連付けていません。",
+  "Changes still not reflected": "再読取で一致しなかった変更",
+  "{{count}} unsupported changes will be skipped and shown in the result.":
+    "未対応の変更 {{count}} 件をスキップし、反映結果に表示します。",
+
   "The pointer scale could not be stored. Reopen this preview and try again.":
     "ポインターの感度を保存できませんでした。プレビューを閉じて開き直し、再試行してください。",
   "Only the keymap identifier will be updated.":
@@ -1731,6 +1751,23 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Keyboard write result": "键盘写入结果",
+  "Finished with errors.": "处理已结束，请查看错误详情。",
+  "Finished with skipped changes.": "处理已结束，部分更改已跳过。",
+  "Supported changes match the keyboard readback.":
+    "支持的更改已通过键盘回读验证。",
+  "Some settings may have been written. Reopen the preview to check the keyboard before retrying.":
+    "部分设置可能已写入。重试前请重新打开预览以检查键盘状态。",
+  "No keymap settings were written.": "未写入键映射设置。",
+  "Skipped changes": "已跳过的更改",
+  "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
+    "已跳过不支持的 raw 和 macro 绑定，并保留其原有设置。",
+  "Skipped changes do not associate the keyboard with the complete Abyss keymap.":
+    "由于存在跳过的更改，未将键盘标识关联为已完整应用该 Abyss 键映射。",
+  "Changes still not reflected": "回读仍不匹配的更改",
+  "{{count}} unsupported changes will be skipped and shown in the result.":
+    "将跳过 {{count}} 项不支持的更改并在结果中显示。",
+
   "The pointer scale could not be stored. Reopen this preview and try again.":
     "无法保存指针灵敏度。请关闭预览后重新打开并重试。",
   "Only the keymap identifier will be updated.": "仅更新键映射标识信息。",
