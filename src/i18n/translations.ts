@@ -9,6 +9,8 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Only the keymap identifier will be updated.":
+    "キーマップの識別情報のみ更新します。",
   "Sheet mode": "シートモード",
   "Edit in a bottom sheet below the keyboard preview":
     "キーボードのプレビューの下に固定したシートで編集します",
@@ -1727,6 +1729,7 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Only the keymap identifier will be updated.": "仅更新键映射标识信息。",
   "Sheet mode": "底部面板模式",
   "Edit in a bottom sheet below the keyboard preview":
     "在键盘预览下方固定的底部面板中编辑",

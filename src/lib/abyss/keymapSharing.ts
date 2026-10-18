@@ -61,6 +61,18 @@ export const ALL_SHARING_PARTS: SharingSelection = {
   modules: {}, // An absent module name means selected.
 };
 
+/** Only a complete transfer can claim the Abyss record's identity. */
+export function isCompleteSharingSelection(
+  selection: SharingSelection,
+): boolean {
+  return (
+    selection.keymap &&
+    selection.combos &&
+    selection.macros &&
+    Object.values(selection.modules).every(Boolean)
+  );
+}
+
 function moduleName(module: unknown): string {
   return module && typeof module === "object" && "name" in module
     ? String(module.name)

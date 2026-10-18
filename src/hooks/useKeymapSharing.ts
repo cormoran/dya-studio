@@ -13,6 +13,7 @@ import {
   buildApplyTarget,
   selectSharingTarget,
   ALL_SHARING_PARTS,
+  isCompleteSharingSelection,
   type SharingSelection,
 } from "../lib/abyss/keymapSharing";
 import type {
@@ -70,6 +71,7 @@ export type ShareReview = {
   diff: KeymapDiff;
   checks: ReturnType<typeof runPreflight>;
   selection: SharingSelection;
+  identityMismatch?: boolean;
 };
 const documentOf = (loaded: ZmkLoadedConnection) =>
   loaded.state.currentKeymap as unknown as KeymapDocument;
@@ -86,6 +88,7 @@ function buildReview(
   record?: AbyssKeymapSummary,
   resolved: AbyssLayoutResolveResult | null = null,
   selection: SharingSelection = ALL_SHARING_PARTS,
+  identityMismatch = false,
 ): ShareReview {
   const device = documentOf(loaded);
   const before = kind === "save" ? remote : device;
@@ -126,6 +129,7 @@ function buildReview(
     diff,
     checks,
     selection,
+    identityMismatch,
   };
 }
 
@@ -390,7 +394,22 @@ export function useKeymapSharing(
       valid();
       if (!target) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
-      setReview(buildReview(kind, loaded, remote, record, resolved));
+      const identifier = record ? await readIdentity(valid) : null;
+      const expectedIdentifier = record
+        ? await keymapIdentifier(record.id)
+        : null;
+      valid();
+      setReview(
+        buildReview(
+          kind,
+          loaded,
+          remote,
+          record,
+          resolved,
+          ALL_SHARING_PARTS,
+          identifier !== null && identifier !== expectedIdentifier,
+        ),
+      );
     });
 
   const selectDirection = (kind: ShareReview["kind"]) => {
@@ -404,6 +423,7 @@ export function useKeymapSharing(
         review.record,
         review.resolved,
         review.selection,
+        review.identityMismatch,
       ),
     );
   };
@@ -418,6 +438,7 @@ export function useKeymapSharing(
         review.record,
         review.resolved,
         selection,
+        review.identityMismatch,
       ),
     );
   };
@@ -445,7 +466,12 @@ export function useKeymapSharing(
       busyRef.current ||
       !review ||
       isBlocked(review.checks) ||
-      isEmptyDiff(review.diff)
+      (isEmptyDiff(review.diff) &&
+        !(
+          review.kind === "apply" &&
+          review.identityMismatch &&
+          isCompleteSharingSelection(review.selection)
+        ))
     )
       return Promise.resolve(false);
     const tab = review.kind === "save" ? reserveKeymapTab() : null;
@@ -487,9 +513,11 @@ export function useKeymapSharing(
         tab?.show(pending.record.id);
         await associate(pending.record.id, valid);
       } else {
-        await runWithUnlock(() =>
-          writeZmkKeymapDiff(fresh.loaded, pending.diff as never),
-        );
+        if (!isEmptyDiff(pending.diff)) {
+          await runWithUnlock(() =>
+            writeZmkKeymapDiff(fresh.loaded, pending.diff as never),
+          );
+        }
         valid();
         const readback = await capture(valid);
         if (!isEmptyDiff(compare(pending.after, documentOf(readback.loaded))))
@@ -497,11 +525,7 @@ export function useKeymapSharing(
             "The keyboard does not yet match this keymap. Review and try again.",
           );
         // A partial transfer cannot claim the complete Abyss identity.
-        const complete =
-          pending.selection.keymap &&
-          pending.selection.combos &&
-          pending.selection.macros &&
-          Object.values(pending.selection.modules).every(Boolean);
+        const complete = isCompleteSharingSelection(pending.selection);
         await associate(complete ? (pending.record?.id ?? null) : null, valid);
         await onApplied();
         valid();

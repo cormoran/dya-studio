@@ -11,6 +11,7 @@ import {
 } from "../../lib/abyss/abyssDiff";
 import {
   ALL_SHARING_PARTS,
+  isCompleteSharingSelection,
   sharingModuleNames,
   type SharingSelection,
 } from "../../lib/abyss/keymapSharing";
@@ -62,7 +63,9 @@ export function KeymapSharingPreview({
     review.loaded.state.currentKeymap as unknown as typeof review.remote,
   );
   const counts = countDiff(review.diff);
-  const empty = isEmptyDiff(review.diff);
+  const identityOnly =
+    !save && review.identityMismatch && isCompleteSharingSelection(selection);
+  const empty = isEmptyDiff(review.diff) && !identityOnly;
   const blocked = isBlocked(review.checks);
   const selected = Number(layer);
   const filtered: KeymapDiff =
@@ -325,6 +328,11 @@ export function KeymapSharingPreview({
               </Tabs.Content>
             </Tabs.Root>
             <div className="shrink-0 p-3 border-t border-[var(--color-border)] space-y-2">
+              {identityOnly && isEmptyDiff(review.diff) && (
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {t("Only the keymap identifier will be updated.")}
+                </p>
+              )}
               {checks}
               {error && (
                 <p role="alert" className="text-xs text-[var(--color-danger)]">
@@ -407,6 +415,11 @@ export function KeymapSharingPreview({
                 {t(
                   "Applying writes and saves to the keyboard immediately. Partial failures may leave mixed settings.",
                 )}
+              </p>
+            )}
+            {identityOnly && isEmptyDiff(review.diff) && (
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {t("Only the keymap identifier will be updated.")}
               </p>
             )}
             {checks}

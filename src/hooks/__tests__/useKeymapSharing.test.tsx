@@ -628,7 +628,9 @@ it.each(["success", "rejected", "mismatched"] as const)(
     await act(async () => {
       await result.current.prepare("apply", record as never);
     });
-    expect(mockCall).not.toHaveBeenCalled();
+    expect(mockCall).not.toHaveBeenCalledWith(
+      expect.objectContaining({ setKeymapIdentifier: expect.anything() }),
+    );
     mockLoad
       .mockResolvedValueOnce({ state: { currentKeymap: device } })
       .mockResolvedValueOnce({ state: { currentKeymap: target } });
@@ -651,3 +653,31 @@ it.each(["success", "rejected", "mismatched"] as const)(
     }
   },
 );
+
+it("updates only the supported Abyss identifier when keyboard settings already match", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  const expected = await keymapIdentifier(record.id);
+  let identifier = "old_";
+  mockLoad.mockResolvedValue({ state: { currentKeymap: target } });
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  expect(result.current.review?.diff.bindingChanges).toHaveLength(0);
+  expect(result.current.review?.identityMismatch).toBe(true);
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockWrite).not.toHaveBeenCalled();
+  expect(identifier).toBe(expected);
+  expect(result.current.review).toBeNull();
+});

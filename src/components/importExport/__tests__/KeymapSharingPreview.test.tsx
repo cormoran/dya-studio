@@ -343,3 +343,55 @@ it("shows a busy spinner in both action buttons and prevents dismissal until app
   expect(retry).toHaveAttribute("aria-busy", "false");
   expect(retry.querySelector(".animate-spin")).toBeNull();
 });
+
+it("allows identifier-only confirmation for a complete Abyss apply but blocks partial empty transfers", () => {
+  const props = {
+    busy: false,
+    error: null,
+    canSave: true,
+    onClose: close,
+    onDirectionChange: jest.fn(),
+    onSelectionChange: jest.fn(),
+    onConfirm: confirm,
+  };
+  const { rerender } = render(
+    <LanguageProvider>
+      <KeymapSharingPreview
+        {...props}
+        review={{
+          ...base,
+          selection: ALL_SHARING_PARTS,
+          diff: EMPTY_DIFF,
+          identityMismatch: true,
+        }}
+      />
+    </LanguageProvider>,
+  );
+  expect(
+    screen.getByText("Only the keymap identifier will be updated."),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  ).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
+  expect(
+    screen.getByRole("dialog", { name: "Apply My map" }),
+  ).toHaveTextContent("Only the keymap identifier will be updated.");
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  rerender(
+    <LanguageProvider>
+      <KeymapSharingPreview
+        {...props}
+        review={{
+          ...base,
+          selection: { ...ALL_SHARING_PARTS, macros: false },
+          diff: EMPTY_DIFF,
+          identityMismatch: true,
+        }}
+      />
+    </LanguageProvider>,
+  );
+  expect(
+    screen.getByRole("button", { name: "Apply to keyboard" }),
+  ).toBeDisabled();
+});
