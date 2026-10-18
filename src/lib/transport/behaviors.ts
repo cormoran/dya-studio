@@ -327,7 +327,7 @@ export const BEHAVIORS = [
     displayName: "Runtime Tap Dance",
     metadata: [
       {
-        param1: [{ name: "Tapdance slot", range: { min: 0, max: 7 } }],
+        param1: [{ name: "Tapdance slot", range: { min: 0, max: 2147483646 } }],
         param2: [],
       },
     ],

@@ -9,6 +9,39 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Edit runtime macros, combos, and tapdances":
+    "マクロ・コンボ・タップダンスを編集",
+  "Read macros, combos, and tapdances from the keyboard again":
+    "キーボードからマクロ・コンボ・タップダンスを再取得します",
+  "Drops edits in keyboard memory and reloads saved macros, combos, and tapdances.":
+    "メモリの編集を破棄し、保存済みのマクロ・コンボ・タップダンスを再取得します。",
+  "Save macro, combo, and tapdance changes so they are kept after the keyboard restarts":
+    "マクロ・コンボ・タップダンスの変更を、再起動後も維持されるように保存します",
+  "Connect your keyboard to edit runtime macros, combos, and tapdances":
+    "マクロ・コンボ・タップダンスを編集するにはキーボードを接続してください",
+  "Select a macro, combo, or tapdance": "マクロ・コンボ・タップダンスを選択",
+  "Update the runtime tapdance firmware to use named tapdances and shared pool allocation.":
+    "名前付きタップダンスと共有 pool を利用するには、タップダンスのファームウェアを更新してください。",
+  "Actions are applied to memory. Use Save above to keep tapdance changes after restart.":
+    "アクションはメモリに適用されます。再起動後も維持するには、上部の保存を押してください。",
+  "The interval applies to all tapdances. Use Save above to keep changes after restart.":
+    "間隔はすべてのタップダンスに適用されます。再起動後も維持するには、上部の保存を押してください。",
+  "Shared pool: {{used}} / {{total}} bytes \u00b7 {{count}} / {{max}} tapdances":
+    "共有 pool: {{used}} / {{total}} bytes・タップダンス {{count}} / {{max}} 件",
+  "Saved runtime tapdance changes.": "タップダンスの変更を保存しました。",
+  "Saving here also saves other tapdance changes already in memory.":
+    "ここで保存すると、すでにメモリに適用されている他のタップダンスの変更も保存されます。",
+  "Tapdance unavailable": "このタップダンスは利用できません",
+  "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
+    "このタップダンスを完全に削除しますか？使用しているキーのタップダンスは動作しなくなり、破棄では元に戻せません。",
+  Tapdances: "タップダンス一覧",
+  "Tapdance Global Settings": "タップダンスのグローバル設定",
+  "No tapdances yet. Create one above.":
+    "タップダンスはまだありません。上から作成してください。",
+  "Tapdance saves separately from macros and combos.":
+    "タップダンスはマクロ・コンボとは別に保存します。",
+  "Select macro, combo, tapdance, or settings":
+    "マクロ、コンボ、タップダンス、設定を選択",
   "Discard edits": "編集を破棄",
   "Use tapdance": "このタップダンスを割り当て",
   Tapdance: "タップダンス",
@@ -24,8 +57,8 @@ const ja: Record<string, string> = {
   "Select binding": "キー割当を選択",
   "Saving these actions also updates {{count}} other tapdance key bindings.":
     "保存すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
-  "This configuration is shared by all keys using this tapdance slot. Usage count is unavailable.":
-    "このスロットを使用するすべてのキーが設定を共有します。使用件数は取得できていません。",
+  "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
+    "このタップダンスを使用するすべてのキーが設定を共有します。使用件数は取得できていません。",
   "Choose a Single action to enable this tapdance.":
     "タップダンスを有効にするにはシングルのアクションを選択してください。",
   "A Triple action requires a Double action.":
@@ -859,6 +892,10 @@ const ja: Record<string, string> = {
   "Memory...": "メモリに書き込み中...",
   "Waiting to apply...": "反映待機中...",
   "Applying to memory...": "メモリに反映中...",
+  "Apply to memory": "メモリに適用",
+  "Discarded tapdance changes.": "タップダンスの変更を破棄しました。",
+  "Applying these actions also updates {{count}} other tapdance key bindings.":
+    "適用すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
   "Applied to memory": "メモリに反映済み",
   "Save and close": "保存して閉じる",
   "Macro name already exists": "同じ名前のマクロが既にあります",
@@ -1786,6 +1823,36 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Edit runtime macros, combos, and tapdances": "编辑运行时宏、组合键和踢踏舞",
+  "Read macros, combos, and tapdances from the keyboard again":
+    "从键盘重新读取宏、组合键和踢踏舞",
+  "Drops edits in keyboard memory and reloads saved macros, combos, and tapdances.":
+    "放弃内存中的更改，并重新读取已保存的宏、组合键和踢踏舞。",
+  "Save macro, combo, and tapdance changes so they are kept after the keyboard restarts":
+    "保存宏、组合键和踢踏舞更改，使其在键盘重启后保留",
+  "Connect your keyboard to edit runtime macros, combos, and tapdances":
+    "请连接键盘以编辑运行时宏、组合键和踢踏舞",
+  "Select a macro, combo, or tapdance": "选择宏、组合键或踢踏舞",
+  "Update the runtime tapdance firmware to use named tapdances and shared pool allocation.":
+    "请更新踢踏舞固件，以使用命名配置和共享池分配。",
+  "Actions are applied to memory. Use Save above to keep tapdance changes after restart.":
+    "动作应用到内存。请使用上方的保存按钮，使更改在重启后保留。",
+  "The interval applies to all tapdances. Use Save above to keep changes after restart.":
+    "间隔适用于所有踢踏舞。请使用上方的保存按钮，使更改在重启后保留。",
+  "Shared pool: {{used}} / {{total}} bytes \u00b7 {{count}} / {{max}} tapdances":
+    "共享池：{{used}} / {{total}} 字节 · 踢踏舞 {{count}} / {{max}} 项",
+  "Saved runtime tapdance changes.": "已保存运行时踢踏舞更改。",
+  "Saving here also saves other tapdance changes already in memory.":
+    "在此保存也会保存内存中其他踢踏舞的更改。",
+  "Tapdance unavailable": "此踢踏舞不可用",
+  "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
+    "永久删除此踢踏舞？使用它的按键将不再触发动作，放弃更改也无法恢复。",
+  Tapdances: "踢踏舞列表",
+  "Tapdance Global Settings": "踢踏舞全局设置",
+  "No tapdances yet. Create one above.": "尚无踢踏舞，请在上方创建。",
+  "Tapdance saves separately from macros and combos.":
+    "踢踏舞与宏和组合键分别保存。",
+  "Select macro, combo, tapdance, or settings": "选择宏、组合键、踢踏舞或设置",
   "Discard edits": "放弃编辑",
   "Use tapdance": "使用此踢踏舞",
   Tapdance: "踢踏舞",
@@ -1801,7 +1868,7 @@ const zh: Record<string, string> = {
   "Select binding": "选择按键绑定",
   "Saving these actions also updates {{count}} other tapdance key bindings.":
     "保存这些动作也会更新其他 {{count}} 个共享此配置的踢踏舞按键绑定。",
-  "This configuration is shared by all keys using this tapdance slot. Usage count is unavailable.":
+  "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
     "使用此槽位的所有按键共享此配置。暂时无法获取使用数量。",
   "Choose a Single action to enable this tapdance.":
     "请选择单击动作以启用踢踏舞。",
@@ -2508,6 +2575,10 @@ const zh: Record<string, string> = {
   "Memory...": "正在写入内存...",
   "Waiting to apply...": "等待应用...",
   "Applying to memory...": "正在应用到内存...",
+  "Apply to memory": "应用到内存",
+  "Discarded tapdance changes.": "已丢弃踢踏舞更改。",
+  "Applying these actions also updates {{count}} other tapdance key bindings.":
+    "应用这些操作也会更新其他 {{count}} 个踢踏舞按键绑定。",
   "Applied to memory": "已应用到内存",
   "Save and close": "保存并关闭",
   "Macro name already exists": "宏名称已存在",

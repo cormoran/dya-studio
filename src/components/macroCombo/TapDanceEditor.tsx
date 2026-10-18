@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { useIsTabActive } from "../../hooks/useIsTabActive";
@@ -27,17 +27,25 @@ type Props = {
   currentSlot?: number;
 };
 
-function TapDanceDraft({
+export function TapDanceDraft({
   config,
   slot,
   runtime,
   onSaved,
+  onSave,
+  applyToMemory = false,
+  onPendingChange,
+  saveDisabled = false,
   ...props
 }: Props & {
   config: Config;
-  slot: number;
+  slot?: number;
   runtime: RuntimeTapDance;
   onSaved?: () => void;
+  onSave?: (config: Config) => Promise<boolean>;
+  applyToMemory?: boolean;
+  onPendingChange?: (pending: boolean) => void;
+  saveDisabled?: boolean;
 }) {
   const { t } = useLanguage();
   const panelId = useId();
@@ -47,17 +55,40 @@ function TapDanceDraft({
   const [saved, setSaved] = useState(false);
   const field = TAP_DANCE_ACTIONS[active];
   const binding = draft[field];
-  const usage = tapDanceUsageCount(props.keymap, props.behaviors, slot);
+  const usage =
+    slot === undefined
+      ? 0
+      : tapDanceUsageCount(props.keymap, props.behaviors, slot);
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
   const valid =
     !!draft.singleBinding?.behaviorId &&
     (!draft.tripleBinding?.behaviorId || !!draft.doubleBinding?.behaviorId);
+  useEffect(() => {
+    onPendingChange?.(dirty || !valid);
+  }, [dirty, valid, onPendingChange]);
+  const commitDraft = (next: Config) => {
+    setDraft(next);
+    setSaved(false);
+    if (
+      applyToMemory &&
+      slot !== undefined &&
+      next.singleBinding?.behaviorId &&
+      (!next.tripleBinding?.behaviorId || next.doubleBinding?.behaviorId)
+    )
+      void runtime.save(slot, next, false);
+  };
   const allowed = new Map(
     [...props.behaviors].filter(([, behavior]) => !isRuntimeTapDance(behavior)),
   );
   const save = async () => {
     setSaved(false);
-    if (await runtime.save(slot, draft)) {
+    if (
+      await (onSave
+        ? onSave(draft)
+        : slot === undefined
+          ? false
+          : runtime.save(slot, draft, !applyToMemory))
+    ) {
       setSaved(true);
       onSaved?.();
     }
@@ -130,11 +161,10 @@ function TapDanceDraft({
             className="btn-ghost"
             disabled={runtime.busy || !binding?.behaviorId}
             onClick={() => {
-              setDraft((current) => ({
-                ...current,
+              commitDraft({
+                ...draft,
                 [field]: { behaviorId: 0, param1: 0, param2: 0 },
-              }));
-              setSaved(false);
+              });
             }}
           >
             {t("Clear")}
@@ -144,10 +174,12 @@ function TapDanceDraft({
       <p className="text-sm text-[var(--color-text-muted)]">
         {usage === null
           ? t(
-              "This configuration is shared by all keys using this tapdance slot. Usage count is unavailable.",
+              "This configuration is shared by all keys using this tapdance. Usage count is unavailable.",
             )
           : t(
-              "Saving these actions also updates {{count}} other tapdance key bindings.",
+              applyToMemory
+                ? "Applying these actions also updates {{count}} other tapdance key bindings."
+                : "Saving these actions also updates {{count}} other tapdance key bindings.",
               {
                 count: Math.max(
                   0,
@@ -156,6 +188,13 @@ function TapDanceDraft({
               },
             )}
       </p>
+      {!applyToMemory && runtime.hasUnsavedChanges && (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {t(
+            "Saving here also saves other tapdance changes already in memory.",
+          )}
+        </p>
+      )}
       {!draft.singleBinding?.behaviorId && (
         <p className="text-sm text-[var(--color-text-muted)]">
           {t("Choose a Single action to enable this tapdance.")}
@@ -182,15 +221,28 @@ function TapDanceDraft({
         <button
           type="button"
           className="btn-electric"
-          disabled={runtime.busy || !valid || !dirty}
+          disabled={
+            runtime.busy ||
+            !valid ||
+            (!dirty && (applyToMemory || !runtime.hasUnsavedChanges)) ||
+            saveDisabled
+          }
           onClick={() => void save()}
         >
-          {t(runtime.busy ? "Saving..." : "Save tapdance")}
+          {t(
+            runtime.busy
+              ? "Saving..."
+              : applyToMemory
+                ? "Apply to memory"
+                : "Save tapdance",
+          )}
         </button>
       </div>
       {saved && (
         <p role="status" className="text-sm text-[var(--color-electric)]">
-          {t("Tapdance saved to keyboard.")}
+          {t(
+            applyToMemory ? "Applied to memory" : "Tapdance saved to keyboard.",
+          )}
         </p>
       )}
       <KeycodeSelector
@@ -202,8 +254,7 @@ function TapDanceDraft({
         keyboardLayout={props.keyboardLayout}
         modalLayerClassName="z-[90]"
         onSelect={(next) => {
-          setDraft((current) => ({ ...current, [field]: next }));
-          setSaved(false);
+          commitDraft({ ...draft, [field]: next });
           setSelecting(false);
         }}
       />
@@ -212,34 +263,50 @@ function TapDanceDraft({
 }
 
 export function TapDanceEditor({
-  slot: controlledSlot,
+  slot,
   onSlotChange,
   onUseSlot,
   ...props
 }: Props & {
   slot?: number;
-  onSlotChange?: (slot: number) => void;
-  onUseSlot?: (slot: number) => void;
+  onSlotChange?: (id: number) => void;
+  onUseSlot?: (id: number) => void;
 }) {
   const { t } = useLanguage();
   const active = useIsTabActive();
   const runtime = useRuntimeTapDance(active);
-  const [selected, setSelected] = useState(0);
-  const [editorSession, setEditorSession] = useState(0);
-  const [modal, setModal] = useState<{ slot: number; create: boolean } | null>(
+  const [selected, setSelected] = useState<number | undefined>();
+  const [session, setSession] = useState(0);
+  const saveTarget = useRef<number | undefined>(undefined);
+  const [modal, setModal] = useState<{ create: boolean; id?: number } | null>(
     null,
   );
-  const [intervalDraft, setIntervalDraft] = useState<number | null>(null);
-  const slot = controlledSlot ?? selected;
-  const choose = (value: number) => {
-    setSelected(value);
-    onSlotChange?.(value);
-  };
-  const free = runtime.slots.findIndex(
-    (config, index) =>
-      !config.singleBinding?.behaviorId &&
-      !(tapDanceUsageCount(props.keymap, props.behaviors, index) ?? 0),
+  const [name, setName] = useState("");
+  const id = slot ?? selected ?? runtime.entries[0]?.index;
+  const entry = runtime.entries.find((candidate) => candidate.index === id);
+  const modalEntry = runtime.entries.find(
+    (candidate) => candidate.index === modal?.id,
   );
+  const choose = (next: number) => {
+    setSelected(next);
+    onSlotChange?.(next);
+  };
+  const canCreate =
+    !!runtime.globalSettings &&
+    runtime.entries.length < runtime.globalSettings.maxEntries &&
+    !runtime.busy;
+  const invalidName =
+    !name.trim() ||
+    new TextEncoder().encode(name.trim()).length >
+      (runtime.globalSettings?.maxNameLength ?? 0) ||
+    (modal?.id === undefined &&
+      runtime.entries.some((candidate) => candidate.name === name.trim()));
+  const openEditor = (create: boolean) => {
+    setSession((value) => value + 1);
+    setName(create ? "" : (entry?.name ?? ""));
+    saveTarget.current = create ? undefined : id;
+    setModal({ create, id: create ? undefined : id });
+  };
   if (!runtime.isAvailable)
     return (
       <p className="text-sm text-[var(--color-text-muted)]">
@@ -257,26 +324,23 @@ export function TapDanceEditor({
             type="button"
             className="btn-ghost text-sm"
             disabled={runtime.busy}
-            onClick={async () => {
-              await runtime.load();
-              setIntervalDraft(null);
-            }}
+            onClick={() => void runtime.load()}
           >
             {t("Refresh")}
           </button>
           <button
             type="button"
             className="btn-ghost text-sm"
-            disabled={runtime.busy || free < 0}
-            onClick={() => setModal({ slot: free, create: true })}
+            disabled={!canCreate}
+            onClick={() => openEditor(true)}
           >
             {t("New tapdance")}
           </button>
           <button
             type="button"
             className="btn-ghost text-sm"
-            disabled={runtime.busy || !runtime.slots[slot]}
-            onClick={() => setModal({ slot, create: false })}
+            disabled={runtime.busy || !entry}
+            onClick={() => openEditor(false)}
           >
             {t("Edit tapdance")}
           </button>
@@ -288,28 +352,36 @@ export function TapDanceEditor({
         </p>
       )}
       {runtime.busy && <p role="status">{t("Loading...")}</p>}
-      <label className="flex items-center gap-2 text-sm">
-        {t("Tapdance slot")}
-        <select
-          className="min-h-11 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] px-2"
-          value={slot}
-          disabled={runtime.busy}
-          onChange={(event) => choose(Number(event.target.value))}
-        >
-          {runtime.slots.map((config, index) => (
-            <option key={index} value={index}>
-              {t("Tapdance")} {index}
-              {config.singleBinding?.behaviorId ? "" : ` (${t("Empty")})`}
-            </option>
-          ))}
-        </select>
-      </label>
-      {runtime.slots[slot] && (
+      {runtime.entries.length > 0 ? (
+        <label className="flex items-center gap-2 text-sm">
+          {t("Tapdance")}
+          <select
+            className="min-h-11 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] px-2"
+            value={id ?? ""}
+            disabled={runtime.busy}
+            onChange={(event) => choose(Number(event.target.value))}
+          >
+            {!entry && (
+              <option value={id ?? ""}>{t("Tapdance unavailable")}</option>
+            )}
+            {runtime.entries.map((candidate) => (
+              <option key={candidate.index} value={candidate.index}>
+                {candidate.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {t("No tapdances yet. Create one above.")}
+        </p>
+      )}
+      {entry?.config && (
         <TapDanceDraft
-          key={`${slot}:${runtime.revision}:${editorSession}`}
+          key={`${entry.index}:${runtime.revision}:${session}`}
           {...props}
-          config={runtime.slots[slot]}
-          slot={slot}
+          config={entry.config}
+          slot={entry.index}
           runtime={runtime}
         />
       )}
@@ -318,87 +390,14 @@ export function TapDanceEditor({
           <button
             type="button"
             className="btn-electric"
-            disabled={
-              runtime.busy || !runtime.slots[slot]?.singleBinding?.behaviorId
-            }
-            onClick={() => onUseSlot(slot)}
+            disabled={runtime.busy || !entry?.config?.singleBinding?.behaviorId}
+            onClick={() => {
+              if (entry) onUseSlot(entry.index);
+            }}
           >
             {t("Use tapdance")}
           </button>
         </div>
-      )}
-      {controlledSlot === undefined && (
-        <>
-          <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-border)] pt-3">
-            <label className="text-sm">
-              {t("Tapdance interval (ms)")}{" "}
-              <input
-                type="number"
-                min={1}
-                max={2000}
-                className="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1"
-                value={
-                  Number.isNaN(intervalDraft)
-                    ? ""
-                    : (intervalDraft ?? runtime.intervalMs)
-                }
-                disabled={runtime.busy}
-                onChange={(event) =>
-                  setIntervalDraft(
-                    event.target.value === ""
-                      ? NaN
-                      : Number(event.target.value),
-                  )
-                }
-              />
-            </label>
-            <button
-              type="button"
-              className="btn-ghost text-sm"
-              disabled={
-                runtime.busy ||
-                intervalDraft === null ||
-                intervalDraft === runtime.intervalMs ||
-                !Number.isInteger(intervalDraft) ||
-                intervalDraft < 1 ||
-                intervalDraft > 2000
-              }
-              onClick={async () => {
-                if (
-                  intervalDraft !== null &&
-                  (await runtime.saveInterval(intervalDraft))
-                )
-                  setIntervalDraft(null);
-              }}
-            >
-              {t("Save interval")}
-            </button>
-            <button
-              type="button"
-              className="btn-ghost text-sm"
-              disabled={
-                runtime.busy || !runtime.slots[slot]?.singleBinding?.behaviorId
-              }
-              onClick={() => {
-                if (
-                  window.confirm(
-                    t(
-                      "Delete this tapdance? Keys using this slot will stop producing tapdance actions.",
-                    ),
-                  )
-                )
-                  void runtime.remove(slot);
-              }}
-            >
-              {t("Delete tapdance")}
-            </button>
-          </div>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            {t(
-              "The interval applies to all tapdance slots. Tapdance saves separately from macros and combos.",
-            )}
-          </p>
-        </>
       )}
       <Dialog.Root
         open={modal !== null}
@@ -414,13 +413,24 @@ export function TapDanceEditor({
           >
             <div className="mb-4 flex items-center justify-between gap-2">
               <Dialog.Title>
-                {t(modal?.create ? "New tapdance" : "Edit tapdance")}{" "}
-                {modal?.slot}
+                {t(modal?.create ? "New tapdance" : "Edit tapdance")}
+                {modalEntry ? ` · ${modalEntry.name}` : ""}
               </Dialog.Title>
               <Dialog.Close className="btn-ghost" disabled={runtime.busy}>
                 {t("Close")}
               </Dialog.Close>
             </div>
+            {modal?.create && (
+              <label className="mb-4 flex flex-col gap-1 text-sm">
+                {t("Name")}
+                <input
+                  className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2"
+                  value={name}
+                  disabled={runtime.busy || modal.id !== undefined}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </label>
+            )}
             {runtime.error && (
               <p role="alert" className="mb-3 text-sm text-red-500">
                 {t(runtime.error)}
@@ -428,16 +438,31 @@ export function TapDanceEditor({
             )}
             {modal && (
               <TapDanceDraft
-                key={`${modal.slot}:${modal.create}`}
+                key={session}
                 {...props}
                 config={
-                  modal.create ? emptyTapDance() : runtime.slots[modal.slot]
+                  modal.create
+                    ? emptyTapDance()
+                    : (modalEntry?.config ?? emptyTapDance())
                 }
-                slot={modal.slot}
+                slot={modal.id}
                 runtime={runtime}
+                saveDisabled={modal.create && invalidName}
+                onSave={async (config) => {
+                  let target = modal.id;
+                  if (target === undefined) {
+                    const created = await runtime.create(name);
+                    if (created === null) return false;
+                    target = created;
+                    saveTarget.current = target;
+                    setModal({ ...modal, id: target });
+                  }
+                  return runtime.save(target, config);
+                }}
                 onSaved={() => {
-                  choose(modal.slot);
-                  setEditorSession((value) => value + 1);
+                  const target = saveTarget.current;
+                  if (target !== undefined) choose(target);
+                  setSession((value) => value + 1);
                   setModal(null);
                 }}
               />

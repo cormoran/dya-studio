@@ -124,3 +124,44 @@ describe("MobileMacroComboMenu", () => {
     ).toBeDisabled();
   });
 });
+
+it("places tapdances after combos and routes selection and creation", async () => {
+  const user = userEvent.setup();
+  const choose = jest.fn(),
+    create = jest.fn();
+  render(
+    <LanguageProvider>
+      <MobileMacroComboMenu
+        macros={[]}
+        combos={[]}
+        tapdances={[
+          {
+            id: "dance-42",
+            label: "Alphabet",
+            selected: true,
+            onSelect: choose,
+          },
+        ]}
+        onCreateTapDance={create}
+      />
+    </LanguageProvider>,
+  );
+  await user.click(
+    screen.getByRole("button", {
+      name: "Select macro, combo, tapdance, or settings",
+    }),
+  );
+  const menu = screen.getByRole("menu");
+  expect(menu.textContent!.indexOf("Tapdances")).toBeGreaterThan(
+    menu.textContent!.indexOf("Combos"),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "Alphabet" }));
+  expect(choose).toHaveBeenCalledTimes(1);
+  await user.click(
+    screen.getByRole("button", {
+      name: "Select macro, combo, tapdance, or settings",
+    }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "New tapdance" }));
+  expect(create).toHaveBeenCalledTimes(1);
+});

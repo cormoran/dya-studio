@@ -26,12 +26,38 @@ message SetIntervalRequest {
     uint32 interval_ms = 1;
     bool persist = 2;
 }
+// First page: has_after_id=false. Later pages: pass the previous
+// ListResponse.next_after_id with has_after_id=true. Entries are ID-ascending.
+message ListRequest {
+    uint32 after_id = 1;
+    bool has_after_id = 2;
+}
+message CreateRequest {
+    string name = 1;
+    bool persist = 2;
+}
+message RenameRequest {
+    uint32 index = 1;
+    string name = 2;
+    bool persist = 3;
+}
+message DeleteRequest { uint32 index = 1; }
+message GetGlobalRequest {}
+message SaveRequest {}
+message DiscardRequest {}
 message Request {
     oneof request_type {
         GetRequest get = 1;
         SetRequest set = 2;
         RemoveRequest remove = 3;
         SetIntervalRequest set_interval = 4;
+        ListRequest list = 5;
+        CreateRequest create = 6;
+        RenameRequest rename = 7;
+        DeleteRequest delete = 8;
+        GetGlobalRequest get_global = 9;
+        SaveRequest save = 10;
+        DiscardRequest discard = 11;
     }
 }
 message State {
@@ -39,7 +65,30 @@ message State {
     Config config = 2;
     uint32 interval_ms = 3;
     uint32 max_count = 4;
+    string name = 5;
+    bool has_unsaved_changes = 6;
 }
+message Summary {
+    uint32 index = 1;
+    string name = 2;
+    bool has_unsaved_changes = 3;
+}
+message ListResponse {
+    repeated Summary entries = 1;
+    bool has_more = 2;
+    uint32 next_after_id = 3;
+}
+message GlobalResponse {
+    uint32 interval_ms = 1;
+    uint32 max_entries = 2;
+    uint32 used_entries = 3;
+    uint32 max_name_length = 4;
+    uint32 pool_bytes_total = 5;
+    uint32 pool_bytes_used = 6;
+    bool has_unsaved_changes = 7;
+    uint32 api_version = 8;
+}
+message StatusResponse { uint32 affected_count = 1; }
 message ErrorResponse {
     int32 code = 1;
     string message = 2;
@@ -48,5 +97,8 @@ message Response {
     oneof response_type {
         ErrorResponse error = 1;
         State state = 2;
+        ListResponse list = 3;
+        GlobalResponse global = 4;
+        StatusResponse status = 5;
     }
 }

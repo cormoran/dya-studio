@@ -42,11 +42,51 @@ export interface SetIntervalRequest {
   persist: boolean;
 }
 
+/**
+ * First page: has_after_id=false. Later pages: pass the previous
+ * ListResponse.next_after_id with has_after_id=true. Entries are ID-ascending.
+ */
+export interface ListRequest {
+  afterId: number;
+  hasAfterId: boolean;
+}
+
+export interface CreateRequest {
+  name: string;
+  persist: boolean;
+}
+
+export interface RenameRequest {
+  index: number;
+  name: string;
+  persist: boolean;
+}
+
+export interface DeleteRequest {
+  index: number;
+}
+
+export interface GetGlobalRequest {
+}
+
+export interface SaveRequest {
+}
+
+export interface DiscardRequest {
+}
+
 export interface Request {
   get?: GetRequest | undefined;
   set?: SetRequest | undefined;
   remove?: RemoveRequest | undefined;
   setInterval?: SetIntervalRequest | undefined;
+  list?: ListRequest | undefined;
+  create?: CreateRequest | undefined;
+  rename?: RenameRequest | undefined;
+  delete?: DeleteRequest | undefined;
+  getGlobal?: GetGlobalRequest | undefined;
+  save?: SaveRequest | undefined;
+  discard?: DiscardRequest | undefined;
 }
 
 export interface State {
@@ -54,6 +94,35 @@ export interface State {
   config: Config | undefined;
   intervalMs: number;
   maxCount: number;
+  name: string;
+  hasUnsavedChanges: boolean;
+}
+
+export interface Summary {
+  index: number;
+  name: string;
+  hasUnsavedChanges: boolean;
+}
+
+export interface ListResponse {
+  entries: Summary[];
+  hasMore: boolean;
+  nextAfterId: number;
+}
+
+export interface GlobalResponse {
+  intervalMs: number;
+  maxEntries: number;
+  usedEntries: number;
+  maxNameLength: number;
+  poolBytesTotal: number;
+  poolBytesUsed: number;
+  hasUnsavedChanges: boolean;
+  apiVersion: number;
+}
+
+export interface StatusResponse {
+  affectedCount: number;
 }
 
 export interface ErrorResponse {
@@ -64,6 +133,9 @@ export interface ErrorResponse {
 export interface Response {
   error?: ErrorResponse | undefined;
   state?: State | undefined;
+  list?: ListResponse | undefined;
+  global?: GlobalResponse | undefined;
+  status?: StatusResponse | undefined;
 }
 
 function createBaseBinding(): Binding {
@@ -458,8 +530,354 @@ export const SetIntervalRequest: MessageFns<SetIntervalRequest> = {
   },
 };
 
+function createBaseListRequest(): ListRequest {
+  return { afterId: 0, hasAfterId: false };
+}
+
+export const ListRequest: MessageFns<ListRequest> = {
+  encode(message: ListRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.afterId !== 0) {
+      writer.uint32(8).uint32(message.afterId);
+    }
+    if (message.hasAfterId !== false) {
+      writer.uint32(16).bool(message.hasAfterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.afterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.hasAfterId = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<ListRequest>): ListRequest {
+    return ListRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListRequest>): ListRequest {
+    const message = createBaseListRequest();
+    message.afterId = object.afterId ?? 0;
+    message.hasAfterId = object.hasAfterId ?? false;
+    return message;
+  },
+};
+
+function createBaseCreateRequest(): CreateRequest {
+  return { name: "", persist: false };
+}
+
+export const CreateRequest: MessageFns<CreateRequest> = {
+  encode(message: CreateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.persist !== false) {
+      writer.uint32(16).bool(message.persist);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.persist = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<CreateRequest>): CreateRequest {
+    return CreateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateRequest>): CreateRequest {
+    const message = createBaseCreateRequest();
+    message.name = object.name ?? "";
+    message.persist = object.persist ?? false;
+    return message;
+  },
+};
+
+function createBaseRenameRequest(): RenameRequest {
+  return { index: 0, name: "", persist: false };
+}
+
+export const RenameRequest: MessageFns<RenameRequest> = {
+  encode(message: RenameRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.index !== 0) {
+      writer.uint32(8).uint32(message.index);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.persist !== false) {
+      writer.uint32(24).bool(message.persist);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RenameRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRenameRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.index = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.persist = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<RenameRequest>): RenameRequest {
+    return RenameRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RenameRequest>): RenameRequest {
+    const message = createBaseRenameRequest();
+    message.index = object.index ?? 0;
+    message.name = object.name ?? "";
+    message.persist = object.persist ?? false;
+    return message;
+  },
+};
+
+function createBaseDeleteRequest(): DeleteRequest {
+  return { index: 0 };
+}
+
+export const DeleteRequest: MessageFns<DeleteRequest> = {
+  encode(message: DeleteRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.index !== 0) {
+      writer.uint32(8).uint32(message.index);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.index = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<DeleteRequest>): DeleteRequest {
+    return DeleteRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteRequest>): DeleteRequest {
+    const message = createBaseDeleteRequest();
+    message.index = object.index ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetGlobalRequest(): GetGlobalRequest {
+  return {};
+}
+
+export const GetGlobalRequest: MessageFns<GetGlobalRequest> = {
+  encode(_: GetGlobalRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGlobalRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGlobalRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GetGlobalRequest>): GetGlobalRequest {
+    return GetGlobalRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetGlobalRequest>): GetGlobalRequest {
+    const message = createBaseGetGlobalRequest();
+    return message;
+  },
+};
+
+function createBaseSaveRequest(): SaveRequest {
+  return {};
+}
+
+export const SaveRequest: MessageFns<SaveRequest> = {
+  encode(_: SaveRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSaveRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SaveRequest>): SaveRequest {
+    return SaveRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SaveRequest>): SaveRequest {
+    const message = createBaseSaveRequest();
+    return message;
+  },
+};
+
+function createBaseDiscardRequest(): DiscardRequest {
+  return {};
+}
+
+export const DiscardRequest: MessageFns<DiscardRequest> = {
+  encode(_: DiscardRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DiscardRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiscardRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<DiscardRequest>): DiscardRequest {
+    return DiscardRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<DiscardRequest>): DiscardRequest {
+    const message = createBaseDiscardRequest();
+    return message;
+  },
+};
+
 function createBaseRequest(): Request {
-  return { get: undefined, set: undefined, remove: undefined, setInterval: undefined };
+  return {
+    get: undefined,
+    set: undefined,
+    remove: undefined,
+    setInterval: undefined,
+    list: undefined,
+    create: undefined,
+    rename: undefined,
+    delete: undefined,
+    getGlobal: undefined,
+    save: undefined,
+    discard: undefined,
+  };
 }
 
 export const Request: MessageFns<Request> = {
@@ -475,6 +893,27 @@ export const Request: MessageFns<Request> = {
     }
     if (message.setInterval !== undefined) {
       SetIntervalRequest.encode(message.setInterval, writer.uint32(34).fork()).join();
+    }
+    if (message.list !== undefined) {
+      ListRequest.encode(message.list, writer.uint32(42).fork()).join();
+    }
+    if (message.create !== undefined) {
+      CreateRequest.encode(message.create, writer.uint32(50).fork()).join();
+    }
+    if (message.rename !== undefined) {
+      RenameRequest.encode(message.rename, writer.uint32(58).fork()).join();
+    }
+    if (message.delete !== undefined) {
+      DeleteRequest.encode(message.delete, writer.uint32(66).fork()).join();
+    }
+    if (message.getGlobal !== undefined) {
+      GetGlobalRequest.encode(message.getGlobal, writer.uint32(74).fork()).join();
+    }
+    if (message.save !== undefined) {
+      SaveRequest.encode(message.save, writer.uint32(82).fork()).join();
+    }
+    if (message.discard !== undefined) {
+      DiscardRequest.encode(message.discard, writer.uint32(90).fork()).join();
     }
     return writer;
   },
@@ -518,6 +957,62 @@ export const Request: MessageFns<Request> = {
           message.setInterval = SetIntervalRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.list = ListRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.create = CreateRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.rename = RenameRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.delete = DeleteRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.getGlobal = GetGlobalRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.save = SaveRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.discard = DiscardRequest.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -540,12 +1035,33 @@ export const Request: MessageFns<Request> = {
     message.setInterval = (object.setInterval !== undefined && object.setInterval !== null)
       ? SetIntervalRequest.fromPartial(object.setInterval)
       : undefined;
+    message.list = (object.list !== undefined && object.list !== null)
+      ? ListRequest.fromPartial(object.list)
+      : undefined;
+    message.create = (object.create !== undefined && object.create !== null)
+      ? CreateRequest.fromPartial(object.create)
+      : undefined;
+    message.rename = (object.rename !== undefined && object.rename !== null)
+      ? RenameRequest.fromPartial(object.rename)
+      : undefined;
+    message.delete = (object.delete !== undefined && object.delete !== null)
+      ? DeleteRequest.fromPartial(object.delete)
+      : undefined;
+    message.getGlobal = (object.getGlobal !== undefined && object.getGlobal !== null)
+      ? GetGlobalRequest.fromPartial(object.getGlobal)
+      : undefined;
+    message.save = (object.save !== undefined && object.save !== null)
+      ? SaveRequest.fromPartial(object.save)
+      : undefined;
+    message.discard = (object.discard !== undefined && object.discard !== null)
+      ? DiscardRequest.fromPartial(object.discard)
+      : undefined;
     return message;
   },
 };
 
 function createBaseState(): State {
-  return { index: 0, config: undefined, intervalMs: 0, maxCount: 0 };
+  return { index: 0, config: undefined, intervalMs: 0, maxCount: 0, name: "", hasUnsavedChanges: false };
 }
 
 export const State: MessageFns<State> = {
@@ -561,6 +1077,12 @@ export const State: MessageFns<State> = {
     }
     if (message.maxCount !== 0) {
       writer.uint32(32).uint32(message.maxCount);
+    }
+    if (message.name !== "") {
+      writer.uint32(42).string(message.name);
+    }
+    if (message.hasUnsavedChanges !== false) {
+      writer.uint32(48).bool(message.hasUnsavedChanges);
     }
     return writer;
   },
@@ -604,6 +1126,22 @@ export const State: MessageFns<State> = {
           message.maxCount = reader.uint32();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.hasUnsavedChanges = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -624,6 +1162,333 @@ export const State: MessageFns<State> = {
       : undefined;
     message.intervalMs = object.intervalMs ?? 0;
     message.maxCount = object.maxCount ?? 0;
+    message.name = object.name ?? "";
+    message.hasUnsavedChanges = object.hasUnsavedChanges ?? false;
+    return message;
+  },
+};
+
+function createBaseSummary(): Summary {
+  return { index: 0, name: "", hasUnsavedChanges: false };
+}
+
+export const Summary: MessageFns<Summary> = {
+  encode(message: Summary, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.index !== 0) {
+      writer.uint32(8).uint32(message.index);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.hasUnsavedChanges !== false) {
+      writer.uint32(24).bool(message.hasUnsavedChanges);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Summary {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSummary();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.index = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.hasUnsavedChanges = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<Summary>): Summary {
+    return Summary.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Summary>): Summary {
+    const message = createBaseSummary();
+    message.index = object.index ?? 0;
+    message.name = object.name ?? "";
+    message.hasUnsavedChanges = object.hasUnsavedChanges ?? false;
+    return message;
+  },
+};
+
+function createBaseListResponse(): ListResponse {
+  return { entries: [], hasMore: false, nextAfterId: 0 };
+}
+
+export const ListResponse: MessageFns<ListResponse> = {
+  encode(message: ListResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.entries) {
+      Summary.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.hasMore !== false) {
+      writer.uint32(16).bool(message.hasMore);
+    }
+    if (message.nextAfterId !== 0) {
+      writer.uint32(24).uint32(message.nextAfterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entries.push(Summary.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.hasMore = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nextAfterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<ListResponse>): ListResponse {
+    return ListResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListResponse>): ListResponse {
+    const message = createBaseListResponse();
+    message.entries = object.entries?.map((e) => Summary.fromPartial(e)) || [];
+    message.hasMore = object.hasMore ?? false;
+    message.nextAfterId = object.nextAfterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGlobalResponse(): GlobalResponse {
+  return {
+    intervalMs: 0,
+    maxEntries: 0,
+    usedEntries: 0,
+    maxNameLength: 0,
+    poolBytesTotal: 0,
+    poolBytesUsed: 0,
+    hasUnsavedChanges: false,
+    apiVersion: 0,
+  };
+}
+
+export const GlobalResponse: MessageFns<GlobalResponse> = {
+  encode(message: GlobalResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.intervalMs !== 0) {
+      writer.uint32(8).uint32(message.intervalMs);
+    }
+    if (message.maxEntries !== 0) {
+      writer.uint32(16).uint32(message.maxEntries);
+    }
+    if (message.usedEntries !== 0) {
+      writer.uint32(24).uint32(message.usedEntries);
+    }
+    if (message.maxNameLength !== 0) {
+      writer.uint32(32).uint32(message.maxNameLength);
+    }
+    if (message.poolBytesTotal !== 0) {
+      writer.uint32(40).uint32(message.poolBytesTotal);
+    }
+    if (message.poolBytesUsed !== 0) {
+      writer.uint32(48).uint32(message.poolBytesUsed);
+    }
+    if (message.hasUnsavedChanges !== false) {
+      writer.uint32(56).bool(message.hasUnsavedChanges);
+    }
+    if (message.apiVersion !== 0) {
+      writer.uint32(64).uint32(message.apiVersion);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GlobalResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGlobalResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.intervalMs = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maxEntries = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.usedEntries = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maxNameLength = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.poolBytesTotal = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.poolBytesUsed = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.hasUnsavedChanges = reader.bool();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.apiVersion = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GlobalResponse>): GlobalResponse {
+    return GlobalResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GlobalResponse>): GlobalResponse {
+    const message = createBaseGlobalResponse();
+    message.intervalMs = object.intervalMs ?? 0;
+    message.maxEntries = object.maxEntries ?? 0;
+    message.usedEntries = object.usedEntries ?? 0;
+    message.maxNameLength = object.maxNameLength ?? 0;
+    message.poolBytesTotal = object.poolBytesTotal ?? 0;
+    message.poolBytesUsed = object.poolBytesUsed ?? 0;
+    message.hasUnsavedChanges = object.hasUnsavedChanges ?? false;
+    message.apiVersion = object.apiVersion ?? 0;
+    return message;
+  },
+};
+
+function createBaseStatusResponse(): StatusResponse {
+  return { affectedCount: 0 };
+}
+
+export const StatusResponse: MessageFns<StatusResponse> = {
+  encode(message: StatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.affectedCount !== 0) {
+      writer.uint32(8).uint32(message.affectedCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.affectedCount = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<StatusResponse>): StatusResponse {
+    return StatusResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StatusResponse>): StatusResponse {
+    const message = createBaseStatusResponse();
+    message.affectedCount = object.affectedCount ?? 0;
     return message;
   },
 };
@@ -687,7 +1552,7 @@ export const ErrorResponse: MessageFns<ErrorResponse> = {
 };
 
 function createBaseResponse(): Response {
-  return { error: undefined, state: undefined };
+  return { error: undefined, state: undefined, list: undefined, global: undefined, status: undefined };
 }
 
 export const Response: MessageFns<Response> = {
@@ -697,6 +1562,15 @@ export const Response: MessageFns<Response> = {
     }
     if (message.state !== undefined) {
       State.encode(message.state, writer.uint32(18).fork()).join();
+    }
+    if (message.list !== undefined) {
+      ListResponse.encode(message.list, writer.uint32(26).fork()).join();
+    }
+    if (message.global !== undefined) {
+      GlobalResponse.encode(message.global, writer.uint32(34).fork()).join();
+    }
+    if (message.status !== undefined) {
+      StatusResponse.encode(message.status, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -724,6 +1598,30 @@ export const Response: MessageFns<Response> = {
           message.state = State.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.list = ListResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.global = GlobalResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.status = StatusResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -742,6 +1640,15 @@ export const Response: MessageFns<Response> = {
       ? ErrorResponse.fromPartial(object.error)
       : undefined;
     message.state = (object.state !== undefined && object.state !== null) ? State.fromPartial(object.state) : undefined;
+    message.list = (object.list !== undefined && object.list !== null)
+      ? ListResponse.fromPartial(object.list)
+      : undefined;
+    message.global = (object.global !== undefined && object.global !== null)
+      ? GlobalResponse.fromPartial(object.global)
+      : undefined;
+    message.status = (object.status !== undefined && object.status !== null)
+      ? StatusResponse.fromPartial(object.status)
+      : undefined;
     return message;
   },
 };

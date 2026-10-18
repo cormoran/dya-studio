@@ -18,6 +18,32 @@ import {
   getKeyTapSequenceString,
 } from "../../components/macroCombo/macroStepUtils";
 
+const mockTapDance = {
+  isAvailable: false,
+  entries: [] as Array<
+    import("../../proto/cormoran/runtime_tapdance/runtime_tapdance").State
+  >,
+  globalSettings: null as
+    | import("../../proto/cormoran/runtime_tapdance/runtime_tapdance").GlobalResponse
+    | null,
+  hasUnsavedChanges: false,
+  intervalMs: 200,
+  revision: 0,
+  busy: false,
+  error: null,
+  load: jest.fn(),
+  create: jest.fn(),
+  rename: jest.fn(),
+  save: jest.fn(),
+  remove: jest.fn(),
+  saveInterval: jest.fn(),
+  saveChanges: jest.fn(),
+  discardChanges: jest.fn(),
+};
+let mockKeymapModel: import("../../hooks/useKeymap").Keymap | null = null;
+jest.mock("../../hooks/useRuntimeTapDance", () => ({
+  useRuntimeTapDance: () => mockTapDance,
+}));
 const mockCall = jest.fn();
 const mockReloadKeymap = jest.fn();
 let mockTabActive = true;
@@ -57,7 +83,8 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => ({
 jest.mock("../../hooks/useKeymap", () => ({
   useKeymap: () => ({
     behaviors: new Map(),
-    keymap: null,
+    keymap: mockKeymapModel,
+    isFullyLoaded: mockKeymapModel !== null,
     loadKeymapData: mockReloadKeymap,
   }),
 }));
@@ -85,6 +112,13 @@ let deferWrites: boolean;
 beforeEach(() => {
   jest.clearAllMocks();
   mockTabActive = true;
+  mockTapDance.isAvailable = false;
+  mockTapDance.entries = [];
+  mockTapDance.globalSettings = null;
+  mockTapDance.hasUnsavedChanges = false;
+  mockKeymapModel = null;
+  mockTapDance.saveChanges.mockResolvedValue(true);
+  mockTapDance.discardChanges.mockResolvedValue(true);
   mockUnlock.mockReturnValue(true);
   mockMacroAvailable = true;
   mockCombo.isLoading = false;
@@ -460,4 +494,81 @@ it("refreshes shared tapdance reference counts when returning to the retained ta
     </ConnectionContext.Provider>,
   );
   expect(mockReloadKeymap).toHaveBeenCalledTimes(1);
+});
+
+it("places named tapdances after macros and combos and shows the selected editor on the right", async () => {
+  const { Config, State, GlobalResponse } =
+    await import("../../proto/cormoran/runtime_tapdance/runtime_tapdance");
+  mockTapDance.isAvailable = true;
+  mockTapDance.entries = [
+    State.create({
+      index: 7,
+      name: "Alphabet",
+      config: Config.create({
+        singleBinding: { behaviorId: 10, param1: 0x70004 },
+        doubleBinding: {},
+        tripleBinding: {},
+      }),
+    }),
+  ];
+  mockTapDance.globalSettings = GlobalResponse.create({
+    apiVersion: 2,
+    maxEntries: 16,
+    maxNameLength: 24,
+    usedEntries: 1,
+    poolBytesTotal: 512,
+  });
+  mockKeymapModel = {
+    layers: [{ id: 0, name: "Base", bindings: [] }],
+    availableLayers: 1,
+    maxLayerNameLength: 32,
+  };
+  mockCombo.isAvailable = true;
+  mockTapDance.create.mockImplementation(async (name: string) => {
+    mockTapDance.entries.push(
+      State.create({
+        index: 42,
+        name,
+        config: Config.create({
+          singleBinding: {},
+          doubleBinding: {},
+          tripleBinding: {},
+        }),
+        hasUnsavedChanges: true,
+      }),
+    );
+    return 42;
+  });
+  const user = await openPage();
+  const headings = screen
+    .getAllByRole("heading", { level: 2 })
+    .map((el) => el.textContent);
+  expect(headings.indexOf("Tapdances")).toBeGreaterThan(
+    headings.indexOf("Combos"),
+  );
+  expect(headings.indexOf("Combos")).toBeGreaterThan(
+    headings.indexOf("Macros"),
+  );
+  expect(screen.queryByRole("tab", { name: "Single" })).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Alphabet", exact: true }),
+  );
+  expect(screen.getByRole("tab", { name: "Single" })).toBeInTheDocument();
+  expect(screen.queryByDisplayValue("aa")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: "Tapdance slot" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Tapdance 1", exact: true }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "New tapdance", exact: true }),
+  );
+  expect(mockTapDance.create).toHaveBeenCalledWith("Tapdance 1");
+  expect(
+    screen.getByRole("button", { name: /^Tapdance 1/ }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Apply to memory" }),
+  ).toBeDisabled();
 });
