@@ -49,18 +49,25 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
     // the app must flag the edit as unsaved.
     await layerTabs(page).nth(1).click();
     await page
-      .getByRole("button", { name: "Move layer up (higher priority)" })
+      .getByRole("button", { name: "Edit layers", exact: true })
       .click();
+    const handle = page.getByRole("button", {
+      name: "Reorder layer Lower",
+      exact: true,
+    });
+    await handle.press("ArrowLeft");
     await expectLayerOrder(page, ["Lower", "Base", "Raise", "Adjust"]);
     await expect(
       page.getByText("Unsaved changes", { exact: true }),
     ).toBeVisible();
 
     // Move it back DOWN → original order restored (net-zero for the device).
-    await page
-      .getByRole("button", { name: "Move layer down (lower priority)" })
-      .click();
+    await expect(handle).toHaveAttribute("aria-disabled", "false");
+    await handle.press("ArrowRight");
     await expectLayerOrder(page, BASE_LAYERS);
+    await page
+      .getByRole("button", { name: "Finish editing", exact: true })
+      .click();
   });
 
   test("renames a layer via keymap.setLayerProps", async ({ page }) => {
@@ -68,7 +75,12 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
 
     // Open the rename dialog for the selected layer (index 0 = "Base").
     await layerTabs(page).nth(0).click();
-    await page.getByRole("button", { name: "Rename current layer" }).click();
+    await page
+      .getByRole("button", { name: "Edit layers", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Rename layer Base", exact: true })
+      .click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Rename Layer")).toBeVisible();
 
@@ -85,12 +97,17 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
     ).toBeVisible();
 
     // Rename back to "Base" so the device is left at baseline (net-zero).
-    await layerTabs(page).nth(0).click();
-    await page.getByRole("button", { name: "Rename current layer" }).click();
+    // Edit-mode layer buttons are not selectors; target the named action.
+    await page
+      .getByRole("button", { name: `Rename layer ${NEW_NAME}`, exact: true })
+      .click();
     await dialog.getByPlaceholder("Layer name").fill("Base");
     await dialog.getByRole("button", { name: "Rename", exact: true }).click();
     await expect(dialog).toBeHidden();
     await expectLayerOrder(page, BASE_LAYERS);
+    await page
+      .getByRole("button", { name: "Finish editing", exact: true })
+      .click();
   });
 
   test("deletes a layer then restores it (keymap.removeLayer + restoreLayer)", async ({
@@ -99,7 +116,12 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
     // Delete the LAST layer ("Adjust", index 3). Deleting the last slot makes
     // this net-zero: restore re-appends at the end == its original position.
     await layerTabs(page).nth(3).click();
-    await page.getByRole("button", { name: "Delete current layer" }).click(); // confirm() auto-accepted in connect()
+    await page
+      .getByRole("button", { name: "Edit layers", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Delete layer Adjust", exact: true })
+      .click(); // confirm() auto-accepted in connect()
 
     // The layer is gone from the tab row and the edit is unsaved.
     await expectLayerOrder(page, ["Base", "Lower", "Raise"]);
@@ -120,6 +142,9 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
 
     // restoreLayer brought "Adjust" back at the end, name preserved → baseline.
     await expectLayerOrder(page, BASE_LAYERS);
+    await page
+      .getByRole("button", { name: "Finish editing", exact: true })
+      .click();
   });
 
   test("physical-layout selector reflects the single layout this DUT exposes", async ({
