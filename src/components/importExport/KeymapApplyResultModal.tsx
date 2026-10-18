@@ -79,11 +79,6 @@ export function KeymapApplyResultModal({
                     "Unsupported raw and macro bindings were skipped. Their existing settings were kept.",
                   )}
                 </p>
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  {t(
-                    "Skipped changes do not associate the keyboard with the complete Abyss keymap.",
-                  )}
-                </p>
                 <KeymapDiffView diff={result.skipped} defaultExpanded />
               </section>
             )}

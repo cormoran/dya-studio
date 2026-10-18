@@ -23,8 +23,6 @@ const ja: Record<string, string> = {
   "Skipped changes": "スキップした変更",
   "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
     "未対応の raw・macro 形式の割り当てをスキップし、該当する既存設定を保持しました。",
-  "Skipped changes do not associate the keyboard with the complete Abyss keymap.":
-    "スキップがあるため、Abyss のキーマップ全体を反映済みとして識別情報を関連付けていません。",
   "Changes still not reflected": "再読取で一致しなかった変更",
   "{{count}} unsupported changes will be skipped and shown in the result.":
     "未対応の変更 {{count}} 件をスキップし、反映結果に表示します。",
@@ -1762,8 +1760,6 @@ const zh: Record<string, string> = {
   "Skipped changes": "已跳过的更改",
   "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
     "已跳过不支持的 raw 和 macro 绑定，并保留其原有设置。",
-  "Skipped changes do not associate the keyboard with the complete Abyss keymap.":
-    "由于存在跳过的更改，未将键盘标识关联为已完整应用该 Abyss 键映射。",
   "Changes still not reflected": "回读仍不匹配的更改",
   "{{count}} unsupported changes will be skipped and shown in the result.":
     "将跳过 {{count}} 项不支持的更改并在结果中显示。",

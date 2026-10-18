@@ -597,10 +597,8 @@ export function useKeymapSharing(
               "The keyboard does not yet match this keymap. Review and try again.",
             );
           outcome.verified = true;
-          // Skipped bindings cannot claim the complete Abyss identity either.
-          const complete =
-            isCompleteSharingSelection(pending.selection) &&
-            isEmptyDiff(skipped);
+          // Identity records the selected source even when unsupported bindings are skipped.
+          const complete = isCompleteSharingSelection(pending.selection);
           await associate(
             complete ? (pending.record?.id ?? null) : null,
             valid,

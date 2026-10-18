@@ -754,7 +754,7 @@ it("restores exact pointer scale fractions before readback and identifier storag
   expect(result.current.error).toBeNull();
 });
 
-it("skips raw changes, applies supported bindings, and opens a partial result without claiming full identity", async () => {
+it("skips raw changes, applies supported bindings, and stores the selected Abyss identity", async () => {
   const local = {
     ...device,
     layers: [
@@ -815,7 +815,8 @@ it("skips raw changes, applies supported bindings, and opens a partial result wi
     error: null,
     skipped: { bindingChanges: [expect.objectContaining({ keyIndex: 0 })] },
   });
-  expect(identifier).toBe("");
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  expect(identifier).toBe(await keymapIdentifier(record.id));
   expect(result.current.review).toBeNull();
   expect(result.current.message).toBe("Finished with skipped changes.");
 });
@@ -841,7 +842,17 @@ it("closes the preview and reports write errors without claiming verification", 
   expect(applied).not.toHaveBeenCalled();
 });
 
-it("finishes an all-raw apply with a skipped result and no settings write", async () => {
+it("stores the selected Abyss identity even when all raw changes are skipped", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  const expected = await keymapIdentifier(record.id);
+  let identifier = "old_";
+  mockCall.mockImplementation(async (request) => {
+    if (request.setKeymapIdentifier) {
+      identifier = request.setKeymapIdentifier.identifier;
+      return { setKeymapIdentifier: {} };
+    }
+    return { keymapIdentifier: { identifier } };
+  });
   const rawTarget = {
     ...target,
     layers: [
@@ -855,12 +866,17 @@ it("finishes an all-raw apply with a skipped result and no settings write", asyn
     wrapper,
   });
   await act(async () => {
-    await result.current.prepare("apply", undefined, rawTarget);
+    client.getKeymap.mockResolvedValueOnce({ ...record, data: rawTarget });
+    await result.current.prepare("apply", record as never);
   });
   await act(async () => {
     expect(await result.current.confirm()).toBe(true);
   });
   expect(mockWrite).not.toHaveBeenCalled();
+  expect(identifier).toBe(expected);
+  expect(mockCall).toHaveBeenCalledWith({
+    setKeymapIdentifier: { identifier: expected },
+  });
   expect(result.current.review).toBeNull();
   expect(result.current.applyResult).toMatchObject({
     verified: true,

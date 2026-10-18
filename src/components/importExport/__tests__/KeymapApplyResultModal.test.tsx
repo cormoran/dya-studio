@@ -54,7 +54,6 @@ it("lists skipped raw bindings and never labels them fully applied", () => {
   expect(
     screen.getByRole("region", { name: "Skipped changes" }),
   ).toHaveTextContent("&custom");
-  expect(screen.getByText(/do not associate/)).toBeInTheDocument();
 });
 it("keeps actual error details and unmatched changes in the result", () => {
   show({
