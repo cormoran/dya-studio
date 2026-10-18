@@ -52,6 +52,7 @@ import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
 import {
+  comboToDraft,
   comboEditStatus,
   formatComboBehavior,
   defaultBehaviorBinding,
@@ -1300,6 +1301,22 @@ export function KeymapPage() {
                   runtimeMacros={runtimeMacro.macros}
                   combos={isComboAvailable ? runtimeCombo.combos : []}
                   onComboClick={openComboBinding}
+                  isActive={isTabActive}
+                  onComboDrop={
+                    !keymap.isFullyLoaded || runtimeCombo.isLoading
+                      ? undefined
+                      : (combo, positions) => {
+                          if (!requireUnlocked()) return;
+                          comboEditor.selectCombo(combo);
+                          comboEditor.applyDraftChange(
+                            {
+                              ...comboToDraft(combo, keymap.behaviors),
+                              keyPositions: positions,
+                            },
+                            true,
+                          );
+                        }
+                  }
                   modules={
                     physicalLayoutModules.isAvailable
                       ? physicalLayoutModules.modules
