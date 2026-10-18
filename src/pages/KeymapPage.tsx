@@ -861,6 +861,11 @@ export function KeymapPage() {
                     />
                   </div>
                   <KeymapSharingMenu
+                    keyboardRevision={JSON.stringify([
+                      keymap.keymap,
+                      runtimeCombo.combos,
+                      runtimeCombo.globalSettings,
+                    ])}
                     beforeRead={comboEditor.flushPendingWrites}
                     disabled={
                       keymap.isLoading ||

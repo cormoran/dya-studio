@@ -169,6 +169,7 @@ export function useKeymapSharing(
   onUnauthorized?: () => Promise<void>,
   beforeRead?: () => Promise<void>,
   accountId?: string,
+  keyboardRevision?: string,
 ) {
   const app = useContext(ZMKAppContext);
   const { runWithUnlock } = useStudioUnlock();
@@ -187,6 +188,12 @@ export function useKeymapSharing(
   >("unknown");
   const cache = useRef(createRemoteCache());
   const [checking, setChecking] = useState(false);
+  const listRevision = useRef<{ revision: string | undefined } | null>(null);
+  const deviceSnapshot = useRef<{
+    revision: string | undefined;
+    loaded: ZmkLoadedConnection;
+    identifier?: string | null;
+  } | null>(null);
   const previouslyAuthenticated = useRef(false);
   useEffect(() => {
     const client = getAbyssClient();
@@ -220,6 +227,8 @@ export function useKeymapSharing(
   const session = useRef(connection);
   const generation = useRef(0);
   useEffect(() => {
+    listRevision.current = null;
+    deviceSnapshot.current = null;
     session.current = connection;
     generation.current += 1;
     setReview(null);
@@ -271,7 +280,12 @@ export function useKeymapSharing(
     }
   }
 
-  async function capture(valid: () => void, resolve = false) {
+  async function capture(valid: () => void, resolve = false, reuse = false) {
+    const cached = deviceSnapshot.current;
+    if (reuse && cached && cached.revision === keyboardRevision) {
+      valid();
+      return { loaded: cached.loaded, resolved: null };
+    }
     if (!connection) throw new Error("No keyboard connected.");
     await beforeRead?.();
     valid();
@@ -299,6 +313,7 @@ export function useKeymapSharing(
       notificationSource?.dispose();
     }
     valid();
+    deviceSnapshot.current = { revision: keyboardRevision, loaded };
     const layout = loaded.state.detectedLayout;
     let resolved: AbyssLayoutResolveResult | null = null;
     if (resolve && layout) {
@@ -319,7 +334,23 @@ export function useKeymapSharing(
     return { loaded, resolved };
   }
 
-  async function readIdentity(valid: () => void): Promise<string | null> {
+  async function readIdentity(
+    valid: () => void,
+    reuse = false,
+  ): Promise<string | null> {
+    const snapshot = deviceSnapshot.current;
+    if (
+      reuse &&
+      snapshot?.revision === keyboardRevision &&
+      snapshot?.identifier !== undefined
+    )
+      return snapshot.identifier;
+    const identifier = await readFreshIdentity(valid);
+    if (snapshot) snapshot.identifier = identifier;
+    return identifier;
+  }
+
+  async function readFreshIdentity(valid: () => void): Promise<string | null> {
     if (!rpc.ready) {
       setIdentity("unsupported");
       return null;
@@ -375,6 +406,13 @@ export function useKeymapSharing(
   }
 
   async function refreshList(valid: () => void) {
+    listRevision.current = null;
+    await loadList(valid);
+    valid();
+    listRevision.current = { revision: keyboardRevision };
+  }
+
+  async function loadList(valid: () => void) {
     const client = getAbyssClient();
     if (!client || !authenticated) return;
     const { loaded, resolved } = await capture(valid, true);
@@ -422,8 +460,15 @@ export function useKeymapSharing(
     setIdentity("known");
   }
 
-  const refresh = (force = true) =>
-    operation(async (valid) => {
+  const refresh = (force = true) => {
+    // Reopening an unchanged menu must not start an operation or a spinner.
+    if (
+      !force &&
+      listRevision.current &&
+      listRevision.current.revision === keyboardRevision
+    )
+      return Promise.resolve(true);
+    return operation(async (valid) => {
       setChecking(!force && cache.current.layouts.size > 0);
       if (force) {
         cache.current.layouts.clear();
@@ -436,6 +481,7 @@ export function useKeymapSharing(
         setChecking(false);
       }
     });
+  };
   const prepare = (
     kind: "apply" | "save",
     record?: AbyssKeymapSummary,
@@ -444,7 +490,7 @@ export function useKeymapSharing(
     operation(async (valid) => {
       setReview(null);
       setApplyResult(null);
-      const { loaded, resolved } = await capture(valid);
+      const { loaded, resolved } = await capture(valid, false, Boolean(record));
       const client = getAbyssClient();
       const target =
         file ??
@@ -452,7 +498,7 @@ export function useKeymapSharing(
       valid();
       if (!target) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
-      const identifier = record ? await readIdentity(valid) : null;
+      const identifier = record ? await readIdentity(valid, true) : null;
       const expectedIdentifier = record
         ? await keymapIdentifier(record.id)
         : null;
@@ -534,6 +580,8 @@ export function useKeymapSharing(
       return Promise.resolve(false);
     const tab = review.kind === "save" ? reserveKeymapTab() : null;
     return operation(async (valid) => {
+      listRevision.current = null;
+      deviceSnapshot.current = null;
       const pending = review;
       if (!pending || isBlocked(pending.checks)) return;
       const { writable, skipped } = splitWritableKeymapDiff(pending.diff);

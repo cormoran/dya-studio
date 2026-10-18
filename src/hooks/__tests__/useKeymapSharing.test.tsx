@@ -409,7 +409,7 @@ it("reuses remote layouts, lists, and full records on menu reopen, but refresh f
   await act(async () => {
     await result.current.refresh(false);
   });
-  expect(mockLoad.mock.calls.length).toBe(captures + 1); // device stays fresh
+  expect(mockLoad.mock.calls.length).toBe(captures); // unchanged reopen is immediate
   expect(client.resolveLayout).toHaveBeenCalledTimes(1);
   expect(client.listMyKeymaps).toHaveBeenCalledTimes(1);
   expect(client.getKeymap).toHaveBeenCalledTimes(1);
@@ -417,6 +417,7 @@ it("reuses remote layouts, lists, and full records on menu reopen, but refresh f
     await result.current.prepare("apply", record as never);
   });
   expect(client.getKeymap).toHaveBeenCalledTimes(1);
+  expect(mockLoad.mock.calls.length).toBe(captures);
   await act(async () => {
     await result.current.refresh();
   });
@@ -1077,4 +1078,54 @@ it("keeps remote data through remount and reconnect while comparing fresh keyboa
   expect(client.getKeymap).toHaveBeenCalledTimes(1);
   next.unmount();
   app.state.connection = originalConnection;
+});
+
+it("rechecks edited keyboard data against cached Abyss data, but does no reads on unchanged reopen", async () => {
+  const { keymapIdentifier } = await import("../../lib/abyss/keymapIdentity");
+  mockCall.mockResolvedValue({
+    keymapIdentifier: { identifier: await keymapIdentifier("one") },
+  });
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: target, detectedLayout: { name: "DYA2" } },
+  });
+  client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
+  client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+  const { result, rerender } = renderHook(
+    ({ revision }) =>
+      useKeymapSharing(true, applied, undefined, undefined, "tester", revision),
+    { wrapper, initialProps: { revision: "initial" } },
+  );
+  await act(async () => {
+    await result.current.refresh(false);
+  });
+  expect(result.current.changed).toBe(false);
+  const calls = mockCall.mock.calls.length;
+  // A cache hit must not even briefly enter the menu's loading state.
+  const reopened = result.current.refresh(false);
+  expect(result.current.busy).toBe(false);
+  expect(result.current.checking).toBe(false);
+  await reopened;
+  await act(async () => {
+    await result.current.refresh(false);
+    await result.current.prepare("apply", record as never);
+  });
+  act(() => result.current.setReview(null));
+  await act(async () => {
+    await result.current.prepare("save", record as never);
+  });
+  expect(mockLoad).toHaveBeenCalledTimes(1);
+  expect(mockCall).toHaveBeenCalledTimes(calls);
+  expect(result.current.checking).toBe(false);
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+  });
+  rerender({ revision: "edited" });
+  await act(async () => {
+    await result.current.refresh(false);
+  });
+  expect(result.current.changed).toBe(true);
+  expect(mockLoad).toHaveBeenCalledTimes(2);
+  expect(client.resolveLayout).toHaveBeenCalledTimes(1);
+  expect(client.listMyKeymaps).toHaveBeenCalledTimes(1);
+  expect(client.getKeymap).toHaveBeenCalledTimes(1);
 });

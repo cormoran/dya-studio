@@ -38,10 +38,12 @@ export function KeymapSharingMenu({
   disabled,
   onApplied,
   beforeRead,
+  keyboardRevision,
 }: {
   disabled?: boolean;
   onApplied: () => Promise<unknown>;
   beforeRead?: () => Promise<void>;
+  keyboardRevision?: string;
 }) {
   const { t } = useLanguage();
   const auth = useAbyssAuth();
@@ -51,6 +53,7 @@ export function KeymapSharingMenu({
     auth.logout,
     beforeRead,
     auth.user?.username,
+    keyboardRevision,
   );
   const [open, setOpen] = useState(false);
   const mobile = useSyncExternalStore(
