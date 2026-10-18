@@ -67,5 +67,9 @@ export async function openKeymap(page: Page): Promise<void> {
 // this survives presentation-only Keymap toolbar changes while still excluding
 // main navigation, layer-management controls, and portal'd restore-menu items.
 export function layerTabs(page: Page) {
-  return page.getByRole("group", { name: "Keymap layers" }).getByRole("button");
+  // Edit mode also contains rename/delete/drag buttons. Only layer names
+  // expose aria-pressed in both normal and edit mode.
+  return page
+    .getByRole("group", { name: "Keymap layers" })
+    .locator("button[aria-pressed]");
 }
