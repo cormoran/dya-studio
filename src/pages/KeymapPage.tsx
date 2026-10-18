@@ -470,18 +470,34 @@ export function KeymapPage() {
     hasComboChanges ||
     hasMacroChanges ||
     runtimeTapDance.hasUnsavedChanges;
-  const runtimeHistory = useMacroComboVersionHistory({
-    runtimeMacro,
-    runtimeCombo,
-    behaviors: keymap.behaviors,
-    t,
-    isLoaded:
+  // History collection itself reads macro details and toggles isLoading.
+  // Latch the initial read so collection cannot trigger another load edge.
+  const [runtimeHistoryLoaded, setRuntimeHistoryLoaded] = useState(false);
+  useEffect(() => {
+    if (
       keymap.isFullyLoaded &&
       !runtimeMacro.isLoading &&
       !runtimeCombo.isLoading &&
       (runtimeMacro.isAvailable || isComboAvailable) &&
       (!runtimeMacro.isAvailable || runtimeMacro.globalSettings !== null) &&
-      (!isComboAvailable || runtimeCombo.globalSettings !== null),
+      (!isComboAvailable || runtimeCombo.globalSettings !== null)
+    )
+      setRuntimeHistoryLoaded(true);
+  }, [
+    keymap.isFullyLoaded,
+    runtimeMacro.isLoading,
+    runtimeCombo.isLoading,
+    runtimeMacro.isAvailable,
+    isComboAvailable,
+    runtimeMacro.globalSettings,
+    runtimeCombo.globalSettings,
+  ]);
+  const runtimeHistory = useMacroComboVersionHistory({
+    runtimeMacro,
+    runtimeCombo,
+    behaviors: keymap.behaviors,
+    t,
+    isLoaded: runtimeHistoryLoaded,
   });
   const runtimeHistoryMenu = (
     <ResetVersionMenu

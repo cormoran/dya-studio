@@ -2269,6 +2269,35 @@ describe("KeymapPage", () => {
     };
     afterEach(() => jest.restoreAllMocks());
 
+    it("keeps runtime history ready while collection reads toggle loading", async () => {
+      const runtime = {
+        ...mockUseRuntimeCombo(),
+        isAvailable: true,
+        globalSettings: {},
+        loadCombos: jest.fn(),
+      };
+      mockUseRuntimeCombo.mockReturnValue(runtime as never);
+      const view = renderComponent({ isConnected: true }, readyKeymap);
+      const historyReady = () =>
+        jest
+          .mocked(useVersionHistory)
+          .mock.calls.filter(([options]) => options.tabId === "macro-combo")
+          .at(-1)?.[0].isLoaded;
+      await waitFor(() => expect(historyReady()).toBe(true));
+      mockUseRuntimeCombo.mockReturnValue({
+        ...runtime,
+        isLoading: true,
+      } as never);
+      view.replaceKeymap({});
+      expect(historyReady()).toBe(true);
+      mockUseRuntimeCombo.mockReturnValue({
+        ...runtime,
+        isLoading: false,
+      } as never);
+      view.replaceKeymap({});
+      expect(historyReady()).toBe(true);
+    });
+
     it("opens a named tapdance in a modal and preserves RAM changes when closed", async () => {
       const user = userEvent.setup();
       const runtime = setupTapDance({ hasUnsavedChanges: true });

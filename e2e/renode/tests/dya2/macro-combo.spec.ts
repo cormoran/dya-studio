@@ -53,7 +53,7 @@ test("dya2 Keymap: runtime macro create -> persist -> round-trip -> delete", asy
     .locator("button")
     .filter({ has: page.locator("span.truncate") });
   const before = await items.count();
-  const name = `E2E macro ${Date.now().toString().slice(-8)}`;
+  const name = `E2E${Date.now().toString().slice(-8)}`;
   await macros.getByRole("button", { name: "New macro", exact: true }).click();
   let modal = page.getByRole("dialog");
   await modal.getByRole("textbox").fill(name);
