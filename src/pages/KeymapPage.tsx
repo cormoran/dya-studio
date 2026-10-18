@@ -1130,11 +1130,11 @@ export function KeymapPage() {
                           type="button"
                           aria-label={t("Layout and display")}
                           aria-description={`${t("Physical Layout")}: ${currentLayout.name || t("Physical Layout")}; ${t("OS Layout")}: ${getLayoutLabel(keyboardLayoutContext.layout)}`}
-                          className="flex h-9 max-w-full items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50 min-[360px]:max-sm:pl-3 sm:h-7 sm:gap-2 sm:px-2.5"
+                          className="flex h-9 max-w-full items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50 sm:h-7 sm:gap-2 sm:px-2.5"
                         >
                           <IconKeyboard
                             size={14}
-                            className="shrink-0 text-[var(--color-text-muted)] max-[360px]:hidden"
+                            className="shrink-0 text-[var(--color-text-muted)] max-sm:mr-1.5 max-[360px]:hidden"
                           />
                           <span className="flex min-w-0 flex-col items-start gap-0.5 text-[10px] leading-3 sm:flex-row sm:items-center sm:gap-2 sm:text-xs sm:leading-normal">
                             <span
