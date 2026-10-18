@@ -8,6 +8,8 @@ import {
 import * as Popover from "@radix-ui/react-popover";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  IconArrowLeft,
+  IconArrowRight,
   IconChevronDown,
   IconCloud,
   IconLoader2,
@@ -189,7 +191,7 @@ export function KeymapSharingMenu({
                     {t("Current keymap")}
                   </h3>
                   {sharing.current ? (
-                    <div className="rounded-lg border border-[var(--color-border)] p-2 space-y-2">
+                    <div className="border-t border-[var(--color-border)] py-2 space-y-2">
                       <button
                         className="btn-ghost w-full text-left flex items-center justify-between gap-2"
                         disabled={busy}
@@ -213,29 +215,45 @@ export function KeymapSharingMenu({
                           )}
                         </span>
                       </button>
-                      <div className="flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-2">
+                      <div className="flex flex-wrap gap-2">
                         {sharing.keymaps.some(
                           (item) => item.id === sharing.current?.id,
                         ) && (
                           <button
-                            className="btn-ghost flex-1 text-xs"
+                            className="btn-ghost flex-1 inline-flex items-center justify-center gap-1"
                             disabled={busy}
                             onClick={() =>
                               void sharing.prepare("save", sharing.current!)
                             }
                           >
-                            {t("Sync to Abyss")}
+                            <IconArrowRight
+                              size={12}
+                              aria-hidden="true"
+                              className="shrink-0"
+                            />
+                            <span className="text-[11px] leading-4">
+                              {t("Sync to Abyss")}
+                            </span>
                           </button>
                         )}
-                        <button
-                          className="btn-ghost flex-1 text-xs"
-                          disabled={busy}
-                          onClick={() =>
-                            void sharing.prepare("apply", sharing.current!)
-                          }
-                        >
-                          {t("Overwrite from Abyss")}
-                        </button>
+                        {sharing.changed && (
+                          <button
+                            className="btn-ghost flex-1 inline-flex items-center justify-center gap-1"
+                            disabled={busy}
+                            onClick={() =>
+                              void sharing.prepare("apply", sharing.current!)
+                            }
+                          >
+                            <span className="text-[11px] leading-4">
+                              {t("Overwrite from Abyss")}
+                            </span>
+                            <IconArrowLeft
+                              size={12}
+                              aria-hidden="true"
+                              className="shrink-0"
+                            />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : (
