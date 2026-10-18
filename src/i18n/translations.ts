@@ -9,6 +9,7 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Not supported": "未対応",
   "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
     "変更はすぐにメモリへ反映されますが、保存ボタンを押すまで永続化されません。",
   "Save persists all unsaved changes in this feature. Discard affects only this item.":
@@ -1845,6 +1846,7 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Not supported": "不支持",
   "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
     "更改会立即应用到内存，点击保存后才会永久保存。",
   "Save persists all unsaved changes in this feature. Discard affects only this item.":

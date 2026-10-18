@@ -11,6 +11,20 @@ import {
 import { StatusDot } from "../EditStatusIndicator";
 import { useLanguage } from "../../hooks/useLanguage";
 
+export function UnsupportedFeatureCard({ title }: { title: string }) {
+  const { t } = useLanguage();
+  return (
+    <section className="glass-card p-4 mt-6" aria-label={title}>
+      <h2 className="text-sm font-medium text-[var(--color-text)]">
+        {title}:{" "}
+        <span className="text-[var(--color-text-muted)]">
+          {t("Not supported")}
+        </span>
+      </h2>
+    </section>
+  );
+}
+
 export function RuntimeListCard({
   title,
   addLabel,

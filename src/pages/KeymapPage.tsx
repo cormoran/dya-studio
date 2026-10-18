@@ -42,7 +42,10 @@ import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
 import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
-import { RuntimeListCard } from "../components/macroCombo/RuntimeListCard";
+import {
+  RuntimeListCard,
+  UnsupportedFeatureCard,
+} from "../components/macroCombo/RuntimeListCard";
 import {
   RuntimeEditors,
   type RuntimeView,
@@ -1481,25 +1484,9 @@ export function KeymapPage() {
 
             {/* Sensor Rotation Configuration */}
             {!sensorRotate.isAvailable && (
-              <div className="glass-card p-4 mt-6 mb-4 border-yellow-500/20 bg-yellow-500/10 flex items-center gap-3">
-                <div className="p-2">
-                  <IconAlertTriangle size={24} />
-                </div>
-                <p className="text-sm">
-                  {t(
-                    "Runtime sensor rotation subsystem is not available for your keyboard. Rotary encoder configuration will not be displayed. You can enable the feature by applying cormoran/zmk-behavior-runtime-sensor-rotate in your firmware.",
-                  )}
-                  <br />
-                  <a
-                    href="https://github.com/cormoran/zmk-behavior-runtime-sensor-rotate"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-electric)] underline mx-1"
-                  >
-                    cormoran/zmk-behavior-runtime-sensor-rotate
-                  </a>
-                </p>
-              </div>
+              <UnsupportedFeatureCard
+                title={t("Rotary Encoder Configuration")}
+              />
             )}
 
             {sensorRotate.isAvailable && currentLayer && (
@@ -1512,7 +1499,7 @@ export function KeymapPage() {
                 />
               </div>
             )}
-            {isComboAvailable && (
+            {isComboAvailable ? (
               <section className="glass-card p-4 mt-6" aria-label={t("Combos")}>
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <h2 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
@@ -1639,6 +1626,8 @@ export function KeymapPage() {
                   </div>
                 )}
               </section>
+            ) : (
+              <UnsupportedFeatureCard title={t("Combos")} />
             )}
             {runtimeStatus && (
               <p
@@ -1648,7 +1637,7 @@ export function KeymapPage() {
                 {runtimeStatus}
               </p>
             )}
-            {runtimeMacro.isAvailable && (
+            {runtimeMacro.isAvailable ? (
               <RuntimeListCard
                 title={t("Macros")}
                 addLabel={t("New macro")}
@@ -1674,8 +1663,10 @@ export function KeymapPage() {
                   },
                 }))}
               />
+            ) : (
+              <UnsupportedFeatureCard title={t("Macros")} />
             )}
-            {runtimeTapDance.isAvailable && (
+            {runtimeTapDance.isAvailable ? (
               <RuntimeListCard
                 title={t("Tapdances")}
                 addLabel={t("New tapdance")}
@@ -1716,6 +1707,8 @@ export function KeymapPage() {
                   },
                 }))}
               />
+            ) : (
+              <UnsupportedFeatureCard title={t("Tapdances")} />
             )}
           </>
         )}

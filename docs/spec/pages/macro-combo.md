@@ -38,7 +38,7 @@ macro step と combo behavior の keycode 表示は [binding editor BIND-024](..
 
 ## 前提・状態
 
-- 未接続・初回 keymap loading は Keymap の gate に従う。未対応 subsystem のカードは非表示。対応しているが空の場合は空一覧を表示する。macro/tapdance 読込中は Loading、追加無効。旧API tapdance は更新案内を出して書込まない。
+- 未接続・初回 keymap loading は Keymap の gate に従う。未対応 subsystem も通常色のカードに `<title>: Not supported` と表示し、操作は出さない（KM-029）。対応しているが空の場合は空一覧を表示する。macro/tapdance 読込中は Loading、追加無効。旧API tapdance は更新案内を出して書込まない。
 - locked は Keymap の Locked button と共有 unlock gate に従う。dirty はカードの緑色と StatusDot。Save の条件は KM-030。macro の blur RAM write が進行中でも Save は flush barrier を待つ。
 - RPC エラーと容量/文字列変換エラーは対応カードの alert。tapdance editor には内部 alert も表示する。再試行はページ Reload または再編集。実機 flash / 電源断耐性は Demo から推測しない。
 
