@@ -12,7 +12,7 @@ Read the [PR template](../../../.github/pull_request_template.md), [AGENTS.md](.
 - Use the template headings, release-notes checkbox, and CLA. Match the title and body to the final diff.
 - Lead `Description` with the concrete problem and resulting behavior, usually in 2–4 short bullets. Put compatibility changes and material limitations near the top.
 - Include only details needed to assess the change. Omit work chronology, exhaustive file lists, logs, and repeated explanations.
-- Summarize executed checks and results under `### Validation` when useful. Keep failed, skipped, and unexecuted checks explicit; CI, source inspection, Demo, and physical-device evidence prove different things.
+- When useful, put `### Validation` inside `Description`, before `Release notes`, and summarize executed checks and results. Keep failed, skipped, and unexecuted checks explicit; CI, source inspection, Demo, and physical-device evidence prove different things.
 - For UI changes, report the themes, components, and states actually checked against [theme coverage guidance](../../../docs/spec/EXPLORATORY_TESTING.md#テーマの一貫性確認). CSS inspection does not establish a visual pass. Scale testing to the change.
 - Follow AGENTS.md for specification updates. Feature/fix PRs describe user outcomes without editing `releaseNotes.json` or invoking release-note curation. Check the policy box only after inspecting the diff; dedicated pre-release notes PRs are the exception.
 

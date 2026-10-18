@@ -23,7 +23,7 @@ Preserve released entries and the schema: `upcoming` stays first with `date: nul
 - **minor:** visual refinements or small behavior changes.
 - **patch:** small wording or internal corrections worth communicating.
 
-Choose the primary user impact. Omit commit mechanics, tests, CI, documentation-only work, and refactors with no release-relevant outcome. Include `en` and `ja` for new items, plus `zh` while surrounding Upcoming entries use it; translations must describe the same scope.
+Choose the primary user impact. Omit commit mechanics, tests, CI, documentation-only work, and refactors with no release-relevant outcome. For each proposed item, including drafts, include `en` and `ja`, plus `zh` while surrounding Upcoming entries use it. Verify that translations cover the same scope.
 
 ## Deliver
 
