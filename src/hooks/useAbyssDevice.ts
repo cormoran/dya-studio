@@ -74,6 +74,12 @@ export function useAbyssDevice(): UseAbyssDeviceReturn {
     const run = (async () => {
       setError(null);
       setPhase("reading");
+      const notificationSource = zmkApp?.onNotification
+        ? createAbyssNotificationSource({
+            subsystemIndexes,
+            onNotification: zmkApp.onNotification,
+          })
+        : undefined;
       try {
         const wrapped = createAbyssZmkConnection({
           rpcConnection,
@@ -82,16 +88,13 @@ export function useAbyssDevice(): UseAbyssDeviceReturn {
           // the adapter only uses this for a display label it never surfaces to
           // us, so the distinction does not matter here.
           method: "serial",
-          notificationSource: zmkApp?.onNotification
-            ? createAbyssNotificationSource({
-                subsystemIndexes,
-                onNotification: zmkApp.onNotification,
-              })
-            : undefined,
+          notificationSource,
         });
         // A locked device throws before any read, so the unlock gate can park
         // the whole operation and retry it cleanly once the user unlocks.
-        const next = await runWithUnlock(() => loadZmkConnection(wrapped));
+        const next = await runWithUnlock(() =>
+          loadZmkConnection(wrapped),
+        ).finally(() => notificationSource?.dispose());
         setLoaded(next);
 
         setPhase("resolving");
@@ -115,6 +118,7 @@ export function useAbyssDevice(): UseAbyssDeviceReturn {
         setPhase("idle");
         setError(studioLockErrorText(caught) ?? abyssErrorMessageKey(caught));
       } finally {
+        notificationSource?.dispose();
         inFlight.current = null;
       }
     })();

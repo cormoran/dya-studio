@@ -94,6 +94,8 @@ auth/list/read/export/import のエラーは alert に残る。menu は Refresh 
 
 新規保存・更新はクリック時に空 tab を確保し、Abyss API の保存成功後だけ対象ページへ遷移する。保存前の失敗・競合では空 tab を閉じる。popup が block された場合も保存は継続し、メニューに `Open on Abyss` link を残す。URL は設定された Abyss instance を使う。保存後の identity/list エラーでも、保存済み record のページと link は利用可能。
 
+keyboard snapshot はプロセッサー一覧要求より前に custom notification の購読を開始し、要求応答より先に届いた mouse/scroll 等の設定通知も収集する。読取成功・失敗の双方で購読と一時 buffer を破棄する。共有メニューの prepare/confirm/readback と旧 Import UI の snapshot に同じ契約を適用する（S3/S5、2026-10-18 実機 Chrome での読取欠落調査）。
+
 adapter は逐次書込みし原子的 rollback はない。途中失敗は混在状態になり得るので再読取してから再確認する。Confirm 前の検査と実際の書込間の外部変更を server-side CAS で防ぐ契約はない。
 
 ## 探索の観点

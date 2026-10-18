@@ -218,23 +218,29 @@ export function useKeymapSharing(
     if (!connection) throw new Error("No keyboard connected.");
     await beforeRead?.();
     valid();
-    const loaded = await runWithUnlock(() =>
-      loadZmkConnection(
-        createAbyssZmkConnection({
-          rpcConnection: connection,
-          deviceName: app?.state.deviceInfo?.name,
-          method: "serial",
-          notificationSource: app?.onNotification
-            ? createAbyssNotificationSource({
-                subsystemIndexes: (
-                  app.state.customSubsystems?.subsystems ?? []
-                ).map((s) => s.index),
-                onNotification: app.onNotification,
-              })
-            : undefined,
-        }),
-      ),
-    );
+    const notificationSource = app?.onNotification
+      ? createAbyssNotificationSource({
+          subsystemIndexes: (app.state.customSubsystems?.subsystems ?? []).map(
+            (s) => s.index,
+          ),
+          onNotification: app.onNotification,
+        })
+      : undefined;
+    let loaded: ZmkLoadedConnection;
+    try {
+      loaded = await runWithUnlock(() =>
+        loadZmkConnection(
+          createAbyssZmkConnection({
+            rpcConnection: connection,
+            deviceName: app?.state.deviceInfo?.name,
+            method: "serial",
+            notificationSource,
+          }),
+        ),
+      );
+    } finally {
+      notificationSource?.dispose();
+    }
     valid();
     const layout = loaded.state.detectedLayout;
     let resolved: AbyssLayoutResolveResult | null = null;
