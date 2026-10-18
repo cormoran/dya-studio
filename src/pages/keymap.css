@@ -207,7 +207,7 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .keymap-layer-toolbar[data-editing="true"] .keymap-layer-label {
+  .keymap-layer-toolbar .keymap-layer-label {
     display: none;
   }
   .keymap-layer-toolbar[data-editing="true"] .keymap-layer-tabs {
