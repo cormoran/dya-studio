@@ -549,11 +549,13 @@ it("places named tapdances after macros and combos and shows the selected editor
   expect(headings.indexOf("Combos")).toBeGreaterThan(
     headings.indexOf("Macros"),
   );
-  expect(screen.queryByRole("tab", { name: "Single" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("group", { name: "Single" }),
+  ).not.toBeInTheDocument();
   await user.click(
     screen.getByRole("button", { name: "Alphabet", exact: true }),
   );
-  expect(screen.getByRole("tab", { name: "Single" })).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Single" })).toBeInTheDocument();
   expect(screen.queryByDisplayValue("aa")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("combobox", { name: "Tapdance slot" }),

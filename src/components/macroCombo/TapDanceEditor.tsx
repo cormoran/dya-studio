@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { useLanguage } from "../../hooks/useLanguage";
@@ -46,7 +46,6 @@ export function TapDanceDraft({
   hideActions?: boolean;
 }) {
   const { t } = useLanguage();
-  const panelId = useId();
   const [draft, setDraft] = useState(() => Config.create(config));
   const [active, setActive] = useState(0);
   const [selecting, setSelecting] = useState(false);
@@ -100,82 +99,53 @@ export function TapDanceDraft({
   };
   return (
     <div className="space-y-3">
-      <div
-        role="tablist"
-        aria-label={t("Tapdance actions")}
-        className="flex border-b border-[var(--color-border)]"
-      >
-        {TAP_DANCE_LABELS.map((label, index) => (
-          <button
-            key={label}
-            type="button"
-            role="tab"
-            aria-selected={active === index}
-            aria-controls={`${panelId}-action`}
-            id={`${panelId}-tab-${index}`}
-            tabIndex={active === index ? 0 : -1}
-            onKeyDown={(event) => {
-              if (
-                ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
-              ) {
-                event.preventDefault();
-                const next =
-                  event.key === "Home"
-                    ? 0
-                    : event.key === "End"
-                      ? 2
-                      : (active + (event.key === "ArrowRight" ? 1 : 2)) % 3;
-                setActive(next);
-                (
-                  event.currentTarget.parentElement?.children[
-                    next
-                  ] as HTMLElement
-                )?.focus();
-              }
-            }}
-            className={`flex-1 px-3 py-2 text-sm border-b-2 ${active === index ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-muted)]"}`}
-            onClick={() => setActive(index)}
-          >
-            {t(label)}
-          </button>
-        ))}
-      </div>
-      <div
-        role="tabpanel"
-        id={`${panelId}-action`}
-        aria-labelledby={`${panelId}-tab-${active}`}
-        className="flex items-center gap-2 p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)]"
-      >
-        <button
-          type="button"
-          className="flex-1 min-w-0 min-h-10 px-3 py-2 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
-          disabled={runtime.busy}
-          onClick={() => setSelecting(true)}
-        >
-          {binding?.behaviorId
-            ? formatBehaviorBinding(
-                binding,
-                props.behaviors.get(binding.behaviorId) ?? null,
-                { layers: props.layers, keyboardLayout: props.keyboardLayout },
-              )
-            : t("Select binding")}
-        </button>
-        {active > 0 && (
-          <button
-            type="button"
-            className="btn-ghost"
-            disabled={runtime.busy || !binding?.behaviorId}
-            onClick={() => {
-              commitDraft({
-                ...draft,
-                [field]: { behaviorId: 0, param1: 0, param2: 0 },
-              });
-            }}
-          >
-            {t("Clear")}
-          </button>
-        )}
-      </div>
+      {TAP_DANCE_ACTIONS.map((action, index) => {
+        const actionBinding = draft[action];
+        return (
+          <fieldset key={action} className="min-w-0">
+            <legend className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
+              {t(TAP_DANCE_LABELS[index])}
+            </legend>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="flex-1 min-w-0 min-h-10 px-3 py-2 rounded-lg bg-[var(--color-bg)] hover:bg-[var(--color-border)] border border-[var(--color-border)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
+                disabled={runtime.busy}
+                onClick={() => {
+                  setActive(index);
+                  setSelecting(true);
+                }}
+              >
+                {actionBinding?.behaviorId
+                  ? formatBehaviorBinding(
+                      actionBinding,
+                      props.behaviors.get(actionBinding.behaviorId) ?? null,
+                      {
+                        layers: props.layers,
+                        keyboardLayout: props.keyboardLayout,
+                      },
+                    )
+                  : t("Select binding")}
+              </button>
+              {index > 0 && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={runtime.busy || !actionBinding?.behaviorId}
+                  onClick={() => {
+                    commitDraft({
+                      ...draft,
+                      [action]: { behaviorId: 0, param1: 0, param2: 0 },
+                    });
+                  }}
+                >
+                  {t("Clear")}
+                </button>
+              )}
+            </div>
+          </fieldset>
+        );
+      })}
       {(otherUsage === null || otherUsage > 0) && (
         <p className="text-sm text-[var(--color-text-muted)]">
           {otherUsage === null

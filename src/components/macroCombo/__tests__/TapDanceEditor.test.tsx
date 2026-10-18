@@ -105,9 +105,14 @@ it("edits a shared action locally, discards, then saves the draft through an exp
     />,
   );
   expect(screen.getByText(/updates 1 other tapdance/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("tab", { name: "Double" }));
+  for (const label of ["Single", "Double", "Triple"]) {
+    expect(screen.getByRole("group", { name: label })).toBeVisible();
+  }
+  expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
   fireEvent.click(
-    within(screen.getByRole("tabpanel")).getAllByRole("button")[0],
+    within(screen.getByRole("group", { name: "Double" })).getAllByRole(
+      "button",
+    )[0],
   );
   expect(screen.getByText("Recursive excluded")).toBeInTheDocument();
   fireEvent.click(screen.getByText("Choose D"));
@@ -116,7 +121,9 @@ it("edits a shared action locally, discards, then saves the draft through an exp
   fireEvent.click(screen.getByRole("button", { name: "Discard edits" }));
   expect(screen.getByRole("button", { name: "Save tapdance" })).toBeDisabled();
   fireEvent.click(
-    within(screen.getByRole("tabpanel")).getAllByRole("button")[0],
+    within(screen.getByRole("group", { name: "Double" })).getAllByRole(
+      "button",
+    )[0],
   );
   fireEvent.click(screen.getByText("Choose D"));
   fireEvent.click(screen.getByRole("button", { name: "Save tapdance" }));
@@ -139,8 +146,11 @@ it("rejects a Triple action without Double", () => {
       slot={0}
     />,
   );
-  fireEvent.click(screen.getByRole("tab", { name: "Double" }));
-  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  fireEvent.click(
+    within(screen.getByRole("group", { name: "Double" })).getByRole("button", {
+      name: "Clear",
+    }),
+  );
   expect(screen.getByRole("alert")).toHaveTextContent(
     "A Triple action requires a Double action",
   );
@@ -159,7 +169,10 @@ it("opens New/Edit modals and closes without writing any local draft", () => {
     ),
   ).not.toBeInTheDocument();
   fireEvent.click(
-    within(dialog).getByRole("button", { name: "Select binding" }),
+    within(within(dialog).getByRole("group", { name: "Single" })).getByRole(
+      "button",
+      { name: "Select binding" },
+    ),
   );
   fireEvent.click(screen.getByText("Choose D"));
   fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
@@ -182,7 +195,10 @@ it("allocates once and preserves the returned stable ID when saving a new modal 
     target: { value: "New dance" },
   });
   fireEvent.click(
-    within(dialog).getByRole("button", { name: "Select binding" }),
+    within(within(dialog).getByRole("group", { name: "Single" })).getByRole(
+      "button",
+      { name: "Select binding" },
+    ),
   );
   fireEvent.click(screen.getByText("Choose D"));
   fireEvent.click(
@@ -213,7 +229,10 @@ it("requires a unique name within the firmware UTF-8 byte limit before creating"
   fireEvent.click(screen.getByRole("button", { name: "New tapdance" }));
   const dialog = screen.getByRole("dialog", { name: "New tapdance" });
   fireEvent.click(
-    within(dialog).getByRole("button", { name: "Select binding" }),
+    within(within(dialog).getByRole("group", { name: "Single" })).getByRole(
+      "button",
+      { name: "Select binding" },
+    ),
   );
   fireEvent.click(screen.getByText("Choose D"));
   const name = within(dialog).getByRole("textbox", { name: "Name" });

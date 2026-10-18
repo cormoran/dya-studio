@@ -737,7 +737,9 @@ it("uses named parameter choices above the tapdance actions and follows the stan
     name: "Navigation",
     exact: true,
   });
-  expect(screen.queryByRole("tab", { name: "Single" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("group", { name: "Single" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "New tapdance" })).toHaveClass(
     "border-dashed",
   );
@@ -764,7 +766,7 @@ it("uses named parameter choices above the tapdance actions and follows the stan
     name: "Edit tapdance · Navigation",
   });
   expect(
-    within(editDialog).getByRole("tab", { name: "Single" }),
+    within(editDialog).getByRole("group", { name: "Single" }),
   ).toBeInTheDocument();
   expect(
     within(editDialog).getByRole("button", { name: "D" }),

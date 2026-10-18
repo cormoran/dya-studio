@@ -1043,8 +1043,9 @@ describe("KeymapPage", () => {
       expect(item).toHaveClass("min-w-0", "w-full");
       expect(item.parentElement).toHaveClass(
         "grid",
-        "grid-cols-2",
-        "sm:grid-cols-3",
+        "grid-cols-1",
+        "sm:grid-cols-2",
+        "lg:grid-cols-3",
       );
       expect(item).toHaveTextContent("0 + 1");
       expect(item).toHaveTextContent("Layers: Base, Lower, Raise");
