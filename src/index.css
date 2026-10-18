@@ -349,6 +349,14 @@
     row-gap: 0.5rem;
   }
 
+  .page-header:has(.page-header-actions) {
+    justify-content: flex-end;
+  }
+
+  .page-header:has(.page-header-actions) > :first-child {
+    margin-right: auto;
+  }
+
   .page-header-description {
     display: none;
   }
