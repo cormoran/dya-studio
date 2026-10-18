@@ -23,7 +23,7 @@
 
 ## 前提・状態
 
-入口の表示名は consumer で異なる。Keymap / Macro&Combo は `Reset` メニュー内に履歴があり、独立した `Versions` ボタンを探しても見つからない。Settings / Connection / Trackball などは `Versions` 表示を使う（S4）。メニュー内の timestamp を選んだ時だけ diff modal に進む。
+入口の表示名は consumer で異なる。Keymap のキー割当履歴は `Reset` メニュー内、runtime macro/combo の履歴は Keymap の Macros カード（macro 未対応なら Combos カード）の `Macro and combo versions` から開く。旧 Macro&Combo タブは廃止したが、既存の device/tab/schema scope を維持する。Settings / Connection / Trackball などは `Versions` 表示を使う（S4）。メニュー内の timestamp を選んだ時だけ diff modal に進む。
 
 重要な判定上の限界: `collect()` の再呼出しは RPC による再読込と同義ではない。現行 consumer は主に hook の ref/state を集め、Macro は detail 取得も行う。画面の「Reading ... from the keyboard」という文言だけで最新実機値を保証しない。比較前に page の Refresh/Reload を行う。HIST-R01 は目標であり、notification collection の完全性や未送信の楽観 state の除外は未検証。
 

@@ -82,6 +82,15 @@ describe("App routing", () => {
     expect(replaceStateSpy).not.toHaveBeenCalledWith(null, "", "/");
   });
 
+  it("keeps the removed macro-combo route as a Keymap compatibility entry", async () => {
+    goTo("/macro-combo");
+    render(<App />);
+    await waitFor(() => expect(window.location.pathname).toBe("/keymap"));
+    expect(
+      screen.queryByRole("tab", { name: "Macro&Combo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("canonicalizes an unknown path back to the home tab", async () => {
     goTo("/not-a-real-tab");
 

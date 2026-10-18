@@ -2,7 +2,7 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
 import { connectDya2 } from "./dya2.helpers";
 
 // The dya2 fork (main+dya) ships two custom Studio subsystems that the
-// Macro&Combo tab drives:
+// Keymap page drives:
 //   - cormoran__runtime_macro  (create/edit/persist macros at runtime)
 //   - cormoran__runtime_combo  (create/edit/persist combos at runtime)
 // dya2 is UNLOCKED, so no unlock step is needed.
@@ -38,113 +38,66 @@ function debugHooks(page: Page): void {
   page.on("dialog", (d) => void d.accept());
 }
 
-test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> delete", async ({
+test("dya2 Keymap: runtime macro create -> persist -> round-trip -> delete", async ({
   page,
 }) => {
-  // Generous: the create/persist/select-slot/delete round trip (each an RPC plus
-  // a 10s save debounce) is much slower on the CPU-starved single-machine
-  // emulation of a stock CI runner than on a dev box, and the select-slot read
-  // can transiently report "No macro bound to that slot" for several cycles
-  // right after create until the write settles.
   test.setTimeout(600_000);
   debugHooks(page);
-
   await connectDya2(page);
-  await page.getByRole("tab", { name: "Macro&Combo" }).click();
-
+  await page.getByRole("tab", { name: "Keymap", exact: true }).click();
   const save = page.getByRole("button", { name: "Save", exact: true });
-
-  // The runtime-macro subsystem is present (list_macros RPC succeeded).
+  const reload = page.getByRole("button", { name: "Reload", exact: true });
   const macros = listSection(page, "Macros");
   await expect(macros).toBeVisible({ timeout: 120_000 });
-  const items = macros.locator("div.space-y-1 > button");
-  const before = (await items.allInnerTexts()).map((s) => s.trim());
-
-  // CREATE a macro. createMacro issues create_macro AND then list_macros, so the
-  // macro appearing here is already a device write->read round-trip.
-  await macros.getByTitle("Create macro").click();
-  await expect(items).toHaveCount(before.length + 1, { timeout: 90_000 });
-  const newMacro = (await items.allInnerTexts())
-    .map((s) => s.trim())
-    .find((n) => !before.includes(n));
-  expect(
-    newMacro,
-    "a newly-named macro should appear in the list",
-  ).toBeTruthy();
-  // Locate by the exact name text (the list button's accessible NAME also
-  // includes the StatusDot's aria-label, so getByRole name won't match).
-  const macroButton = macros
-    .locator("div.space-y-1 > button")
-    .filter({ has: page.getByText(newMacro!, { exact: true }) });
-  await expect(macroButton).toBeVisible();
-
-  // The default Step is a zero-ms delay. Use a nonzero body for this normal
-  // round trip; empty/zero-delay firmware persistence remains a separate issue.
-  await expect(page.getByText("No steps in this macro")).toBeVisible();
-  await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Remove step 1" })).toBeVisible(
-    { timeout: 90_000 },
-  );
-  const refresh = page.getByRole("button", { name: "Refresh", exact: true });
-  await page.getByRole("combobox").selectOption("delay");
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
-  const delay = page.getByRole("spinbutton");
-  await delay.fill("25");
-  await delay.press("Tab"); // Normal blur flushes the queued RAM write.
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
-
-  // Explicit selection clears the local detail and calls GetMacro. This
-  // assertion reads actual RAM rather than accepting the optimistic input.
-  await macroButton.click();
-  await expect(page.getByRole("combobox")).toHaveValue("delay");
-  await expect(delay).toHaveValue("25", { timeout: 90_000 });
-
-  // PERSIST to flash (save_macros). Save disables once nothing is pending.
-  await expect(save).toBeEnabled();
-  await save.click();
-  await expect(save).toBeDisabled({ timeout: 120_000 });
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
-  // Refresh re-lists from the device; reselecting then reads the saved body.
-  await refresh.click();
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  const items = macros
+    .locator("button")
+    .filter({ has: page.locator("span.truncate") });
+  const before = await items.count();
+  const name = `E2E macro ${Date.now().toString().slice(-8)}`;
+  await macros.getByRole("button", { name: "New macro", exact: true }).click();
+  let modal = page.getByRole("dialog");
+  await modal.getByRole("textbox").fill(name);
+  await modal.getByRole("button", { name: "Step", exact: true }).click();
+  await modal.getByRole("combobox").selectOption("delay");
+  await modal.getByRole("spinbutton").fill("25");
+  await modal.getByRole("spinbutton").press("Tab");
+  await modal
+    .getByRole("button", { name: "Create macro", exact: true })
+    .click();
+  await expect(modal).toHaveCount(0, { timeout: 90_000 });
+  const macroButton = items.filter({
+    has: page.getByText(name, { exact: true }),
+  });
   await expect(macroButton).toBeVisible({ timeout: 90_000 });
   await macroButton.click();
-  await expect(page.getByRole("button", { name: "Remove step 1" })).toBeVisible(
-    { timeout: 90_000 },
-  );
-  await expect(page.getByRole("combobox")).toHaveValue("delay");
-  await expect(delay).toHaveValue("25", { timeout: 90_000 });
-
-  // REVERT: select + delete it (delete_macro re-lists). Selecting reads the
-  // slot back, which can transiently fail right after create ("No macro bound
-  // to that slot"), so retry the select+delete until the macro is gone. Wait
-  // for the selection RPC to settle before clicking Delete: immediately
-  // re-clicking the list item while Delete is disabled starts another read and
-  // can keep the editor permanently busy on a slow Renode runner.
-  const deleteMacro = page.getByRole("button", {
-    name: "Delete",
-    exact: true,
+  modal = page.getByRole("dialog");
+  await expect(modal.getByRole("spinbutton")).toHaveValue("25", {
+    timeout: 90_000,
   });
-  await expect(async () => {
-    if ((await macroButton.count()) > 0) {
-      await macroButton.click();
-      await expect(deleteMacro).toBeEnabled({ timeout: 60_000 });
-      await deleteMacro.click();
-      await expect(macroButton).toHaveCount(0, { timeout: 90_000 });
-    }
-    expect(await macroButton.count()).toBe(0);
-  }).toPass({ timeout: 300_000, intervals: [5_000] });
-  await expect(items).toHaveCount(before.length);
-  // Persist the removal if it left a pending change.
-  if (await save.isEnabled().catch(() => false)) {
+  await modal.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(save).toBeEnabled({ timeout: 90_000 });
+  await save.click();
+  await expect(save).toBeDisabled({ timeout: 120_000 });
+  await reload.click();
+  await expect(reload).toBeEnabled({ timeout: 90_000 });
+  await macroButton.click();
+  await expect(modal.getByRole("spinbutton")).toHaveValue("25", {
+    timeout: 90_000,
+  });
+  await expect(
+    modal.getByRole("button", { name: "Delete", exact: true }),
+  ).toBeEnabled({ timeout: 60_000 });
+  await modal.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(macroButton).toHaveCount(0, { timeout: 90_000 });
+  await modal.getByRole("button", { name: "Close", exact: true }).click();
+  if (await save.isEnabled()) {
     await save.click();
     await expect(save).toBeDisabled({ timeout: 120_000 });
   }
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
-  await refresh.click();
-  await expect(refresh).toBeEnabled({ timeout: 90_000 });
+  await reload.click();
+  await expect(reload).toBeEnabled({ timeout: 90_000 });
+  await expect(items).toHaveCount(before);
   await expect(macroButton).toHaveCount(0);
-  await expect(items).toHaveCount(before.length);
 });
 
 // NOTE: covered by an implemented test but marked `fixme` (skipped) because it
@@ -157,14 +110,14 @@ test("dya2 Macro&Combo tab: runtime macro create -> persist -> round-trip -> del
 // combo-create flakiness is resolved. The sibling runtime-macro subsystem
 // (same create/persist/round-trip/delete pattern, same custom-subsystem RPC
 // path) is exercised fully and reliably by the test above.
-test.fixme("dya2 Macro&Combo tab: runtime combo create -> persist -> round-trip -> delete", async ({
+test.fixme("dya2 Keymap: runtime combo create -> persist -> round-trip -> delete", async ({
   page,
 }) => {
   test.setTimeout(300_000);
   debugHooks(page);
 
   await connectDya2(page);
-  await page.getByRole("tab", { name: "Macro&Combo" }).click();
+  await page.getByRole("tab", { name: "Keymap" }).click();
 
   const save = page.getByRole("button", { name: "Save", exact: true });
 
@@ -172,7 +125,7 @@ test.fixme("dya2 Macro&Combo tab: runtime combo create -> persist -> round-trip 
   // behavior/layer metadata), so this also waits out the fast-keymap load.
   const combos = listSection(page, "Combos");
   await expect(combos).toBeVisible({ timeout: 150_000 });
-  const items = combos.locator("div.space-y-2 > button");
+  const items = combos.locator('[data-testid^="combo-list-item-"]');
   // Wait until the combo list has finished its initial load (either the empty
   // placeholder or at least one combo is shown) before creating — clicking
   // "New combo" while the list is still loading can drop the create.

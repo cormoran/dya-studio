@@ -9,6 +9,12 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Could not apply macro edits to memory.":
+    "マクロの編集をメモリに適用できませんでした。",
+  "Macro and combo versions": "マクロ・コンボの履歴",
+  "No items": "まだ項目がありません",
+  "Drops unsaved keymap, macro, combo and tapdance edits in keyboard memory, then reloads their saved values.":
+    "キーボードメモリの未保存のキーマップ・マクロ・コンボ・タップダンスの編集を破棄し、保存済みの値を再取得します。",
   "Edit runtime macros, combos, and tapdances":
     "マクロ・コンボ・タップダンスを編集",
   "Read macros, combos, and tapdances from the keyboard again":
@@ -1821,6 +1827,11 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Could not apply macro edits to memory.": "无法将宏编辑应用到内存。",
+  "Macro and combo versions": "宏和组合键历史",
+  "No items": "暂无项目",
+  "Drops unsaved keymap, macro, combo and tapdance edits in keyboard memory, then reloads their saved values.":
+    "丢弃键盘内存中未保存的键位、宏、组合键和踢踏舞编辑，并重新读取已保存的值。",
   "Edit runtime macros, combos, and tapdances": "编辑运行时宏、组合键和踢踏舞",
   "Read macros, combos, and tapdances from the keyboard again":
     "从键盘重新读取宏、组合键和踢踏舞",

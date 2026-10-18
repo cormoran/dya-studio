@@ -20,6 +20,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import * as tapDanceHook from "../../hooks/useRuntimeTapDance";
+import * as macroHook from "../../hooks/useRuntimeMacro";
+import {
+  Config,
+  State,
+  GlobalResponse,
+} from "../../proto/cormoran/runtime_tapdance/runtime_tapdance";
 import { KeymapPage } from "../KeymapPage";
 import { KeyboardLayoutProvider } from "../../contexts/KeyboardLayoutProvider";
 import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
@@ -2220,6 +2227,134 @@ describe("KeymapPage", () => {
 
     // Note: Dialog testing requires portal rendering support
     // which may not work in all test environments
+  });
+
+  describe("Runtime cards", () => {
+    const readyKeymap = {
+      keymap: mockKeymap,
+      physicalLayouts: mockPhysicalLayouts,
+      behaviors: mockBehaviors,
+      isFullyLoaded: true,
+    };
+    const setupTapDance = (overrides = {}) => {
+      const runtime = {
+        isAvailable: true,
+        busy: false,
+        error: null,
+        revision: 0,
+        intervalMs: 200,
+        entries: [
+          State.create({ index: 7, name: "Alphabet", config: Config.create() }),
+        ],
+        globalSettings: GlobalResponse.create({
+          apiVersion: 2,
+          maxEntries: 16,
+          maxNameLength: 24,
+        }),
+        hasUnsavedChanges: false,
+        load: jest.fn().mockResolvedValue(true),
+        create: jest.fn().mockResolvedValue(7),
+        rename: jest.fn(),
+        remove: jest.fn(),
+        save: jest.fn(),
+        saveInterval: jest.fn(),
+        saveChanges: jest.fn().mockResolvedValue(true),
+        discardChanges: jest.fn().mockResolvedValue(true),
+        ...overrides,
+      };
+      jest
+        .spyOn(tapDanceHook, "useRuntimeTapDance")
+        .mockReturnValue(runtime as never);
+      return runtime;
+    };
+    afterEach(() => jest.restoreAllMocks());
+
+    it("opens a named tapdance in a modal and preserves RAM changes when closed", async () => {
+      const user = userEvent.setup();
+      const runtime = setupTapDance({ hasUnsavedChanges: true });
+      renderComponent({ isConnected: true }, readyKeymap);
+      const card = screen.getByRole("region", { name: "Tapdances" });
+      await user.click(within(card).getByRole("button", { name: "Alphabet" }));
+      expect(screen.getByRole("dialog", { name: "Tapdances" })).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Delete tapdance" }),
+      ).toBeVisible();
+      await user.click(
+        screen.getByRole("button", { name: "Close", exact: true }),
+      );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(runtime.discardChanges).not.toHaveBeenCalled();
+      await user.click(
+        screen.getByRole("button", { name: "Save", exact: true }),
+      );
+      expect(runtime.saveChanges).toHaveBeenCalledTimes(1);
+    });
+
+    it("creates from the card plus and disables creation at capacity", async () => {
+      const user = userEvent.setup();
+      const runtime = setupTapDance();
+      const view = renderComponent({ isConnected: true }, readyKeymap);
+      await user.click(screen.getByRole("button", { name: "New tapdance" }));
+      expect(runtime.create).toHaveBeenCalledWith("Tapdance 1");
+      expect(screen.getByRole("dialog", { name: "Tapdances" })).toBeVisible();
+      await user.click(
+        screen.getByRole("button", { name: "Close", exact: true }),
+      );
+      runtime.globalSettings.maxEntries = 1;
+      view.replaceKeymap({});
+      expect(
+        screen.getByRole("button", { name: "New tapdance" }),
+      ).toBeDisabled();
+    });
+
+    it("discards tapdance RAM changes through the page Reset menu", async () => {
+      const user = userEvent.setup();
+      const runtime = setupTapDance({ hasUnsavedChanges: true });
+      jest.spyOn(window, "confirm").mockReturnValue(true);
+      renderComponent({ isConnected: true }, readyKeymap);
+      await openResetMenu(user);
+      await user.click(screen.getByRole("menuitem", { name: /Discard/ }));
+      expect(runtime.discardChanges).toHaveBeenCalledTimes(1);
+    });
+
+    it("opens macro creation locally without allocating until Create", async () => {
+      const user = userEvent.setup();
+      setupTapDance({ isAvailable: false });
+      const runtime = {
+        globalSettings: null,
+        hasUnsavedChanges: false,
+        isSlotUnsaved: jest.fn(() => false),
+        getMacro: jest.fn(),
+        clearError: jest.fn(),
+        deleteMacro: jest.fn(),
+        renameMacro: jest.fn(),
+        resetMacro: jest.fn(),
+        setMacroStepCount: jest.fn(),
+        setMacroStep: jest.fn(),
+        appendMacroStep: jest.fn(),
+        setTapMs: jest.fn(),
+        saveMacros: jest.fn(),
+        discardMacros: jest.fn(),
+        isAvailable: true,
+        macros: [],
+        isLoading: false,
+        error: null,
+        maxMacroBytes: 256,
+        maxNameLength: 24,
+        loadMacros: jest.fn(),
+        createMacro: jest.fn(),
+      };
+      jest.spyOn(macroHook, "useRuntimeMacro").mockReturnValue(runtime);
+      renderComponent({ isConnected: true }, readyKeymap);
+      await user.click(screen.getByRole("button", { name: "New macro" }));
+      expect(screen.getByRole("dialog", { name: "New macro" })).toBeVisible();
+      expect(runtime.createMacro).not.toHaveBeenCalled();
+      await user.click(
+        screen.getByRole("button", { name: "Close", exact: true }),
+      );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(runtime.createMacro).not.toHaveBeenCalled();
+    });
   });
 
   describe("Help Text", () => {

@@ -85,6 +85,8 @@ IE-001〜IE-012 は旧独立ページの契約として廃止。認証保持は 
 5. 新規保存で private/public を選び保存、一覧更新/record 再取得、sign out 後 cloud section 非表示を確認（IE-019/023）。所有キーマップの行右側には公開済みの場合のみ `public`、Preview header のタイトル左側には公開状態に応じて `private` / `public` が表示され、file preview には表示されないことを確認（IE-029）。外部サービス書込みは検証用アカウントでのみ実施。
 6. identity RPC の新旧 firmware を比較。対応機は適用後 identifier の get readback、編集後も同一、再接続後の判定、file 反映後 empty を確認。未対応機は注意表示と file/cloud 機能の継続を確認（IE-024）。
 
+Keymap の共有操作は、現在編集中の macro と combo の待機中 RAM 書込みを flush してから読取を開始する。macro の RAM 反映が失敗した場合は preview の読取を進めず、エラーを表示して再編集または Discard 後に再試行する。これは flash 保存ではない（KM-030、KeymapPage の beforeRead）。
+
 ## 不変条件
 
 - IE-I01: 読込中・保存中・blocked preflight では二重書込みを開始しない（S3）。

@@ -16,22 +16,22 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 
 ## Sitemap
 
-| 入口 / 機能                        | 仕様                                                                      | 接続条件                                       |
-| ---------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- |
-| `/` 接続前                         | [接続・unlock](modules/device-session.md)                                 | 不要                                           |
-| `/` Home                           | [ホーム](pages/home.md)                                                   | 接続または Demo                                |
-| `/keymap`                          | [キーマップ](pages/keymap.md) / [rotary encoder](pages/keymap-sensors.md) | 接続または Demo、機能別 capability             |
-| `/macro-combo`                     | [Macro & Combo](pages/macro-combo.md)                                     | 接続 + runtime macro/combo/tapdance            |
-| `/trackball`                       | [Trackball](pages/trackball.md)                                           | 接続 + 対応入力機能                            |
-| `/connection`                      | [接続先設定](pages/connection.md)                                         | 接続 + 機能別 capability                       |
-| `/settings`                        | [設定](pages/settings.md)                                                 | 接続 + 機能別 capability                       |
-| `/troubleshooting`                 | [診断](pages/troubleshooting.md)                                          | 接続 + 診断 capability                         |
-| `/subsystems`                      | [Subsystems](pages/subsystems.md)                                         | 接続                                           |
-| `/keymap` の Save/share keymap     | [キーマップ共有](pages/import-export.md)                                  | 接続または Demo、file/search は Abyss 認証不要 |
-| `/oauth/callback`                  | [OAuth callback](pages/oauth-callback.md)                                 | keyboard 接続不要、認証フローの状態は別途必要  |
-| `/release-notes`                   | [リリースノート](pages/release-notes.md)                                  | 不要                                           |
-| `/developer-guide` と配下 10 route | [開発者ガイド・全 route 一覧](pages/developer-guide.md)                   | 不要                                           |
-| 接続中の Debug Tool ボタン         | [Debug Tool](pages/debug-tool.md)                                         | devtool capability                             |
+| 入口 / 機能                        | 仕様                                                                      | 接続条件                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `/` 接続前                         | [接続・unlock](modules/device-session.md)                                 | 不要                                                             |
+| `/` Home                           | [ホーム](pages/home.md)                                                   | 接続または Demo                                                  |
+| `/keymap`                          | [キーマップ](pages/keymap.md) / [rotary encoder](pages/keymap-sensors.md) | 接続または Demo、機能別 capability                               |
+| `/keymap` の Macros / Tapdances    | [runtime editors](pages/macro-combo.md)                                   | 接続 + 各 runtime capability。旧 `/macro-combo` も Keymap を表示 |
+| `/trackball`                       | [Trackball](pages/trackball.md)                                           | 接続 + 対応入力機能                                              |
+| `/connection`                      | [接続先設定](pages/connection.md)                                         | 接続 + 機能別 capability                                         |
+| `/settings`                        | [設定](pages/settings.md)                                                 | 接続 + 機能別 capability                                         |
+| `/troubleshooting`                 | [診断](pages/troubleshooting.md)                                          | 接続 + 診断 capability                                           |
+| `/subsystems`                      | [Subsystems](pages/subsystems.md)                                         | 接続                                                             |
+| `/keymap` の Save/share keymap     | [キーマップ共有](pages/import-export.md)                                  | 接続または Demo、file/search は Abyss 認証不要                   |
+| `/oauth/callback`                  | [OAuth callback](pages/oauth-callback.md)                                 | keyboard 接続不要、認証フローの状態は別途必要                    |
+| `/release-notes`                   | [リリースノート](pages/release-notes.md)                                  | 不要                                                             |
+| `/developer-guide` と配下 10 route | [開発者ガイド・全 route 一覧](pages/developer-guide.md)                   | 不要                                                             |
+| 接続中の Debug Tool ボタン         | [Debug Tool](pages/debug-tool.md)                                         | devtool capability                                               |
 
 入口の母集団は [App.tsx](../../src/App.tsx) の `getTabs` と `AppRouter` / `AppContent` の独立ルート、開発者ガイドは [route 定義](../../src/content/developerGuide.ts)。新しい入口を追加したらこの表とページ仕様を同時に更新する。
 

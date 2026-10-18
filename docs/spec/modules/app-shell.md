@@ -82,6 +82,8 @@ SHELL-023: モバイル（640px未満）のKeymapでsheetを表示している�
 
 7. トップ → guide の module page → Release Notes → browser Back/Forward を移動し、各ページと言語に title / description / canonical / OGP が追従することを document head で確認する。query / hash 付きで直接開いても canonical に含まれないこと、公開ページから通常編集 route に移ると canonical が残らないことを確認する（SHELL-018/019）。`/sitemap.xml` と `/robots.txt` は HTTP で内容を確認し、検索登録済みとは扱わない（SHELL-020）。
 
+- SHELL-024: Macro&Combo タブを廃止し、マクロとタップダンスの一覧・modal 編集入口を Keymap に統合する（KM-029/030）。旧 `/macro-combo` は同じ接続セッション内の Keymap を表示する互換入口とし、新規のタブ遷移は `/keymap` を使う。根拠: 2026-10-18 ユーザー明示要求、AppContent/getTabs。
+
 ## 不変条件
 
 - SHELL-I01: 非選択タブの操作 UI が選択ページと重なって利用されない（S3 hidden）。
