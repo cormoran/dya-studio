@@ -1,81 +1,38 @@
 ---
 name: ai-operability-review
-description: Review DYA Studio pages for AI operability through actual browser tasks, distinguish product friction from tool limitations, and produce evidence-backed improvement proposals. Use for requested AI-readiness or agent-usability audits, not ordinary regression testing.
+description: Review DYA Studio pages through real browser tasks for agent usability and evidence-backed improvements. Use for requested AI operability audits, not ordinary regression testing.
 ---
 
 # AI operability review
 
-Use the [specification sitemap](../../../docs/spec/README.md) to inventory assigned entry points, including standalone routes and capability-gated tools. Read the assigned page/module specs and [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md). Use `exploratory-ui-test` for isolation and evidence discipline; this skill adds an operability lens rather than requiring its entire functional regression suite.
+Read the [sitemap](../../../docs/spec/README.md), assigned specs, and [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md). Follow `exploratory-ui-test` isolation, evidence, and restoration rules without running its full regression suite.
 
-## Review through tasks
+## Observe real tasks
 
-Start with a coordinator-operated editing-page pilot before delegating a new whole-app audit. Complete one representative edit, applicable save, application readback, restoration, and restoration readback. Explore at least one cancellation/navigation variant. Record what required extra inference or observation, then use it to calibrate worker briefs and model choices.
+For a new whole-app audit, first complete a coordinator-run editing pilot: edit, save if applicable, application readback, restore, restoration readback, and one cancellation/navigation variant. Use its actual difficulties to scope workers.
 
-For each assigned page, assess:
+For each assigned page, perform a representative task and a distinct variant. Check:
 
-- **Discovery and identity:** Can an agent find the entry and uniquely identify the device, layer, row, direction, setting, and current target from names and semantic grouping? Repeated labels alone are not defects if a stable accessible group resolves them.
-- **State and feedback:** Can it read selected/expanded/disabled states, draft versus applied values, pending work, success, failure, and unsupported conditions? Inspect the actual accessibility/DOM attributes before blaming the app for a snapshot omission.
-- **Action semantics and recovery:** Do names communicate immediate writes, save boundaries, close/cancel behavior, and destructive scope? Can it cancel, retry, reload, and restore without guessing?
-- **Efficiency:** Can ordinary tasks use semantic controls without coordinates, source-code knowledge, large repeated snapshots, or remembering hidden context? Measure concrete extra steps; do not invent a numeric usability score.
-- **Theme consistency and visual affordances:** Follow the [all-theme checks](../../../docs/spec/EXPLORATORY_TESTING.md#テーマの一貫性確認) on assigned pages and visible overlays. Compare colors, fonts, focus/selection/disabled states, and separation of cards, menus and keys against the theme concept. Check actual rendered visuals after async fonts settle and restoration outside Pop; do not infer visual consistency from accessible names or DOM snapshots alone. Include the theme × page/component × state matrix and distinguish design suggestions from specification mismatches.
-- **Alternative interfaces:** Where a structured agent interface already exists, inspect its documented scope and contracts. UI success does not verify that interface; its absence alone is not a defect. Do not introduce a new API as the automatic answer to poor labels.
+- **Target identity:** Can names and groups distinguish device, layer, row, direction, setting, and current selection? Inspect computed accessible names and active visible panels; hidden retained tabs can inflate document-wide counts.
+- **State and recovery:** Can an agent read selection, draft/applied values, pending work, success/failure, and unsupported states, then cancel, retry, reload, and restore without guessing? Compare modal versus floating Close/Escape behavior and write-through versus Save boundaries.
+- **Cost of operation:** Record concrete extra steps, source knowledge, coordinates, or repeated snapshots needed. Do not invent a usability score.
+- **Visuals:** Apply the guide's all-theme checks to assigned pages and overlays. Capture screenshots and fresh rendered styles after fonts settle, including focus/selection/disabled states and restoration after Pop. Report the theme × page/component × state matrix; separate design suggestions from spec violations.
+- **Other interfaces:** Inspect existing structured interfaces when relevant. UI success does not test them, and absence alone is not a defect.
 
-Perform a representative task and one relevant variant per page. For editing pages, read back the changed value through the application's Refresh/Reload or documented equivalent before restoration. For informational pages, use real navigation/search/expand controls and verify the destination or resulting content. Directly opening a route proves rendering, not that its incoming links work. Related documentation routes may share one exercised navigation variant, but enumerate each route's actual observations. Mobile exploration is optional unless assigned; do not let it displace a required desktop task.
+For edits, read the changed value through the application's Refresh/Reload before and after restoration; first record every affected source/device value. For informational pages, exercise a real link, search, or expansion and verify the resulting route/content. Direct URL rendering does not verify navigation. Enumerate observations for each route even when related routes share a variant. Mark capability-gated and external-auth flows blocked when unavailable; do not operate hardware/accounts without authorization.
 
-Record unreachable capabilities and external-auth flows explicitly; do not operate hardware or external accounts without task authorization. An unavailable page can still receive a targeted source-only review, but mark its proposals as unverified in the browser. Do not turn a missing test assertion or an ambiguous tool timeout into a product improvement issue.
+Browse before reading source. Read-only DOM inspection may clarify roles, names, state, and grouping; never write DOM, React, or storage to bypass controls. Then inspect exact source and shared consumers. Separate UI observations, source facts, proposals, tool errors, and untested conditions. A missing assertion or tool timeout is not a product defect. Check the DOM before blaming the app for snapshot omissions such as `aria-pressed`; a `title` may already name an icon button. Synthetic OAuth errors may stop at build configuration before callback handling.
 
-For synthetic callback errors, record which guard actually rendered the result: an unconfigured OAuth build can stop before provider-error handling. An icon-only button with `title` is not automatically unnamed; check its computed accessible name before proposing an attribute-only fix.
+## Delegation
 
-Browse first using UI/specifications. Targeted read-only DOM observation may inspect names, roles, values, grouping, and state. Do not write DOM/React/storage to bypass the UI. Afterwards inspect the relevant source to confirm a finding and its shared consumers. Keep UI observations, source facts, proposals, tool errors, and untested conditions separate.
+Use available models and user preferences. Starting choices: `gpt-5.6-terra` / `high` for complex editing pages; `gpt-5.6-luna` / `medium` for bounded informational routes. These are judgments, not a model benchmark. Escalate unresolved adjudication to the coordinator. In Orca, read `orca-cli` and `orchestration`, launch Codex workers with `--profile orca`, and verify the effective model/effort. If `worker-start` cannot set the profile, use the documented custom-argv terminal route and attach it; inspect ownership before release.
 
-DYA Studio retains visited tab panels. Scope DOM counts and label checks to the active visible panel (and its visible portal dialogs); a document-wide selector can include hidden controls from another page. In forward testing, a ninth apparent Trackball switch belonged to the hidden Macro & Combo pane. Verify source symbols and control counts before publishing, and require meaningful evidence rather than a worker's blanket pass.
+Give each editing worker 1–2 pages, separate origins and dedicated browser pages; run at most 2–3 concurrently. Enumerate informational routes, keep a page-to-worker inventory, settle every dispatch, and follow up once with exact missing evidence. Runtime failures do not justify increasing reasoning effort. Workers must not redelegate.
 
-## Pilot lessons to carry forward
+Worker brief: assigned routes/specs and isolated URL; exclusive temporary report; representative task/variant; exact targets and initial/changed/restored values; applicable save/Refresh/readback; all-theme matrix; extra inference, useful affordances, candidates, blocked/not-run; environment and effective model/effort. Review only: no app edits, commits, GitHub writes, hardware/account operations. Require UI evidence before source corroboration.
 
-- Keymap position names distinguish identical bindings. Preserve this strength; check that opening an editor retains the same layer/position context. The preview's zero-based position and floating toolbar's one-based count require explicit mapping.
-- Orca snapshots can omit `aria-pressed` even when the DOM exposes it correctly. In the Keymap pilot, layer buttons and Close on select had valid attributes. This is tool friction, not evidence for adding attributes already present.
-- A modal's Close/Escape can apply a draft while floating Close/Escape discards unfinished edits. Compare observable effects with the accessible action name and available explanation. Spec compliance can still leave a usability improvement.
-- Repeated encoder Tap time inputs need sensor/layer context, and binding buttons need direction context. Compare full-tree grouping with the interactive control names before proposing labels.
-- A closed editor or cleared pending indicator does not prove persistence. Keymap Save and encoder writes have different boundaries.
-- Use the actual localized reread control in reports (for example, Macro & Combo `更新`, Trackball `プロセッサーを再読み込み`). For write-through fields, wait beyond the documented debounce and use that control; do not look for another section's Save.
-- Record all affected device/source values before editing. Restoring the central timeout can overwrite different peripheral values; fresh Demo reconnection restores the simulation defaults but is not proof of restoring a physical device.
+## Findings
 
-## Delegation and model selection
+Each proposal needs observed reproduction, current and proposed behavior, agent impact, evidence class, spec IDs/source symbols and shared consumers, priority rationale, and testable acceptance criteria. Prioritize wrong-target writes and misleading save/cancel feedback. Group duplicate symptoms by root cause and include existing strengths. Never call untested paths reproduced or proposals approved requirements.
 
-Use the user's available models and preferences. The following starting choices are judgments from the Keymap pilot's ambiguity and source/tool triangulation, **not a benchmark of relative model quality or cost**:
-
-| Work                                                                           | Starting model / effort   | Reason                                                                                           |
-| ------------------------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------ |
-| Editing pages with multiple targets, shared selectors, or mixed save semantics | `gpt-5.6-terra` / `high`  | Needs causal reasoning about target identity, asynchronous writes, recovery, and source evidence |
-| Informational pages and bounded read-only diagnosis                            | `gpt-5.6-luna` / `medium` | Mostly navigation and naming; medium leaves room to distinguish tooling gaps from product issues |
-| Adjudication                                                                   | Coordinator first         | Escalate a narrowly specified unresolved question only when existing evidence is insufficient    |
-
-Give an editing worker 1–2 pages per dispatch. Group related informational routes, but enumerate every route and require individual coverage rows. Run at most 2–3 workers concurrently, each on a coordinator-provided separate origin and dedicated browser page. No worker redelegation or duplicate successful baseline runs. Follow up once with the exact missing evidence, then reassess the cause; higher reasoning effort does not fix runtime errors.
-
-In Orca, read `orca-cli` and `orchestration`, use outside-sandbox CLI calls when required by the environment, and launch every Codex worker with `--profile orca`. Verify the effective model/effort from the launch receipt or startup screen. If worker-start cannot express the profile, use the documented custom-argv terminal path and attach the task with `worker-start --terminal`; do not silently omit the profile. A reused terminal can remain externally owned: inspect the receipt rather than assuming release will close it. Keep a page-to-worker inventory, settle every dispatch, and follow the orchestration guide for release or ownership transfer and any caller-owned cleanup.
-
-Worker brief:
-
-```text
-Use .agents/skills/ai-operability-review/SKILL.md.
-Target: <enumerated pages/routes/specs>; URL: <isolated running origin>.
-Result: <exclusive temporary report path>; review only, no application edits,
-commits, GitHub writes, hardware/account operations, or redelegation.
-Record environment and actual model/effort. Use your own browser page ID.
-For each page: representative task + variant; applicable edit/save/readback/
-restoration/readback; concrete target names and values, extra inference needed,
-positive affordances, improvement candidates, and blocked/not-run conditions.
-Include all-theme color/font/state observations and untested cells per the exploration guide.
-Inspect source only after UI evidence; distinguish DOM/tool omissions.
-Finish with exact remaining changes and skill ambiguities encountered.
-```
-
-## Findings and delivery
-
-Each proposal needs a reproduction from an observed state, current versus proposed behavior, concrete agent impact, evidence class, related spec IDs/source symbols, affected consumers, priority rationale, and testable acceptance criteria. Do not call a proposal an approved requirement or label an unexecuted failure path reproduced.
-
-Prioritize wrong-target writes and misleading apply/save/cancel feedback ahead of extra navigation or verbosity. Merge findings with one shared root cause; avoid one issue per duplicate control. List useful existing affordances as well as problems.
-
-Keep raw snapshots and trial reports in temporary files. When issue creation is authorized, check existing issues, create one parent with the complete coverage/limitations matrix, and split children by independently implementable root cause when the findings are numerous. Use actual GitHub sub-issue relationships where supported, with reciprocal links as a documented fallback. Do not close the improvement parent merely because the review skill is merged. Publish a skill PR only when authorized by the task/repository delivery instructions, then follow their CI requirements.
-
-Validate skill metadata and links, and forward-test the instructions with the assigned workers. Improve only guidance that their observed execution shows is missing or misleading; do not accumulate raw audit logs in the skill.
+Keep raw reports in temporary storage. When issue creation is authorized, check existing issues; use a parent coverage/limitations report and independently implementable children with sub-issue links where supported. Follow repository PR/CI rules only when publication is authorized. For skill revisions, validate metadata and links and run a bounded forward test when warranted; change guidance only for observed ambiguity.

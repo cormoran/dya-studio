@@ -1,40 +1,29 @@
 ---
 name: frontend-performance
-description: Analyze DYA Studio frontend responsiveness, loading cost, and resource use; measure and validate targeted optimizations or recurring performance audits. Use for performance work, not ordinary functional UI testing or backend tuning.
+description: Measure and improve DYA Studio frontend responsiveness, loading cost, and resource use. Use for performance audits or optimizations, not ordinary UI regression or backend tuning.
 ---
 
 # Frontend performance
 
-Optimize user wait and resource consumption with reproducible evidence. Default to analysis; implement only when the task authorizes changes. A successful audit may conclude that no optimization is justified.
+Default to analysis; implement only when the task authorizes changes. “No justified optimization” is a valid result.
 
-## Workflow
+1. Read `docs/spec/README.md`, `AUTHORING.md`, target specs, and for browser work `EXPLORATORY_TESTING.md` and the tool guide. Check actual build/compiler configuration and dependency versions before framework advice.
+2. Choose one page and a complete journey. Separate initial delivery, first usable UI, full readiness, immediate feedback, device acknowledgement, and persistence. Read [measurement methods](references/measurement.md); for Keymap read its [investigation map](references/keymap.md).
+3. Record commit/diff, build mode, URL, browser/hardware/viewport, foreground state, transport/capabilities, data size, cache and instrumentation. Build once before measurement; freeze sources during the session. Use production preview for baseline; dev/HMR/StrictMode only for diagnosis.
+4. Trace the exact handler → hook → state/RPC path, including awaited callees, then test falsifiable hypotheses. Source complexity, render counts, or bundle warnings alone do not prove user-visible delay. Keep frontend CPU/paint, RPC queue/wire, and flash wait separate.
+5. Complete the journey with application Reload readback and restoration of values/preferences. Collect repeated operation-specific samples, plus trace/profiling and resource evidence as relevant. Mark unavailable metrics and unexecuted conditions blocked/not-run.
+6. Rank a few candidates by measured cost, frequency, confidence, and correctness risk. State source symbol, mechanism, measurement, experiment/change, and regression guard; avoid invented percentage gains.
+7. If authorized to implement, change one mechanism at a time and compare equivalent conditions. Preserve persistence, errors, accessibility, freshness, and shared consumers. Run relevant tests/lint/build/spec checks; update specs for observable changes. Reject wins caused by skipped or delayed work.
+8. Report evidence, limits, next action, and cleanup. Store raw traces/trial reports temporarily or in authorized CI artifacts, not HEAD.
 
-1. Read `docs/spec/README.md`, `AUTHORING.md`, the target page and affected module specs. For browser work also read `EXPLORATORY_TESTING.md` and the selected tool guide. Review the actual build/compiler configuration and installed dependency code before recommending framework changes.
-2. Define the journey and separate initial load, first usable UI, fully loaded state, input feedback, device acknowledgement, and persistence. Choose a small target: one page and one complete read/edit/save/readback journey. Read [measurement.md](references/measurement.md) before measuring. For Keymap also read [keymap.md](references/keymap.md).
-3. Record commit and working diff, production/dev/profiling build, actual URL, browser/hardware/viewport, foreground state, transport/capabilities, data size, cache state, and instrumentation. Build once before browsing; never generate/build/edit the application during a measured session. Production preview is the baseline; dev/HMR/StrictMode timings are diagnostic only.
-4. Trace the relevant handler → hook → state/RPC path. Identify hypotheses, then measure the corresponding operation. Source complexity, bundle warnings, and render counts alone do not prove a user-visible bottleneck. Keep frontend CPU, browser paint, RPC queue/wire wait, and flash persistence separate. Before ranking a source-backed finding, re-read the exact function body and its awaited callees; do not infer a reload, bulk write or cache miss from a neighboring handler or generic lifecycle description.
-5. Run the full successful journey, including application Reload readback and restoration of original values/preferences. Gather repeat samples for selected interactions, then investigate dominant work using a browser trace or React profiling build. Keep unsupported metrics and unexecuted conditions explicitly blocked/not-run.
-6. Rank a few candidates by measured cost, user frequency, confidence, and correctness risk. Each needs a source symbol, mechanism, falsifiable measurement, proposed change, and regression guard. Do not invent an expected percentage improvement.
-7. If implementing, change one mechanism at a time and compare the same scenario/environment against baseline. Preserve persistence, errors, accessibility, freshness, and shared consumers. Run relevant tests/lint/build/spec checks and update affected specs for observable changes. Reject apparent wins caused by skipped work or delayed correctness.
-8. Report evidence, limits, next action, and cleanup. Raw traces/snapshots/trial reports belong in temporary storage or authorized CI artifacts, not HEAD. Keep only durable guidance in this skill.
+## Delegation and recurring audits
 
-## Delegation and recurring use
+Use the environment's orchestration skill when delegation is requested. In Orca, launch Codex with `--profile orca` and explicit model/effort, verify the launch, use dedicated pages, and obtain approved outside-sandbox CLI access. Isolated origins separate storage; serialize timed browser work and builds on a host, though workers can inspect source concurrently.
 
-Use the environment's orchestration skill when delegation is requested. In Orca, use `codex --profile orca`, explicit model/effort, a dedicated page, and approved outside-sandbox CLI access. Confirm effective launch values. Separate origins isolate storage; do not run performance samples concurrently on the same host. Workers may inspect code concurrently, but serialize timed browser work and builds.
+Default to `gpt-5.6-luna` / `medium` with coordinator review. Read [model selection and acceptance](references/model-selection.md) when delegating; this pilot guidance does not qualify unattended audits. Give workers a frozen build URL, route/specs, exclusive timing slot, temporary report, allowed Demo edits/restoration, and required journey/samples. Do not give expected findings. Review worker evidence, not completion labels: require complete readback/restoration, valid sample boundaries, honest resource limits, and exact source attribution. One focused source re-check can correct a misread awaited operation.
 
-Use `gpt-5.6-luna` with `medium` reasoning for a bounded, coordinator-reviewed audit. This is a conservative pilot recommendation, not an unattended-audit qualification: both tested efforts missed required operation-specific latency samples. Read [model-selection.md](references/model-selection.md) before delegation for evidence, limitations and escalation. Never infer monetary cost from elapsed time; re-evaluate after material model/tool changes.
+Scheduled audits are report-only by default with fixed fixture/build and comparable retained baseline; create a schedule only when requested. If runtime access fails, complete static analysis and mark measurements blocked. Escalate reproducible regressions beyond baseline variation; do not alert from incomparable conditions.
 
-Worker brief: target route/specs; frozen build URL; exclusive measurement slot; exact skill path; owned temporary report; allowed Demo edits/restoration; no product edits/commit/PR; required complete journey plus repeated latency samples and source-backed ranked findings. Do not give the evaluator the expected findings.
+## Report
 
-Review acceptance independently of worker completion labels: complete journey and restoration, valid sample boundaries/counts, at least one resource observation with honest limits, exact source attribution, and no fabricated cost/speedup/persistence claims. An honest blocked report is useful but does not pass the runtime evaluation. If a report invents an awaited operation, request one focused source re-check before accepting its ranking. Separate queue wait and environment repair from model execution cost.
-
-For scheduled audits, default to report-only with a fixed fixture/build mode and comparable retained baseline. If hardware/tool access is unavailable, complete static analysis but mark runtime coverage blocked. Do not provision an actual schedule unless requested. Escalate reproducible regression outside baseline variability; do not file repeated alerts from incomparable environments.
-
-## Report contract
-
-- Environment and scenario, initial/final values, spec IDs, coverage and artifact paths.
-- Metric definition and boundaries, sample count/raw samples, median and range, cache/transport conditions; limitations and missing metrics.
-- Findings labeled **measured**, **source-backed hypothesis**, or **not-run**. Separate UI correctness results from performance evidence.
-- For each candidate: user impact, source/symbol, attribution, proposed experiment/fix, risk and verification.
-- If changed: before/after under equivalent conditions, tests, spec impact, and remaining uncertainty.
-- Cleanup including device state, preferences, observers, tabs and owned servers; remaining changes disclosed.
+Include environment and scenario; spec IDs; initial/final values; coverage and artifacts; metric definitions/boundaries, raw samples/count, median/range, cache/transport, and missing metrics. Label each finding **measured**, **source-backed hypothesis**, or **not-run**; separate correctness from speed. For each candidate include impact, attribution, proposed test/change, risk, and verification. If changed, include comparable before/after and tests/spec impact. Disclose observer, tab, server, device/preference cleanup and remaining changes.

@@ -1,90 +1,32 @@
 # Physical Chrome through CUA
 
-Read only when `mcp__cua_repl` and actual Chrome are available. Load the tool's
-current documentation first; use its supported APIs and browser-selection rules.
-This is an adapter for a proven physical chooser path, not a requirement to
-install a browser/extension or replace an otherwise working tool.
+Read only when actual Chrome and `mcp__cua_repl` are available. Load current tool documentation and use supported APIs. This is one proven chooser path, not a browser-install requirement.
 
-## One owned session and a real user gesture
+Create a named tab; record exact ID, URL and display state. Freshly observe native Chrome and select only that tab before native input: the DOM-controlled tab may be in the background. A new app document may auto-connect a granted serial port through `DeviceConnectionProvider`; wait for it. Use an already connected DYA2 session and do not open duplicate tabs as a reset. Distinguish pending, connected and error states.
 
-Create a named test tab and record its exact ID, URL and initial display state.
-Before a native action, freshly observe the native Chrome window and select only
-that owned tab. A DOM-controlled tab can be in the background while the native
-window shows unrelated user content; never assume the visible tab is yours.
+If disconnected after auto-connect settles, use native clicks on USB and Agree, inspect the native chooser, and select the verified DYA2 row. A pilot's DOM clicks dismissed the notice without opening the chooser. After handshake, use the bound tab's DOM/locator APIs for ordinary UI controls/readback; use native input for browser-owned chooser/download surfaces. Record actual permission failures without bypassing them.
 
-A new app document may automatically connect to a previously granted serial
-port: `DeviceConnectionProvider` checks paired ports even without a stored method.
-Wait for that attempt to settle. If DYA2 is already connected, use that session;
-do not click USB again. Do not open duplicate app tabs as a reset. Observe
-pending, connected and error states separately and keep the planned connection
-budget. The source behaviour does not prove the cause of any particular error.
-
-If still disconnected with no pending auto attempt, use native CUA clicks on
-USB and the normal Agree button, inspect the native chooser, then select only
-the verified DYA2 row. A pilot's DOM clicks closed the notice without reaching
-the chooser; native input did. After the actual handshake, prefer the bound
-Chrome tab's DOM/locator APIs for ordinary controls and scoped readback. Native
-window automation is still useful for browser-owned chooser/download surfaces.
-
-## Persist evidence instead of only displaying it
-
-The screenshot APIs return image bytes (`Uint8Array`); inspect their actual
-signature before choosing an extension. A later run returned JPEG despite the
-earlier PNG assumption. Do not rename bytes and call that format conversion.
-Retain originals and record any encoding conversion; never edit the scene.
-No guessed `saveScreenshot` method or unsupported `path` option is needed.
-The CUA Node REPL can persist the returned bytes locally:
+Screenshot APIs return bytes, whose actual signature determines the extension. One run returned JPEG despite a PNG assumption. Retain originals and record any conversion; never relabel bytes or alter the scene. With already-bound app/tab and an owned evidence directory, persist screenshots and DOM evidence through the CUA Node REPL:
 
 ```js
-var evidenceFs = await import("node:fs/promises");
-var evidenceRoot = "/private/tmp/your-owned-run";
-await evidenceFs.mkdir(evidenceRoot, { recursive: true });
-var saveCapture = async (stem, bytes) => {
+var fs = await import("node:fs/promises");
+var dir = "/private/tmp/your-owned-run";
+await fs.mkdir(dir, { recursive: true });
+var save = async (stem, bytes) => {
   var png = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e;
-  var jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (!png && !jpeg) throw new Error("Inspect unsupported capture encoding");
-  var path = evidenceRoot + "/" + stem + (png ? ".png" : ".jpg");
-  await evidenceFs.writeFile(path, bytes);
+  var jpg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (!png && !jpg) throw new Error("Inspect capture encoding");
+  var path = `${dir}/${stem}.${png ? "png" : "jpg"}`;
+  await fs.writeFile(path, bytes);
   return path;
 };
-await saveCapture(
-  "native",
-  await ownedChromeApp.getScreenshot({ emit: false }),
-);
-await saveCapture("page", await ownedTab.screenshot({ fullPage: false }));
-await evidenceFs.writeFile(
-  evidenceRoot + "/page.txt",
-  await ownedTab.playwright.domSnapshot(),
-);
+await save("native", await ownedChromeApp.getScreenshot({ emit: false }));
+await save("page", await ownedTab.screenshot({ fullPage: false }));
+await fs.writeFile(`${dir}/page.txt`, await ownedTab.playwright.domSnapshot());
 ```
 
-Use your actual already-bound app/tab and owned directory; do not paste unknown
-binding names. Confirm current runtime methods before using the example. Local
-file writes persist tool-returned evidence, not another input mechanism. If an
-actual permission/capability error prevents persistence, report it precisely.
-Do not label saving unavailable merely because a screenshot was only emitted.
-Verify nonempty files before linking them. If bytes were never retained, an old
-image cannot be reconstructed or replaced with another run's screenshot.
+Check current method names and replace example bindings. Verify nonempty files before linking; report a real persistence error precisely. An emitted image alone is not a saved artifact, and missing old bytes cannot be reconstructed.
 
-For style/value observations use the tab's read-only `playwright.evaluate` or a
-freshly observed locator's `evaluate`. Filter to visible nodes, for example
-nonempty `getClientRects()` and non-hidden computed visibility. The app retains
-hidden visited tab panels; their headings and styles are not visual evidence.
-Pair each stable screenshot with the selected theme, route, visible state and
-rendered values; font-family or theme class alone does not prove final rendering.
-After a macro rename, reacquire the textbox: its accessible name may be the
-current macro name rather than the visible Name label.
+For style/value readback, use supported read-only evaluation on visible nodes (`getClientRects()` and computed visibility); hidden visited panels do not count. Pair screenshots with route, theme, selected state and rendered values. After macro rename, reacquire the textbox because its accessible name may change.
 
-Inspect ambiguous restore/reset labels before acting. Settings currently uses
-`ResetVersionMenu`: its top-level “Reset”/“リセット” button with
-`aria-haspopup="menu"` opens a popover containing both saved timestamps and a
-separate destructive reset item. For a history-only charter, verify that exact
-visible menu trigger, select only a timestamp, inspect the diff and Cancel.
-Do not choose reset items, confirmations or Apply. A label alone does not prove
-either a harmless menu or a destructive action; preserve actual permission
-rejections and resolve the ambiguity without raw-event or permission bypasses.
-
-Complete live observations and cleanup before closing the tab or settling the
-worker. Preserve exact error details before closing a failed connection page.
-Verify owned-tab closure through a fresh inventory; do not close unrelated tabs
-or restart the whole browser to release a port.
+Inspect ambiguous Reset/restore controls before acting. In Settings, `ResetVersionMenu` opens a menu of saved timestamps plus a separate destructive reset item. For history-only work select a timestamp, inspect diff, then Cancel; do not Apply or select reset. Preserve permission errors without raw-event bypasses. Finish observations and restoration before closing the owned tab; verify closure with fresh tab inventory and never close unrelated tabs or restart the browser to free a port.
