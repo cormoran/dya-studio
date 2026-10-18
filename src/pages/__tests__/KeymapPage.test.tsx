@@ -403,11 +403,57 @@ describe("KeymapPage", () => {
       await user.click(
         screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
       );
-      await user.click(
-        screen.getByRole("button", { name: /^(Floating|Sheet) mode$/ }),
-      );
+      const modeSwitch = screen.queryByRole("button", {
+        name: /^(Floating|Sheet) mode$/,
+      });
+      if (modeSwitch) await user.click(modeSwitch);
       return { user, setBinding };
     };
+
+    it.each([
+      [true, null, "sheet"],
+      [true, "modal", "modal"],
+      [true, "floating", "sheet"],
+      [false, null, "modal"],
+      [false, "modal", "modal"],
+      [false, "floating", "floating"],
+    ] as const)(
+      "initializes mobile=%s with saved mode=%s as %s",
+      async (mobile, savedMode, expected) => {
+        const originalMatchMedia = window.matchMedia;
+        window.matchMedia = jest.fn((query: string) => ({
+          ...originalMatchMedia(query),
+          matches: query === "(max-width: 639px)" && mobile,
+        }));
+        if (savedMode !== null)
+          localStorage.setItem("keymapSelectorMode", savedMode);
+        try {
+          const user = userEvent.setup();
+          const setBinding = jest.fn();
+          renderComponent(
+            { isConnected: true },
+            {
+              keymap: mockKeymap,
+              physicalLayouts: mockPhysicalLayouts,
+              setBinding,
+            },
+          );
+          await user.click(
+            screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+          );
+          expect(screen.getByRole("dialog")).toHaveAttribute(
+            "data-presentation",
+            expected,
+          );
+          expect(localStorage.getItem("keymapSelectorMode")).toBe(
+            expected === "sheet" ? "floating" : expected,
+          );
+          expect(setBinding).not.toHaveBeenCalled();
+        } finally {
+          window.matchMedia = originalMatchMedia;
+        }
+      },
+    );
 
     it("releases the mobile sheet workspace when switching to a dialog or closing", async () => {
       const originalMatchMedia = window.matchMedia;

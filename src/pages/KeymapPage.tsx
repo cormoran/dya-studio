@@ -105,12 +105,12 @@ export function KeymapPage() {
 
   const [selectorMode, setSelectorMode] = useState<"modal" | "floating">(() => {
     try {
-      return localStorage.getItem("keymapSelectorMode") === "floating"
-        ? "floating"
-        : "modal";
+      const savedMode = localStorage.getItem("keymapSelectorMode");
+      if (savedMode === "floating" || savedMode === "modal") return savedMode;
     } catch {
-      return "modal";
+      // Use the viewport default when preferences cannot be read.
     }
+    return mobile ? "floating" : "modal";
   });
   const [autoAdvance, setAutoAdvance] = useState(() => {
     try {
