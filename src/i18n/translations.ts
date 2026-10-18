@@ -9,6 +9,8 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "The pointer scale could not be stored. Reopen this preview and try again.":
+    "ポインターの感度を保存できませんでした。プレビューを閉じて開き直し、再試行してください。",
   "Only the keymap identifier will be updated.":
     "キーマップの識別情報のみ更新します。",
   "Sheet mode": "シートモード",
@@ -1729,6 +1731,8 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "The pointer scale could not be stored. Reopen this preview and try again.":
+    "无法保存指针灵敏度。请关闭预览后重新打开并重试。",
   "Only the keymap identifier will be updated.": "仅更新键映射标识信息。",
   "Sheet mode": "底部面板模式",
   "Edit in a bottom sheet below the keyboard preview":

@@ -56,6 +56,17 @@ import {
   rememberedKeymap,
 } from "../lib/abyss/keymapIdentity";
 
+import { abyssPointerScaleCorrections } from "../lib/abyss/abyssPointerScales";
+import {
+  Request as ProcessorRequest,
+  Response as ProcessorResponse,
+} from "../proto/zmk/runtime_input_processor/runtime_input_processor";
+
+const processorCodec = {
+  encode: (request: ProcessorRequest) =>
+    ProcessorRequest.encode(request).finish(),
+  decode: (payload: Uint8Array) => ProcessorResponse.decode(payload),
+};
 const codec = {
   encode: (r: Request) => Request.encode(r).finish(),
   decode: (p: Uint8Array) => Response.decode(p),
@@ -143,6 +154,7 @@ export function useKeymapSharing(
   const app = useContext(ZMKAppContext);
   const { runWithUnlock } = useStudioUnlock();
   const rpc = useCustomSubsystem("cormoran__fast_keymap", codec);
+  const processorRpc = useCustomSubsystem("cormoran_rip", processorCodec);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
@@ -326,7 +338,7 @@ export function useKeymapSharing(
     if (!client || !authenticated) return;
     const { loaded, resolved } = await capture(valid, true);
     // Do not widen to unrelated keyboards in the compact menu.
-    const layoutId = resolved?.layout?.id;
+    const layoutId = resolved?.layout?.id ?? resolved?.compatibleLayout?.id;
     let owned = layoutId ? cache.current.lists.get(layoutId) : [];
     if (!owned) {
       owned = await listMatchingKeymaps(client, layoutId!);
@@ -519,6 +531,35 @@ export function useKeymapSharing(
           );
         }
         valid();
+        // adapter-zmk rounds scales to /1000. Restore exactly representable
+        // firmware fractions (e.g. 1/60) before verifying the actual device.
+        for (const correction of abyssPointerScaleCorrections(pending.diff)) {
+          for (const request of [
+            {
+              setScaleMultiplier: {
+                id: correction.id,
+                value: correction.multiplier,
+              },
+            },
+            {
+              setScaleDivisor: { id: correction.id, value: correction.divisor },
+            },
+          ]) {
+            valid();
+            const response = await processorRpc.call(
+              ProcessorRequest.create(request),
+            );
+            valid();
+            if (
+              !response ||
+              response.error ||
+              !(response.setScaleMultiplier || response.setScaleDivisor)
+            )
+              throw new Error(
+                "The pointer scale could not be stored. Reopen this preview and try again.",
+              );
+          }
+        }
         const readback = await capture(valid);
         if (!isEmptyDiff(compare(pending.after, documentOf(readback.loaded))))
           throw new Error(

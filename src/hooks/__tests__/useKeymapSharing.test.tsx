@@ -681,3 +681,63 @@ it("updates only the supported Abyss identifier when keyboard settings already m
   expect(identifier).toBe(expected);
   expect(result.current.review).toBeNull();
 });
+
+it("lists keymaps for an Abyss compatible layout when there is no exact variation", async () => {
+  mockLoad.mockResolvedValue({
+    state: { currentKeymap: device, detectedLayout: { name: "DYA2" } },
+  });
+  client.resolveLayout.mockResolvedValueOnce({
+    layout: null,
+    compatibleLayout: { id: "layout-one" },
+  });
+  client.listMyKeymaps.mockResolvedValueOnce({ items: [record], pageCount: 1 });
+  const { result } = renderHook(() => useKeymapSharing(true, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.refresh();
+  });
+  expect(result.current.keymaps).toEqual([record]);
+  expect(client.listMyKeymaps).toHaveBeenCalledWith(
+    expect.objectContaining({ layoutId: "layout-one" }),
+  );
+});
+
+it("restores exact pointer scale fractions before readback and identifier storage", async () => {
+  const pointer = (scaleX: number) => ({
+    name: "scroll",
+    type: "trackball",
+    scaleX,
+    scaleY: scaleX,
+    firmwareDialect: { zmk: { cormoran_rip: { processorId: 1 } } },
+  });
+  const local = { ...device, modules: [pointer(0.017)] };
+  const remote = { ...target, modules: [pointer(1 / 60)] };
+  mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+  client.getKeymap.mockResolvedValueOnce({ ...record, data: remote });
+  mockCall.mockImplementation(async (request) => {
+    if (request.setScaleMultiplier) return { setScaleMultiplier: {} };
+    if (request.setScaleDivisor) return { setScaleDivisor: {} };
+    return { error: { code: 0 } }; // old identity firmware
+  });
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: local } })
+    .mockResolvedValueOnce({ state: { currentKeymap: remote } });
+  await act(async () => {
+    expect(await result.current.confirm()).toBe(true);
+  });
+  expect(mockCall).toHaveBeenCalledWith(
+    expect.objectContaining({ setScaleMultiplier: { id: 1, value: 1 } }),
+  );
+  expect(mockCall).toHaveBeenCalledWith(
+    expect.objectContaining({ setScaleDivisor: { id: 1, value: 60 } }),
+  );
+  expect(result.current.review).toBeNull();
+  expect(result.current.error).toBeNull();
+});
