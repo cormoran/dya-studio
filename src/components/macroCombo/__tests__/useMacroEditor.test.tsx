@@ -23,6 +23,7 @@ function makeRuntimeMacro(
     isAvailable: true,
     isLoading: false,
     getMacro,
+    getMacroSlot: () => 3,
     isSlotUnsaved: () => false,
     clearError: () => {},
     loadMacros: jest.fn(),
@@ -393,6 +394,61 @@ describe("useMacroEditor", () => {
     });
     expect(renameMacro).toHaveBeenCalledWith("Draft", "Replacement");
     expect(result.current.loadedMacro?.name).toBe("Replacement");
+  });
+
+  it("waits for rename and appends to the reassigned slot", async () => {
+    let finishRename!: (ok: boolean) => void;
+    const renameMacro = jest.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishRename = resolve;
+        }),
+    );
+    const appendMacroStep = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = {
+      ...makeRuntimeMacro(
+        jest.fn().mockResolvedValue({
+          slot: 3,
+          name: "Draft",
+          steps: [],
+          encodedSize: 0,
+        }),
+      ),
+      macros: [{ slot: 3, name: "Draft" }],
+      renameMacro,
+      getMacroSlot: () => 9,
+      appendMacroStep,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        immediate: true,
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    act(() => result.current.selectMacro({ slot: 3, name: "Draft" }));
+    await waitFor(() => expect(result.current.loadedMacro).not.toBeNull());
+    act(() => result.current.handleRenameChange("Renamed"));
+    let append!: Promise<void>;
+    await act(async () => {
+      append = result.current.handleAddStep();
+      await Promise.resolve();
+    });
+    expect(renameMacro).toHaveBeenCalledWith("Draft", "Renamed");
+    expect(appendMacroStep).not.toHaveBeenCalled();
+    await act(async () => {
+      finishRename(true);
+      await append;
+    });
+    expect(appendMacroStep).toHaveBeenCalledWith(9, { delay: { delayMs: 0 } });
+    expect(result.current.loadedMacro?.slot).toBe(9);
+    expect(result.current.loadedMacro?.steps).toHaveLength(1);
   });
 
   it("flushes a pending step edit before appending or removing steps", async () => {

@@ -32,6 +32,7 @@ export interface UseRuntimeMacroReturn {
   clearError: () => void;
   loadMacros: () => Promise<void>;
   getMacro: (slot: number) => Promise<MacroDetail | null>;
+  getMacroSlot: (name: string) => number | null;
   createMacro: (name: string, steps?: MacroStep[]) => Promise<boolean>;
   deleteMacro: (name: string) => Promise<boolean>;
   renameMacro: (oldName: string, newName: string) => Promise<boolean>;
@@ -212,13 +213,13 @@ export function useRuntimeMacro(
               );
           }
         }
-        setMacros(
-          summaries.map((entry) =>
-            restoredMacros.current.has(entry.name)
-              ? { ...entry, hasUnsavedChanges: false }
-              : entry,
-          ),
+        const nextMacros = summaries.map((entry) =>
+          restoredMacros.current.has(entry.name)
+            ? { ...entry, hasUnsavedChanges: false }
+            : entry,
         );
+        macroListRef.current = nextMacros;
+        setMacros(nextMacros);
         setMaxMacroBytes(listResponse.listMacros.maxMacroBytes || 64);
         setMaxNameLength(listResponse.listMacros.maxNameLength || 64);
       }
@@ -245,6 +246,12 @@ export function useRuntimeMacro(
       loadInFlightRef.current = false;
     }
   }, [callRpc, ready]);
+
+  const getMacroSlot = useCallback(
+    (name: string) =>
+      macroListRef.current.find((macro) => macro.name === name)?.slot ?? null,
+    [],
+  );
 
   const getMacroInFlightRef = useRef(false);
   const getMacro = useCallback(
@@ -563,6 +570,7 @@ export function useRuntimeMacro(
     clearError,
     loadMacros,
     getMacro,
+    getMacroSlot,
     createMacro,
     deleteMacro,
     renameMacro,

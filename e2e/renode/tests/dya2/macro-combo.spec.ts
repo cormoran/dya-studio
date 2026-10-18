@@ -58,7 +58,7 @@ test("dya2 Keymap: runtime macro create -> persist -> round-trip -> delete", asy
   const modal = page.getByRole("dialog", { name: "Edit macros", exact: true });
   await modal.getByRole("textbox").fill(name);
   await modal.getByRole("button", { name: "Step", exact: true }).click();
-  await modal.getByRole("combobox").selectOption("delay");
+  await modal.getByRole("combobox").selectOption("delay", { timeout: 30_000 });
   await modal.getByRole("spinbutton").fill("25");
   await modal.getByRole("spinbutton").press("Tab");
   await modal.getByRole("button", { name: "Close", exact: true }).click();

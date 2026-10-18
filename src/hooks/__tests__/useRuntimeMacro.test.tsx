@@ -38,6 +38,31 @@ beforeEach(() => {
 });
 
 describe("useRuntimeMacro autoLoad", () => {
+  it("exposes the reassigned slot before rename finishes and React rerenders", async () => {
+    let summary = { slot: 3, name: "Draft", hasUnsavedChanges: true };
+    mockCall.mockImplementation(async (req: Record<string, unknown>) => {
+      if (req.renameMacro) {
+        summary = { ...summary, slot: 9, name: "Renamed" };
+        return { status: { affectedCount: 1 } };
+      }
+      if (req.listMacros) return { listMacros: { macros: [summary] } };
+      if (req.getMacroGlobalSettings)
+        return { getMacroGlobalSettings: { settings: { tapMs: 30 } } };
+      return {};
+    });
+    const { result } = renderHook(() => useRuntimeMacro({ autoLoad: false }));
+    await act(async () => {
+      await result.current.loadMacros();
+    });
+    const getSlot = result.current.getMacroSlot;
+    expect(getSlot("Draft")).toBe(3);
+    await act(async () => {
+      expect(await result.current.renameMacro("Draft", "Renamed")).toBe(true);
+      expect(getSlot("Renamed")).toBe(9);
+      expect(getSlot("Draft")).toBeNull();
+    });
+  });
+
   it("loads the macro list on mount by default", async () => {
     const { result } = renderHook(() => useRuntimeMacro());
     await waitFor(() =>
