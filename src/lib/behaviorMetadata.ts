@@ -291,6 +291,20 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // ============================================================================
   {
     category: "keypress",
+    displayNameVariants: [
+      "Runtime Tap Dance",
+      "Runtime Tapdance",
+      "runtime_tapdance",
+      "rtd",
+    ],
+    shortCode: "TD",
+    param1Type: "number",
+    param1Description: "Tapdance slot",
+    getDisplayText: (binding) => `TD ${binding.param1}`,
+    description: "Run different actions for single, double, or triple taps",
+  },
+  {
+    category: "keypress",
     displayNameVariants: ["Runtime Macro", "rmacro", "macro", "runtime_macro"],
     shortCode: "Macro",
     param1Type: "macro",

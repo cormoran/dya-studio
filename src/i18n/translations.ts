@@ -9,6 +9,38 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Discard edits": "編集を破棄",
+  "Use tapdance": "このタップダンスを割り当て",
+  Tapdance: "タップダンス",
+  "New tapdance": "新規タップダンス",
+  "Edit tapdance": "タップダンスを編集",
+  "Save tapdance": "タップダンスを保存",
+  "Delete tapdance": "タップダンスを削除",
+  "Tapdance slot": "タップダンスのスロット",
+  "Tapdance actions": "タップダンスのアクション",
+  Single: "シングル",
+  Double: "ダブル",
+  Triple: "トリプル",
+  "Select binding": "キー割当を選択",
+  "Saving these actions also updates {{count}} other tapdance key bindings.":
+    "保存すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
+  "This configuration is shared by all keys using this tapdance slot. Usage count is unavailable.":
+    "このスロットを使用するすべてのキーが設定を共有します。使用件数は取得できていません。",
+  "Choose a Single action to enable this tapdance.":
+    "タップダンスを有効にするにはシングルのアクションを選択してください。",
+  "A Triple action requires a Double action.":
+    "トリプルを設定するにはダブルのアクションも必要です。",
+  "Tapdance saved to keyboard.": "タップダンスをキーボードに保存しました。",
+  "Runtime tapdance subsystem is unavailable.":
+    "ランタイムタップダンスのサブシステムが利用できません。",
+  "Tapdance interval (ms)": "タップダンスの間隔 (ms)",
+  "Save interval": "間隔を保存",
+  "The interval applies to all tapdance slots. Tapdance saves separately from macros and combos.":
+    "間隔はすべてのタップダンスに適用されます。タップダンスはマクロ・コンボとは別に保存します。",
+  "Delete this tapdance? Keys using this slot will stop producing tapdance actions.":
+    "このタップダンスを削除しますか？このスロットを使うキーのタップダンスは動作しなくなります。",
+  "Run different actions for single, double, or triple taps":
+    "シングル・ダブル・トリプルタップで異なるアクションを実行",
   "Sheet mode": "シートモード",
   "Edit in a bottom sheet below the keyboard preview":
     "キーボードのプレビューの下に固定したシートで編集します",
@@ -1727,6 +1759,36 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Discard edits": "放弃编辑",
+  "Use tapdance": "使用此踢踏舞",
+  Tapdance: "踢踏舞",
+  "New tapdance": "新建踢踏舞",
+  "Edit tapdance": "编辑踢踏舞",
+  "Save tapdance": "保存踢踏舞",
+  "Delete tapdance": "删除踢踏舞",
+  "Tapdance slot": "踢踏舞槽位",
+  "Tapdance actions": "踢踏舞动作",
+  Single: "单击",
+  Double: "双击",
+  Triple: "三击",
+  "Select binding": "选择按键绑定",
+  "Saving these actions also updates {{count}} other tapdance key bindings.":
+    "保存这些动作也会更新其他 {{count}} 个共享此配置的踢踏舞按键绑定。",
+  "This configuration is shared by all keys using this tapdance slot. Usage count is unavailable.":
+    "使用此槽位的所有按键共享此配置。暂时无法获取使用数量。",
+  "Choose a Single action to enable this tapdance.":
+    "请选择单击动作以启用踢踏舞。",
+  "A Triple action requires a Double action.": "设置三击动作时也需要双击动作。",
+  "Tapdance saved to keyboard.": "踢踏舞已保存到键盘。",
+  "Runtime tapdance subsystem is unavailable.": "运行时踢踏舞子系统不可用。",
+  "Tapdance interval (ms)": "踢踏舞间隔 (ms)",
+  "Save interval": "保存间隔",
+  "The interval applies to all tapdance slots. Tapdance saves separately from macros and combos.":
+    "此间隔适用于所有踢踏舞槽位。踢踏舞与宏和组合键分别保存。",
+  "Delete this tapdance? Keys using this slot will stop producing tapdance actions.":
+    "删除此踢踏舞？使用此槽位的按键将不再触发踢踏舞动作。",
+  "Run different actions for single, double, or triple taps":
+    "单击、双击和三击执行不同动作",
   "Sheet mode": "底部面板模式",
   "Edit in a bottom sheet below the keyboard preview":
     "在键盘预览下方固定的底部面板中编辑",

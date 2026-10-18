@@ -33,9 +33,12 @@ const mockCombo = {
   reload: jest.fn(),
 };
 jest.mock("../../hooks/useCustomSubsystem", () => ({
-  useCustomSubsystem: () => ({
-    subsystem: mockMacroAvailable ? { index: 0 } : null,
-    ready: mockMacroAvailable,
+  useCustomSubsystem: (identifier: string) => ({
+    subsystem:
+      mockMacroAvailable && identifier === "cormoran__runtime_macro"
+        ? { index: 0 }
+        : null,
+    ready: mockMacroAvailable && identifier === "cormoran__runtime_macro",
     call: mockCall,
   }),
 }));
@@ -412,4 +415,11 @@ it("does not offer Save when neither subsystem is available", async () => {
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   expect(saveCalls()).toHaveLength(0);
   expect(mockCombo.saveChanges).not.toHaveBeenCalled();
+});
+
+it("renders one tapdance section alongside the macro/combo editors", async () => {
+  await openPage();
+  expect(
+    screen.getAllByText("Runtime tapdance subsystem is unavailable."),
+  ).toHaveLength(1);
 });

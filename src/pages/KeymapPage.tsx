@@ -1929,6 +1929,7 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        keymap={keymap.isFullyLoaded ? keymap.keymap : null}
         onOpenMacroEditor={handleOpenMacroEditor}
       />
     </div>

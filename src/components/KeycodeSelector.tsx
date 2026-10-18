@@ -48,6 +48,9 @@ import {
   useFloatingWindow,
   type FloatingWindowPosition,
 } from "../hooks/useFloatingWindow";
+import { TapDanceEditor } from "./macroCombo/TapDanceEditor";
+import { isRuntimeTapDance } from "../lib/runtimeTapDance";
+import type { Keymap } from "../hooks/useKeymap";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -69,6 +72,7 @@ interface SelectedBehaviorInfo {
 }
 
 interface KeycodeSelectorProps {
+  keymap?: Keymap | null;
   presentation?: "modal" | "floating";
   /** Renders above an already-open modal dialog when needed by a caller. */
   modalLayer?: "default" | "nested";
@@ -279,6 +283,7 @@ export function KeycodeSelector({
   layers,
   keyboardLayout,
   behaviorQuickSelects,
+  keymap,
   runtimeMacros = [],
   onOpenMacroEditor,
   modalLayerClassName = "z-50",
@@ -347,7 +352,8 @@ export function KeycodeSelector({
   // Check if behavior needs parameters
   const needsParam1 = hasParam(selectedBehaviorInfo, 1);
   const needsParam2 = hasParam(selectedBehaviorInfo, 2);
-  const needsAnyParam = needsParam1 || needsParam2;
+  const tapDance = isRuntimeTapDance(selectedBehaviorInfo?.behavior);
+  const needsAnyParam = needsParam1 || needsParam2 || tapDance;
 
   // Handle behavior selection from dropdown
   const handleBehaviorSelect = useCallback(
@@ -371,7 +377,7 @@ export function KeycodeSelector({
         hasParam(nextSelectedBehaviorInfo, 2);
 
       // If behavior doesn't need params and closeOnSelect is enabled, apply immediately
-      if (closeOnSelect && !needsAnyParam) {
+      if (closeOnSelect && !needsAnyParam && !isRuntimeTapDance(behavior)) {
         onSelect({
           behaviorId,
           param1: 0,
@@ -980,7 +986,38 @@ export function KeycodeSelector({
               </div>
 
               {/* Parameter Selection - Horizontal Layout */}
-              {selectedBehaviorInfo && needsAnyParam && (
+              {selectedBehaviorInfo && tapDance && open && (
+                <div className="flex-1 overflow-y-auto p-4">
+                  <TapDanceEditor
+                    key={selectedBehavior}
+                    behaviors={behaviors}
+                    layers={layers}
+                    keyboardLayout={keyboardLayout}
+                    keymap={keymap}
+                    currentSlot={
+                      isRuntimeTapDance(
+                        behaviors.get(currentBinding?.behaviorId ?? -1),
+                      )
+                        ? currentBinding?.param1
+                        : undefined
+                    }
+                    slot={param1}
+                    onUseSlot={(slot) => {
+                      onSelect({
+                        behaviorId: selectedBehaviorInfo.behavior.id,
+                        param1: slot,
+                        param2: 0,
+                      });
+                      if (!floating) onClose();
+                    }}
+                    onSlotChange={(slot) => {
+                      setParam1(slot);
+                      setParam2(0);
+                    }}
+                  />
+                </div>
+              )}
+              {selectedBehaviorInfo && needsAnyParam && !tapDance && (
                 <div
                   className={`flex-1 flex flex-col overflow-hidden ${floating && !sheet ? "min-h-[240px]" : "min-h-0"}`}
                 >

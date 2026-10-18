@@ -1,0 +1,52 @@
+syntax = "proto3";
+package cormoran.runtime_tapdance;
+
+message Binding {
+    uint32 behavior_id = 1;
+    uint32 param1 = 2;
+    uint32 param2 = 3;
+}
+message Config {
+    Binding single_binding = 2;
+    Binding double_binding = 4;
+    Binding triple_binding = 5;
+}
+message GetRequest { uint32 index = 1; }
+message SetRequest {
+    uint32 index = 1;
+    uint32 tap_count = 2;
+    Binding binding = 3;
+    bool persist = 4;
+}
+message RemoveRequest {
+    uint32 index = 1;
+    bool persist = 2;
+}
+message SetIntervalRequest {
+    uint32 interval_ms = 1;
+    bool persist = 2;
+}
+message Request {
+    oneof request_type {
+        GetRequest get = 1;
+        SetRequest set = 2;
+        RemoveRequest remove = 3;
+        SetIntervalRequest set_interval = 4;
+    }
+}
+message State {
+    uint32 index = 1;
+    Config config = 2;
+    uint32 interval_ms = 3;
+    uint32 max_count = 4;
+}
+message ErrorResponse {
+    int32 code = 1;
+    string message = 2;
+}
+message Response {
+    oneof response_type {
+        ErrorResponse error = 1;
+        State state = 2;
+    }
+}

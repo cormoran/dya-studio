@@ -159,6 +159,12 @@ export const DEMO_SUBSYSTEMS: DemoSubsystemInfo[] = [
     label: "Setting Expose",
     defaultEnabled: true,
   },
+  {
+    index: 17,
+    identifier: "cormoran__runtime_tapdance",
+    label: "Runtime Tapdance",
+    defaultEnabled: true,
+  },
 ];
 
 function readOverrides(): Record<string, boolean> {

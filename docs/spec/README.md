@@ -21,7 +21,7 @@ DYA Studio は ZMK キーボードに USB/Bluetooth または擬似デバイス�
 | `/` 接続前                         | [接続・unlock](modules/device-session.md)                                 | 不要                                           |
 | `/` Home                           | [ホーム](pages/home.md)                                                   | 接続または Demo                                |
 | `/keymap`                          | [キーマップ](pages/keymap.md) / [rotary encoder](pages/keymap-sensors.md) | 接続または Demo、機能別 capability             |
-| `/macro-combo`                     | [Macro & Combo](pages/macro-combo.md)                                     | 接続 + runtime macro/combo                     |
+| `/macro-combo`                     | [Macro & Combo](pages/macro-combo.md)                                     | 接続 + runtime macro/combo/tapdance            |
 | `/trackball`                       | [Trackball](pages/trackball.md)                                           | 接続 + 対応入力機能                            |
 | `/connection`                      | [接続先設定](pages/connection.md)                                         | 接続 + 機能別 capability                       |
 | `/settings`                        | [設定](pages/settings.md)                                                 | 接続 + 機能別 capability                       |

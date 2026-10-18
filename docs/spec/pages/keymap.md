@@ -199,3 +199,5 @@ Rename の失敗変形: Demo で ASCII 32文字（advertised max length）を入
 ## 未解決・未検証
 
 実機 flash 永続化、lock と失敗後復帰、遅延競合、sensor rotation の詳細、履歴復元の詳細は通常 Demo のキーマップ pilot で未検証。combo preview の全配置・実機 persistence は未検証。共有 selector / history / connection の詳細はモジュール仕様の展開時にリンクする。default reset の部分変更はコード上の注意点で、承認済み不具合ではない。
+
+Runtime Tap Dance のキー割当は [BIND-027](../modules/binding-editor.md#runtime-tapdance-binding) に従う。Single / Double / Triple の action と新規/編集 modal は共有 slot の設定を変更するため、他のキーへの影響件数を表示する。Keymap の Save/Discard/version history は tapdance slot の action 保存を含まない。

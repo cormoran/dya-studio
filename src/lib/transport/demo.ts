@@ -1,3 +1,8 @@
+import { RuntimeTapDanceHandler } from "./demo-runtime-tapdance";
+import {
+  Request as TapDanceRequest,
+  Response as TapDanceResponse,
+} from "../../proto/cormoran/runtime_tapdance/runtime_tapdance";
 /**
  * Demo RPC Transport
  *
@@ -240,6 +245,7 @@ class Keyboard {
   private pmw3610Handler = new Pmw3610Handler();
   private runtimeInputProcessorHandler = new RuntimeInputProcessorHandler();
   private runtimeSensorRotateHandler = new RuntimeSensorRotateHandler();
+  private runtimeTapDanceHandler = new RuntimeTapDanceHandler();
   private runtimeComboHandler = new RuntimeComboHandler();
   private runtimeMacroHandler: RuntimeMacroHandler;
   private physicalLayoutsHandler = new PhysicalLayoutsHandler();
@@ -280,6 +286,7 @@ class Keyboard {
   }
 
   private customSubsystems = [
+    { index: 17, identifier: "cormoran__runtime_tapdance", uiUrl: [] },
     {
       index: this.BLE_SUBSYSTEM_INDEX,
       identifier: BLE_MANAGEMENT_IDENTIFIER,
@@ -652,6 +659,10 @@ class Keyboard {
         } catch (e) {
           console.error("Runtime Combo subsystem error:", e);
         }
+      } else if (subsystemIndex === 17) {
+        responseData = TapDanceResponse.encode(
+          this.runtimeTapDanceHandler.process(TapDanceRequest.decode(data)),
+        ).finish();
       } else if (subsystemIndex === this.RUNTIME_MACRO_SUBSYSTEM_INDEX) {
         // Runtime Macro
         try {

@@ -1,3 +1,4 @@
+import { TapDanceEditor } from "../components/macroCombo/TapDanceEditor";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 /**
  * Merged "Macro&Combo" page: one tab that hosts both the runtime-macro and
@@ -665,6 +666,17 @@ export function MacroComboPage() {
               }
             />
           )}
+
+        {connection.isConnected && (
+          <div className="glass-card p-4 mb-4">
+            <TapDanceEditor
+              behaviors={keymap.behaviors}
+              layers={keymap.keymap?.layers ?? []}
+              keymap={keymap.isFullyLoaded ? keymap.keymap : null}
+              keyboardLayout={keyboardLayoutContext.layout}
+            />
+          </div>
+        )}
 
         {connection.isConnected && anyAvailable && (
           <div className="grid grid-cols-1 desktop:grid-cols-[300px_1fr] gap-4 min-w-0">
