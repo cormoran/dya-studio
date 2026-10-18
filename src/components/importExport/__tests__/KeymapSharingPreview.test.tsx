@@ -303,3 +303,43 @@ it("starts with every section/module on and preserves selection when cancelling 
   ).not.toBeChecked();
   expect(confirm).not.toHaveBeenCalled();
 });
+
+it("shows a busy spinner in both action buttons and prevents dismissal until apply finishes", async () => {
+  const { rerender } = render(<Harness />);
+  const previewAction = screen.getByRole("button", {
+    name: "Apply to keyboard",
+  });
+  expect(previewAction).toHaveAttribute("aria-busy", "false");
+  expect(previewAction.querySelector(".animate-spin")).toBeNull();
+  fireEvent.click(previewAction);
+  fireEvent.click(screen.getByRole("button", { name: "Apply to keyboard" }));
+  rerender(<Harness busy />);
+  const confirmation = screen.getByRole("dialog", { name: "Apply My map" });
+  const action = within(confirmation).getByRole("button", {
+    name: "Apply to keyboard",
+  });
+  for (const button of screen.getAllByRole("button", {
+    name: "Apply to keyboard",
+    hidden: true,
+  })) {
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button.querySelector(".animate-spin")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  }
+  expect(
+    within(confirmation).getByRole("button", { name: "Cancel" }),
+  ).toBeDisabled();
+  await userEvent.keyboard("{Escape}");
+  expect(confirmation).toBeInTheDocument();
+  fireEvent.click(action);
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(close).not.toHaveBeenCalled();
+  rerender(<Harness />);
+  const retry = screen.getByRole("button", { name: "Apply to keyboard" });
+  expect(retry).toBeEnabled();
+  expect(retry).toHaveAttribute("aria-busy", "false");
+  expect(retry.querySelector(".animate-spin")).toBeNull();
+});

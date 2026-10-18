@@ -572,3 +572,37 @@ it("does not write or open a tab with every part excluded", async () => {
   expect(client.updateKeymap).not.toHaveBeenCalled();
   expect(openTab).not.toHaveBeenCalled();
 });
+
+it("keeps the Abyss preview busy during writing and closes it only after verified application", async () => {
+  const { result } = renderHook(() => useKeymapSharing(false, applied), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.prepare("apply", record as never);
+  });
+  let finishWrite!: () => void;
+  mockWrite.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finishWrite = resolve;
+      }),
+  );
+  mockLoad
+    .mockResolvedValueOnce({ state: { currentKeymap: device } })
+    .mockResolvedValueOnce({ state: { currentKeymap: target } });
+  let pending!: Promise<boolean>;
+  await act(async () => {
+    pending = result.current.confirm();
+  });
+  expect(result.current.busy).toBe(true);
+  expect(result.current.review?.record?.id).toBe("one");
+  expect(applied).not.toHaveBeenCalled();
+  await act(async () => {
+    finishWrite();
+    expect(await pending).toBe(true);
+  });
+  expect(applied).toHaveBeenCalledTimes(1);
+  expect(result.current.busy).toBe(false);
+  expect(result.current.review).toBeNull();
+  expect(result.current.message).toBe("Applied to keyboard.");
+});

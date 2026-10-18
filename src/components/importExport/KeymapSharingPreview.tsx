@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { IconX } from "@tabler/icons-react";
+import { IconLoader2, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { ShareReview } from "../../hooks/useKeymapSharing";
 import {
@@ -351,10 +351,18 @@ export function KeymapSharingPreview({
                 </button>
                 <EditorTooltip content={save ? helpSave : helpApply}>
                   <button
-                    className="btn-electric text-sm"
+                    className="btn-electric text-sm inline-flex items-center justify-center gap-2"
+                    aria-busy={busy}
                     disabled={busy || blocked || empty}
                     onClick={() => setConfirming(true)}
                   >
+                    {busy && (
+                      <IconLoader2
+                        size={16}
+                        className="animate-spin shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     {save ? t("Update Abyss keymap") : t("Apply to keyboard")}
                   </button>
                 </EditorTooltip>
@@ -412,10 +420,18 @@ export function KeymapSharingPreview({
                 {t("Cancel")}
               </Dialog.Close>
               <button
-                className="btn-electric text-sm"
+                className="btn-electric text-sm inline-flex items-center justify-center gap-2"
+                aria-busy={busy}
                 disabled={busy || blocked || empty}
                 onClick={() => void onConfirm()}
               >
+                {busy && (
+                  <IconLoader2
+                    size={16}
+                    className="animate-spin shrink-0"
+                    aria-hidden="true"
+                  />
+                )}
                 {save ? t("Save to Abyss") : t("Apply to keyboard")}
               </button>
             </div>
