@@ -1090,9 +1090,10 @@ it("rechecks edited keyboard data against cached Abyss data, but does no reads o
   });
   client.resolveLayout.mockResolvedValue({ layout: { id: "layout-one" } });
   client.listMyKeymaps.mockResolvedValue({ items: [record], pageCount: 1 });
+  const flush = jest.fn().mockResolvedValue(undefined);
   const { result, rerender } = renderHook(
     ({ revision }) =>
-      useKeymapSharing(true, applied, undefined, undefined, "tester", revision),
+      useKeymapSharing(true, applied, undefined, flush, "tester", revision),
     { wrapper, initialProps: { revision: "initial" } },
   );
   await act(async () => {
@@ -1114,6 +1115,7 @@ it("rechecks edited keyboard data against cached Abyss data, but does no reads o
     await result.current.prepare("save", record as never);
   });
   expect(mockLoad).toHaveBeenCalledTimes(1);
+  expect(flush).toHaveBeenCalledTimes(1);
   expect(mockCall).toHaveBeenCalledTimes(calls);
   expect(result.current.checking).toBe(false);
   mockLoad.mockResolvedValue({
@@ -1125,6 +1127,7 @@ it("rechecks edited keyboard data against cached Abyss data, but does no reads o
   });
   expect(result.current.changed).toBe(true);
   expect(mockLoad).toHaveBeenCalledTimes(2);
+  expect(flush).toHaveBeenCalledTimes(2);
   expect(client.resolveLayout).toHaveBeenCalledTimes(1);
   expect(client.listMyKeymaps).toHaveBeenCalledTimes(1);
   expect(client.getKeymap).toHaveBeenCalledTimes(1);

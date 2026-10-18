@@ -865,6 +865,7 @@ export function KeymapPage() {
                       keymap.keymap,
                       runtimeCombo.combos,
                       runtimeCombo.globalSettings,
+                      comboEditor.hasPendingWrites,
                     ])}
                     beforeRead={comboEditor.flushPendingWrites}
                     disabled={

@@ -352,6 +352,10 @@ export function useComboEditor({
   }, []);
 
   return {
+    hasPendingWrites:
+      comboMemoryWrite.state !== "idle" ||
+      globalTimeoutWrite.state !== "idle" ||
+      globalIdleWrite.state !== "idle",
     selectedIndex,
     draft,
     showBehaviorSelector,
