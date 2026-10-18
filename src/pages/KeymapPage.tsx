@@ -748,7 +748,7 @@ export function KeymapPage() {
       return;
     // Reveal only as far as needed in each scrollable ancestor, including the
     // preview's horizontal scroller and the workspace above a mobile sheet.
-    // Keep focus in the binding editor and avoid queued scroll animations.
+    // Do not focus the preview or queue scroll animations.
     pageRef.current
       ?.querySelector<HTMLElement>(
         `[data-key-position="${selectedKeyPosition}"]`,
