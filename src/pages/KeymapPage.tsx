@@ -33,6 +33,7 @@ import {
   IconX,
   IconLink,
   IconCode,
+  IconMusic,
   IconSettings,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
@@ -1682,6 +1683,7 @@ export function KeymapPage() {
             {runtimeTapDance.isAvailable ? (
               <RuntimeListCard
                 title={t("Tapdances")}
+                icon={<IconMusic size={17} />}
                 addLabel={t("New tapdance")}
                 settingsLabel={t("Tapdance Global Settings")}
                 busy={runtimeTapDance.busy || !runtimeTapDance.globalSettings}
@@ -1721,7 +1723,10 @@ export function KeymapPage() {
                 }))}
               />
             ) : (
-              <UnsupportedFeatureCard title={t("Tapdances")} />
+              <UnsupportedFeatureCard
+                title={t("Tapdances")}
+                icon={<IconMusic size={17} />}
+              />
             )}
           </>
         )}
