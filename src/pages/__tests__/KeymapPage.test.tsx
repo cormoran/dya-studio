@@ -466,7 +466,7 @@ describe("KeymapPage", () => {
             65 + position,
           )}`,
         );
-        expect(screen.getByText("Press a key")).toBeInTheDocument();
+        expect(screen.queryByText("Press a key")).not.toBeInTheDocument();
         expect(
           screen.queryByText(/Base · Key \d+ \/ 3/),
         ).not.toBeInTheDocument();

@@ -67,7 +67,7 @@
 
 これらは document head と公開静的ファイルの表示契約であり、device RAM / flash や外部サービスへ書込まない。言語設定の保存範囲は SHELL-006 のまま。metadata の network fetch・loading・saving・retry UI は存在しない。検索エンジンによる JavaScript rendering / indexing は別途実測が必要。
 
-SHELL-023: モバイル（640px未満）のKeymapでsheetを表示している間、app headerとtab列を非表示にし、main/tab contentの高さをviewportからsheetの45dvhを引いた範囲に収める。上側はその範囲内で縦scrollし、sheetの裏にcontentを重ねない。横向き・短いviewportでも通常のdocument scrollへの切替（SHELL-013）よりこの配置を優先する。sheetを閉じる、Dialog modeへ戻す、別tab/routeへ移動する、切断する、640px以上へ広げると通常のshellに戻る。tabの保持・binding・保存状態は変更しない。Keymap固有の非表示領域は[KM-025](../pages/keymap.md)。根拠は2026-10-18ユーザー明示要求、[共通CSS](../../../src/index.css)の `data-mobile-sheet-open` によるshell配置、S3/S4。
+SHELL-023: モバイル（640px未満）のKeymapでsheetを表示している間、app headerとtab列を非表示にし、main/tab contentの高さをviewportからsheetの45dvhを引いた範囲に収める。上側はその範囲内で縦scrollし、sheetの裏にcontentを重ねない。横向き・短いviewportでも通常のdocument scrollへの切替（SHELL-013）よりこの配置を優先する。sheetを閉じる、Dialog modeへ戻す、別tab/routeへ移動する、切断する、640px以上へ広げると通常のshellに戻る。tabの保持・binding・保存状態は変更しない。Keymap固有の非表示領域は[KM-026](../pages/keymap.md)。根拠は2026-10-18ユーザー明示要求、[共通CSS](../../../src/index.css)の `data-mobile-sheet-open` によるshell配置、S3/S4。
 
 ## 代表ユーザーフロー
 

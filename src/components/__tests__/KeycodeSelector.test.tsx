@@ -315,7 +315,9 @@ it("explains both layer-tap parameters and uses firmware parameter names", async
     "Layer active while held",
   );
   expect(screen.queryByText("Key sent on tap")).not.toBeInTheDocument();
-  expect(screen.getByText("Layer on hold, key on tap")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Layer on hold, key on tap"),
+  ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: /Key:/ }));
   expect(screen.getByTestId("active-param-description")).toHaveTextContent(
     "Key sent on tap",

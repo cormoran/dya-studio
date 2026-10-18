@@ -875,12 +875,6 @@ export function KeycodeSelector({
                     </p>
                   )}
                 </div>
-                {floating &&
-                  selectedBehaviorInfo?.overrideMetadata?.description && (
-                    <span className="min-w-0 truncate text-xs text-[var(--color-text-muted)]">
-                      {t(selectedBehaviorInfo.overrideMetadata.description)}
-                    </span>
-                  )}
                 <div
                   data-testid="binding-editor-actions"
                   className="ml-auto flex shrink-0 items-center gap-1"
