@@ -59,6 +59,10 @@ export function TapDanceDraft({
     slot === undefined
       ? 0
       : tapDanceUsageCount(props.keymap, props.behaviors, slot);
+  const otherUsage =
+    usage === null
+      ? null
+      : Math.max(0, usage - (props.currentSlot === slot ? 1 : 0));
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
   const valid =
     !!draft.singleBinding?.behaviorId &&
@@ -171,33 +175,25 @@ export function TapDanceDraft({
           </button>
         )}
       </div>
-      <p className="text-sm text-[var(--color-text-muted)]">
-        {usage === null
-          ? t(
-              "This configuration is shared by all keys using this tapdance. Usage count is unavailable.",
-            )
-          : t(
-              applyToMemory
-                ? "Applying these actions also updates {{count}} other tapdance key bindings."
-                : "Saving these actions also updates {{count}} other tapdance key bindings.",
-              {
-                count: Math.max(
-                  0,
-                  usage - (props.currentSlot === slot ? 1 : 0),
-                ),
-              },
-            )}
-      </p>
+      {(otherUsage === null || otherUsage > 0) && (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {otherUsage === null
+            ? t(
+                "This configuration is shared by all keys using this tapdance. Usage count is unavailable.",
+              )
+            : t(
+                applyToMemory
+                  ? "Applying these actions also updates {{count}} other tapdance key bindings."
+                  : "Saving these actions also updates {{count}} other tapdance key bindings.",
+                { count: otherUsage },
+              )}
+        </p>
+      )}
       {!applyToMemory && runtime.hasUnsavedChanges && (
         <p className="text-sm text-[var(--color-text-muted)]">
           {t(
             "Saving here also saves other tapdance changes already in memory.",
           )}
-        </p>
-      )}
-      {!draft.singleBinding?.behaviorId && (
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {t("Choose a Single action to enable this tapdance.")}
         </p>
       )}
       {!!draft.tripleBinding?.behaviorId &&

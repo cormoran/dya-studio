@@ -59,8 +59,6 @@ const ja: Record<string, string> = {
     "保存すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
   "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
     "このタップダンスを使用するすべてのキーが設定を共有します。使用件数は取得できていません。",
-  "Choose a Single action to enable this tapdance.":
-    "タップダンスを有効にするにはシングルのアクションを選択してください。",
   "A Triple action requires a Double action.":
     "トリプルを設定するにはダブルのアクションも必要です。",
   "Tapdance saved to keyboard.": "タップダンスをキーボードに保存しました。",
@@ -1870,8 +1868,6 @@ const zh: Record<string, string> = {
     "保存这些动作也会更新其他 {{count}} 个共享此配置的踢踏舞按键绑定。",
   "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
     "使用此槽位的所有按键共享此配置。暂时无法获取使用数量。",
-  "Choose a Single action to enable this tapdance.":
-    "请选择单击动作以启用踢踏舞。",
   "A Triple action requires a Double action.": "设置三击动作时也需要双击动作。",
   "Tapdance saved to keyboard.": "踢踏舞已保存到键盘。",
   "Runtime tapdance subsystem is unavailable.": "运行时踢踏舞子系统不可用。",

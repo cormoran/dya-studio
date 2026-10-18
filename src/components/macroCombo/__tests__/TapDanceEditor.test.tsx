@@ -136,6 +136,14 @@ it("opens New/Edit modals and closes without writing any local draft", () => {
   render(<TapDanceEditor {...props} slot={0} />);
   fireEvent.click(screen.getByRole("button", { name: "New tapdance" }));
   const dialog = screen.getByRole("dialog", { name: "New tapdance" });
+  expect(
+    within(dialog).queryByText(/other 0 tapdance/),
+  ).not.toBeInTheDocument();
+  expect(
+    within(dialog).queryByText(
+      "Choose a Single action to enable this tapdance.",
+    ),
+  ).not.toBeInTheDocument();
   fireEvent.click(
     within(dialog).getByRole("button", { name: "Select binding" }),
   );
