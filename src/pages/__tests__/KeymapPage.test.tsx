@@ -11,7 +11,14 @@ import { createIdleVersionHistory } from "../testUtils/versionHistory";
 // Storage/diff units have separate tests; page-to-history wiring is not covered here.
 jest.mock("../../hooks/useVersionHistory");
 
-import { act, render, screen, within, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
 import { KeyboardLayoutProvider } from "../../contexts/KeyboardLayoutProvider";
@@ -773,6 +780,71 @@ describe("KeymapPage", () => {
       );
       expect(within(item).getByLabelText("Unsaved")).toBeInTheDocument();
       expect(item).toHaveTextContent("Escape chord");
+    });
+
+    it("moves a held combo through the editor with all other settings intact", async () => {
+      jest.useFakeTimers();
+      const originalPointerEvent = window.PointerEvent;
+      window.PointerEvent = MouseEvent as typeof PointerEvent;
+      HTMLElement.prototype.setPointerCapture = jest.fn();
+      try {
+        const combo = {
+          index: 3,
+          name: "Move me",
+          keyPositions: [0, 1],
+          behavior: { behaviorId: 1, param1: 0x29, param2: 0 },
+          layerMask: 0,
+          enabled: true,
+          timeoutMs: 75,
+          requirePriorIdleMs: 123,
+          slowReleaseOverride: 1,
+          source: ComboSource.COMBO_SOURCE_DEFAULT,
+        };
+        mockUseRuntimeCombo.mockReturnValue({
+          ...mockUseRuntimeCombo(),
+          isAvailable: true,
+          loadCombos: jest.fn(),
+          combos: [combo],
+          globalSettings: { maxCombo: 8 },
+        } as never);
+        renderComponent(
+          { isConnected: true },
+          {
+            keymap: mockKeymap,
+            physicalLayouts: mockPhysicalLayouts,
+            behaviors: mockBehaviors,
+            isFullyLoaded: true,
+          },
+        );
+        const button = screen.getByRole("button", { name: /Combo Move me:/ });
+        // 100 physical units = 1U; use the rendered control size to include responsive scale.
+        const unit = Number.parseFloat(button.style.width) * 2;
+        fireEvent.pointerDown(button, { button: 0, clientX: 0, clientY: 0 });
+        act(() => jest.advanceTimersByTime(500));
+        fireEvent.pointerUp(button, { clientX: unit, clientY: 0 });
+        const editor = mockUseComboEditor.mock.results.at(-1)?.value;
+        expect(editor.applyDraftChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            index: 3,
+            name: "Move me",
+            keyPositions: [1, 2],
+            behavior: combo.behavior,
+            layerMask: 0,
+            enabled: true,
+            timeoutMs: 75,
+            requirePriorIdleMs: 123,
+            slowReleaseOverride: 1,
+          }),
+          true,
+        );
+        fireEvent.click(button, { detail: 1 });
+        expect(
+          screen.queryByTestId("binding-editor-target"),
+        ).not.toBeInTheDocument();
+      } finally {
+        window.PointerEvent = originalPointerEvent;
+        jest.useRealTimers();
+      }
     });
 
     it("edits an adjacent combo in a floating behavior selector", async () => {

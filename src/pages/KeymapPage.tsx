@@ -53,6 +53,7 @@ import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
 import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
 import {
+  comboToDraft,
   comboEditStatus,
   formatComboBehavior,
   defaultBehaviorBinding,
@@ -1103,15 +1104,15 @@ export function KeymapPage() {
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="keymap-preview glass-card p-3 sm:p-6 relative">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                  <div className="flex shrink-0 items-center gap-3">
+                <div className="mb-2 flex flex-nowrap items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                     {inputStream.isAvailable && (
                       <EditorTooltip
                         content={t(
                           "Highlight keys pressed on your keyboard when turned on",
                         )}
                       >
-                        <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                        <label className="flex min-h-9 cursor-pointer flex-col justify-center items-center gap-0.5 text-[10px] leading-3 text-[var(--color-text-muted)] sm:min-h-8 sm:flex-row sm:gap-1.5 sm:text-xs">
                           <span>{t("Stream")}</span>
                           <Switch.Root
                             checked={inputStream.isEnabled}
@@ -1136,7 +1137,7 @@ export function KeymapPage() {
                       role="status"
                       aria-live="polite"
                       aria-atomic="true"
-                      className="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
+                      className="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[10px] sm:text-xs"
                       title={
                         !keymap.hasUnsavedChanges &&
                         keymap.isKeymapChangedFromDefault
@@ -1168,36 +1169,38 @@ export function KeymapPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="ml-auto min-w-0 max-w-full">
+                  <div className="ml-auto min-w-0">
                     <Popover.Root>
                       <Popover.Trigger asChild>
                         <button
                           type="button"
                           aria-label={t("Layout and display")}
                           aria-description={`${t("Physical Layout")}: ${currentLayout.name || t("Physical Layout")}; ${t("OS Layout")}: ${getLayoutLabel(keyboardLayoutContext.layout)}`}
-                          className="flex h-7 max-w-full items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50"
+                          className="flex h-9 max-w-full items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)] data-[state=open]:border-[var(--color-electric)]/50 sm:h-7 sm:gap-2 sm:px-2.5"
                         >
                           <IconKeyboard
                             size={14}
-                            className="shrink-0 text-[var(--color-text-muted)]"
+                            className="shrink-0 text-[var(--color-text-muted)] max-sm:mr-1.5 max-[360px]:hidden"
                           />
-                          <span
-                            className="max-w-40 truncate"
-                            title={currentLayout.name || t("Physical Layout")}
-                          >
-                            {currentLayout.name || t("Physical Layout")}
-                          </span>
-                          <span
-                            aria-hidden="true"
-                            className="h-3 w-px bg-[var(--color-border)]"
-                          />
-                          <span className="shrink-0">
-                            <span className="text-[var(--color-text-muted)]">
-                              OS{" "}
+                          <span className="flex min-w-0 flex-col items-start gap-0.5 text-[10px] leading-3 sm:flex-row sm:items-center sm:gap-2 sm:text-xs sm:leading-normal">
+                            <span
+                              className="max-w-40 w-full truncate sm:w-auto"
+                              title={currentLayout.name || t("Physical Layout")}
+                            >
+                              {currentLayout.name || t("Physical Layout")}
                             </span>
-                            {keyboardLayoutContext.layout === "US_JP"
-                              ? "US (JP)"
-                              : keyboardLayoutContext.layout}
+                            <span
+                              aria-hidden="true"
+                              className="hidden h-3 w-px bg-[var(--color-border)] sm:block"
+                            />
+                            <span className="shrink-0 whitespace-nowrap">
+                              <span className="text-[var(--color-text-muted)]">
+                                OS{" "}
+                              </span>
+                              {keyboardLayoutContext.layout === "US_JP"
+                                ? "US (JP)"
+                                : keyboardLayoutContext.layout}
+                            </span>
                           </span>
                           <IconChevronDown
                             size={12}
@@ -1345,6 +1348,22 @@ export function KeymapPage() {
                   runtimeMacros={runtimeMacro.macros}
                   combos={isComboAvailable ? runtimeCombo.combos : []}
                   onComboClick={openComboBinding}
+                  isActive={isTabActive}
+                  onComboDrop={
+                    !keymap.isFullyLoaded || runtimeCombo.isLoading
+                      ? undefined
+                      : (combo, positions) => {
+                          if (!requireUnlocked()) return;
+                          comboEditor.selectCombo(combo);
+                          comboEditor.applyDraftChange(
+                            {
+                              ...comboToDraft(combo, keymap.behaviors),
+                              keyPositions: positions,
+                            },
+                            true,
+                          );
+                        }
+                  }
                   modules={
                     physicalLayoutModules.isAvailable
                       ? physicalLayoutModules.modules

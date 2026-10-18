@@ -18,7 +18,7 @@
     --color-electric: #155b91;
     --color-neon: #217238;
     --color-cyber: #1266b0;
-    --color-warning: #895200;
+    --color-warning: var(--pop-rose);
 
     --color-bg: #ffffff;
     --color-surface: #ffffff;
@@ -326,7 +326,7 @@
 :root.pop .warning-banner {
   border-color: transparent;
   background-color: var(--pop-warning);
-  color: #704500;
+  color: var(--color-warning);
 }
 
 /* Native slider thumbs have their own shadow declarations. */
@@ -412,7 +412,7 @@
   border-width: 2px;
 }
 
-/* Separate the readable warning ink from its cream fill; avoid brown alpha mixes. */
+/* Share the tab underline accent without mixing it into the cream fill. */
 :root.pop
   :is(
     [class~="bg-[var(--color-warning)]"],

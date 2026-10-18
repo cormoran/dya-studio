@@ -1,8 +1,8 @@
 import type { KeyPhysicalAttrs } from "../hooks/useKeymap";
 
-type Point = { x: number; y: number };
+export type Point = { x: number; y: number };
 
-function corners(key: KeyPhysicalAttrs): Point[] {
+export function corners(key: KeyPhysicalAttrs): Point[] {
   const points = [
     { x: key.x, y: key.y },
     { x: key.x + key.width, y: key.y },
@@ -68,4 +68,49 @@ export function adjacentComboCenter(
     }
   }
   return null;
+}
+
+/** Two-key combos without a shared edge still need a movable preview control. */
+export function comboPreviewCenter(
+  keys: KeyPhysicalAttrs[],
+  positions: number[],
+): Point | null {
+  const adjacent = adjacentComboCenter(keys, positions);
+  if (adjacent) return adjacent;
+  if (positions.length !== 2 || positions.some((position) => !keys[position]))
+    return null;
+  const points = positions.flatMap((position) => corners(keys[position]));
+  return {
+    x: points.reduce((sum, point) => sum + point.x, 0) / 8,
+    y: points.reduce((sum, point) => sum + point.y, 0) / 8,
+  };
+}
+
+/** Positive-area overlap of the 0.5U combo control and rotated physical keys. */
+export function comboDropPositions(
+  keys: KeyPhysicalAttrs[],
+  center: Point,
+): number[] {
+  const box = [
+    { x: center.x - 25, y: center.y - 25 },
+    { x: center.x + 25, y: center.y - 25 },
+    { x: center.x + 25, y: center.y + 25 },
+    { x: center.x - 25, y: center.y + 25 },
+  ];
+  return keys.flatMap((key, position) => {
+    const polygon = corners(key);
+    const overlaps = [...polygon, ...box].every((point, index) => {
+      const next = index < 4 ? polygon[(index + 1) % 4] : box[(index - 3) % 4];
+      const axis = { x: -(next.y - point.y), y: next.x - point.x };
+      if (!axis.x && !axis.y) return true;
+      const a = polygon.map((p) => p.x * axis.x + p.y * axis.y);
+      const b = box.map((p) => p.x * axis.x + p.y * axis.y);
+      return (
+        Math.min(Math.max(...a), Math.max(...b)) -
+          Math.max(Math.min(...a), Math.min(...b)) >
+        0.01
+      );
+    });
+    return overlaps ? [position] : [];
+  });
 }

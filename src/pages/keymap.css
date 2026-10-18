@@ -50,6 +50,13 @@
   --keymap-layer-height: 2rem;
 }
 
+/* Reserve the horizontal scrollbar even when every layer fits. Match its
+   bottom inset above the row so layers stay centered with the action buttons. */
+.keymap-layer-tabs {
+  overflow-x: scroll;
+  padding-top: calc(0.25rem + var(--scrollbar-size));
+}
+
 .keymap-layer-label {
   flex-shrink: 0;
   padding-right: 0.5rem;
@@ -215,6 +222,7 @@
     flex: none;
     width: 100%;
     overflow: visible;
+    padding-top: 0.25rem;
   }
   .keymap-layer-toolbar[data-editing="true"] .keymap-layer-item {
     width: 100%;

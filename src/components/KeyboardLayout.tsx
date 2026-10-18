@@ -22,7 +22,8 @@ import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import type { KeyboardLayoutType } from "../lib/keyboardLayouts";
 import type { Combo } from "../hooks/useRuntimeCombo";
 import { hasLayer } from "./macroCombo/comboUtils";
-import { adjacentComboCenter } from "./comboPreview";
+import { adjacentComboCenter, comboPreviewCenter } from "./comboPreview";
+import { useComboDrag } from "./useComboDrag";
 import { useLanguage } from "../hooks/useLanguage";
 
 // Base unit size for 1U key in pixels at scale 1.0
@@ -88,6 +89,8 @@ interface KeyboardLayoutProps {
   /** Runtime combos shown on this layer. Omitted in the combo position editor. */
   combos?: Combo[];
   onComboClick?: (combo: Combo) => void;
+  onComboDrop?: (combo: Combo, positions: number[]) => void;
+  isActive?: boolean;
 }
 
 type LayoutGeometry = Pick<
@@ -146,10 +149,17 @@ export function KeyboardLayout({
   ariaLabel,
   combos = [],
   onComboClick,
+  onComboDrop,
+  isActive = true,
 }: KeyboardLayoutProps) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1.0);
+  const { drag, handlers: comboDragHandlers } = useComboDrag(
+    layout.keys,
+    `${layer.id}:${isActive}:${scale}`,
+    isActive ? onComboDrop : undefined,
+  );
 
   // Calculate raw layout bounds (at scale 1.0)
   const rawBounds = useMemo(() => {
@@ -328,7 +338,7 @@ export function KeyboardLayout({
   const comboLabels = visibleCombos.map((combo) => ({
     combo,
     label: getKeyLongDisplayName(-1, combo.behavior),
-    center: adjacentComboCenter(layout.keys, combo.keyPositions),
+    center: comboPreviewCenter(layout.keys, combo.keyPositions),
     number: comboNumbers.get(combo.index) ?? 1,
   }));
 
@@ -390,7 +400,11 @@ export function KeyboardLayout({
               }
               bindingDescription={getBindingDescription(binding)}
               isSelected={selectedKey === position}
-              isHighlighted={highlightedKeys?.has(position)}
+              isHighlighted={
+                highlightedKeys?.has(position) ||
+                (drag?.positions.length === 2 &&
+                  drag.positions.includes(position))
+              }
               onClick={() => onKeyClick(position)}
               onReset={() => onKeyReset(position)}
               onResetToDefault={
@@ -405,7 +419,10 @@ export function KeyboardLayout({
                   index: combo.index,
                   name: combo.name,
                   label,
-                  showBadge: center === null,
+                  showBadge:
+                    center === null ||
+                    adjacentComboCenter(layout.keys, combo.keyPositions) ===
+                      null,
                   badgeNumber: number,
                 }))}
             />
@@ -431,15 +448,34 @@ export function KeyboardLayout({
             />
           );
         })}
-        {comboLabels.map(({ combo, label, center }) =>
-          center ? (
+        {comboLabels.map(({ combo, label, center: originalCenter }) => {
+          const center =
+            drag?.index === combo.index ? drag.center : originalCenter;
+          return center ? (
             <Tooltip.Provider key={`combo-${combo.index}`} delayDuration={200}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
                   <button
                     type="button"
                     className="absolute z-10 rounded border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-electric)] shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+                    {...comboDragHandlers(
+                      combo,
+                      originalCenter!,
+                      (BASE_UNIT_SIZE * scale) / 100,
+                    )}
+                    data-dragging={drag?.index === combo.index || undefined}
                     style={{
+                      touchAction: onComboDrop ? "none" : undefined,
+                      userSelect: "none",
+                      cursor: onComboDrop
+                        ? drag?.index === combo.index
+                          ? "grabbing"
+                          : "grab"
+                        : undefined,
+                      outline:
+                        drag?.index === combo.index
+                          ? `2px solid var(${drag.positions.length === 2 ? "--color-electric" : "--color-warning"})`
+                          : undefined,
                       width: BASE_UNIT_SIZE * scale * 0.5,
                       height: BASE_UNIT_SIZE * scale * 0.5,
                       left:
@@ -480,8 +516,8 @@ export function KeyboardLayout({
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-          ) : null,
-        )}
+          ) : null;
+        })}
       </div>
     </div>
   );
