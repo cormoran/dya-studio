@@ -115,7 +115,9 @@ export function RuntimeEditors({
   const invalid = settings
     ? invalidSetting
     : domain === "macro"
-      ? !!macro.encodedSizeError || !!macro.stringConversionError
+      ? !!macro.encodedSizeError ||
+        !!macro.stringConversionError ||
+        !macro.renameDraft.trim()
       : domain === "combo"
         ? !!combo.validationError
         : tapDraftPending;

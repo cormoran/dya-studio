@@ -248,7 +248,12 @@ export function useMacroEditor({
       if (isCreateDraft) return true;
       if (!requireUnlocked() || !loadedMacro) return false;
       const trimmedName = nextName.slice(0, runtimeMacro.maxNameLength).trim();
-      if (!trimmedName || trimmedName === loadedMacro.name) {
+      if (!trimmedName) {
+        if (immediate) return false;
+        setRenameDraft(loadedMacro.name);
+        return true;
+      }
+      if (trimmedName === loadedMacro.name) {
         setRenameDraft(loadedMacro.name);
         return true;
       }
@@ -256,12 +261,19 @@ export function useMacroEditor({
       if (ok) {
         setSelectedName(trimmedName);
         setLoadedMacro({ ...loadedMacro, name: trimmedName });
-      } else {
+      } else if (!immediate) {
         setRenameDraft(loadedMacro.name);
       }
       return ok;
     },
-    [isCreateDraft, loadedMacro, renameDraft, runtimeMacro, requireUnlocked],
+    [
+      immediate,
+      isCreateDraft,
+      loadedMacro,
+      renameDraft,
+      runtimeMacro,
+      requireUnlocked,
+    ],
   );
 
   const commitSteps = useCallback(

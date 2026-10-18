@@ -353,6 +353,48 @@ describe("useMacroEditor", () => {
     }
   });
 
+  it("keeps an empty immediate name draft while the user replaces the name", async () => {
+    const getMacro = jest.fn().mockResolvedValue({
+      slot: 3,
+      name: "Draft",
+      steps: [],
+      encodedSize: 0,
+    });
+    const renameMacro = jest.fn().mockResolvedValue(true);
+    const runtimeMacro = {
+      ...makeRuntimeMacro(getMacro),
+      macros: [{ slot: 3, name: "Draft" }],
+      renameMacro,
+    };
+    const { result } = renderHook(() =>
+      useMacroEditor({
+        immediate: true,
+        runtimeMacro,
+        keymap,
+        layers: [],
+        keyboardLayout: "ansi" as never,
+        requireUnlocked: () => true,
+        t: (key: string) => key,
+        canMaintainSelection: false,
+        onAutoSelected: () => {},
+      }),
+    );
+    act(() => result.current.selectMacro({ slot: 3, name: "Draft" }));
+    await waitFor(() => expect(result.current.loadedMacro).not.toBeNull());
+    act(() => result.current.handleRenameChange(""));
+    await act(async () => {
+      expect(await result.current.flushPendingWrites()).toBe(false);
+    });
+    expect(result.current.renameDraft).toBe("");
+    expect(renameMacro).not.toHaveBeenCalled();
+    act(() => result.current.handleRenameChange("Replacement"));
+    await act(async () => {
+      expect(await result.current.flushPendingWrites()).toBe(true);
+    });
+    expect(renameMacro).toHaveBeenCalledWith("Draft", "Replacement");
+    expect(result.current.loadedMacro?.name).toBe("Replacement");
+  });
+
   it("flushes a pending step edit before appending or removing steps", async () => {
     const initial = {
       slot: 3,
