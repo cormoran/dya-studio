@@ -7,6 +7,32 @@ import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
 import { translate } from "../../i18n/translations";
 import { combineWithModifiers, MODIFIER_FLAGS } from "../../lib/keycodes";
 
+const mockTapDanceRuntime = {
+  isAvailable: true,
+  entries: [
+    {
+      index: 7,
+      name: "Alphabet",
+      config: { singleBinding: { behaviorId: 10, param1: 0x70004, param2: 0 } },
+    },
+    {
+      index: 42,
+      name: "Navigation",
+      config: { singleBinding: { behaviorId: 10, param1: 0x70007, param2: 0 } },
+    },
+  ],
+  globalSettings: { apiVersion: 2, maxEntries: 16, maxNameLength: 24 },
+  hasUnsavedChanges: false,
+  busy: false,
+  error: null,
+  revision: 0,
+  load: jest.fn(),
+  save: jest.fn(),
+};
+jest.mock("../../hooks/useRuntimeTapDance", () => ({
+  useRuntimeTapDance: () => mockTapDanceRuntime,
+}));
+
 beforeEach(() => localStorage.clear());
 
 it("localizes every standard behavior parameter explanation", () => {
@@ -658,4 +684,90 @@ it("switches a floating editor to a fixed mobile sheet without applying or reset
   } finally {
     window.matchMedia = originalMatchMedia;
   }
+});
+
+it("uses named parameter choices above the tapdance actions and follows the standard selection setting", async () => {
+  localStorage.setItem("keycodeSelectorCloseOnSelect", "false");
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 32, param1: 7, param2: 0 }}
+      behaviors={
+        new Map([
+          [10, { id: 10, displayName: "Key Press", metadata: [] }],
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  const choice = screen.getByRole("button", {
+    name: "Navigation",
+    exact: true,
+  });
+  const actions = screen.getByRole("tab", { name: "Single" });
+  expect(
+    choice.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(screen.getByText("Parameters")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "param1: Alphabet" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: "Tapdance" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Use tapdance" }),
+  ).not.toBeInTheDocument();
+  await user.click(choice);
+  expect(
+    screen.getByRole("button", { name: "param1: Navigation" }),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("tabpanel")).getByRole("button", { name: "D" }),
+  ).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(onClose).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+});
+
+it("applies a named tapdance choice immediately when close-on-select is enabled", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 32, param1: 7, param2: 0 }}
+      behaviors={
+        new Map([
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Navigation", exact: true }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+  expect(onClose).toHaveBeenCalled();
 });

@@ -74,6 +74,7 @@ jest.mock("../../KeycodeSelector", () => ({
     ) : null,
 }));
 const props = {
+  runtime: mockRuntime,
   behaviors: new Map([
     [10, { id: 10, displayName: "Key Press", metadata: [] }],
     [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
@@ -155,14 +156,6 @@ it("opens New/Edit modals and closes without writing any local draft", () => {
   expect(
     screen.getByRole("dialog", { name: "Edit tapdance · Alphabet" }),
   ).toBeInTheDocument();
-});
-
-it("applies the selected slot explicitly without saving actions", () => {
-  const onUseSlot = jest.fn();
-  render(<TapDanceEditor {...props} slot={0} onUseSlot={onUseSlot} />);
-  fireEvent.click(screen.getByRole("button", { name: "Use tapdance" }));
-  expect(onUseSlot).toHaveBeenCalledWith(0);
-  expect(mockSave).not.toHaveBeenCalled();
 });
 
 it("allocates once and preserves the returned stable ID when saving a new modal draft is retried", async () => {

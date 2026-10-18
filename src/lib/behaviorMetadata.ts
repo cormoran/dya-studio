@@ -299,7 +299,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     ],
     shortCode: "TD",
     param1Type: "number",
-    param1Description: "Tapdance slot",
+    param1Description: "Tapdance",
     getDisplayText: (binding) => `TD ${binding.param1}`,
     description: "Run different actions for single, double, or triple taps",
   },

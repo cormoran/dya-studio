@@ -48,10 +48,37 @@ import {
   useFloatingWindow,
   type FloatingWindowPosition,
 } from "../hooks/useFloatingWindow";
+import { useRuntimeTapDance } from "../hooks/useRuntimeTapDance";
+import { useIsTabActive } from "../hooks/useIsTabActive";
 import { TapDanceEditor } from "./macroCombo/TapDanceEditor";
 import { isRuntimeTapDance } from "../lib/runtimeTapDance";
 import type { Keymap } from "../hooks/useKeymap";
 import { useLanguage } from "../hooks/useLanguage";
+
+function NamedBehaviorOptions({
+  options,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  options: Array<{ value: number; label: string }>;
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <fieldset disabled={disabled} className="min-w-0 space-y-2">
+      {options.length > 0 && (
+        <ButtonListSelector
+          options={options}
+          value={value}
+          onChange={onChange}
+          columns={Math.min(options.length, 4)}
+        />
+      )}
+    </fieldset>
+  );
+}
 
 // =============================================================================
 // Types
@@ -354,6 +381,8 @@ export function KeycodeSelector({
   const needsParam2 = hasParam(selectedBehaviorInfo, 2);
   const tapDance = isRuntimeTapDance(selectedBehaviorInfo?.behavior);
   const needsAnyParam = needsParam1 || needsParam2 || tapDance;
+  const tabActive = useIsTabActive();
+  const runtimeTapDance = useRuntimeTapDance(open && tapDance && tabActive);
 
   // Handle behavior selection from dropdown
   const handleBehaviorSelect = useCallback(
@@ -574,25 +603,33 @@ export function KeycodeSelector({
       const overrideMeta = selectedBehaviorInfo?.overrideMetadata;
       const overrideType =
         paramNumber === 1 ? overrideMeta?.param1Type : overrideMeta?.param2Type;
+      if (tapDance && paramNumber === 1) {
+        return (
+          <NamedBehaviorOptions
+            options={runtimeTapDance.entries.map((entry) => ({
+              value: entry.index,
+              label: entry.name,
+            }))}
+            value={value}
+            onChange={onChange}
+            disabled={runtimeTapDance.busy}
+          />
+        );
+      }
       // From DYA Studio override metadata
       if (overrideType) {
         switch (overrideType) {
           case "macro":
             if (runtimeMacros.length > 0 || onOpenMacroEditor) {
               return (
-                <div className="space-y-2">
-                  {runtimeMacros.length > 0 && (
-                    <ButtonListSelector
-                      options={runtimeMacros.map((macro) => ({
-                        value: macro.slot,
-                        label: macro.name || `Macro ${macro.slot}`,
-                      }))}
-                      value={value}
-                      onChange={onChange}
-                      columns={Math.min(runtimeMacros.length, 4)}
-                    />
-                  )}
-                </div>
+                <NamedBehaviorOptions
+                  options={runtimeMacros.map((macro) => ({
+                    value: macro.slot,
+                    label: macro.name || `Macro ${macro.slot}`,
+                  }))}
+                  value={value}
+                  onChange={onChange}
+                />
               );
             }
             return (
@@ -743,6 +780,9 @@ export function KeycodeSelector({
       runtimeMacros,
       floating,
       onOpenMacroEditor,
+      tapDance,
+      runtimeTapDance.entries,
+      runtimeTapDance.busy,
     ],
   );
 
@@ -778,15 +818,19 @@ export function KeycodeSelector({
               {getParamDisplayName(selectedBehaviorInfo, number, t)}:
             </span>
             <span className="truncate text-xs font-mono text-[var(--color-neon)]">
-              {formatParamValue(
-                selectedBehaviorInfo,
-                param1,
-                param2,
-                number,
-                layers,
-                keyboardLayout,
-                runtimeMacros,
-              )}
+              {tapDance && number === 1
+                ? (runtimeTapDance.entries.find(
+                    (entry) => entry.index === param1,
+                  )?.name ?? t("Tapdance unavailable"))
+                : formatParamValue(
+                    selectedBehaviorInfo,
+                    param1,
+                    param2,
+                    number,
+                    layers,
+                    keyboardLayout,
+                    runtimeMacros,
+                  )}
             </span>
           </button>
         ))}
@@ -986,38 +1030,7 @@ export function KeycodeSelector({
               </div>
 
               {/* Parameter Selection - Horizontal Layout */}
-              {selectedBehaviorInfo && tapDance && open && (
-                <div className="flex-1 overflow-y-auto p-4">
-                  <TapDanceEditor
-                    key={selectedBehavior}
-                    behaviors={behaviors}
-                    layers={layers}
-                    keyboardLayout={keyboardLayout}
-                    keymap={keymap}
-                    currentSlot={
-                      isRuntimeTapDance(
-                        behaviors.get(currentBinding?.behaviorId ?? -1),
-                      )
-                        ? currentBinding?.param1
-                        : undefined
-                    }
-                    slot={param1}
-                    onUseSlot={(slot) => {
-                      onSelect({
-                        behaviorId: selectedBehaviorInfo.behavior.id,
-                        param1: slot,
-                        param2: 0,
-                      });
-                      if (!floating) onClose();
-                    }}
-                    onSlotChange={(slot) => {
-                      setParam1(slot);
-                      setParam2(0);
-                    }}
-                  />
-                </div>
-              )}
-              {selectedBehaviorInfo && needsAnyParam && !tapDance && (
+              {selectedBehaviorInfo && needsAnyParam && (
                 <div
                   className={`flex-1 flex flex-col overflow-hidden ${floating && !sheet ? "min-h-[240px]" : "min-h-0"}`}
                 >
@@ -1036,9 +1049,11 @@ export function KeycodeSelector({
                     className={`flex-1 ${
                       floating
                         ? "p-2 overflow-y-auto"
-                        : inlineParamToolbar
-                          ? "px-4 pt-2 pb-4 overflow-hidden"
-                          : "p-4 overflow-hidden"
+                        : tapDance
+                          ? "p-4 overflow-y-auto"
+                          : inlineParamToolbar
+                            ? "px-4 pt-2 pb-4 overflow-hidden"
+                            : "p-4 overflow-hidden"
                     } flex flex-col`}
                     onFocusCapture={(event) => {
                       editingNumber.current =
@@ -1079,6 +1094,30 @@ export function KeycodeSelector({
                             inlineParamToolbar ? parameterTabs : undefined,
                           )
                         : null}
+                    {tapDance && open && (
+                      <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                        <TapDanceEditor
+                          key={selectedBehavior}
+                          runtime={runtimeTapDance}
+                          behaviors={behaviors}
+                          layers={layers}
+                          keyboardLayout={keyboardLayout}
+                          keymap={keymap}
+                          currentSlot={
+                            isRuntimeTapDance(
+                              behaviors.get(currentBinding?.behaviorId ?? -1),
+                            )
+                              ? currentBinding?.param1
+                              : undefined
+                          }
+                          slot={param1}
+                          onSlotChange={(slot) => {
+                            setParam1(slot);
+                            setParam2(0);
+                          }}
+                        />
+                      </div>
+                    )}
                     {activeOverride === "macro" && onOpenMacroEditor && (
                       <div className="mt-3 flex flex-wrap justify-end gap-2">
                         <button

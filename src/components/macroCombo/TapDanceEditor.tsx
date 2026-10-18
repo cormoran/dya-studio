@@ -1,12 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { KeycodeSelector } from "../KeycodeSelector";
-import { useIsTabActive } from "../../hooks/useIsTabActive";
 import { useLanguage } from "../../hooks/useLanguage";
-import {
-  useRuntimeTapDance,
-  type RuntimeTapDance,
-} from "../../hooks/useRuntimeTapDance";
+import type { RuntimeTapDance } from "../../hooks/useRuntimeTapDance";
 import type { BehaviorDefinition, Keymap } from "../../hooks/useKeymap";
 import type { KeyboardLayoutType } from "../../lib/keyboardLayouts";
 import { formatBehaviorBinding } from "../../lib/behaviorMetadata";
@@ -261,16 +257,14 @@ export function TapDanceDraft({
 export function TapDanceEditor({
   slot,
   onSlotChange,
-  onUseSlot,
+  runtime,
   ...props
 }: Props & {
   slot?: number;
   onSlotChange?: (id: number) => void;
-  onUseSlot?: (id: number) => void;
+  runtime: RuntimeTapDance;
 }) {
   const { t } = useLanguage();
-  const active = useIsTabActive();
-  const runtime = useRuntimeTapDance(active);
   const [selected, setSelected] = useState<number | undefined>();
   const [session, setSession] = useState(0);
   const saveTarget = useRef<number | undefined>(undefined);
@@ -348,28 +342,14 @@ export function TapDanceEditor({
         </p>
       )}
       {runtime.busy && <p role="status">{t("Loading...")}</p>}
-      {runtime.entries.length > 0 ? (
-        <label className="flex items-center gap-2 text-sm">
-          {t("Tapdance")}
-          <select
-            className="min-h-11 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] px-2"
-            value={id ?? ""}
-            disabled={runtime.busy}
-            onChange={(event) => choose(Number(event.target.value))}
-          >
-            {!entry && (
-              <option value={id ?? ""}>{t("Tapdance unavailable")}</option>
-            )}
-            {runtime.entries.map((candidate) => (
-              <option key={candidate.index} value={candidate.index}>
-                {candidate.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : (
+      {runtime.entries.length === 0 && (
         <p className="text-sm text-[var(--color-text-muted)]">
           {t("No tapdances yet. Create one above.")}
+        </p>
+      )}
+      {id !== undefined && !entry && runtime.entries.length > 0 && (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          {t("Tapdance unavailable")}
         </p>
       )}
       {entry?.config && (
@@ -380,20 +360,6 @@ export function TapDanceEditor({
           slot={entry.index}
           runtime={runtime}
         />
-      )}
-      {onUseSlot && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="btn-electric"
-            disabled={runtime.busy || !entry?.config?.singleBinding?.behaviorId}
-            onClick={() => {
-              if (entry) onUseSlot(entry.index);
-            }}
-          >
-            {t("Use tapdance")}
-          </button>
-        </div>
       )}
       <Dialog.Root
         open={modal !== null}
