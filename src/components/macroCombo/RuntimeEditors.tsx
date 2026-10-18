@@ -344,7 +344,7 @@ export function RuntimeEditors({
                   !macro.isMemoryWritePending &&
                   settingsWrite.state === "idle")
               }
-              onSave={() => void run(save)}
+              onSave={settings ? () => void run(save) : undefined}
               onDiscard={
                 !settings && domainDirty
                   ? () => setConfirm("discard")
@@ -355,13 +355,8 @@ export function RuntimeEditors({
           </>
         }
       >
-        <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+        <p className="mb-3 text-xs text-[var(--color-text-muted)]">
           {t(MEMORY_EDIT_NOTICE)}
-        </p>
-        <p className="mb-4 text-xs text-[var(--color-text-muted)]">
-          {t(
-            "Save persists all unsaved changes in this feature. Discard affects only this item.",
-          )}
         </p>
         {(error || rpcError) && (
           <p role="alert" className="mb-3 text-sm text-red-400">

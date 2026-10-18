@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   IconPlus,
@@ -64,12 +64,14 @@ export function RuntimeListCard({
     id: number;
     name: string;
     dirty: boolean;
+    preview?: ReactNode;
     onClick: () => void;
   }>;
   onAdd: () => void;
   onSettings: () => void;
 }) {
   const { t } = useLanguage();
+  const previewId = useId();
   return (
     <section className="glass-card p-4 mt-6" aria-label={title}>
       <div className="flex items-center justify-between gap-3 mb-3">
@@ -129,12 +131,24 @@ export function RuntimeListCard({
             type="button"
             disabled={busy}
             onClick={item.onClick}
+            aria-describedby={
+              item.preview ? `${previewId}-${item.id}` : undefined
+            }
             className={`min-w-0 w-full p-3 rounded-lg border text-left transition-colors disabled:opacity-40 ${item.dirty ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 text-[var(--color-neon)]" : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-electric)]/60"}`}
           >
             <span className="flex items-center gap-2 text-sm font-medium">
               <span className="truncate">{item.name}</span>
               <StatusDot status={item.dirty ? "unsaved" : "default"} />
             </span>
+            {item.preview && (
+              <span
+                id={`${previewId}-${item.id}`}
+                aria-hidden="true"
+                className="mt-2 block text-[var(--color-text-muted)]"
+              >
+                {item.preview}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -208,7 +222,7 @@ export function RuntimeModalActions({
   dirty: boolean;
   mutationBusy?: boolean;
   saveDisabled?: boolean;
-  onSave: () => void;
+  onSave?: () => void;
   onDiscard?: () => void;
   onDelete?: () => void;
 }) {
@@ -237,15 +251,17 @@ export function RuntimeModalActions({
           {t("Discard")}
         </button>
       )}
-      <button
-        type="button"
-        className="btn-electric text-sm flex items-center gap-1"
-        disabled={busy || saveDisabled}
-        onClick={onSave}
-      >
-        <IconDeviceFloppy size={16} />
-        {t("Save and close")}
-      </button>
+      {onSave && (
+        <button
+          type="button"
+          className="btn-electric text-sm flex items-center gap-1"
+          disabled={busy || saveDisabled}
+          onClick={onSave}
+        >
+          <IconDeviceFloppy size={16} />
+          {t("Save and close")}
+        </button>
+      )}
     </div>
   );
 }

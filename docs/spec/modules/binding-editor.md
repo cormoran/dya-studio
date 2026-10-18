@@ -46,7 +46,7 @@ BIND-019: `Runtime Macro`、`Trans`、`None` は behavior dropdown の `Key Pres
 
 BIND-023: JIS のキー配列表示では Q/A/Z の左端をそれぞれ 1.5u/1.75u/2.25u とし、無変換・Space・変換・かなの順に並べる。Enter は上部 1.5u、下部 1.25u の逆 L 字で、切り欠きにも枠線を表示し、隣の `]` キーと重ならず個別に選択できる。Backspace と Enter の右端、上下矢印の列を揃える。通常・hover・選択状態、狭幅の横スクロールでも輪郭と間隔を保つ。根拠は [keyLayout](../../../src/lib/keyLayout.ts)、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、2026-09-27ユーザー修正要求。binding の適用と保存は既存の caller 契約に従う。
 
-BIND-020: caller-owned macro modal は Keymap の item modal と共通（KM-031）。New macro は modal を開く前に RAM に作成し、Create macro ボタンを出さない。Close は RAM 編集を維持し、header Save and close は同機能を永続化する。header Discard は確認後に対象だけの保存済み値を RAM 復元し、兄弟の未保存編集を保つ。進行中 write を待ち、失敗時は modal を残して再試行可能とする。根拠は [RuntimeEditors](../../../src/components/macroCombo/RuntimeEditors.tsx)、[useRuntimeMacro](../../../src/hooks/useRuntimeMacro.ts)。旧 [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx) は Keymap の入口から使用しない。
+BIND-020: caller-owned macro modal は Keymap の item modal と共通（KM-031）。New macro は modal を開く前に RAM に作成し、Create macro ボタンを出さない。Close は RAM 編集を維持する。item modal に Save and close は表示せず、Keymap ページ上部 Save で永続化する。header Discard は確認後に対象だけの保存済み値を RAM 復元し、兄弟の未保存編集を保つ。進行中 write を待ち、失敗時は modal を残して再試行可能とする。根拠は [RuntimeEditors](../../../src/components/macroCombo/RuntimeEditors.tsx)、[useRuntimeMacro](../../../src/hooks/useRuntimeMacro.ts)。旧 [MacroEditorDialog](../../../src/components/macroCombo/MacroEditorDialog.tsx) は Keymap の入口から使用しない。
 
 BIND-021: `Edit macros` の step 追加・削除は、同じ macro への待機中または進行中の文字列・delay write を先に完了してから RAM に構造変更を適用し、古い step 一式の後続 write による上書きを防ぐ。根拠は [useMacroEditor](../../../src/components/macroCombo/useMacroEditor.ts) の `flushStepWrites`。
 

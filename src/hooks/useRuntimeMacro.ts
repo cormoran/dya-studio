@@ -23,6 +23,7 @@ const CODEC = {
 export interface UseRuntimeMacroReturn {
   isAvailable: boolean;
   macros: MacroSummary[];
+  macroDetails: ReadonlyMap<number, MacroDetail>;
   globalSettings: MacroGlobalSettings | null;
   maxMacroBytes: number;
   maxNameLength: number;
@@ -80,6 +81,9 @@ export function useRuntimeMacro(
     CODEC,
   );
   const [macros, setMacros] = useState<MacroSummary[]>([]);
+  const [macroDetails, setMacroDetails] = useState(
+    new Map<number, MacroDetail>(),
+  );
   const [globalSettings, setGlobalSettings] =
     useState<MacroGlobalSettings | null>(null);
   const [maxMacroBytes, setMaxMacroBytes] = useState(64);
@@ -185,6 +189,7 @@ export function useRuntimeMacro(
   const loadMacros = useCallback(async () => {
     if (!ready) {
       setMacros([]);
+      setMacroDetails(new Map());
       setGlobalSettings(null);
       return;
     }
@@ -201,18 +206,21 @@ export function useRuntimeMacro(
       const listResponse = await callRpc(Request.create({ listMacros: {} }));
       if (listResponse?.listMacros) {
         const summaries = listResponse.listMacros.macros;
+        const details = new Map<number, MacroDetail>();
         for (const summary of summaries) {
-          if (!summary.hasUnsavedChanges) {
-            const detail = await callRpc(
-              Request.create({ getMacro: { slot: summary.slot } }),
-            );
-            if (detail?.getMacro?.macro)
+          const detail = await callRpc(
+            Request.create({ getMacro: { slot: summary.slot } }),
+          );
+          if (detail?.getMacro?.macro) {
+            details.set(summary.slot, detail.getMacro.macro);
+            if (!summary.hasUnsavedChanges)
               savedMacros.current.set(
                 summary.name,
                 JSON.parse(JSON.stringify(detail.getMacro.macro)),
               );
           }
         }
+        setMacroDetails(details);
         const nextMacros = summaries.map((entry) =>
           restoredMacros.current.has(entry.name)
             ? { ...entry, hasUnsavedChanges: false }
@@ -542,6 +550,7 @@ export function useRuntimeMacro(
     if (subsystemIndex === undefined) {
       autoLoadedForRef.current = undefined;
       setMacros([]);
+      setMacroDetails(new Map());
       savedMacros.current.clear();
       restoredMacros.current.clear();
       savedTapMs.current = null;
@@ -561,6 +570,7 @@ export function useRuntimeMacro(
   return {
     isAvailable: subsystem !== null,
     macros,
+    macroDetails,
     globalSettings,
     maxMacroBytes,
     maxNameLength,

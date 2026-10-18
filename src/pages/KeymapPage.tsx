@@ -1,3 +1,7 @@
+import {
+  MacroItemPreview,
+  TapDanceItemPreview,
+} from "../components/macroCombo/RuntimeItemPreview";
 import { RuntimeBehaviorContext } from "../contexts/RuntimeBehaviorContext";
 import { KeymapLayerTabs } from "../components/KeymapLayerTabs";
 import { KeymapSharingMenu } from "../components/importExport/KeymapSharingMenu";
@@ -1667,6 +1671,21 @@ export function KeymapPage() {
                   id: macro.slot,
                   name: macro.name || t("Macro {{slot}}", { slot: macro.slot }),
                   dirty: macro.hasUnsavedChanges,
+                  preview: runtimeMacro.macroDetails?.get(macro.slot) ? (
+                    <MacroItemPreview
+                      macro={runtimeMacro.macroDetails.get(macro.slot)!}
+                      keyPressBehaviorId={
+                        runtimeMacro.globalSettings?.keyPressBehaviorId
+                      }
+                      behaviors={keymap.behaviors}
+                      context={{
+                        layers: layersForSelector,
+                        keyboardLayout: keyboardLayoutContext.layout,
+                        runtimeMacros: runtimeMacro.macros,
+                        shortFormat: true,
+                      }}
+                    />
+                  ) : undefined,
                   onClick: () => {
                     if (!requireUnlocked()) return;
                     macroEditor.selectMacro(macro);
@@ -1715,6 +1734,18 @@ export function KeymapPage() {
                   id: entry.index,
                   name: entry.name,
                   dirty: entry.hasUnsavedChanges,
+                  preview: (
+                    <TapDanceItemPreview
+                      config={entry.config}
+                      behaviors={keymap.behaviors}
+                      context={{
+                        layers: layersForSelector,
+                        keyboardLayout: keyboardLayoutContext.layout,
+                        runtimeMacros: runtimeMacro.macros,
+                        shortFormat: true,
+                      }}
+                    />
+                  ),
                   onClick: () => {
                     if (!requireUnlocked()) return;
                     setTapDanceSlot(entry.index);
@@ -1753,6 +1784,10 @@ export function KeymapPage() {
           view={showComboEditor ? "combo" : runtimeView!}
           onBusyChange={setRuntimeActionBusy}
           onClose={() => {
+            if (runtimeView === "macro")
+              void macroEditor
+                .flushPendingWrites()
+                .then(() => runtimeMacro.loadMacros());
             closeRuntimeEditor();
             setShowComboEditor(false);
           }}

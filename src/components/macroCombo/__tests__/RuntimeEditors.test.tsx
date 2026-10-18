@@ -10,12 +10,14 @@ import { RuntimeEditors } from "../RuntimeEditors";
 
 function setup(
   view:
+    | "macro"
     | "macro-settings"
     | "combo-settings"
     | "tapdance-settings" = "macro-settings",
 ) {
   const onClose = jest.fn();
   const runtimeMacro = {
+    macros: [],
     isAvailable: true,
     isLoading: false,
     error: null,
@@ -53,6 +55,7 @@ function setup(
     saveChanges: jest.fn().mockResolvedValue(true),
   };
   const macro = {
+    renameDraft: "Example",
     isMemoryWritePending: false,
     loadedMacroHasUnsavedChanges: false,
     clearGlobalModified: jest.fn(),
@@ -164,4 +167,21 @@ it("applies tapdance interval immediately without an Apply button", async () => 
   expect(
     screen.queryByRole("button", { name: "Apply to memory" }),
   ).not.toBeInTheDocument();
+});
+
+it("leaves persistence on the page for item editors and keeps the memory notice compact", () => {
+  setup("macro");
+  expect(
+    screen.queryByRole("button", { name: "Save and close" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      "Save persists all unsaved changes in this feature. Discard affects only this item.",
+    ),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Changes are applied to memory immediately, but are not saved permanently until you press Save.",
+    ),
+  ).toHaveClass("text-xs");
 });
