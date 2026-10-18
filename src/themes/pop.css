@@ -33,17 +33,11 @@
     --glass-bg: #f2faff;
     --glass-border: #d4e8f2;
 
+    --scrollbar-size: 4px;
     --scrollbar-track: #ffffff;
     --scrollbar-thumb: var(--pop-sky);
     --scrollbar-thumb-hover: var(--pop-leaf);
   }
-}
-
-/* Keep the bright scrollbar accent small on pages and floating menus alike. */
-:root.pop::-webkit-scrollbar,
-:root.pop ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
 }
 
 @supports not selector(::-webkit-scrollbar) {

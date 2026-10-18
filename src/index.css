@@ -28,6 +28,7 @@
     --glass-border: rgba(255, 255, 255, 0.14);
 
     /* Scrollbar */
+    --scrollbar-size: 8px;
     --scrollbar-track: #2a2a2a;
     --scrollbar-thumb: #4a4a4a;
     --scrollbar-thumb-hover: #5a5a5a;
@@ -95,8 +96,8 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
   }
 
   ::-webkit-scrollbar-track {
