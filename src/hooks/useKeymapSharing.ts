@@ -505,6 +505,7 @@ export function useKeymapSharing(
         name: pending.record?.name ?? pending.remote.name ?? "Keymap",
         skipped,
         remaining: null,
+        unverified: null,
         verified: false,
         attempted: false,
         error: null,
@@ -594,16 +595,25 @@ export function useKeymapSharing(
                   );
               }
             }
+          } catch (caught) {
+            failures.push(failureText(caught));
+          }
+          valid();
+          outcome.unverified = writable;
+          // Even an encoder/RPC failure can leave a partial write. Read the device
+          // again rather than guessing which changes were applied from the error.
+          try {
             const readback = await capture(valid);
             outcome.remaining = withoutSkippedChanges(
               compare(pending.after, documentOf(readback.loaded)),
               skipped,
             );
-            if (!isEmptyDiff(outcome.remaining))
-              throw new Error(
+            outcome.unverified = null;
+            if (!isEmptyDiff(outcome.remaining) && !failures.length)
+              failures.push(
                 "The keyboard does not yet match this keymap. Review and try again.",
               );
-            outcome.verified = true;
+            outcome.verified = isEmptyDiff(outcome.remaining);
           } catch (caught) {
             failures.push(failureText(caught));
           }

@@ -23,7 +23,12 @@ const ja: Record<string, string> = {
   "Skipped changes": "スキップした変更",
   "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
     "未対応の raw・macro 形式の割り当てをスキップし、該当する既存設定を保持しました。",
-  "Changes still not reflected": "再読取で一致しなかった変更",
+  "Changes not applied": "適用されなかった変更",
+  "Changes not verified": "適用を確認できなかった変更",
+  "These changes still differ from the requested settings after reading the keyboard again. The error above describes the write operation, not the cause of each individual change.":
+    "キーボードを再読取した結果、以下の変更が反映されていません。上のエラーは書き込み処理全体のもので、各変更の失敗原因を示すものではありません。",
+  "The keyboard could not be read back. These requested changes may or may not have been applied. Reopen the preview to check before retrying.":
+    "キーボードを再読取できなかったため、以下の変更が反映されたか確認できません。再試行前にプレビューを開き直して確認してください。",
   "{{count}} unsupported changes will be skipped and shown in the result.":
     "未対応の変更 {{count}} 件をスキップし、反映結果に表示します。",
 
@@ -1760,7 +1765,12 @@ const zh: Record<string, string> = {
   "Skipped changes": "已跳过的更改",
   "Unsupported raw and macro bindings were skipped. Their existing settings were kept.":
     "已跳过不支持的 raw 和 macro 绑定，并保留其原有设置。",
-  "Changes still not reflected": "回读仍不匹配的更改",
+  "Changes not applied": "未应用的更改",
+  "Changes not verified": "未能确认的更改",
+  "These changes still differ from the requested settings after reading the keyboard again. The error above describes the write operation, not the cause of each individual change.":
+    "重新读取键盘后，以下更改仍未应用。上方错误描述整个写入操作，并非每项更改的具体失败原因。",
+  "The keyboard could not be read back. These requested changes may or may not have been applied. Reopen the preview to check before retrying.":
+    "无法重新读取键盘，不能确认以下更改是否已应用。重试前请重新打开预览进行检查。",
   "{{count}} unsupported changes will be skipped and shown in the result.":
     "将跳过 {{count}} 项不支持的更改并在结果中显示。",
 

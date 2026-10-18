@@ -1,0 +1,20 @@
+/* Keep semantic error colors local to the write-result surface. */
+.keymap-apply-result {
+  --keymap-write-error: #fca5a5;
+  --keymap-write-error-bg: #451a1a;
+}
+
+:root:is(.light, .neutral) .keymap-apply-result {
+  --keymap-write-error: #b91c1c;
+  --keymap-write-error-bg: #fef2f2;
+}
+
+:root.pop .keymap-apply-result {
+  --keymap-write-error: #a52b42;
+  --keymap-write-error-bg: #fff0ee;
+}
+
+.keymap-write-error-notice {
+  color: var(--keymap-write-error);
+  background: var(--keymap-write-error-bg);
+}

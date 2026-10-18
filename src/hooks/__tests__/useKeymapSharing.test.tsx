@@ -837,7 +837,12 @@ it("closes the preview and reports write errors without claiming verification", 
     verified: false,
     attempted: true,
     error: "RPC write failed",
-    remaining: null,
+    remaining: expect.objectContaining({
+      bindingChanges: [
+        expect.objectContaining({ keyIndex: 0, to: { type: "none" } }),
+      ],
+    }),
+    unverified: null,
   });
   expect(applied).toHaveBeenCalledTimes(1);
 });
@@ -940,6 +945,89 @@ it.each(["write", "readback", "write-and-identity"] as const)(
       expect(result.current.applyResult?.error).toMatch(
         failure === "write" ? /Mouse Button Press/ : /does not yet match/,
       );
+    }
+  },
+);
+
+it.each([false, true])(
+  "reads back after partial write failure (readback fails: %s)",
+  async (readbackFails) => {
+    const local = {
+      ...device,
+      layers: [
+        {
+          name: "Base",
+          bindings: [{ type: "trans" }, { type: "trans" }, { type: "trans" }],
+        },
+      ],
+    };
+    const remote = {
+      ...target,
+      layers: [
+        {
+          name: "Base",
+          bindings: [
+            { type: "key", usage: 4 },
+            { type: "mouse_button", button: 1 },
+            { type: "raw", label: "Custom", zmk: "&custom" },
+          ],
+        },
+      ],
+    };
+    const partial = {
+      ...local,
+      layers: [
+        {
+          name: "Base",
+          bindings: [
+            remote.layers[0].bindings[0],
+            local.layers[0].bindings[1],
+            local.layers[0].bindings[2],
+          ],
+        },
+      ],
+    };
+    mockLoad.mockResolvedValue({ state: { currentKeymap: local } });
+    const { result } = renderHook(() => useKeymapSharing(false, applied), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.prepare("apply", undefined, remote);
+    });
+    const writeError =
+      "ZMK behavior is unavailable: Mouse Button Press / Mouse Button.";
+    mockWrite.mockRejectedValueOnce(new Error(writeError));
+    mockLoad.mockResolvedValueOnce({ state: { currentKeymap: local } });
+    if (readbackFails)
+      mockLoad.mockRejectedValueOnce(new Error("Readback disconnected"));
+    else mockLoad.mockResolvedValueOnce({ state: { currentKeymap: partial } });
+    await act(async () => {
+      expect(await result.current.confirm()).toBe(false);
+    });
+    expect(result.current.review).toBeNull();
+    expect(result.current.applyResult?.error).toContain(writeError);
+    expect(result.current.applyResult?.skipped.bindingChanges).toEqual([
+      expect.objectContaining({ keyIndex: 2 }),
+    ]);
+    if (readbackFails) {
+      expect(result.current.applyResult?.remaining).toBeNull();
+      expect(
+        result.current.applyResult?.unverified?.bindingChanges.map(
+          (c) => c.keyIndex,
+        ),
+      ).toEqual([0, 1]);
+      expect(result.current.applyResult?.error).toContain(
+        "Readback disconnected",
+      );
+    } else {
+      expect(result.current.applyResult?.unverified).toBeNull();
+      expect(result.current.applyResult?.remaining?.bindingChanges).toEqual([
+        expect.objectContaining({
+          keyIndex: 1,
+          from: { type: "trans" },
+          to: { type: "mouse_button", button: 1 },
+        }),
+      ]);
     }
   },
 );

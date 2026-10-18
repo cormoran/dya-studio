@@ -3,7 +3,10 @@ import { EMPTY_DIFF, type KeymapDiff } from "./abyssDiff";
 export interface KeymapApplyResult {
   name: string;
   skipped: KeymapDiff;
+  /** Actual requested settings still missing in a fresh device readback. */
   remaining: KeymapDiff | null;
+  /** Requested writable changes whose outcome could not be read back. */
+  unverified: KeymapDiff | null;
   verified: boolean;
   attempted: boolean;
   error: string | null;

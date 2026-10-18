@@ -1,9 +1,10 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconX } from "@tabler/icons-react";
 import { useLanguage } from "../../hooks/useLanguage";
 import { isEmptyDiff } from "../../lib/abyss/abyssDiff";
 import type { KeymapApplyResult } from "../../lib/abyss/keymapApplyResult";
 import { KeymapDiffView } from "./KeymapDiffView";
+import "./KeymapApplyResultModal.css";
 
 export function KeymapApplyResultModal({
   result,
@@ -15,6 +16,30 @@ export function KeymapApplyResultModal({
   const { t } = useLanguage();
   const skipped = !isEmptyDiff(result.skipped);
   const remaining = result.remaining && !isEmptyDiff(result.remaining);
+  const unverified = result.unverified && !isEmptyDiff(result.unverified);
+  const outstanding = remaining
+    ? result.remaining
+    : unverified
+      ? result.unverified
+      : null;
+  const outstandingTitle = remaining
+    ? "Changes not applied"
+    : "Changes not verified";
+  const errorNotice = result.error && (
+    <div
+      role="alert"
+      className="keymap-write-error-notice flex items-start gap-2 rounded-lg p-3 text-sm"
+    >
+      <IconAlertTriangle
+        size={18}
+        aria-hidden="true"
+        className="shrink-0 mt-0.5"
+      />
+      <p className="whitespace-pre-wrap break-words min-w-0">
+        {t(result.error)}
+      </p>
+    </div>
+  );
   return (
     <Dialog.Root
       open
@@ -24,7 +49,7 @@ export function KeymapApplyResultModal({
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
-        <Dialog.Content className="fixed z-[60] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-card w-[min(56rem,calc(100vw-2rem))] max-h-[90dvh] flex flex-col overflow-hidden">
+        <Dialog.Content className="keymap-apply-result fixed z-[60] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-card w-[min(56rem,calc(100vw-2rem))] max-h-[90dvh] flex flex-col overflow-hidden">
           <div className="shrink-0 flex items-start gap-3 p-4 border-b border-[var(--color-border)]">
             <div className="min-w-0 flex-1">
               <Dialog.Title className="text-base font-medium">
@@ -44,7 +69,7 @@ export function KeymapApplyResultModal({
           <div className="min-h-0 overflow-y-auto p-4 space-y-4">
             <p
               role="status"
-              className={`text-sm ${result.error || skipped ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"}`}
+              className={`text-sm ${result.error ? "text-[var(--keymap-write-error)]" : skipped ? "text-[var(--color-warning)]" : "text-[var(--color-neon)]"}`}
             >
               {t(
                 result.error
@@ -63,13 +88,22 @@ export function KeymapApplyResultModal({
                     : "No keymap settings were written.",
               )}
             </p>
-            {result.error && (
-              <p
-                role="alert"
-                className="text-sm whitespace-pre-wrap break-words text-[var(--color-danger)]"
-              >
-                {t(result.error)}
-              </p>
+            {!outstanding && errorNotice}
+            {outstanding && (
+              <section aria-label={t(outstandingTitle)} className="space-y-3">
+                <h3 className="text-sm font-medium text-[var(--keymap-write-error)]">
+                  {t(outstandingTitle)}
+                </h3>
+                {errorNotice}
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  {t(
+                    remaining
+                      ? "These changes still differ from the requested settings after reading the keyboard again. The error above describes the write operation, not the cause of each individual change."
+                      : "The keyboard could not be read back. These requested changes may or may not have been applied. Reopen the preview to check before retrying.",
+                  )}
+                </p>
+                <KeymapDiffView diff={outstanding} defaultExpanded />
+              </section>
             )}
             {skipped && (
               <section aria-label={t("Skipped changes")} className="space-y-3">
@@ -80,17 +114,6 @@ export function KeymapApplyResultModal({
                   )}
                 </p>
                 <KeymapDiffView diff={result.skipped} defaultExpanded />
-              </section>
-            )}
-            {remaining && (
-              <section
-                aria-label={t("Changes still not reflected")}
-                className="space-y-3"
-              >
-                <h3 className="text-sm font-medium">
-                  {t("Changes still not reflected")}
-                </h3>
-                <KeymapDiffView diff={result.remaining!} defaultExpanded />
               </section>
             )}
           </div>
