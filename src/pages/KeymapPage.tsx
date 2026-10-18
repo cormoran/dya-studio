@@ -30,6 +30,7 @@ import {
   IconRefresh,
   IconX,
   IconLink,
+  IconCode,
   IconSettings,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
@@ -1505,6 +1506,7 @@ export function KeymapPage() {
                   <h2 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
                     <IconLink
                       size={17}
+                      aria-hidden="true"
                       className="text-[var(--color-electric)]"
                     />
                     {t("Combos")}
@@ -1627,7 +1629,10 @@ export function KeymapPage() {
                 )}
               </section>
             ) : (
-              <UnsupportedFeatureCard title={t("Combos")} />
+              <UnsupportedFeatureCard
+                title={t("Combos")}
+                icon={<IconLink size={17} />}
+              />
             )}
             {runtimeStatus && (
               <p
@@ -1640,6 +1645,7 @@ export function KeymapPage() {
             {runtimeMacro.isAvailable ? (
               <RuntimeListCard
                 title={t("Macros")}
+                icon={<IconCode size={17} />}
                 addLabel={t("New macro")}
                 settingsLabel={t("Macro Global Settings")}
                 busy={runtimeMacro.isLoading || !keymap.isFullyLoaded}
@@ -1664,7 +1670,10 @@ export function KeymapPage() {
                 }))}
               />
             ) : (
-              <UnsupportedFeatureCard title={t("Macros")} />
+              <UnsupportedFeatureCard
+                title={t("Macros")}
+                icon={<IconCode size={17} />}
+              />
             )}
             {runtimeTapDance.isAvailable ? (
               <RuntimeListCard

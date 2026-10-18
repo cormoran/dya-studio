@@ -11,14 +11,30 @@ import {
 import { StatusDot } from "../EditStatusIndicator";
 import { useLanguage } from "../../hooks/useLanguage";
 
-export function UnsupportedFeatureCard({ title }: { title: string }) {
+export function UnsupportedFeatureCard({
+  title,
+  icon,
+}: {
+  title: string;
+  icon?: ReactNode;
+}) {
   const { t } = useLanguage();
   return (
     <section className="glass-card p-4 mt-6" aria-label={title}>
-      <h2 className="text-sm font-medium text-[var(--color-text)]">
-        {title}:{" "}
-        <span className="text-[var(--color-text-muted)]">
-          {t("Not supported")}
+      <h2 className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+        {icon && (
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-[var(--color-text-muted)]"
+          >
+            {icon}
+          </span>
+        )}
+        <span>
+          {title}:{" "}
+          <span className="text-[var(--color-text-muted)]">
+            {t("Not supported")}
+          </span>
         </span>
       </h2>
     </section>
@@ -27,6 +43,7 @@ export function UnsupportedFeatureCard({ title }: { title: string }) {
 
 export function RuntimeListCard({
   title,
+  icon,
   addLabel,
   settingsLabel,
   busy,
@@ -37,6 +54,7 @@ export function RuntimeListCard({
   onSettings,
 }: {
   title: string;
+  icon?: ReactNode;
   addLabel: string;
   settingsLabel: string;
   busy: boolean;
@@ -55,7 +73,15 @@ export function RuntimeListCard({
   return (
     <section className="glass-card p-4 mt-6" aria-label={title}>
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-sm font-medium text-[var(--color-text)]">
+        <h2 className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+          {icon && (
+            <span
+              aria-hidden="true"
+              className="shrink-0 text-[var(--color-electric)]"
+            >
+              {icon}
+            </span>
+          )}
           {title}
         </h2>
         <div className="flex items-center gap-2">
