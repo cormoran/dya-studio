@@ -42,7 +42,7 @@ BIND-017: floating / sheet の header は編集対象と操作アイコン群を
 
 BIND-018: keycode selector は開くたびにキー配列表示から始める。配列下に「その他のキーは右上のカテゴリ別表示ボタンから選択できます」と案内し、右上の表示切替ボタンは通常色にする。Keymap の OS Layout が JIS のときは同じ browser localStorage の `keyboardLayout` 値から JIS の物理配列（半角/全角、変換/無変換、ISO Enter を含む）と JIS のキー表記を表示し、US (ANSI) for JP のときは ANSI の物理配列のまま US for JP のキー表記を使う。修飾キー表示ボタンは選択中の修飾キー名を含めず、修飾キーが一つ以上選択されている場合だけ修飾キートグルと同じ紫で示す。behavior dropdown の「選択したカテゴリを維持」は未設定時 ON で、明示的に OFF にした設定は保持する。根拠はS2、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、[KeyboardLayoutProvider](../../../src/contexts/KeyboardLayoutProvider.tsx)、2026-09-27ユーザー要求。
 
-BIND-019: `Runtime Macro`、`Trans`、`None` は behavior dropdown の `Key Press` category に表示する。Runtime Macro behavior があれば登録件数ゼロでも `Macro` category を表示し、登録済み entry と `New macro`（新規マクロ）を並べる。新規項目は重複しない仮名で RAM に entry を作成し、返された slot を param1 に選ぶ。既存項目も新規項目も binding draft のみ更新し、自動適用・自動終了しない。param1 の既存 New macro / Edit macros は caller-owned editor を開く別操作（BIND-020）。作成不能・処理中は新規項目を無効にし、作成失敗は selector 内 alert に表示して draft を保持する。RAM 作成は binding の取消だけでは取り消さず、Keymap のカードと Save/Discard 対象にも反映する。flash 保存は Keymap Save または runtime editor Save で行う。根拠はS1/S4、2026-10-19ユーザー明示要求。
+BIND-019: `Runtime Macro`、`Trans`、`None` は behavior dropdown の `Key Press` category に表示する。Runtime Macro behavior があれば登録件数ゼロでも `Macro` category を表示し、登録済み entry と `New macro`（新規マクロ）を並べる。新規項目は重複しない仮名で RAM に entry を作成し、返された slot を param1 に選ぶ。既存項目も新規項目も binding draft のみ更新し、自動適用・自動終了しない。param1 の既存 New macro / Edit macros は caller-owned editor を開く別操作（BIND-020）。作成不能・処理中は新規項目を無効にし、作成失敗は selector 内 alert に表示して draft を保持する。RAM 作成は binding の取消だけでは取り消さず、Keymap 内の入れ子の action/step/sensor selector でもカードと同じ編集状態を共有して Save/Discard 対象に反映する。flash 保存は Keymap Save または runtime editor Save で行う。根拠はS1/S4、2026-10-19ユーザー明示要求。
 
 BIND-023: JIS のキー配列表示では Q/A/Z の左端をそれぞれ 1.5u/1.75u/2.25u とし、無変換・Space・変換・かなの順に並べる。Enter は上部 1.5u、下部 1.25u の逆 L 字で、切り欠きにも枠線を表示し、隣の `]` キーと重ならず個別に選択できる。Backspace と Enter の右端、上下矢印の列を揃える。通常・hover・選択状態、狭幅の横スクロールでも輪郭と間隔を保つ。根拠は [keyLayout](../../../src/lib/keyLayout.ts)、[KeyLayoutSelector](../../../src/components/KeyLayoutSelector.tsx)、2026-09-27ユーザー修正要求。binding の適用と保存は既存の caller 契約に従う。
 
@@ -95,7 +95,7 @@ BIND-026: 640px以上ではmodal headerの `Floating mode` と `Close on select`
 
 ## エラーと復帰
 
-caller の error prop に加え、runtime 一覧取得・新規作成の失敗も selector 内 alert に表示する。新規作成失敗では binding draft を変更せず、取得・書込の部分成功があり得るため Keymap の一覧を再取得する。作成 RPC 自体の自動 retry/rollback は行わない。modal は callback 成否を待たず閉じる経路を持つ。floating の成功後移動/失敗時保持はキーマップ caller の契約。別 consumer にそのまま当てはめない。localStorage 利用不能時の一部設定アクセスには try/catch がなく、回復は未保証。
+caller の error prop に加え、runtime 一覧取得・新規作成の失敗も selector 内 alert に表示する。新規作成失敗では binding draft を変更せず、取得・書込の部分成功があり得るため、エラー表示に従って再読込して確認する。作成 RPC 自体の自動 retry/rollback は行わない。modal は callback 成否を待たず閉じる経路を持つ。floating の成功後移動/失敗時保持はキーマップ caller の契約。別 consumer にそのまま当てはめない。localStorage 利用不能時の一部設定アクセスには try/catch がなく、回復は未保証。
 
 ## 探索の観点
 

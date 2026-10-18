@@ -1,7 +1,9 @@
+import { RuntimeBehaviorContext } from "../contexts/RuntimeBehaviorContext";
 import { KeymapLayerTabs } from "../components/KeymapLayerTabs";
 import { KeymapSharingMenu } from "../components/importExport/KeymapSharingMenu";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
+  createElement,
   useState,
   useContext,
   useCallback,
@@ -850,7 +852,9 @@ export function KeymapPage() {
     mobile,
   ]);
 
-  return (
+  return createElement(
+    RuntimeBehaviorContext.Provider,
+    { value: { macro: runtimeMacro, tapDance: runtimeTapDance } },
     <div
       ref={pageRef}
       data-mobile-sheet-open={sheetOpen}
@@ -1909,8 +1913,6 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
-        runtimeMacroController={runtimeMacro}
-        runtimeTapDanceController={runtimeTapDance}
         toolbar={
           <div className="flex items-center gap-1">
             <EditorTooltip content={t("Open Combo Editor")}>
@@ -2073,11 +2075,9 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
-        runtimeMacroController={runtimeMacro}
-        runtimeTapDanceController={runtimeTapDance}
         keymap={keymap.isFullyLoaded ? keymap.keymap : null}
         onOpenMacroEditor={handleOpenMacroEditor}
       />
-    </div>
+    </div>,
   );
 }

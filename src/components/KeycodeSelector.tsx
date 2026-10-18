@@ -1,3 +1,4 @@
+import { RuntimeBehaviorContext } from "../contexts/RuntimeBehaviorContext";
 /**
  * KeycodeSelector Component
  *
@@ -10,6 +11,7 @@
  *   (setting is persisted in localStorage)
  */
 import {
+  useContext,
   useState,
   useMemo,
   useCallback,
@@ -48,14 +50,8 @@ import {
   useFloatingWindow,
   type FloatingWindowPosition,
 } from "../hooks/useFloatingWindow";
-import {
-  useRuntimeMacro,
-  type UseRuntimeMacroReturn,
-} from "../hooks/useRuntimeMacro";
-import {
-  useRuntimeTapDance,
-  type RuntimeTapDance,
-} from "../hooks/useRuntimeTapDance";
+import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
+import { useRuntimeTapDance } from "../hooks/useRuntimeTapDance";
 import { useIsTabActive } from "../hooks/useIsTabActive";
 import { TapDanceEditor } from "./macroCombo/TapDanceEditor";
 import { isRuntimeTapDance } from "../lib/runtimeTapDance";
@@ -131,8 +127,6 @@ interface KeycodeSelectorProps {
   keyboardLayout?: KeyboardLayoutType;
   behaviorQuickSelects?: string[]; // Optional list of behavior displayNameVariants for quick select
   runtimeMacros?: Array<{ slot: number; name?: string }>;
-  runtimeMacroController?: UseRuntimeMacroReturn;
-  runtimeTapDanceController?: RuntimeTapDance;
   /**
    * Opens the caller-owned runtime macro editor without changing this draft.
    * A slot identifies the macro assigned to the active Runtime Macro binding;
@@ -321,8 +315,6 @@ export function KeycodeSelector({
   behaviorQuickSelects,
   keymap,
   runtimeMacros: suppliedMacros = [],
-  runtimeMacroController,
-  runtimeTapDanceController,
   onOpenMacroEditor,
   modalLayerClassName = "z-50",
 }: KeycodeSelectorProps) {
@@ -405,6 +397,9 @@ export function KeycodeSelector({
   }, [open, selectionKey]);
 
   const [creationError, setCreationError] = useState<string | null>(null);
+  const runtimeControllers = useContext(RuntimeBehaviorContext);
+  const runtimeMacroController = runtimeControllers?.macro;
+  const runtimeTapDanceController = runtimeControllers?.tapDance;
   const localRuntimeMacro = useRuntimeMacro({ autoLoad: false });
   const runtimeMacro = runtimeMacroController ?? localRuntimeMacro;
   const { loadMacros } = runtimeMacro;

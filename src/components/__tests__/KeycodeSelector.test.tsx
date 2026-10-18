@@ -1,3 +1,4 @@
+import { RuntimeBehaviorContext } from "../../contexts/RuntimeBehaviorContext";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRuntimeTapDance } from "../../hooks/useRuntimeTapDance";
@@ -990,6 +991,71 @@ it("requires explicit Apply for floating macro choices and restores auto-selecti
   expect(onSelect).toHaveBeenCalledWith({
     behaviorId: 9,
     param1: 0,
+    param2: 0,
+  });
+});
+
+it("uses the page runtime controllers for creation in descendant selectors", async () => {
+  const user = userEvent.setup();
+  const createMacro = jest.fn().mockResolvedValue(true);
+  const createTapDance = jest.fn().mockResolvedValue(99);
+  const shared = {
+    macro: {
+      ...mockMacroRuntime,
+      createMacro,
+      getMacroSlot: jest.fn(() => 87),
+    },
+    tapDance: { ...mockTapDanceRuntime, create: createTapDance },
+  };
+  const onSelect = jest.fn();
+  render(
+    <RuntimeBehaviorContext.Provider
+      value={
+        shared as unknown as NonNullable<
+          React.ContextType<typeof RuntimeBehaviorContext>
+        >
+      }
+    >
+      <div>
+        <KeycodeSelector
+          open
+          onClose={jest.fn()}
+          onSelect={onSelect}
+          behaviors={
+            new Map([
+              [91, { id: 91, displayName: "Runtime Macro", metadata: [] }],
+              [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+            ])
+          }
+          layers={[]}
+        />
+      </div>
+    </RuntimeBehaviorContext.Provider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(screen.getByRole("button", { name: "Macro", exact: true }));
+  await user.click(
+    screen.getByRole("button", { name: "New macro", exact: true }),
+  );
+  expect(createMacro).toHaveBeenCalledWith("Macro 1");
+  expect(shared.macro.getMacroSlot).toHaveBeenCalledWith("Macro 1");
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Runtime Macro - Execute macro" }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Tapdance", exact: true }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "New tapdance", exact: true }),
+  );
+  expect(createTapDance).toHaveBeenCalledWith("Tapdance 3");
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 99,
     param2: 0,
   });
 });
