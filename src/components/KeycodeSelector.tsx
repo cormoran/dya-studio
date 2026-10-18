@@ -382,7 +382,13 @@ export function KeycodeSelector({
   const tapDance = isRuntimeTapDance(selectedBehaviorInfo?.behavior);
   const needsAnyParam = needsParam1 || needsParam2 || tapDance;
   const tabActive = useIsTabActive();
-  const runtimeTapDance = useRuntimeTapDance(open && tapDance && tabActive);
+  const hasRuntimeTapDance = useMemo(
+    () => Array.from(behaviors.values()).some(isRuntimeTapDance),
+    [behaviors],
+  );
+  const runtimeTapDance = useRuntimeTapDance(
+    open && hasRuntimeTapDance && tabActive,
+  );
 
   // Handle behavior selection from dropdown
   const handleBehaviorSelect = useCallback(
@@ -460,28 +466,35 @@ export function KeycodeSelector({
     ],
   );
 
-  const handleMacroSelect = useCallback(
-    (slot: number) => {
-      const runtimeMacroBehavior = Array.from(behaviors.values()).find(
-        (behavior) =>
-          getBehaviorMetadata(behavior.displayName)?.param1Type === "macro",
-      );
-      if (!runtimeMacroBehavior) return;
-
-      setSelectedBehavior(runtimeMacroBehavior.id);
-      setParam1(slot);
+  const handleNamedBehaviorSelect = useCallback(
+    (behaviorId: number, param1: number) => {
+      setSelectedBehavior(behaviorId);
+      setParam1(param1);
       setParam2(0);
       setActiveParam(1);
       if (closeOnSelect) {
-        onSelect({
-          behaviorId: runtimeMacroBehavior.id,
-          param1: slot,
-          param2: 0,
-        });
+        onSelect({ behaviorId, param1, param2: 0 });
         if (!floating) onClose();
       }
     },
-    [behaviors, closeOnSelect, floating, onClose, onSelect],
+    [closeOnSelect, floating, onClose, onSelect],
+  );
+  const handleMacroSelect = useCallback(
+    (slot: number) => {
+      const behavior = Array.from(behaviors.values()).find(
+        (candidate) =>
+          getBehaviorMetadata(candidate.displayName)?.param1Type === "macro",
+      );
+      if (behavior) handleNamedBehaviorSelect(behavior.id, slot);
+    },
+    [behaviors, handleNamedBehaviorSelect],
+  );
+  const handleTapDanceSelect = useCallback(
+    (id: number) => {
+      const behavior = Array.from(behaviors.values()).find(isRuntimeTapDance);
+      if (behavior) handleNamedBehaviorSelect(behavior.id, id);
+    },
+    [behaviors, handleNamedBehaviorSelect],
   );
 
   const handleParam2Change = useCallback(
@@ -1025,6 +1038,8 @@ export function KeycodeSelector({
                     quickSelects={behaviorQuickSelects}
                     runtimeMacros={runtimeMacros}
                     onMacroSelect={handleMacroSelect}
+                    runtimeTapDances={runtimeTapDance.entries}
+                    onTapDanceSelect={handleTapDanceSelect}
                   />
                 )}
               </div>

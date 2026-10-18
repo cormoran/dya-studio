@@ -27,6 +27,7 @@ import type { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-
 export type BehaviorCategory =
   | "keypress" // Basic key input
   | "macro" // Saved runtime macros
+  | "tapdance" // Saved runtime tapdances
   | "layer" // Layer switching/activation
   | "mod" // Modifiers and mod-tap
   | "transport" // Bluetooth and output management

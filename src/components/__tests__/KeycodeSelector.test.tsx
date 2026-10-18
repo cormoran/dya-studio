@@ -1,5 +1,6 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useRuntimeTapDance } from "../../hooks/useRuntimeTapDance";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { KeycodeValueSelector } from "../KeycodeValueSelector";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
@@ -30,7 +31,7 @@ const mockTapDanceRuntime = {
   save: jest.fn(),
 };
 jest.mock("../../hooks/useRuntimeTapDance", () => ({
-  useRuntimeTapDance: () => mockTapDanceRuntime,
+  useRuntimeTapDance: jest.fn(() => mockTapDanceRuntime),
 }));
 
 beforeEach(() => localStorage.clear());
@@ -764,6 +765,41 @@ it("applies a named tapdance choice immediately when close-on-select is enabled"
   await user.click(
     screen.getByRole("button", { name: "Navigation", exact: true }),
   );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+  expect(onClose).toHaveBeenCalled();
+});
+
+it("loads tapdance shortcuts before selecting its behavior and applies the chosen named entry", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 10, param1: 0x70004, param2: 0 }}
+      behaviors={
+        new Map([
+          [10, { id: 10, displayName: "Key Press", metadata: [] }],
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  expect(useRuntimeTapDance).toHaveBeenLastCalledWith(true);
+  await user.click(
+    screen.getByRole("button", { name: /Key Press.*Press a key/ }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Tapdance", exact: true }),
+  );
+  await user.click(screen.getByRole("button", { name: "Navigation Tapdance" }));
   expect(onSelect).toHaveBeenCalledWith({
     behaviorId: 32,
     param1: 42,

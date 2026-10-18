@@ -236,3 +236,65 @@ it("groups Runtime Macro, Trans, and None with key input", () => {
   expect(getBehaviorMetadata("Trans")?.category).toBe("keypress");
   expect(getBehaviorMetadata("None")?.category).toBe("keypress");
 });
+
+it("lists and searches registered tapdances in a separate category using stable IDs", async () => {
+  const user = userEvent.setup();
+  const onTapDanceSelect = jest.fn();
+  const onSelect = jest.fn();
+  render(
+    <BehaviorDropdown
+      behaviors={
+        new Map([
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      selectedBehaviorId={null}
+      onSelect={onSelect}
+      onQuickSelect={jest.fn()}
+      runtimeTapDances={[
+        { index: 7, name: "Alphabet" },
+        { index: 42, name: "Navigation" },
+      ]}
+      onTapDanceSelect={onTapDanceSelect}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(
+    screen.getByRole("button", { name: "Tapdance", exact: true }),
+  );
+  expect(
+    screen.getByRole("button", { name: "Alphabet Tapdance" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Navigation Tapdance" }));
+  expect(onTapDanceSelect).toHaveBeenLastCalledWith(42);
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.type(screen.getByPlaceholderText("Search behaviors..."), "Alpha");
+  expect(
+    screen.queryByRole("button", { name: "Navigation Tapdance" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Alphabet Tapdance" }));
+  expect(onTapDanceSelect).toHaveBeenLastCalledWith(7);
+});
+
+it("hides tapdance shortcuts when its behavior is unavailable", async () => {
+  const user = userEvent.setup();
+  render(
+    <BehaviorDropdown
+      behaviors={
+        new Map([[10, { id: 10, displayName: "Key Press", metadata: [] }]])
+      }
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+      runtimeTapDances={[{ index: 42, name: "Navigation" }]}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(
+    screen.queryByRole("button", { name: "Tapdance", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Navigation Tapdance" }),
+  ).not.toBeInTheDocument();
+});
