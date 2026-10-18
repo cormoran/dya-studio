@@ -298,3 +298,32 @@ it("hides tapdance shortcuts when its behavior is unavailable", async () => {
     screen.queryByRole("button", { name: "Navigation Tapdance" }),
   ).not.toBeInTheDocument();
 });
+
+it.each([
+  ["Runtime Macro", "Macro", "New macro"],
+  ["Runtime Tap Dance", "Tapdance", "New tapdance"],
+])(
+  "shows the empty %s category with a creation item",
+  async (behavior, category, label) => {
+    const user = userEvent.setup(),
+      create = jest.fn();
+    render(
+      <BehaviorDropdown
+        behaviors={
+          new Map([[91, { id: 91, displayName: behavior, metadata: [] }]])
+        }
+        selectedBehaviorId={null}
+        onSelect={jest.fn()}
+        onQuickSelect={jest.fn()}
+        onCreateMacro={create}
+        onCreateTapDance={create}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Select behavior" }));
+    await user.click(
+      screen.getByRole("button", { name: category, exact: true }),
+    );
+    await user.click(screen.getByRole("button", { name: label, exact: true }));
+    expect(create).toHaveBeenCalledTimes(1);
+  },
+);

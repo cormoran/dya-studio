@@ -1909,6 +1909,8 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        runtimeMacroController={runtimeMacro}
+        runtimeTapDanceController={runtimeTapDance}
         toolbar={
           <div className="flex items-center gap-1">
             <EditorTooltip content={t("Open Combo Editor")}>
@@ -2071,6 +2073,8 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        runtimeMacroController={runtimeMacro}
+        runtimeTapDanceController={runtimeTapDance}
         keymap={keymap.isFullyLoaded ? keymap.keymap : null}
         onOpenMacroEditor={handleOpenMacroEditor}
       />
