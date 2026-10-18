@@ -273,7 +273,7 @@ export function RuntimeEditors({
       : view === "macro"
         ? "Edit macros"
         : view === "tapdance"
-          ? "Tapdances"
+          ? "Tapdance Editor"
           : view === "macro-settings"
             ? "Macro Global Settings"
             : view === "combo-settings"

@@ -144,11 +144,11 @@ export function TapDanceDraft({
         role="tabpanel"
         id={`${panelId}-action`}
         aria-labelledby={`${panelId}-tab-${active}`}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)]"
       >
         <button
           type="button"
-          className="btn-ghost flex-1 min-h-11"
+          className="flex-1 min-w-0 min-h-10 px-3 py-2 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
           disabled={runtime.busy}
           onClick={() => setSelecting(true)}
         >

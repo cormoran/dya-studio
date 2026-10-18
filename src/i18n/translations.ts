@@ -60,6 +60,7 @@ const ja: Record<string, string> = {
   "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
     "このタップダンスを完全に削除しますか？使用しているキーのタップダンスは動作しなくなり、破棄では元に戻せません。",
   Tapdances: "タップダンス一覧",
+  "Tapdance Editor": "タップダンス編集",
   "Tapdance Global Settings": "タップダンスのグローバル設定",
   "No tapdances yet. Create one above.":
     "タップダンスはまだありません。上から作成してください。",
@@ -1894,6 +1895,7 @@ const zh: Record<string, string> = {
   "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
     "永久删除此踢踏舞？使用它的按键将不再触发动作，放弃更改也无法恢复。",
   Tapdances: "踢踏舞列表",
+  "Tapdance Editor": "踢踏舞编辑器",
   "Tapdance Global Settings": "踢踏舞全局设置",
   "No tapdances yet. Create one above.": "尚无踢踏舞，请在上方创建。",
   "Tapdance saves separately from macros and combos.":

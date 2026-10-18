@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useDebouncedMemoryWrite } from "../../hooks/useDebouncedMemoryWrite";
+import { StatusDot } from "../EditStatusIndicator";
 import { TapDanceDraft } from "./TapDanceEditor";
 import type { RuntimeTapDance } from "../../hooks/useRuntimeTapDance";
 import type { BehaviorDefinition, Keymap } from "../../hooks/useKeymap";
@@ -60,10 +61,12 @@ export function TapDanceEditorCard({
   ]);
   if (!config) return null;
   return (
-    <section className="glass-card p-4 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-medium text-[var(--color-text)]">{entry?.name}</h2>
-        {!hideActions && (
+    <section className="glass-card p-4 min-w-0 space-y-4">
+      {!hideActions && (
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium text-[var(--color-text)]">
+            {entry?.name}
+          </h2>
           <button
             type="button"
             className="btn-ghost text-sm"
@@ -82,40 +85,48 @@ export function TapDanceEditorCard({
           >
             {t("Delete tapdance")}
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {runtime.error && (
         <p role="alert" className="text-sm text-red-500">
           {t(runtime.error)}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <label htmlFor={nameId}>{t("Name")}</label>
-        <input
-          id={nameId}
-          className="min-w-0 flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text)]"
-          value={nameDraft}
-          disabled={!hideActions && runtime.busy}
-          onChange={(event) => {
-            const next = event.target.value;
-            setName(next);
-            const trimmed = next.trim();
-            if (
-              hideActions &&
-              trimmed &&
-              new TextEncoder().encode(trimmed).length <=
-                (runtime.globalSettings?.maxNameLength ?? 0) &&
-              !runtime.entries.some(
-                (candidate) =>
-                  candidate.index !== slot && candidate.name === trimmed,
+      <div className="flex flex-col tablet:flex-row tablet:items-end gap-3">
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor={nameId}
+            className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-muted)] mb-1"
+          >
+            {t("Name")}
+            {entry?.hasUnsavedChanges && <StatusDot status="unsaved" />}
+          </label>
+          <input
+            id={nameId}
+            className="w-full h-10 px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
+            value={nameDraft}
+            disabled={!hideActions && runtime.busy}
+            onChange={(event) => {
+              const next = event.target.value;
+              setName(next);
+              const trimmed = next.trim();
+              if (
+                hideActions &&
+                trimmed &&
+                new TextEncoder().encode(trimmed).length <=
+                  (runtime.globalSettings?.maxNameLength ?? 0) &&
+                !runtime.entries.some(
+                  (candidate) =>
+                    candidate.index !== slot && candidate.name === trimmed,
+                )
               )
-            )
-              nameWrite.queue(trimmed);
-          }}
-          onBlur={() => {
-            if (hideActions) void nameWrite.flush();
-          }}
-        />
+                nameWrite.queue(trimmed);
+            }}
+            onBlur={() => {
+              if (hideActions) void nameWrite.flush();
+            }}
+          />
+        </div>
         {!hideActions && (
           <button
             type="button"

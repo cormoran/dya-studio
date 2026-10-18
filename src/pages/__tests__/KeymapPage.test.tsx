@@ -2302,7 +2302,14 @@ describe("KeymapPage", () => {
       renderComponent({ isConnected: true }, readyKeymap);
       const card = screen.getByRole("region", { name: "Tapdances" });
       await user.click(within(card).getByRole("button", { name: "Alphabet" }));
-      expect(screen.getByRole("dialog", { name: "Tapdances" })).toBeVisible();
+      expect(
+        screen.getByRole("dialog", { name: "Tapdance Editor" }),
+      ).toBeVisible();
+      expect(
+        within(
+          screen.getByRole("dialog", { name: "Tapdance Editor" }),
+        ).queryByRole("heading", { name: "Alphabet" }),
+      ).not.toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: "Delete", exact: true }),
       ).toBeVisible();
@@ -2323,7 +2330,9 @@ describe("KeymapPage", () => {
       const view = renderComponent({ isConnected: true }, readyKeymap);
       await user.click(screen.getByRole("button", { name: "New tapdance" }));
       expect(runtime.create).toHaveBeenCalledWith("Tapdance 1");
-      expect(screen.getByRole("dialog", { name: "Tapdances" })).toBeVisible();
+      expect(
+        screen.getByRole("dialog", { name: "Tapdance Editor" }),
+      ).toBeVisible();
       await user.click(
         screen.getByRole("button", { name: "Close", exact: true }),
       );
