@@ -32,6 +32,8 @@ jobs:
         run: node --test .agents/skills/exploratory-ui-test/scripts/check-coverage.test.mjs
       - name: Check preview approval guards
         run: node --test scripts/preview-workflow.test.mjs
+      - name: Check Renode E2E scope
+        run: node --test scripts/renode-workflow.test.mjs
       - name: Run tests
         run: npm test
       - name: Build for Cloudflare Workers

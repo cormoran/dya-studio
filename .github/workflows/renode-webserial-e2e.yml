@@ -68,8 +68,11 @@ jobs:
             ]);
             return files.some(({ filename }) =>
               filename === '.github/workflows/renode-webserial-e2e.yml' ||
-              filename === 'src/hooks/useRuntimeMacro.ts' ||
-              filename.startsWith('src/components/macroCombo/') ||
+              filename === 'scripts/renode-workflow.test.mjs' ||
+              ['package.json', 'package-lock.json', 'index.html', 'vite.config.ts',
+                'buf.gen.yaml', 'buf.yaml'].includes(filename) ||
+              /^tsconfig.*\.json$/.test(filename) ||
+              ['src/', 'public/', 'proto/'].some((prefix) => filename.startsWith(prefix)) ||
               (filename.startsWith('e2e/renode/') && !excluded.has(filename)));
 
   # Single source of truth for the DUT firmware matrix, consumed by both
@@ -293,7 +296,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm ci
+      - name: Install app dependencies (retry transient network failures once)
+        run: bash e2e/renode/npm-ci.sh
       - run: npm run build
         env:
           VITE_BASE: /
@@ -322,7 +326,7 @@ jobs:
       - name: Install e2e deps (Playwright + ws)
         working-directory: e2e/renode
         run: |
-          npm install
+          bash npm-ci.sh
           npx playwright install --with-deps chromium
 
       - name: Check Renode startup orchestration
@@ -424,7 +428,7 @@ jobs:
         run: bash run-local.sh "${{ github.workspace }}/fw/zmk.elf" ${{ matrix.dut.destructive_specs }}
 
       - name: Upload Playwright and Renode startup artifacts
-        if: ${{ !cancelled() && (failure() || hashFiles('e2e/renode/startup-results/**') != '') }}
+        if: ${{ !cancelled() && (failure() || hashFiles('e2e/renode/startup-results/**', 'e2e/renode/install-results/**') != '') }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts-${{ matrix.dut.id }}
@@ -436,6 +440,7 @@ jobs:
             e2e/renode/renode_serve.out
             e2e/renode/renode_serve.err
             e2e/renode/bridge.out
+            e2e/renode/install-results
           if-no-files-found: ignore
 
   report-failure:

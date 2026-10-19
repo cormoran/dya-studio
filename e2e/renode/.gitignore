@@ -2,6 +2,7 @@ node_modules/
 __pycache__/
 test-results/
 startup-results/
+install-results/
 playwright-report/
 *.out
 *.err
