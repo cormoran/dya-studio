@@ -150,22 +150,35 @@ describe("PhysicalKey — label fitting", () => {
     });
   });
 
-  it("wraps labels that cannot fit at the 6px minimum and refits on changes", () => {
-    mockLabelGeometry(18, 120);
-    const { props, rerender } = renderKey({ displayName: "Very long binding" });
-    const content = screen.getByText("Very long binding");
-    expect(content.parentElement).toHaveStyle({ fontSize: "6px" });
-    expect(content).toHaveStyle({
-      display: "inline",
-      whiteSpace: "normal",
-      width: "100%",
-    });
+  it.each([
+    [74, 6],
+    [75, 6.5],
+    [100, 6.5],
+  ])(
+    "uses height %s/100U to select the %spx minimum and refits on changes",
+    (height, minimum) => {
+      mockLabelGeometry(18, 120);
+      const { props, rerender } = renderKey({
+        attrs: { ...attrs, height },
+        displayName: "Very long binding",
+      });
+      const content = screen.getByText("Very long binding");
+      expect(content.parentElement).toHaveStyle({ fontSize: `${minimum}px` });
+      expect(content).toHaveStyle({
+        display: "inline",
+        whiteSpace: "normal",
+        width: "100%",
+      });
 
-    mockLabelGeometry(44, 12);
-    rerender(<PhysicalKey {...props} displayName="A" />);
-    expect(screen.getByText("A").parentElement).toHaveStyle({
-      fontSize: "12px",
-    });
-    expect(screen.getByText("A")).toHaveStyle({ whiteSpace: "nowrap" });
-  });
+      rerender(<PhysicalKey {...props} attrs={{ ...attrs, height: 50 }} />);
+      expect(content.parentElement).toHaveStyle({ fontSize: "6px" });
+
+      mockLabelGeometry(44, 12);
+      rerender(<PhysicalKey {...props} displayName="A" />);
+      expect(screen.getByText("A").parentElement).toHaveStyle({
+        fontSize: "12px",
+      });
+      expect(screen.getByText("A")).toHaveStyle({ whiteSpace: "nowrap" });
+    },
+  );
 });

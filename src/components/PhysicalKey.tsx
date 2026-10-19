@@ -134,6 +134,7 @@ export function PhysicalKey({
     const scaledSize = baseSize * scale;
     return Math.max(8, Math.min(14, scaledSize)); // clamp between 8px and 14px
   }, [scale]);
+  const minFontSize = attrs.height >= 75 ? 6.5 : 6;
 
   // Measure the rendered label (including replacement icons) at its usual size.
   // Keep short labels on one line, shrinking only when the key is too narrow.
@@ -157,11 +158,11 @@ export function PhysicalKey({
         content.getBoundingClientRect().width;
       const naturalWidth = contentWidth();
       const fittedSize = Math.max(
-        6,
+        minFontSize,
         Math.min(fontSize, (fontSize * availableWidth) / (naturalWidth || 1)),
       );
       label.style.fontSize = `${fittedSize}px`;
-      // Labels that still cannot fit at 6px retain the two-line fallback.
+      // Labels that still cannot fit at the minimum retain the two-line fallback.
       if (contentWidth() > availableWidth + 0.5) {
         content.style.display = "inline";
         content.style.whiteSpace = "normal";
@@ -187,7 +188,7 @@ export function PhysicalKey({
       themeObserver.disconnect();
       document.fonts?.removeEventListener("loadingdone", fitLabel);
     };
-  }, [fontSize, displayName]);
+  }, [fontSize, minFontSize, displayName]);
 
   // Key content
   const keyContent = (
