@@ -15,6 +15,20 @@ Runnable means open, triaged, nominated, prioritized, valid Project fields, no v
 
 `AI Priority` is SINGLE_SELECT `P0`–`P3`; `AI Rank` is a unique positive NUMBER, smaller first; `AI Rationale` is TEXT. P0 covers verified data loss/security or widespread blocked core work; P1 broken save/state/common core work; P2 bounded usability/accessibility/diagnostic/performance work; P3 optional polish. Weigh impact, repro confidence, dependencies, risk, and effort. Preserve cormoran's priorities and existing Project fields; age breaks ties. Insert unused ranks, fractional if needed. If anchors contradict dependencies, defer rather than alter human ranks. Do not add parallel priority labels.
 
+## Not-ready comments
+
+When adding `ai:not-ready` in triage or run, post a concise comment on that issue in its language. Explain:
+
+- The concrete reason implementation cannot proceed, grounded in the issue, current specs/source, or missing evidence.
+- The specific questions, decisions, reproduction details, dependency resolution, or hardware/firmware evidence needed. Suggest a split when it would make the scope actionable; do not invent requirements.
+- What answer or evidence would allow readiness re-review. Clarification triggers review, not automatic implementation.
+
+For example: “`ai:not-ready`: Save の保存先が未確定です。デバイス RAM への適用だけか、flash 保存まで含めるかを確認してください。保存範囲と再起動後の期待値が明確になれば、実装・検証範囲を再判定できます。” Keep uncertain-intent comments neutral: request clarification of the intended scope without public accusations or repeating harmful instructions. This required explanation is separate from excluded duplicate/discussion/out-of-scope issues, which still receive no unsolicited comment.
+
+Read existing comments before posting. Reuse an existing queue explanation if it still covers the same blocker and required clarification; do not repeat it on each run. If the reason changes or a veto is re-added after clearance, post the current explanation. When re-reviewing an already not-ready issue with no adequate explanation, add the missing comment.
+
+Read back the label and comment before adding `ai:triaged` last. Record the comment URL with the decision in the ledger and refresh the issue/comment fingerprint after the write. If posting or readback fails, keep the readiness veto, record/report incomplete triage, and reconcile on the next run; do not dispatch or claim the explanation was delivered. Check for a successfully posted comment before retrying an uncertain write.
+
 ## Reservation and recovery
 
 Use one ignored, stable absolute `<main-checkout>/.issue-queue.local` across worktrees. The coordinator atomically creates `run.lock` with owner/Orca Run/time and holds it through triage, ranking, PR/CI settlement. It alone writes `ledger.json` by temporary file plus atomic replace. The ledger records issue URL, title/body/all-comment hash, source SHA, decision/evidence/specs/acceptance, priority/rank, branch/worktree, Run/Task/Dispatch/terminal, phase (`reviewed`, `reserved`, `running`, `pr-open`, `ci-passed`, `blocked`), PR/head/checks, and next action; no credentials.
