@@ -70,6 +70,7 @@ jobs:
               filename === '.github/workflows/renode-webserial-e2e.yml' ||
               filename === 'scripts/renode-workflow.test.mjs' ||
               ['package.json', 'package-lock.json', 'index.html', 'vite.config.ts',
+                'postcss.config.js', 'tailwind.config.js', '.npmrc',
                 'buf.gen.yaml', 'buf.yaml'].includes(filename) ||
               /^tsconfig.*\.json$/.test(filename) ||
               ['src/', 'public/', 'proto/'].some((prefix) => filename.startsWith(prefix)) ||
