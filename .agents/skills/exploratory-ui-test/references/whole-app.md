@@ -51,4 +51,6 @@ Exit 0: structurally reviewable required observations, including product candida
 
 Reconcile every planned batch and report executed coverage, product findings, actual spec gaps, blocked/not-run rows, and excluded hardware/service combinations separately. Required `pending`/`not-run`/`blocked` prevents complete coverage. Allow at most one narrow post-settlement repair Dispatch per run unless authorized otherwise; do not use it to repeat passes or cover several omitted pages. If it fails, preserve the incomplete result.
 
+Coverage failure does not skip delivery. When authorized, follow [issue reporting](issue-reporting.md) for every actionable finding, including recurring workflow/restoration failures. Finish GitHub disposition/readback and cleanup even if the gate is nonzero or the browser is unavailable. Before closing an editing tab, verify restoration or record exact residual values and the blocker; tab closure or a fresh Demo is not restoration.
+
 For scheduled work, use the maintained [automation prompt](automation-prompt.md). Preserve schedule, enabled state, model settings, and workspace placement unless requested; do not launch an extra run merely to test a prompt edit.
