@@ -89,7 +89,11 @@ KM-028: モバイル（640px未満）では Floating mode の入口を Sheet mod
 
 KM-027: floating / sheet の Auto advance がONで次キーへ移った際、移動先のキーがpreviewまたは上側workspaceの表示範囲外なら、そのキーが見える位置まで縦/横のscroll領域を必要最小限だけ動かす。すでに見えるキーではscroll位置を動かさず、scroll操作自体でpreviewへfocusを移さない。連続適用でscroll animationを積み重ねない。OFF時や適用失敗で選択が進まない場合は次キーへのscrollを行わない。末尾でeditorを閉じる動作と保存境界はKM-004/005のまま。根拠は2026-10-18ユーザー明示要求、S1の選択キーに対する `scrollIntoView`（縦横 `nearest`）。
 
+KM-029: keyboard preview全体の倍率は0.8〜1.2倍のままとする。各キーのラベルは通常サイズ（`12px × 倍率` を8〜14pxに制限）で文字と置換iconの描画幅を実測し、キーの余白を除いた内幅に収まらない場合だけ6pxを下限に縮小して1行表示する。6pxでも収まらないラベルは最大2行の省略表示へ戻す。キー幅・倍率・割当・theme・web font読込みの変化後に再計算する。tooltipとaccessible nameは完全な割当名を保持し、拡縮はRAM/flashやbrowser保存値を変更しない。共通consumerのCombo Editor内position previewにも適用する（[COMBO-002](macro-combo.md)）。根拠: 2026-10-20ユーザー明示要求、S5の`PhysicalKey`。
+
 ## 代表ユーザーフロー
+
+確認手順（KM-029）: 同じpreviewで0.5Uキーの`Vol+`/`Vol-`と1U以上の`Enter`/1文字ラベルを比較する。狭いキーのラベルだけが6px以上で縮小されて1行に収まり、十分広いキーは通常サイズのままであることを測る。長いbindingは6pxの2行表示になること、幅・割当・themeの変更後に再計算されることを確認し、変更した割当とthemeを初期値へ戻す。
 
 削除済みlayerの復元メニューもviewport端から8px以上を確保し、高さを超える項目はメニュー内で縦スクロールする。外側タップ/Escapeで閉じ、項目選択まで復元を実行しない（KM-011/017、S1のPopover）。
 

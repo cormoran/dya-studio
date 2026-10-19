@@ -70,6 +70,8 @@ Popではコンボ位置プレビューの背景をアイスブルーにし、�
 
 ## 代表ユーザーフロー
 
+Combo Editorのposition preview（COMBO-002）でも[KM-029](keymap.md)のラベル調整を使う。キー内に収まらないラベルだけ6pxまで縮め、収まらない場合は2行表示とする。表示調整自体はpositionやbindingを書き換えない。
+
 ### F1: macro の作成、容量境界、保存（MAC-001/002/004、MC-002）
 
 1. 接続して `Macro&Combo` を開き、表示された subsystem と macro list の初期値を記録する。

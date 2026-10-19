@@ -4,7 +4,7 @@
  * Renders a single key in the physical keyboard layout.
  * Supports positioning, rotation, sizing, and interactive states.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useLayoutEffect } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   IconArrowBigUp,
@@ -92,6 +92,9 @@ export function PhysicalKey({
 }: PhysicalKeyProps) {
   const { t } = useLanguage();
   const [isHovered, setIsHovered] = useState(false);
+  const keyRef = useRef<HTMLButtonElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const labelContentRef = useRef<HTMLSpanElement>(null);
   const accessibleName = t("Key position {{position}}: {{binding}}", {
     position: keyPosition,
     binding: longDisplayName || displayName || t("No binding"),
@@ -132,9 +135,64 @@ export function PhysicalKey({
     return Math.max(8, Math.min(14, scaledSize)); // clamp between 8px and 14px
   }, [scale]);
 
+  // Measure the rendered label (including replacement icons) at its usual size.
+  // Keep short labels on one line, shrinking only when the key is too narrow.
+  useLayoutEffect(() => {
+    const key = keyRef.current;
+    const label = labelRef.current;
+    const content = labelContentRef.current;
+    if (!key || !label || !content) return;
+
+    const fitLabel = () => {
+      const availableWidth = label.clientWidth;
+      if (availableWidth <= 0) return;
+
+      label.style.fontSize = `${fontSize}px`;
+      content.style.display = "inline-block";
+      content.style.whiteSpace = "nowrap";
+      content.style.width = "max-content";
+      // CSS width excludes the physical key's rotation transform.
+      const contentWidth = () =>
+        Number.parseFloat(getComputedStyle(content).width) ||
+        content.getBoundingClientRect().width;
+      const naturalWidth = contentWidth();
+      const fittedSize = Math.max(
+        6,
+        Math.min(fontSize, (fontSize * availableWidth) / (naturalWidth || 1)),
+      );
+      label.style.fontSize = `${fittedSize}px`;
+      // Labels that still cannot fit at 6px retain the two-line fallback.
+      if (contentWidth() > availableWidth + 0.5) {
+        content.style.display = "inline";
+        content.style.whiteSpace = "normal";
+        content.style.width = "100%";
+      }
+    };
+
+    fitLabel();
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(fitLabel)
+        : undefined;
+    observer?.observe(key);
+    // Themes can switch to an already-loaded font without a font-loading event.
+    const themeObserver = new MutationObserver(fitLabel);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    document.fonts?.addEventListener("loadingdone", fitLabel);
+    return () => {
+      observer?.disconnect();
+      themeObserver.disconnect();
+      document.fonts?.removeEventListener("loadingdone", fitLabel);
+    };
+  }, [fontSize, displayName]);
+
   // Key content
   const keyContent = (
     <button
+      ref={keyRef}
       type="button"
       className={`
         physical-key relative w-full h-full rounded-lg border cursor-pointer transition-all duration-150
@@ -172,8 +230,9 @@ export function PhysicalKey({
       )}
       {/* Display Name */}
       <span
+        ref={labelRef}
         className={`
-            flex items-center justify-center
+          w-full min-w-0
           font-medium text-center leading-tight break-words line-clamp-2
           ${
             isHighlighted
@@ -186,7 +245,12 @@ export function PhysicalKey({
         style={{ fontSize: `${fontSize}px` }}
         title={displayName}
       >
-        {iconReplace(displayName) || "—"}
+        <span
+          ref={labelContentRef}
+          className="inline-block align-middle [&_svg]:inline-block [&_svg]:align-middle"
+        >
+          {iconReplace(displayName) || "—"}
+        </span>
       </span>
 
       {/* Modified indicator */}

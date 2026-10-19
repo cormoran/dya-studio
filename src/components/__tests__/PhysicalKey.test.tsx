@@ -116,3 +116,56 @@ describe("PhysicalKey — combo badges", () => {
     expect(screen.queryByText("1")).not.toBeInTheDocument();
   });
 });
+
+describe("PhysicalKey — label fitting", () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  function mockLabelGeometry(availableWidth: number, widthAt12px: number) {
+    jest
+      .spyOn(HTMLElement.prototype, "clientWidth", "get")
+      .mockReturnValue(availableWidth);
+    jest
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const size = Number.parseFloat(
+          this.parentElement?.style.fontSize || "12",
+        );
+        return { width: (widthAt12px * size) / 12 } as DOMRect;
+      });
+  }
+
+  it("shrinks a narrow key label using its rendered width", () => {
+    mockLabelGeometry(18, 30);
+    renderKey({ attrs: { ...attrs, width: 50 }, displayName: "Vol+" });
+    const content = screen.getByText("Vol+");
+    expect(content.parentElement).toHaveStyle({ fontSize: "7.2px" });
+    expect(content).toHaveStyle({ whiteSpace: "nowrap" });
+  });
+
+  it("keeps a label that already fits at its usual size", () => {
+    mockLabelGeometry(44, 30);
+    renderKey({ displayName: "Enter" });
+    expect(screen.getByText("Enter").parentElement).toHaveStyle({
+      fontSize: "12px",
+    });
+  });
+
+  it("wraps labels that cannot fit at the 6px minimum and refits on changes", () => {
+    mockLabelGeometry(18, 120);
+    const { props, rerender } = renderKey({ displayName: "Very long binding" });
+    const content = screen.getByText("Very long binding");
+    expect(content.parentElement).toHaveStyle({ fontSize: "6px" });
+    expect(content).toHaveStyle({
+      display: "inline",
+      whiteSpace: "normal",
+      width: "100%",
+    });
+
+    mockLabelGeometry(44, 12);
+    rerender(<PhysicalKey {...props} displayName="A" />);
+    expect(screen.getByText("A").parentElement).toHaveStyle({
+      fontSize: "12px",
+    });
+    expect(screen.getByText("A")).toHaveStyle({ whiteSpace: "nowrap" });
+  });
+});
