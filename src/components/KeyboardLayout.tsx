@@ -29,7 +29,7 @@ import { useLanguage } from "../hooks/useLanguage";
 // Base unit size for 1U key in pixels at scale 1.0
 const BASE_UNIT_SIZE = 54;
 // Min and max scale limits for responsive sizing
-const MIN_SCALE = 0.8;
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.2;
 
 interface KeyboardLayoutProps {

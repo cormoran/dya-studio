@@ -11,6 +11,9 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 describe("KeyboardLayout combo controls", () => {
   it("shows a combo tooltip for an adjacent two-key control", () => {
     jest.useFakeTimers();
+    const containerWidth = jest
+      .spyOn(HTMLElement.prototype, "clientWidth", "get")
+      .mockReturnValue(160);
     render(
       <KeyboardLayout
         layout={{
@@ -73,6 +76,7 @@ describe("KeyboardLayout combo controls", () => {
     act(() => jest.advanceTimersByTime(200));
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Combo: Twin escape");
+    containerWidth.mockRestore();
     jest.useRealTimers();
   });
 });

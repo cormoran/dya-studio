@@ -89,6 +89,8 @@ KM-028: モバイル（640px未満）では Floating mode の入口を Sheet mod
 
 KM-027: floating / sheet の Auto advance がONで次キーへ移った際、移動先のキーがpreviewまたは上側workspaceの表示範囲外なら、そのキーが見える位置まで縦/横のscroll領域を必要最小限だけ動かす。すでに見えるキーではscroll位置を動かさず、scroll操作自体でpreviewへfocusを移さない。連続適用でscroll animationを積み重ねない。OFF時や適用失敗で選択が進まない場合は次キーへのscrollを行わない。末尾でeditorを閉じる動作と保存境界はKM-004/005のまま。根拠は2026-10-18ユーザー明示要求、S1の選択キーに対する `scrollIntoView`（縦横 `nearest`）。
 
+KM-029: keyboard preview はコンテナ幅に応じて0.5〜1.2倍に拡縮する。最小倍率は2026-10-20ユーザー明示要求。倍率は `(コンテナ幅 − 32px) / レイアウト本来の幅` を範囲内に制限し、幅変更時に再計算する。最小倍率でも収まらない場合はpreview内をスクロールする。キー文字は `12px × 倍率` を8〜14pxに制限するため、0.5倍では8pxになる。表示のみの変更で保存やデバイス書込みはない。共通consumerのCombo Editor内previewにも適用する（[COMBO-002](macro-combo.md)、S5の`KeyboardLayout`）。確認時は同じlayoutでコンテナ幅を狭め、0.5倍まで縮小すること、再び広げると1.2倍まで拡大することを測定する。
+
 ## 代表ユーザーフロー
 
 削除済みlayerの復元メニューもviewport端から8px以上を確保し、高さを超える項目はメニュー内で縦スクロールする。外側タップ/Escapeで閉じ、項目選択まで復元を実行しない（KM-011/017、S1のPopover）。
