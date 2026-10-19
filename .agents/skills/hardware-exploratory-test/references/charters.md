@@ -1,207 +1,42 @@
 # Hardware risk selection and bounded charters
 
-These are test design priorities, not new product requirements. Use actual IDs
-from current page/module specifications for expected results; label undocumented
-firmware limits/behaviour as spec gaps. Inspect capabilities before selecting
-charters and do not assume every DYA2 build has identical capacities or topology.
+These are priorities, not product requirements. Use current page/module spec IDs for expectations; mark undocumented limits as spec gaps. Check actual capabilities and topology first. Read the [Renode harness](../../../../e2e/renode/README.md), [DUT recipes](../../../../e2e/renode/firmware/README.md), and [non-split overlay](../../../../e2e/renode/firmware/dya2_nonsplit.conf) before claiming a physical-only gap.
 
-## What Renode already covers and what remains
+| Area             | Renode boundary                                         | Physical charter                                                                                |
+| ---------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| RPC/capacity     | Real firmware handlers, framing and limits              | Real USB/BLE buffering, memory and concurrent load; rejected writes preserve earlier data       |
+| USB              | WebSerial shim; DYA2 one connection per boot            | Chooser, CDC ownership, re-enumeration and reconnect                                            |
+| Persistence      | Erased emulated NVS at boot                             | Existing flash, save/delete/reuse and reboot retention; cold start needs physical power control |
+| Split            | Experimental two-machine UART; non-split disables relay | Both physical halves, forwarded read/write and contention                                       |
+| Sensors/HID      | Synthetic motion, no host HID proof                     | Real sensor/key/encoder stimulus and safe host observation                                      |
+| Scheduling/power | Non-split omits production watchdog/LED/power work      | Watchdog, flash latency, battery, sleep/wake and BLE RF                                         |
 
-Read [harness boundaries](../../../../e2e/renode/README.md) and
-[DUT recipes](../../../../e2e/renode/firmware/README.md), including
-[non-split overlay](../../../../e2e/renode/firmware/dya2_nonsplit.conf).
+Do not carry Renode-only second-connection failures or watchdog workarounds into hardware defect verdicts. Emulated success does not prove physical timing or radio/flash integrity.
 
-| Area                | Existing Renode evidence boundary                                                                                        | Physical target                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| RPC and data limits | Real firmware handlers, protobuf/framing and capacity logic can be exercised; large data is not inherently hardware-only | Same limits under real USB/BLE buffering, memory, logging and event load; rejected writes must leave prior data intact  |
-| USB lifecycle       | Browser serial API is shimmed through WebSocket/TCP; DYA2 harness uses one connection per boot                           | Actual chooser/permission, CDC interface ownership, OS enumeration after reboot, repeated open/close and real reconnect |
-| Persistence         | Fresh harness boot starts with erased emulated NVS                                                                       | Existing physical flash content, save/delete/reuse, reboot retention; cold-start is separate and requires power action  |
-| Split               | Two-machine UART hub exists but half-duplex turnaround is imperfect; non-split disables relay                            | Actual central/peripheral firmware pair, forwarded writes/readback, link delays and resource contention                 |
-| Sensors/HID         | PMW3610 accepts synthetic QueueMotion; this is not physical sensor/host HID evidence                                     | Real motion, keys/encoders, output destination, event processing while RPC/log streaming is busy                        |
-| Scheduling/power    | Non-split disables animation, LED strip, transient external power and watchdog freeze detection                          | Production watchdog, animation/sensor threads, flash latency, battery/sleep/wake and BLE RF behaviour                   |
+Current comparisons are leads, not executed coverage. The [Macro/Combo spec](../../../../e2e/renode/tests/dya2/macro-combo.spec.ts) uses a nonempty 25 ms delay; compare normal, empty, and zero-delay macros when the UI permits (MAC-002/003, MC-002), with body/name/slot fresh reads before/after Save. If slot ID is hidden, keep it unknown; list order is not slot identity. Its combo round trip is `test.fixme`; historical ENODEV/timeout comments are hypotheses. Check create, disabled-state readback, Save, Refresh, detail, delete/restore. The [Trackball spec](../../../../e2e/renode/tests/dya2/trackball.spec.ts) is `test.fixme` for processor notifications; check the current [workflow](../../../../.github/workflows/renode-webserial-e2e.yml), then prioritize processor ID/count, completed Reload and reversible setting readback. A skipped test is not a pass. Non-split evidence does not establish the other half's state.
 
-Do not transfer emulator-specific second-connection failures or watchdog workarounds
-into accepted hardware defects. Conversely, an emulated success does not prove
-physical timing, flash endurance, electrical integrity or radio robustness.
+## Capacity and allocation
 
-### Current high-value comparisons
+Record initial occupancy/IDs, actual count and encoded-byte limits, per-item bytes, exposed shared-pool bytes, and shared resources. Unknown limits stay unknown: use a finite cap, not an unbounded create loop. Default _per-domain_ budget is at most 8 new records and 4 flash Saves including cleanup; default _run-wide_ budget is 2 normal RPC reboots. These are ceilings, not targets. A larger finite budget needs an explicit user stress request and reliable restoration plan. Reserve cleanup capacity and never consume user-data slots. Count UI mutations, Save clicks, known persistence requests, and reboots separately; actual flash erase/program counts are unknown without instrumentation. Immediate-persist settings, creates/deletes, and scaling may issue writes without a Save click. Budget the changed-state and restored-state reboot stages across the whole run.
 
-Review these linked gaps on each run; their presence is not executed coverage:
+Select distinct shapes within budget: near-byte-limit macro, mixed-size shared-pool items, reclaim/reuse, combo position/name/slot edges. Tiny-item count does not test byte pressure. Measure pool changes after creates, renames, edits and deletes; names and allocation overhead may count. Unknown pool deltas or counter semantics cannot prove leaks. Full runtime pool does not prove NVS exhaustion/garbage collection; test finite save/delete/reuse only if firmware diagnostics/configuration expose it. Never force wear or interrupt power. Trackball offers edits of existing processors, not UI chain creation; use a bounded fixed-list read/notification stress (for example, ten serial Reloads in two minutes with per-read timeout, streaming, ID/count and diagnostics).
 
-- [Macro/Combo Renode spec](../../../../e2e/renode/tests/dya2/macro-combo.spec.ts)
-  uses a nonempty 25 ms delay to avoid unresolved empty/0 ms macro slot/name
-  retention. Compare the normal control, empty body and zero-delay body separately
-  when the actual UI permits them (MAC-002/003, MC-002 and the macro spec's
-  unresolved section). Fresh-read the body/name/slot before and after Save;
-  stop on mismatch instead of repeatedly creating new records.
-  If the UI does not expose a numeric macro slot, record that as unknown and
-  track the unique name plus actual body; slot-specific retention remains
-  unverified. Never infer numeric slot identity from list order.
-- That file's combo round trip is `test.fixme`; historical ENODEV/timeout comments
-  are hypotheses to compare, not a proven cause on current hardware. Exercise
-  create → disabled-state readback → Save → Refresh → detail → delete/restore.
-- [Trackball Renode spec](../../../../e2e/renode/tests/dya2/trackball.spec.ts)
-  is `test.fixme` around processor notification delivery. Read current
-  [workflow selection](../../../../.github/workflows/renode-webserial-e2e.yml):
-  a skipped or omitted file never establishes that path passed. Prioritize
-  actual processor IDs/count, completed Reload and a reversible setting round trip.
-- Non-split overlays disable relay and other production work; split E2E is
-  experimental/manual. Explicitly select physical split-source readback instead
-  of treating a non-split result as proof for the other half.
+A bounded sequence:
 
-## Capacity and allocation pressure
+1. Fresh-read baseline/diagnostics. Create one inert identifiable item through UI and verify after page Refresh. Do not bind output to physical keys. Include non-ASCII data only when supported; count bytes, not characters. Wait for list/rename settlement; reselect and verify editor identity before and after each scoped edit. If ordering is ambiguous, preserve evidence, stop and restore before a corrected continuation.
+2. `New combo` immediately creates an enabled positions 0/1 HID A default (COMBO-001). Pause physical key input, disable it through UI, wait for RAM write and fresh-read `Enabled=false` before proceeding. Without that pause, block creation but allow reads. Do not invent a disabled-create RPC; an enabled-input trial requires human/actuator and safe sink.
+3. Grow at finite checkpoints (for example 1/4/8 records or reachable 25/50/90% capacity). Read test items and original sentinels; capture responsiveness, errors, diagnostics. Below-boundary cap is partial stress coverage. Attempt one UI-supported overflow only when the real boundary is safely reachable; otherwise mark exact-full/overflow not-run with remaining counts/bytes. Never forge RPC payloads.
+4. Delete/reuse only test items and check IDs, selection, neighbours and pool. Save deliberate state, fresh-read, RPC reboot/reconnect/unlock/read, then restore and check saved baseline. Preserve cleanup budget. Inspect accepted state before retrying a non-idempotent creation after refusal.
 
-For Macro & Combo and Keymap layers use the actual
-available count/byte limits. Record initial occupancy and identifiers, per-item
-encoded bytes, shared pool bytes if exposed, and which resources are shared.
-If a limit is unknown, report it unknown and use a finite exploratory cap;
-do not discover a limit through an unbounded create loop.
+On a large-write timeout, stop growth. Save draft, loaded identity, debounce/event order, errors and timestamps as evidence; displayed local bytes are not accepted firmware state. Permit one fresh read after requests settle. If reads also time out, stop. One coordinator-approved ordinary reconnect may support cleanup; compare every disposable body and original sentinel before deleting test records. Do not Save suspect state to reach a reboot milestone. A separate small control requires verified restoration and remaining budget. Partial returned data is evidence, not a root-cause assignment.
 
-Default per-domain exploratory budget: at most 8 new records and at most 4
-flash Save operations including cleanup, plus at most 2 normal RPC reboots for
-the entire run. These are safety bounds, not required test volume. Use RAM-only
-checkpoints when the domain permits. A coordinator may set a larger finite
-budget under the user's explicit stress-test request, recording why restoration
-is reliable. Account for immediate-persist creates/deletes/settings too; reducing
-the number of Save clicks does not bound those writes. Reserve cleanup writes
-before consuming the mutation budget. Never consume slots needed by user data.
+## Transport, split, physical events
 
-Keep separate counters for UI mutations, Save clicks, known persistence requests
-and run-wide reboots. Actual flash program/erase counts remain unknown without
-firmware instrumentation. For example, one settled inertia numeric edit plus
-one settled restoration is two PERSIST requests (INPUT-006/TRACK-012) despite
-zero Save clicks; do not generate intermediate settled values. A scaling action
-may issue multiple requests. Allocate the two reboot stages before all batches:
-one changed-state reboot and one restored-state reboot consume the default
-run-wide budget; they are not available anew for every page.
+- USB: verify capability, lock refresh, authorized devtool unlock and page readback. Distinguish devtool unlock from physical key unlock. Default maximum is three orderly disconnect/reconnect cycles, including reboot re-enumeration; record actual counts. Never steal another client's port. Reboot only after Save completes, then verify identity/capabilities and changed domains. No reboot during Save or unplug fault injection.
+- Diagnostics: compare Troubleshooting health/watchdog/stack, resets, errors/dropped records, and response before/after bounded page switching, reads, edit/Save, and Debug Tool streaming. Zero incidents is inconclusive if counters reset. Never Clear history. Distinguish browser log cap from firmware `droppedCount`; do not manufacture unlimited traffic.
+- Split: record both halves' available identity/firmware and initial settings. For a reversible shared setting, fresh-read central and peripheral after change; a central form alone does not prove peripheral persistence.
+- Physical input: with a human/actuator, record stimulus separately from host HID output while RPC/logging runs. Use a non-executing sink, never the user's active apps/terminal.
+- BLE: where firmware requires it, unlock through authorized USB devtool, disconnect serial in-app, use real BLE chooser for the same DUT, fresh-read GATT capabilities/data, disconnect BLE, reconnect USB, and restore lock/session. Keep the app document: a new/reloaded tab can auto-reconnect a paired USB port. Budget both transitions; do not clear pairing or change output route. Missing advertisement/API/chooser is blocked. HID output does not prove GATT.
+- Battery, idle/sleep/wake, peripheral power recovery and cold start require the corresponding physical control. Keep a recovery path; RPC reboot does not cover them.
 
-Choose distinct payload shapes within the budget: a macro near its reported
-encoded-byte limit, several mixed-size macros to pressure a shared pool and
-reclaim/reuse space, or combo slot/position/name boundaries. Tiny-item counts
-alone do not cover byte pressure. Record aggregate pool deltas when exposed,
-otherwise unknown; undocumented counter semantics alone do not prove a leak.
-Pool usage can include names/allocation overhead rather than only encoded
-bodies. Measure it after actual creates, renames, body edits and deletes;
-never calculate remaining shared capacity solely by summing the Size labels.
-A full runtime pool is not proof of a full physical settings/NVS partition or
-flash garbage collection. If firmware diagnostics or known build configuration
-make that condition observable, select a finite save/delete/reuse sequence
-within the allocated persistence budget and check errors, survivors and reboot
-readback. Otherwise keep NVS exhaustion/compaction unverified; do not force wear
-or power interruption to manufacture it.
-Trackball currently edits existing processors, without UI chain create/delete.
-For that page use fixed-list notification/read stress: e.g. ten serially awaited
-Reload processors operations over a bounded two-minute window with explicit
-per-read timeout, Debug Tool streaming, count/ID comparisons and diagnostics.
-Report unavailable chain growth, rather than searching for nonexistent controls.
-
-Suggested sequence:
-
-1. Fresh-read baseline and diagnostics. Create one identifiable inert test item
-   through UI, verify contents after page Refresh; do not attach output-generating
-   bindings to physical keys. Include a non-ASCII label/string only if the spec
-   supports it; record byte size rather than assuming character count equals bytes.
-   After each create/rename, wait for the actual mutation/list load to settle,
-   explicitly reselect the observed name and verify the loaded editor identity.
-   Scope Step/field actions to that expected editor: a generic locator can
-   auto-wait through loading and click when a different record becomes selected.
-   Confirm target identity immediately before and after the mutation. An action
-   fired before rename settlement is not proof of firmware wrong-slot corruption;
-   preserve its ordering evidence, stop and restore before a corrected continuation.
-   **Combo exception:** `New combo` creates an enabled default on positions 0/1
-   with HID A (COMBO-001), before Save. Arrange a brief pause of physical key
-   input for each creation, disable the new combo through UI, wait for the RAM
-   write and fresh-read `Enabled=false` before continuing. If the pause cannot
-   be arranged, combo creation is blocked; existing combo reads remain available.
-   Do not invent a disabled-create RPC. An intentional enabled-combo input trial
-   needs the human/actuator and safe sink described below.
-2. Grow in finite checkpoints (for example 1, 4, 8 records, or 25/50/90% of
-   available reported capacity within budget). Read back all test items and sample
-   original sentinels at each checkpoint. Capture responsiveness/errors and
-   diagnostics. Reaching the configured cap below capacity is partial stress
-   coverage, not a capacity-boundary pass.
-3. If the advertised boundary is reachable within budget and baseline safety,
-   exercise the last valid state and one UI-supported overflow attempt. Otherwise
-   mark exact-full/overflow not-run with remaining counts/bytes. Never bypass
-   validation or forge RPC payloads to force allocation failure.
-4. Delete only a test item, refill the released slot/bytes, and verify no duplicate
-   ID, stale selection, lost neighbour, or unexpected pool leak. Save the deliberate
-   state once, fresh-read, RPC reboot/reconnect/unlock, re-read; retain final cleanup
-   budget. Include immediate Save after input to exercise debounce when applicable.
-5. Remove test records and restore baseline with fresh-read and saved-state checks.
-   A firmware or transport refusal must not cause a success banner for unsaved
-   data; inspect accepted state before retrying any non-idempotent create.
-
-On a large-write timeout, stop growth immediately. Preserve the attempted draft,
-loaded record identity, input event/debounce ordering, exact errors and timestamps.
-The displayed byte limit and local text are not accepted firmware state. Permit
-one fresh read after pending requests settle; if reads also time out, stop rather
-than queue more requests. A coordinator may allocate one ordinary reconnect for
-cleanup, then compare every disposable body and original sentinels through fresh
-reads before deleting only test records. A shorter returned string or partial
-state is evidence of the failed operation, not sufficient to assign a UI,
-transport or firmware root cause. Never Save the suspect state merely to reach a
-reboot milestone. A separate small-payload persistence control may proceed only
-after verified restoration and within the remaining Save/reboot budget.
-
-## Transport, lock and firmware resources
-
-- Real USB connect → capability inventory → devtool lock refresh → authorized
-  unlock → page readback. Distinguish direct devtool unlock from physical key
-  unlock. Test cancel/retry of the normal unlock UI only when restoration is possible.
-- Use up to three orderly disconnect/reconnect cycles by default, keeping actual
-  connection/reboot counts. Count reboot-driven re-enumeration/reconnect events
-  within this total, not as three additional cycles. Observe chooser re-use, stale data, duplicated streams
-  and ability to edit/read after reconnect. A second OS client is optional and
-  requires separate explicit port ownership; never steal another session's port.
-- Capture Troubleshooting health/watchdog/stack diagnostics before and after
-  bounded page switching, fresh reads, one edit/Save and Debug Tool streaming.
-  Compare resets, stack high-water marks, errors/dropped records and UI response.
-  Zero observed incidents is not proof that no incident occurred if the counter
-  resets on reboot or history is unavailable. Do not Clear historical diagnostics.
-- Open Debug Tool, observe normal streaming, change filters/cap, close/reopen and
-  compare stream behaviour while reading an editing page. Browser cache cap and
-  firmware droppedCount are different. Do not manufacture unlimited log traffic.
-- Reboot after completed Save, then wait for actual re-enumeration/reconnect,
-  verify device identity/capabilities, unlock, fresh-read all changed domains.
-  Reboot during Save, unplug during write and bootloader are excluded fault injection.
-
-## Split, physical events and power
-
-- Record each half's identity/firmware if available and both initial values for
-  settings that fan out. Change one safe reversible shared setting, wait, fresh-read
-  central and peripheral. If UI does not expose independent readback, report that
-  limit rather than treating the central form as proof of peripheral persistence.
-- With an available human/actuator, observe safe key/encoder/motion events and host
-  output while UI RPC reads/logging occur. Use a dedicated non-executing input
-  sink; never emit shortcuts into the user's terminal or applications. Record
-  input stimulus and host observation separately from UI configuration readback.
-- BLE needs a real browser/OS radio path and the firmware's Studio advertisement,
-  but does not inherently need a human: use authorized USB devtool unlock first
-  when that firmware makes Studio discoverable, disconnect the serial session,
-  then use the real BLE chooser for the same DUT and fresh-read capabilities/data.
-  Keep the same app document between transport changes: a new/reloaded tab with
-  a paired serial port may automatically reconnect USB. Use in-app Disconnect,
-  connection buttons and tabs instead of browser navigation as a transport reset.
-  Record actual GATT connection separately from ordinary keyboard HID output.
-  Disconnect BLE, reconnect USB and restore the initial lock/session state. Plan
-  both transport transitions in the finite reconnect budget before dispatch;
-  never clear pairing profiles or change the keyboard output route to force it.
-  An absent advertisement/API/chooser remains blocked, not a Renode-equivalent pass.
-- Battery, idle/sleep/wake, powered-off peripheral recovery and cold-start need
-  their corresponding safe physical control and human/actuator when not available
-  through the authorized rig.
-  Never remove the user's sole control path by changing output/sleep/pairing
-  settings without a recovery channel. A software reboot does not cover these.
-
-## Whole-app assignment inventory
-
-Preplan sequential DUT batches: connection/lock/keymap/sensors; macros/combos
-capacity; Trackball/processors/split; Settings/Connection; Troubleshooting/Debug
-Tool/Subsystems. Include sharing/export/history and all public routes separately.
-Public pages can use an isolated parallel worker without a DUT connection.
-Use actual specification IDs and the existing coverage checklist format. Add
-hardware-specific rows for baseline backup, occupancy/budgets, fresh reads,
-reboot/reconnect, restore per source, and each unavailable physical condition.
-Do not drop those rows when a preflight blocks the device; independent reachable
-public/UI batches can still run, with their own non-hardware verdicts.
+For whole-app work, plan sequential DUT batches for connection/lock/keymap/sensors; Macro/Combo capacity; Trackball/split; Settings/Connection; Troubleshooting/Debug/Subsystems. Include sharing/export/history and all public routes separately. Checklist rows cover baselines, occupancy/budgets, fresh reads, reboot/reconnect, restoration per source, and unavailable physical conditions. A blocked DUT preflight does not erase required rows or prevent independent public/UI coverage.

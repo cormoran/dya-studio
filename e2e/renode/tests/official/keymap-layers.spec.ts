@@ -41,10 +41,10 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
     await expectLayerOrder(page, BASE_LAYERS);
   });
 
-  test("reorders layers (move up / move down) via keymap.moveLayer", async ({
+  test("reorders layers with the keyboard drag handle via keymap.moveLayer", async ({
     page,
   }) => {
-    // Select "Lower" (index 1) and move it UP one slot. The moveLayer RPC
+    // Select "Lower" (index 1), enter edit mode, and move it LEFT one slot. The moveLayer RPC
     // returns the reordered keymap; the tab row must reflect the new order and
     // the app must flag the edit as unsaved.
     await layerTabs(page).nth(1).click();
@@ -55,13 +55,14 @@ test.describe("dya-studio Keymap: layer management over official ZMK core RPCs",
       name: "Reorder layer Lower",
       exact: true,
     });
+    await expect(handle).toHaveAttribute("aria-disabled", "false");
     await handle.press("ArrowLeft");
     await expectLayerOrder(page, ["Lower", "Base", "Raise", "Adjust"]);
     await expect(
       page.getByText("Unsaved changes", { exact: true }),
     ).toBeVisible();
 
-    // Move it back DOWN → original order restored (net-zero for the device).
+    // Move it back RIGHT → original order restored (net-zero for the device).
     await expect(handle).toHaveAttribute("aria-disabled", "false");
     await handle.press("ArrowRight");
     await expectLayerOrder(page, BASE_LAYERS);

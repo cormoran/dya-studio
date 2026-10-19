@@ -68,3 +68,45 @@ it("does not hide mismatches at other positions or in a different module scope",
   };
   expect(withoutSkippedChanges(actual, skipped)).toEqual(actual);
 });
+
+it("skips known unsupported module routes while preserving ZMK write routes", () => {
+  const moduleChanges = [
+    {
+      scope: "global" as const,
+      moduleName: "pointer",
+      to: { type: "trackball" },
+    },
+    {
+      scope: "layer" as const,
+      layerIndex: 0,
+      moduleName: "pointer",
+      to: { type: "trackball" },
+    },
+    {
+      scope: "global" as const,
+      moduleName: "encoder",
+      to: { type: "rotary_encoder" },
+    },
+    {
+      scope: "layer" as const,
+      layerIndex: 0,
+      moduleName: "encoder",
+      to: { type: "rotary_encoder" },
+    },
+    {
+      scope: "global" as const,
+      moduleName: "unknown",
+      to: { type: "lighting" },
+    },
+  ];
+  const { writable, skipped } = splitWritableKeymapDiff({
+    ...EMPTY_DIFF,
+    moduleChanges,
+  });
+  expect(writable.moduleChanges).toEqual([moduleChanges[0], moduleChanges[3]]);
+  expect(skipped.moduleChanges).toEqual([
+    moduleChanges[1],
+    moduleChanges[2],
+    moduleChanges[4],
+  ]);
+});

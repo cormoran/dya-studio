@@ -88,7 +88,7 @@ describe("KeymapDiffView", () => {
     expect(screen.getByRole("button", { name: "Layer 0" })).toBeInTheDocument();
   });
 
-  it("separates global module changes from layer-scoped ones", () => {
+  it("groups modules in named cards with their scope", () => {
     const diff: KeymapDiff = {
       ...EMPTY_DIFF,
       moduleChanges: [
@@ -97,11 +97,12 @@ describe("KeymapDiffView", () => {
       ],
     };
 
-    render(<KeymapDiffView diff={diff} />);
+    render(<KeymapDiffView diff={diff} defaultExpanded />);
 
-    // The global one sits outside any layer card.
+    // Modules have their own cards.
     expect(screen.getByText("trackball")).toBeInTheDocument();
-    expect(screen.getByText("1 changes")).toBeInTheDocument();
+    expect(screen.getByText("Global settings")).toBeInTheDocument();
+    expect(screen.getByText("Layer 1")).toBeInTheDocument();
   });
 
   it("renders nothing alarming for an empty diff", () => {
@@ -143,4 +144,46 @@ it("shows nested before/after module fields at global and layer scope", () => {
   expect(
     screen.getByRole("region", { name: "Module: encoder" }),
   ).toHaveTextContent('$["values"][1]2 → Not set');
+});
+
+it("keeps unsupported bindings and module scopes visible as skipped only for keyboard writes", () => {
+  const diff: KeymapDiff = {
+    ...EMPTY_DIFF,
+    bindingChanges: [
+      {
+        layerIndex: 0,
+        layerName: "Base",
+        keyIndex: 0,
+        to: { type: "raw", zmk: "&unknown" },
+      },
+    ],
+    moduleChanges: [
+      {
+        scope: "layer",
+        layerIndex: 0,
+        moduleName: "ball",
+        from: { type: "trackball", scale: 1 },
+        to: { type: "trackball", scale: 2 },
+      },
+    ],
+  };
+  const { rerender } = render(
+    <KeymapDiffView diff={diff} defaultExpanded markUnsupported />,
+  );
+  expect(
+    screen.getByRole("region", {
+      name: "Unsupported changes (will be skipped)",
+    }),
+  ).toHaveTextContent("&unknown");
+  expect(
+    screen.getByRole("region", {
+      name: "Unsupported changes (will be skipped)",
+    }),
+  ).toHaveTextContent("ball");
+  rerender(<KeymapDiffView diff={diff} defaultExpanded />);
+  expect(
+    screen.queryByRole("region", {
+      name: "Unsupported changes (will be skipped)",
+    }),
+  ).toBeNull();
 });

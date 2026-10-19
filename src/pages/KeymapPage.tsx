@@ -953,6 +953,12 @@ export function KeymapPage() {
                     />
                   </div>
                   <KeymapSharingMenu
+                    keyboardRevision={JSON.stringify([
+                      keymap.keymap,
+                      runtimeCombo.combos,
+                      runtimeCombo.globalSettings,
+                      comboEditor.hasPendingWrites,
+                    ])}
                     beforeRead={async () => {
                       if (!(await macroEditor.flushPendingWrites()))
                         throw new Error(

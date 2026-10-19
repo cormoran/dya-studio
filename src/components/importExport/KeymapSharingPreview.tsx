@@ -115,21 +115,21 @@ export function KeymapSharingPreview({
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
           <Dialog.Content className="diff-sheet fixed left-0 top-0 w-screen h-dvh max-w-none z-50 flex flex-col glass-card p-0 overflow-hidden tablet:top-1/2 tablet:left-1/2 tablet:-translate-x-1/2 tablet:-translate-y-1/2 tablet:w-[95vw] tablet:h-[90vh] tablet:max-w-6xl tablet:rounded-xl">
             <div className="shrink-0 flex items-start gap-3 p-3 tablet:p-4 border-b border-[var(--color-border)]">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(review.record?.visibility === "private" ||
-                    review.record?.visibility === "public") && (
-                    <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
-                      {review.record.visibility}
-                    </span>
-                  )}
-                  <Dialog.Title className="min-w-0 text-base font-medium break-words">
+              <div className="flex-1 min-w-0 flex items-center gap-3">
+                {(review.record?.visibility === "private" ||
+                  review.record?.visibility === "public") && (
+                  <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
+                    {review.record.visibility}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <Dialog.Title className="text-base font-medium break-words">
                     {t("Preview {{name}}", { name })}
                   </Dialog.Title>
+                  <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
+                    {description}
+                  </Dialog.Description>
                 </div>
-                <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
-                  {description}
-                </Dialog.Description>
               </div>
               <button
                 className="btn-ghost p-1.5 shrink-0"
@@ -176,7 +176,7 @@ export function KeymapSharingPreview({
               )}
               <fieldset
                 disabled={busy || confirming}
-                className="shrink-0 max-h-36 overflow-auto px-3 py-2 border-b border-[var(--color-border)]"
+                className="shrink-0 max-h-44 overflow-auto px-4 pt-3 pb-4 my-3 border-b border-[var(--color-border)]"
               >
                 <legend className="text-xs text-[var(--color-text-muted)] px-1">
                   {t("Include")}
@@ -317,6 +317,7 @@ export function KeymapSharingPreview({
                       key={`${review.kind}:${layer}`}
                       diff={filtered}
                       defaultExpanded
+                      markUnsupported={!save}
                     />
                   )}
                 </section>
