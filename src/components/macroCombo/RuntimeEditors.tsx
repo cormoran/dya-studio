@@ -13,6 +13,7 @@ import type { ComboEditorController } from "./useComboEditor";
 import { ComboSource } from "../../proto/cormoran/runtime_combo/runtime_combo";
 import { MacroEditorCard } from "./MacroEditorCard";
 import { ComboEditorCard } from "./ComboEditorCard";
+import { ComboDraftValidationAlert } from "./ComboDraftValidationAlert";
 import { TapDanceEditorCard } from "./TapDanceEditorCard";
 import { RetainedInput } from "./RetainedInput";
 import { RuntimeEditorModal, RuntimeModalActions } from "./RuntimeListCard";
@@ -112,8 +113,9 @@ export function RuntimeEditors({
       : domain === "combo"
         ? !!runtimeCombo.globalSettings
         : !!runtimeTapDance.globalSettings;
+  const invalidComboDraft = domain === "combo" && !!combo.validationError;
   const invalid = settings
-    ? invalidSetting
+    ? invalidSetting || invalidComboDraft
     : domain === "macro"
       ? !!macro.encodedSizeError ||
         !!macro.stringConversionError ||
@@ -158,6 +160,7 @@ export function RuntimeEditors({
     return !tapDraftPending && !runtimeTapDance.error;
   };
   const save = async () => {
+    if (invalidComboDraft) return false;
     if (!(await flush())) return false;
     if (domain === "macro") {
       if (!(await runtimeMacro.saveMacros())) return false;
@@ -214,7 +217,11 @@ export function RuntimeEditors({
     if (domain === "combo") {
       combo.cancelPendingWrites();
       await combo.flushPendingWrites();
-      return runtimeCombo.deleteCombo(combo.draft.index);
+      const index = combo.draft.index;
+      if (!(await runtimeCombo.deleteCombo(index))) return false;
+      combo.clearModified(index);
+      combo.clearSelection();
+      return true;
     }
     return tapDanceSlot !== null && runtimeTapDance.remove(tapDanceSlot);
   };
@@ -404,6 +411,9 @@ export function RuntimeEditors({
           )}
           {settings && (
             <section className="space-y-4">
+              {invalidComboDraft && (
+                <ComboDraftValidationAlert error={combo.validationError!} />
+              )}
               {domain === "macro" && (
                 <>
                   <p className="text-xs text-[var(--color-text-muted)]">
