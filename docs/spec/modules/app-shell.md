@@ -12,6 +12,7 @@
 | S4   | [AppLayout](../../../src/layouts/AppLayout.tsx): header / language / theme / disconnect                                                          |
 | S5   | [ThemeContext](../../../src/contexts/ThemeContext.tsx), [LanguageContext](../../../src/contexts/LanguageContext.tsx): storage and initialization |
 | S6   | [navigation tests](../../../src/components/__tests__/TabNavigation.test.tsx)                                                                     |
+| S8   | [route tests](../../../src/__tests__/App.legacyRoutes.test.tsx): 旧 URL の置換、接続 gate、履歴、tab 保持、standalone routes                     |
 | S7   | [LanguageToggle](../../../src/components/LanguageToggle.tsx): 言語ドロップダウン（SplashScreen / AppLayout / ReleaseNotesPage 共通）             |
 
 ## 機能要求
@@ -24,7 +25,7 @@
 
 ## 前提・状態
 
-通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。Developer Guide は keyboard providers の外、Release Notes/OAuth callback は接続 gate より前に分岐する。独立 Import/Export タブは廃止し、Keymap 内の共有メニューへ移転。旧 `/import-export` は `/keymap` に正規化する。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
+通常の tabs は接続中のみ。未接続は SplashScreen、再接続中は ReconnectingOverlay。Developer Guide は keyboard providers の外、Release Notes/OAuth callback は接続 gate より前に分岐する。独立 Import/Export タブは廃止し、Keymap 内の共有メニューへ移転。旧 `/import-export`（末尾 `/` 付きも含む）は接続前・接続中とも `/keymap` に置換遷移し、query / hash を保持する。history entry を追加せず、Back は旧 URL に戻らない。同じセッションの Keymap が既に mount 済みなら編集中 state を保持する。shell 自体に dirty/save はなく各ページの状態を保持する。読み込み/empty/error は各ページの責務。
 
 ## 現行の機能仕様
 
@@ -51,7 +52,7 @@
 | SHELL-001 | tab 選択                                            | 選択タブと pathname が対応。Home は `/`、他は `/<id>`。狭幅ではアイコン中心でも accessible name を持つ                                                                                                                                                                                                                                                        | history pushState。初回のみ page を mount                                                                             | S1/S2/S3 |
 | SHELL-002 | 訪問済み tab へ戻る                                 | component は維持され、選択/編集中 state が残る。非選択 tab は hidden                                                                                                                                                                                                                                                                                          | 自動的な再接続や device 再読込ではない。stream 等の停止はページが処理                                                 | S3       |
 | SHELL-003 | browser Back/Forward                                | popstate で route と active tab を更新                                                                                                                                                                                                                                                                                                                        | device の Save/Discard は実行しない                                                                                   | S2       |
-| SHELL-004 | 未登録パス                                          | 通常ルートでは Home を選び `/` へ replace。standalone routes は別扱い                                                                                                                                                                                                                                                                                         | query を持つ OAuth callback を Home に書換えない                                                                      | S1       |
+| SHELL-004 | 未登録パス                                          | 通常の未知ルートでは Home を選び `/` へ replace。旧 `/import-export` は接続前から `/keymap` へ replace し query / hash を保持。standalone routes は別扱い                                                                                                                                                                                                     | query を持つ OAuth callback を Home に書換えない                                                                      | S1       |
 | SHELL-005 | header の Theme dropdown                            | Light / Dark / Pop / Neutral を選択し、配色・html class・現在値を即時更新                                                                                                                                                                                                                                                                                     | `dya-studio-theme` localStorage。初回は有効な保存値、未知値/未保存は OS light 指定、その他 dark。再読込後も選択を維持 | S4/S5    |
 | SHELL-006 | 言語ドロップダウンで English / 日本語 / 中文 を選択 | 言語アイコンだけのボタン（言語名・下矢印は表示しない、accessible nameは言語と現在値）でカスタムメニューを開く。選択中の項目にチェックを表示し、選択すると閉じて html lang と翻訳ラベルを即時更新。開くと現在の項目にfocus。上下矢印/Home/Endはfocusのみ移動しEnter/Spaceで確定。Escape・外側クリックは言語を変更せず閉じ、Escape・選択後はボタンへfocusを戻す | `dya-studio-language` localStorage。初回は有効保存値、なければ navigator の ja/zh、その他 en                          | S5/S7    |
 | SHELL-007 | 接続 header / Disconnect                            | deviceName（なければ Connected）と切断操作。切断で通常 tab を離れる                                                                                                                                                                                                                                                                                           | 接続の解除は DeviceConnectionProvider の責務                                                                          | S1/S4    |
@@ -75,7 +76,7 @@ SHELL-023: モバイル（640px未満）のKeymapでsheetを表示している�
 
 1. Demo で Home → Keymap。URL `/keymap` と tab を確認（SHELL-001）。
 2. layer を変更、Settings へ行って戻る。元の layer 選択が残る（SHELL-002）。保存成功の証明にはしない。
-3. browser Back/Forward。履歴に対応した tab を確認（SHELL-003）。
+3. browser Back/Forward。履歴に対応した tab を確認（SHELL-003）。接続前と Demo 接続中それぞれで `/import-export?source=legacy#sharing` を直接開き、URL が `/keymap?source=legacy#sharing` となり、接続前は splash、接続中は Keymap になることを確認する。前の履歴 entry から旧 URL に入り Back/Forward しても旧 URL の entry が増えないことを確認する（SHELL-001/004、S8）。
 4. Home → 他のタブ → Home でヘッダーの中央・左端間の移動を確認する。1024px未満では常に左揃え、640px未満ではロゴのみとなること、動きを抑える設定では即時切替になることも確認する（SHELL-015）。
 5. Keymap など対象タブを幅639pxで開き、見出し左のアイコンと枠がなく見出し・説明・操作が表示されることを確認する。640pxに広げるとアイコンと枠が戻り、再び狭めると占有幅ごと消えることを確認する（SHELL-021）。同時に説明文が640px未満では非表示となり、主操作がタイトル行から並ぶことを320px/390pxと長い言語ラベルで確認する。操作同士の間隔が8pxで右端に揃い、折り返した行も右揃えになることを確認する。全操作へ到達でき、Macro&Combo / Trackball の項目選択欄は次行に表示されることも確認する（SHELL-022）。
 6. 元の theme/language を記録する。言語ドロップダウンで3言語を直接選び、選択名・翻訳・html lang を確認する。browser reload 後の選択維持、Escape 取消しで値が変わらないことを確認し、元の言語に戻して再読込する（SHELL-005/006）。他 worker とは別 origin を使用。

@@ -150,12 +150,7 @@ function AppContent() {
 
   // The release notes page is a standalone, connection-independent route so it
   // stays reachable from the splash screen and via GitHub Release deep links.
-  const [pathname, setPathname] = useState(() => window.location.pathname);
-  useEffect(() => {
-    const onPopState = () => setPathname(window.location.pathname);
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  const pathname = usePathname();
   const navigatePath = useCallback((path: string) => {
     if (window.location.pathname !== path) {
       window.history.pushState(null, "", path);
@@ -173,16 +168,21 @@ function AppContent() {
   const onOauthCallback = pathname === OAUTH_CALLBACK_PATH;
 
   useEffect(() => {
+    if (onReleaseNotes || onOauthCallback) return;
+
+    // useUrlTab already maps this legacy entry to Keymap, so comparing tab
+    // IDs cannot detect it. Replace the URL even before a keyboard connects,
+    // retaining its query/hash and the current history position.
+    if (/^\/+import-export(?:\/|$)/.test(pathname)) {
+      replacePath(`/keymap${window.location.search}${window.location.hash}`);
+      return;
+    }
+
     // Canonicalize unknown paths (e.g. a stale/typo'd link) to the home tab,
     // but leave the standalone routes alone. The OAuth callback especially:
     // rewriting it to "/" would discard the ?code=&state= query string before
     // AbyssCallbackPage ever gets to read it.
-    if (
-      !onReleaseNotes &&
-      !onOauthCallback &&
-      urlTab !== activeTab &&
-      window.location.pathname !== "/"
-    ) {
+    if (urlTab !== activeTab && window.location.pathname !== "/") {
       window.history.replaceState(
         null,
         "",
@@ -190,7 +190,14 @@ function AppContent() {
       );
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
-  }, [urlTab, activeTab, onReleaseNotes, onOauthCallback]);
+  }, [
+    pathname,
+    urlTab,
+    activeTab,
+    onReleaseNotes,
+    onOauthCallback,
+    replacePath,
+  ]);
 
   const setActiveTabWithTracking = useCallback(
     (tabId: string) => {
