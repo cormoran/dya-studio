@@ -229,6 +229,46 @@ describe("CustomSubsystemsPage", () => {
       ).toBeInTheDocument();
     });
 
+    it("should group runtime tapdance as supported while preserving firmware metadata", () => {
+      const subsystems = createMockSubsystems([
+        {
+          index: 7,
+          identifier: "cormoran__runtime_tapdance",
+          uiUrl: ["https://example.com/tapdance"],
+        },
+        { index: 8, identifier: "zmk__unknown", uiUrl: [] },
+      ]);
+      renderComponent({
+        state: {
+          connection: null,
+          deviceInfo: null,
+          customSubsystems: subsystems,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      expect(
+        screen.queryByText("cormoran__runtime_tapdance"),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("zmk__unknown")).toBeInTheDocument();
+      expect(
+        screen.getByText("No web UI available for this subsystem."),
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Already supported by DYA Studio"));
+
+      expect(screen.getAllByText("cormoran__runtime_tapdance")).toHaveLength(1);
+      expect(screen.getByText("Subsystem index: 7")).toBeInTheDocument();
+      expect(
+        screen.getByText("https://example.com/tapdance"),
+      ).toBeInTheDocument();
+      expect(screen.getByText("zmk__unknown")).toBeInTheDocument();
+      expect(
+        screen.getByText("No web UI available for this subsystem."),
+      ).toBeInTheDocument();
+    });
+
     it("should keep the setting-expose subsystem as a prominent external card", () => {
       const subsystems = createMockSubsystems([
         {
