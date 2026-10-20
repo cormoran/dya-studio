@@ -9,6 +9,95 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Not supported": "未対応",
+  "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
+    "変更はすぐにメモリへ反映されますが、保存ボタンを押すまで永続化されません。",
+  "Save persists all unsaved changes in this feature. Discard affects only this item.":
+    "保存はこの機能のすべての未保存変更を永続化します。破棄は開いている項目だけに適用されます。",
+  "Close and restore the settings from when this dialog opened?":
+    "この画面を開いたときの設定に戻して閉じますか？",
+  "Discard this item’s unsaved changes and restore its saved value?":
+    "この項目だけの未保存変更を破棄し、保存済みの値に戻しますか？",
+  "Delete this item from keyboard memory?":
+    "この項目をキーボードのメモリから削除しますか？",
+  "The operation failed. Your changes remain available; retry or reload.":
+    "操作に失敗しました。編集内容は残っています。再試行するか再読み込みしてください。",
+  "The saved value of this item is unavailable. Other items were left unchanged.":
+    "この項目の保存済みの値を取得できません。ほかの項目は変更していません。",
+  "Enter a whole number within the displayed range.":
+    "表示された範囲内の整数を入力してください。",
+  "Discard and close": "破棄して閉じる",
+  "Discard changes?": "変更を破棄しますか？",
+  "Could not apply macro edits to memory.":
+    "マクロの編集をメモリに適用できませんでした。",
+  "Macro and combo versions": "マクロ・コンボの履歴",
+  "No items": "まだ項目がありません",
+  "Drops unsaved keymap, macro, combo and tapdance edits in keyboard memory, then reloads their saved values.":
+    "キーボードメモリの未保存のキーマップ・マクロ・コンボ・タップダンスの編集を破棄し、保存済みの値を再取得します。",
+  "Edit runtime macros, combos, and tapdances":
+    "マクロ・コンボ・タップダンスを編集",
+  "Read macros, combos, and tapdances from the keyboard again":
+    "キーボードからマクロ・コンボ・タップダンスを再取得します",
+  "Drops edits in keyboard memory and reloads saved macros, combos, and tapdances.":
+    "メモリの編集を破棄し、保存済みのマクロ・コンボ・タップダンスを再取得します。",
+  "Save macro, combo, and tapdance changes so they are kept after the keyboard restarts":
+    "マクロ・コンボ・タップダンスの変更を、再起動後も維持されるように保存します",
+  "Connect your keyboard to edit runtime macros, combos, and tapdances":
+    "マクロ・コンボ・タップダンスを編集するにはキーボードを接続してください",
+  "Select a macro, combo, or tapdance": "マクロ・コンボ・タップダンスを選択",
+  "Update the runtime tapdance firmware to use named tapdances and shared pool allocation.":
+    "名前付きタップダンスと共有 pool を利用するには、タップダンスのファームウェアを更新してください。",
+  "Actions are applied to memory. Use Save above to keep tapdance changes after restart.":
+    "アクションはメモリに適用されます。再起動後も維持するには、上部の保存を押してください。",
+  "The interval applies to all tapdances. Use Save above to keep changes after restart.":
+    "間隔はすべてのタップダンスに適用されます。再起動後も維持するには、上部の保存を押してください。",
+  "Shared pool: {{used}} / {{total}} bytes \u00b7 {{count}} / {{max}} tapdances":
+    "共有 pool: {{used}} / {{total}} bytes・タップダンス {{count}} / {{max}} 件",
+  "Saved runtime tapdance changes.": "タップダンスの変更を保存しました。",
+  "Saving here also saves other tapdance changes already in memory.":
+    "ここで保存すると、すでにメモリに適用されている他のタップダンスの変更も保存されます。",
+  "Tapdance unavailable": "このタップダンスは利用できません",
+  "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
+    "このタップダンスを完全に削除しますか？使用しているキーのタップダンスは動作しなくなり、破棄では元に戻せません。",
+  Tapdances: "タップダンス一覧",
+  "Tapdance Editor": "タップダンス編集",
+  "Tapdance Global Settings": "タップダンスのグローバル設定",
+  "No tapdances yet. Create one above.":
+    "タップダンスはまだありません。上から作成してください。",
+  "Tapdance saves separately from macros and combos.":
+    "タップダンスはマクロ・コンボとは別に保存します。",
+  "Select macro, combo, tapdance, or settings":
+    "マクロ、コンボ、タップダンス、設定を選択",
+  "Discard edits": "編集を破棄",
+  "Use tapdance": "このタップダンスを割り当て",
+  Tapdance: "タップダンス",
+  "New tapdance": "新規タップダンス",
+  "Edit tapdance": "タップダンスを編集",
+  "Save tapdance": "タップダンスを保存",
+  "Delete tapdance": "タップダンスを削除",
+  "Tapdance slot": "タップダンスのスロット",
+  "Tapdance actions": "タップダンスのアクション",
+  Single: "シングル",
+  Double: "ダブル",
+  Triple: "トリプル",
+  "Select binding": "キー割当を選択",
+  "Saving these actions also updates {{count}} other tapdance key bindings.":
+    "保存すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
+  "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
+    "このタップダンスを使用するすべてのキーが設定を共有します。使用件数は取得できていません。",
+  "A Triple action requires a Double action.":
+    "トリプルを設定するにはダブルのアクションも必要です。",
+  "Tapdance saved to keyboard.": "タップダンスをキーボードに保存しました。",
+  "Runtime tapdance subsystem is unavailable.":
+    "ランタイムタップダンスのサブシステムが利用できません。",
+  "Tapdance interval (ms)": "タップダンスの間隔 (ms)",
+  "Save interval": "間隔を保存",
+  "The interval applies to all tapdance slots. Tapdance saves separately from macros and combos.":
+    "間隔はすべてのタップダンスに適用されます。タップダンスはマクロ・コンボとは別に保存します。",
+  "Delete this tapdance? Keys using this slot will stop producing tapdance actions.":
+    "このタップダンスを削除しますか？このスロットを使うキーのタップダンスは動作しなくなります。",
+  "Run different actions for single, double, or triple taps":
+    "シングル・ダブル・トリプルタップで異なるアクションを実行",
   "Keyboard write result": "キーボードへの反映結果",
   "Finished with errors.":
     "処理が完了しました。エラーの内容を確認してください。",
@@ -120,6 +209,12 @@ const ja: Record<string, string> = {
   "Current keymap": "現在のキーマップ",
   "Your keymaps": "自分のキーマップ",
   "In sync": "同期済み",
+  "Differences found": "差分あり",
+  "Checking differences...": "差分を確認中...",
+  "Sync to Abyss": "Abyss へ同期",
+  "Overwrite from Abyss": "Abyss から上書き",
+  "Unsupported changes (will be skipped)": "未対応の変更（スキップされます）",
+  "Global settings": "全体設定",
   "This keyboard cannot identify its current keymap. Keymap identity RPC is not supported.":
     "このキーボードはキーマップ識別 RPC に未対応のため、現在のキーマップを判定できません。",
   "No keymap identity is stored on this keyboard.":
@@ -829,6 +924,10 @@ const ja: Record<string, string> = {
   "Memory...": "メモリに書き込み中...",
   "Waiting to apply...": "反映待機中...",
   "Applying to memory...": "メモリに反映中...",
+  "Apply to memory": "メモリに適用",
+  "Discarded tapdance changes.": "タップダンスの変更を破棄しました。",
+  "Applying these actions also updates {{count}} other tapdance key bindings.":
+    "適用すると、同じ設定を共有する他の {{count}} 件のタップダンスのキー割当も更新されます。",
   "Applied to memory": "メモリに反映済み",
   "Save and close": "保存して閉じる",
   "Macro name already exists": "同じ名前のマクロが既にあります",
@@ -1756,6 +1855,88 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Not supported": "不支持",
+  "Changes are applied to memory immediately, but are not saved permanently until you press Save.":
+    "更改会立即应用到内存，点击保存后才会永久保存。",
+  "Save persists all unsaved changes in this feature. Discard affects only this item.":
+    "保存会持久化此功能的所有未保存更改，丢弃仅影响当前项目。",
+  "Close and restore the settings from when this dialog opened?":
+    "恢复打开此窗口时的设置并关闭？",
+  "Discard this item’s unsaved changes and restore its saved value?":
+    "仅丢弃此项目的未保存更改并恢复已保存的值？",
+  "Delete this item from keyboard memory?": "从键盘内存中删除此项目？",
+  "The operation failed. Your changes remain available; retry or reload.":
+    "操作失败。编辑仍然保留，请重试或重新加载。",
+  "The saved value of this item is unavailable. Other items were left unchanged.":
+    "无法获取此项目已保存的值。其他项目未改变。",
+  "Enter a whole number within the displayed range.":
+    "请输入显示范围内的整数。",
+  "Discard and close": "丢弃并关闭",
+  "Discard changes?": "丢弃更改？",
+  "Could not apply macro edits to memory.": "无法将宏编辑应用到内存。",
+  "Macro and combo versions": "宏和组合键历史",
+  "No items": "暂无项目",
+  "Drops unsaved keymap, macro, combo and tapdance edits in keyboard memory, then reloads their saved values.":
+    "丢弃键盘内存中未保存的键位、宏、组合键和踢踏舞编辑，并重新读取已保存的值。",
+  "Edit runtime macros, combos, and tapdances": "编辑运行时宏、组合键和踢踏舞",
+  "Read macros, combos, and tapdances from the keyboard again":
+    "从键盘重新读取宏、组合键和踢踏舞",
+  "Drops edits in keyboard memory and reloads saved macros, combos, and tapdances.":
+    "放弃内存中的更改，并重新读取已保存的宏、组合键和踢踏舞。",
+  "Save macro, combo, and tapdance changes so they are kept after the keyboard restarts":
+    "保存宏、组合键和踢踏舞更改，使其在键盘重启后保留",
+  "Connect your keyboard to edit runtime macros, combos, and tapdances":
+    "请连接键盘以编辑运行时宏、组合键和踢踏舞",
+  "Select a macro, combo, or tapdance": "选择宏、组合键或踢踏舞",
+  "Update the runtime tapdance firmware to use named tapdances and shared pool allocation.":
+    "请更新踢踏舞固件，以使用命名配置和共享池分配。",
+  "Actions are applied to memory. Use Save above to keep tapdance changes after restart.":
+    "动作应用到内存。请使用上方的保存按钮，使更改在重启后保留。",
+  "The interval applies to all tapdances. Use Save above to keep changes after restart.":
+    "间隔适用于所有踢踏舞。请使用上方的保存按钮，使更改在重启后保留。",
+  "Shared pool: {{used}} / {{total}} bytes \u00b7 {{count}} / {{max}} tapdances":
+    "共享池：{{used}} / {{total}} 字节 · 踢踏舞 {{count}} / {{max}} 项",
+  "Saved runtime tapdance changes.": "已保存运行时踢踏舞更改。",
+  "Saving here also saves other tapdance changes already in memory.":
+    "在此保存也会保存内存中其他踢踏舞的更改。",
+  "Tapdance unavailable": "此踢踏舞不可用",
+  "Delete this tapdance permanently? Keys using it will stop producing tapdance actions. Discard cannot restore it.":
+    "永久删除此踢踏舞？使用它的按键将不再触发动作，放弃更改也无法恢复。",
+  Tapdances: "踢踏舞列表",
+  "Tapdance Editor": "踢踏舞编辑器",
+  "Tapdance Global Settings": "踢踏舞全局设置",
+  "No tapdances yet. Create one above.": "尚无踢踏舞，请在上方创建。",
+  "Tapdance saves separately from macros and combos.":
+    "踢踏舞与宏和组合键分别保存。",
+  "Select macro, combo, tapdance, or settings": "选择宏、组合键、踢踏舞或设置",
+  "Discard edits": "放弃编辑",
+  "Use tapdance": "使用此踢踏舞",
+  Tapdance: "踢踏舞",
+  "New tapdance": "新建踢踏舞",
+  "Edit tapdance": "编辑踢踏舞",
+  "Save tapdance": "保存踢踏舞",
+  "Delete tapdance": "删除踢踏舞",
+  "Tapdance slot": "踢踏舞槽位",
+  "Tapdance actions": "踢踏舞动作",
+  Single: "单击",
+  Double: "双击",
+  Triple: "三击",
+  "Select binding": "选择按键绑定",
+  "Saving these actions also updates {{count}} other tapdance key bindings.":
+    "保存这些动作也会更新其他 {{count}} 个共享此配置的踢踏舞按键绑定。",
+  "This configuration is shared by all keys using this tapdance. Usage count is unavailable.":
+    "使用此槽位的所有按键共享此配置。暂时无法获取使用数量。",
+  "A Triple action requires a Double action.": "设置三击动作时也需要双击动作。",
+  "Tapdance saved to keyboard.": "踢踏舞已保存到键盘。",
+  "Runtime tapdance subsystem is unavailable.": "运行时踢踏舞子系统不可用。",
+  "Tapdance interval (ms)": "踢踏舞间隔 (ms)",
+  "Save interval": "保存间隔",
+  "The interval applies to all tapdance slots. Tapdance saves separately from macros and combos.":
+    "此间隔适用于所有踢踏舞槽位。踢踏舞与宏和组合键分别保存。",
+  "Delete this tapdance? Keys using this slot will stop producing tapdance actions.":
+    "删除此踢踏舞？使用此槽位的按键将不再触发踢踏舞动作。",
+  "Run different actions for single, double, or triple taps":
+    "单击、双击和三击执行不同动作",
   "Keyboard write result": "键盘写入结果",
   "Finished with errors.": "处理已结束，请查看错误详情。",
   "Finished with skipped changes.": "处理已结束，部分更改已跳过。",
@@ -2450,6 +2631,10 @@ const zh: Record<string, string> = {
   "Memory...": "正在写入内存...",
   "Waiting to apply...": "等待应用...",
   "Applying to memory...": "正在应用到内存...",
+  "Apply to memory": "应用到内存",
+  "Discarded tapdance changes.": "已丢弃踢踏舞更改。",
+  "Applying these actions also updates {{count}} other tapdance key bindings.":
+    "应用这些操作也会更新其他 {{count}} 个踢踏舞按键绑定。",
   "Applied to memory": "已应用到内存",
   "Save and close": "保存并关闭",
   "Macro name already exists": "宏名称已存在",

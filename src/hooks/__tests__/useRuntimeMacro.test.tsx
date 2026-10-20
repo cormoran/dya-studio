@@ -38,6 +38,31 @@ beforeEach(() => {
 });
 
 describe("useRuntimeMacro autoLoad", () => {
+  it("exposes the reassigned slot before rename finishes and React rerenders", async () => {
+    let summary = { slot: 3, name: "Draft", hasUnsavedChanges: true };
+    mockCall.mockImplementation(async (req: Record<string, unknown>) => {
+      if (req.renameMacro) {
+        summary = { ...summary, slot: 9, name: "Renamed" };
+        return { status: { affectedCount: 1 } };
+      }
+      if (req.listMacros) return { listMacros: { macros: [summary] } };
+      if (req.getMacroGlobalSettings)
+        return { getMacroGlobalSettings: { settings: { tapMs: 30 } } };
+      return {};
+    });
+    const { result } = renderHook(() => useRuntimeMacro({ autoLoad: false }));
+    await act(async () => {
+      await result.current.loadMacros();
+    });
+    const getSlot = result.current.getMacroSlot;
+    expect(getSlot("Draft")).toBe(3);
+    await act(async () => {
+      expect(await result.current.renameMacro("Draft", "Renamed")).toBe(true);
+      expect(getSlot("Renamed")).toBe(9);
+      expect(getSlot("Draft")).toBeNull();
+    });
+  });
+
   it("loads the macro list on mount by default", async () => {
     const { result } = renderHook(() => useRuntimeMacro());
     await waitFor(() =>
@@ -96,4 +121,50 @@ it("creates a macro with steps in RAM without issuing SaveMacros", async () => {
     persist: false,
   });
   expect(requests.some((request) => request.saveMacros)).toBe(false);
+});
+
+it("refreshes RAM previews without treating dirty details as a saved discard baseline", async () => {
+  let steps = [{ delay: { delayMs: 42 } }];
+  let exists = true;
+  mockCall.mockImplementation(async (request) => {
+    if (request.listMacros)
+      return {
+        listMacros: {
+          macros: exists
+            ? [{ slot: 2, name: "Draft", hasUnsavedChanges: true }]
+            : [],
+        },
+      };
+    if (request.getMacro)
+      return {
+        getMacro: { macro: { slot: 2, name: "Draft", steps, encodedSize: 3 } },
+      };
+    if (request.getMacroGlobalSettings)
+      return { getMacroGlobalSettings: { settings: { tapMs: 30 } } };
+    return {};
+  });
+  const { result } = renderHook(() => useRuntimeMacro({ autoLoad: false }));
+  await act(async () => {
+    await result.current.loadMacros();
+  });
+  expect(result.current.macroDetails.get(2)?.steps).toEqual(steps);
+  await act(async () => {
+    expect(await result.current.discardMacro("Draft")).toBe(false);
+  });
+  expect(
+    mockCall.mock.calls.some(
+      ([request]) =>
+        request.deleteMacro || request.saveMacros || request.discardMacros,
+    ),
+  ).toBe(false);
+  steps = [{ delay: { delayMs: 99 } }];
+  await act(async () => {
+    await result.current.loadMacros();
+  });
+  expect(result.current.macroDetails.get(2)?.steps).toEqual(steps);
+  exists = false;
+  await act(async () => {
+    await result.current.loadMacros();
+  });
+  expect(result.current.macroDetails.size).toBe(0);
 });

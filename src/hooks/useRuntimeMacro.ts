@@ -23,6 +23,7 @@ const CODEC = {
 export interface UseRuntimeMacroReturn {
   isAvailable: boolean;
   macros: MacroSummary[];
+  macroDetails: ReadonlyMap<number, MacroDetail>;
   globalSettings: MacroGlobalSettings | null;
   maxMacroBytes: number;
   maxNameLength: number;
@@ -32,6 +33,7 @@ export interface UseRuntimeMacroReturn {
   clearError: () => void;
   loadMacros: () => Promise<void>;
   getMacro: (slot: number) => Promise<MacroDetail | null>;
+  getMacroSlot: (name: string) => number | null;
   createMacro: (name: string, steps?: MacroStep[]) => Promise<boolean>;
   deleteMacro: (name: string) => Promise<boolean>;
   renameMacro: (oldName: string, newName: string) => Promise<boolean>;
@@ -57,6 +59,7 @@ export interface UseRuntimeMacroReturn {
   setTapMs: (tapMs: number, persist?: boolean) => Promise<boolean>;
   saveMacros: () => Promise<boolean>;
   discardMacros: () => Promise<boolean>;
+  discardMacro: (name: string) => Promise<boolean>;
 }
 
 export interface UseRuntimeMacroOptions {
@@ -78,6 +81,9 @@ export function useRuntimeMacro(
     CODEC,
   );
   const [macros, setMacros] = useState<MacroSummary[]>([]);
+  const [macroDetails, setMacroDetails] = useState(
+    new Map<number, MacroDetail>(),
+  );
   const [globalSettings, setGlobalSettings] =
     useState<MacroGlobalSettings | null>(null);
   const [maxMacroBytes, setMaxMacroBytes] = useState(64);
@@ -85,6 +91,14 @@ export function useRuntimeMacro(
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const savedTapMs = useRef<number | null>(null);
+  const pendingDeletes = useRef(new Set<string>());
+  const currentTapMs = useRef(0);
+  const savedMacros = useRef(new Map<string, MacroDetail | null>());
+  const restoredMacros = useRef(new Set<string>());
+  const macroListRef = useRef(macros);
+  macroListRef.current = macros;
 
   const subsystemIndex = subsystem?.index;
 
@@ -134,6 +148,17 @@ export function useRuntimeMacro(
       request: Request,
       persist: boolean,
     ): Promise<StatusResponse | null> => {
+      const changedSlot =
+        request.setMacroStepCount?.slot ??
+        request.setMacroStep?.slot ??
+        request.appendMacroStep?.slot ??
+        request.resetMacro?.slot;
+      const changedName =
+        changedSlot === undefined
+          ? (request.renameMacro?.oldName ?? request.deleteMacro?.name)
+          : macroListRef.current.find((entry) => entry.slot === changedSlot)
+              ?.name;
+      if (changedName) restoredMacros.current.delete(changedName);
       setIsLoading(true);
       setError(null);
       try {
@@ -164,6 +189,7 @@ export function useRuntimeMacro(
   const loadMacros = useCallback(async () => {
     if (!ready) {
       setMacros([]);
+      setMacroDetails(new Map());
       setGlobalSettings(null);
       return;
     }
@@ -179,7 +205,29 @@ export function useRuntimeMacro(
     try {
       const listResponse = await callRpc(Request.create({ listMacros: {} }));
       if (listResponse?.listMacros) {
-        setMacros(listResponse.listMacros.macros);
+        const summaries = listResponse.listMacros.macros;
+        const details = new Map<number, MacroDetail>();
+        for (const summary of summaries) {
+          const detail = await callRpc(
+            Request.create({ getMacro: { slot: summary.slot } }),
+          );
+          if (detail?.getMacro?.macro) {
+            details.set(summary.slot, detail.getMacro.macro);
+            if (!summary.hasUnsavedChanges)
+              savedMacros.current.set(
+                summary.name,
+                JSON.parse(JSON.stringify(detail.getMacro.macro)),
+              );
+          }
+        }
+        setMacroDetails(details);
+        const nextMacros = summaries.map((entry) =>
+          restoredMacros.current.has(entry.name)
+            ? { ...entry, hasUnsavedChanges: false }
+            : entry,
+        );
+        macroListRef.current = nextMacros;
+        setMacros(nextMacros);
         setMaxMacroBytes(listResponse.listMacros.maxMacroBytes || 64);
         setMaxNameLength(listResponse.listMacros.maxNameLength || 64);
       }
@@ -188,7 +236,11 @@ export function useRuntimeMacro(
         Request.create({ getMacroGlobalSettings: {} }),
       );
       if (settingsResponse?.getMacroGlobalSettings?.settings) {
-        setGlobalSettings(settingsResponse.getMacroGlobalSettings.settings);
+        const settings = settingsResponse.getMacroGlobalSettings.settings;
+        if (savedTapMs.current === null && settings)
+          savedTapMs.current = settings.tapMs;
+        currentTapMs.current = settings?.tapMs ?? 0;
+        setGlobalSettings(settings);
       }
     } catch (err) {
       console.error("Failed to load runtime macros:", err);
@@ -202,6 +254,12 @@ export function useRuntimeMacro(
       loadInFlightRef.current = false;
     }
   }, [callRpc, ready]);
+
+  const getMacroSlot = useCallback(
+    (name: string) =>
+      macroListRef.current.find((macro) => macro.name === name)?.slot ?? null,
+    [],
+  );
 
   const getMacroInFlightRef = useRef(false);
   const getMacro = useCallback(
@@ -288,6 +346,7 @@ export function useRuntimeMacro(
         persist,
       );
       if (status) {
+        currentTapMs.current = tapMs;
         setGlobalSettings((prev) => ({
           tapMs,
           maxEntries: prev?.maxEntries ?? 0,
@@ -308,6 +367,7 @@ export function useRuntimeMacro(
         false,
       );
       if (status !== null) {
+        savedMacros.current.set(name, null);
         if (steps.length > 0) {
           const failAfterCreate = async () => {
             await loadMacros();
@@ -348,6 +408,14 @@ export function useRuntimeMacro(
         false,
       );
       if (status !== null) {
+        if (savedMacros.current.get(name)) pendingDeletes.current.add(name);
+        setHasUnsavedChanges(
+          pendingDeletes.current.size > 0 ||
+            currentTapMs.current !== savedTapMs.current ||
+            macroListRef.current.some(
+              (entry) => entry.name !== name && entry.hasUnsavedChanges,
+            ),
+        );
         await loadMacros();
         return true;
       }
@@ -363,6 +431,11 @@ export function useRuntimeMacro(
         false,
       );
       if (status !== null) {
+        if (savedMacros.current.has(oldName)) {
+          savedMacros.current.set(newName, savedMacros.current.get(oldName)!);
+          savedMacros.current.delete(oldName);
+        }
+        restoredMacros.current.delete(oldName);
         await loadMacros();
         return true;
       }
@@ -396,6 +469,10 @@ export function useRuntimeMacro(
     const status = await runMutation(Request.create({ saveMacros: {} }), true);
     if (status) {
       setHasUnsavedChanges(false);
+      restoredMacros.current.clear();
+      savedMacros.current.clear();
+      savedTapMs.current = null;
+      pendingDeletes.current.clear();
       await loadMacros();
     }
     return status !== null;
@@ -408,10 +485,58 @@ export function useRuntimeMacro(
     );
     if (status) {
       setHasUnsavedChanges(false);
+      restoredMacros.current.clear();
+      savedMacros.current.clear();
+      savedTapMs.current = null;
+      pendingDeletes.current.clear();
       await loadMacros();
     }
     return status !== null;
   }, [loadMacros, runMutation]);
+
+  const discardMacro = useCallback(
+    async (name: string): Promise<boolean> => {
+      if (!savedMacros.current.has(name)) {
+        setError(
+          "The saved value of this item is unavailable. Other items were left unchanged.",
+        );
+        return false;
+      }
+      const baseline = savedMacros.current.get(name);
+      if (baseline === null) return deleteMacro(name);
+      if (!baseline) return false;
+      const summary = macroListRef.current.find((entry) => entry.name === name);
+      if (!summary) return false;
+      if (name !== baseline.name && !(await renameMacro(name, baseline.name)))
+        return false;
+      if (!(await setMacroStepCount(summary.slot, baseline.steps.length)))
+        return false;
+      for (const [index, step] of baseline.steps.entries()) {
+        if (!(await setMacroStep(summary.slot, index, step))) return false;
+      }
+      restoredMacros.current.add(baseline.name);
+      setMacros((current) =>
+        current.map((entry) =>
+          entry.name === baseline.name
+            ? { ...entry, hasUnsavedChanges: false }
+            : entry,
+        ),
+      );
+      setHasUnsavedChanges(
+        pendingDeletes.current.size > 0 ||
+          currentTapMs.current !== savedTapMs.current ||
+          macroListRef.current.some(
+            (entry) =>
+              entry.name !== name &&
+              entry.name !== baseline.name &&
+              entry.hasUnsavedChanges,
+          ),
+      );
+      await loadMacros();
+      return true;
+    },
+    [deleteMacro, loadMacros, renameMacro, setMacroStepCount, setMacroStep],
+  );
 
   // Auto-load exactly once per connected subsystem. `loadMacros` is in the
   // dependency array (its identity can change as the connection/gate updates),
@@ -425,6 +550,11 @@ export function useRuntimeMacro(
     if (subsystemIndex === undefined) {
       autoLoadedForRef.current = undefined;
       setMacros([]);
+      setMacroDetails(new Map());
+      savedMacros.current.clear();
+      restoredMacros.current.clear();
+      savedTapMs.current = null;
+      pendingDeletes.current.clear();
       setGlobalSettings(null);
       setHasUnsavedChanges(false);
       return;
@@ -440,6 +570,7 @@ export function useRuntimeMacro(
   return {
     isAvailable: subsystem !== null,
     macros,
+    macroDetails,
     globalSettings,
     maxMacroBytes,
     maxNameLength,
@@ -449,6 +580,7 @@ export function useRuntimeMacro(
     clearError,
     loadMacros,
     getMacro,
+    getMacroSlot,
     createMacro,
     deleteMacro,
     renameMacro,
@@ -460,5 +592,6 @@ export function useRuntimeMacro(
     setTapMs,
     saveMacros,
     discardMacros,
+    discardMacro,
   };
 }

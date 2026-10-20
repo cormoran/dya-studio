@@ -27,6 +27,7 @@ import type { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-
 export type BehaviorCategory =
   | "keypress" // Basic key input
   | "macro" // Saved runtime macros
+  | "tapdance" // Saved runtime tapdances
   | "layer" // Layer switching/activation
   | "mod" // Modifiers and mod-tap
   | "transport" // Bluetooth and output management
@@ -289,6 +290,20 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // ============================================================================
   // Macro Behavior
   // ============================================================================
+  {
+    category: "keypress",
+    displayNameVariants: [
+      "Runtime Tap Dance",
+      "Runtime Tapdance",
+      "runtime_tapdance",
+      "rtd",
+    ],
+    shortCode: "TD",
+    param1Type: "number",
+    param1Description: "Tapdance",
+    getDisplayText: (binding) => `TD ${binding.param1}`,
+    description: "Run different actions for single, double, or triple taps",
+  },
   {
     category: "keypress",
     displayNameVariants: ["Runtime Macro", "rmacro", "macro", "runtime_macro"],

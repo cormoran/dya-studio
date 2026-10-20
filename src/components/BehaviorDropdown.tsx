@@ -17,6 +17,7 @@ import {
   getBehaviorMetadata,
   type BehaviorCategory,
 } from "../lib/behaviorMetadata";
+import { isRuntimeTapDance } from "../lib/runtimeTapDance";
 import type { BehaviorDefinition } from "../hooks/useKeymap";
 import { EditorTooltip } from "./EditorTooltip";
 import { useLanguage } from "../hooks/useLanguage";
@@ -30,6 +31,7 @@ const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "transport", name: "Transport" },
   { id: "system", name: "System" },
   { id: "macro", name: "Macro" },
+  { id: "tapdance", name: "Tapdance" },
   { id: "miscellaneous", name: "Misc" },
 ];
 
@@ -43,10 +45,18 @@ interface BehaviorOption {
   displayName: string;
   category: BehaviorCategory;
   description?: string;
+  createEntry?: "macro" | "tapdance";
 }
 
-interface MacroOption extends BehaviorOption {
-  macroSlot: number;
+interface NamedBehaviorOption extends BehaviorOption {
+  entryType: "macro" | "tapdance";
+  param1: number;
+}
+
+function isNamedBehaviorOption(
+  option: BehaviorOption,
+): option is NamedBehaviorOption {
+  return "entryType" in option && "param1" in option;
 }
 
 interface QuickSelectConfig {
@@ -82,6 +92,11 @@ interface BehaviorDropdownProps {
   /** Saved macro entries exposed as shortcuts when Runtime Macro is available. */
   runtimeMacros?: Array<{ slot: number; name?: string }>;
   onMacroSelect?: (slot: number) => void;
+  runtimeTapDances?: Array<{ index: number; name: string }>;
+  onTapDanceSelect?: (id: number) => void;
+  onCreateMacro?: () => void;
+  onCreateTapDance?: () => void;
+  creatingEntry?: boolean;
 }
 
 function readQuickSelectConfig(storageKey: string): QuickSelectConfig {
@@ -117,6 +132,11 @@ export function BehaviorDropdown({
   quickSelects,
   runtimeMacros = [],
   onMacroSelect,
+  runtimeTapDances = [],
+  onTapDanceSelect,
+  onCreateMacro,
+  onCreateTapDance,
+  creatingEntry = false,
 }: BehaviorDropdownProps) {
   const { t } = useLanguage();
   const presetNames = quickSelects || QUICK_SELECT_BEHAVIORS;
@@ -242,11 +262,12 @@ export function BehaviorDropdown({
   );
 
   const macroOptions = useMemo(
-    (): MacroOption[] =>
+    (): NamedBehaviorOption[] =>
       runtimeMacroBehavior
         ? runtimeMacros.map((macro) => ({
             id: runtimeMacroBehavior.id,
-            macroSlot: macro.slot,
+            entryType: "macro",
+            param1: macro.slot,
             name: macro.name || `Macro ${macro.slot}`,
             displayName: macro.name || `Macro ${macro.slot}`,
             category: "macro",
@@ -256,28 +277,75 @@ export function BehaviorDropdown({
     [runtimeMacroBehavior, runtimeMacros],
   );
 
-  const filteredOptions = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase();
-    if (query) {
-      return [...behaviorOptions, ...macroOptions].filter((option) =>
-        [option.displayName, option.name, option.description]
-          .filter((value): value is string => Boolean(value))
-          .some((value) => value.toLocaleLowerCase().includes(query)),
-      );
-    }
-    return filterCategory === "all"
-      ? [...behaviorOptions, ...macroOptions]
-      : [...behaviorOptions, ...macroOptions].filter(
-          (option) => option.category === filterCategory,
-        );
-  }, [behaviorOptions, filterCategory, macroOptions, searchQuery]);
+  const runtimeTapDanceBehavior = useMemo(
+    () => Array.from(behaviors.values()).find(isRuntimeTapDance) ?? null,
+    [behaviors],
+  );
+  const tapDanceOptions = useMemo(
+    (): NamedBehaviorOption[] =>
+      runtimeTapDanceBehavior
+        ? runtimeTapDances.map((entry) => ({
+            id: runtimeTapDanceBehavior.id,
+            entryType: "tapdance",
+            param1: entry.index,
+            name: entry.name,
+            displayName: entry.name,
+            category: "tapdance",
+            description: "Tapdance",
+          }))
+        : [],
+    [runtimeTapDanceBehavior, runtimeTapDances],
+  );
 
-  const visibleCategories = useMemo(
-    () =>
-      BEHAVIOR_CATEGORIES.filter(
-        (category) => category.id !== "macro" || macroOptions.length > 0,
-      ),
-    [macroOptions.length],
+  const creationOptions = useMemo((): BehaviorOption[] => {
+    const options: BehaviorOption[] = [];
+    if (runtimeMacroBehavior)
+      options.push({
+        id: runtimeMacroBehavior.id,
+        name: "New macro",
+        displayName: t("New macro"),
+        category: "macro",
+        createEntry: "macro",
+      });
+    if (runtimeTapDanceBehavior)
+      options.push({
+        id: runtimeTapDanceBehavior.id,
+        name: "New tapdance",
+        displayName: t("New tapdance"),
+        category: "tapdance",
+        createEntry: "tapdance",
+      });
+    return options;
+  }, [runtimeMacroBehavior, runtimeTapDanceBehavior, t]);
+
+  const filteredOptions = useMemo(() => {
+    const options = [
+      ...behaviorOptions,
+      ...macroOptions,
+      ...tapDanceOptions,
+      ...creationOptions,
+    ];
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return options.filter((option) =>
+      query
+        ? [option.displayName, option.name, option.description].some((value) =>
+            value?.toLocaleLowerCase().includes(query),
+          )
+        : filterCategory === "all" || option.category === filterCategory,
+    );
+  }, [
+    behaviorOptions,
+    macroOptions,
+    tapDanceOptions,
+    creationOptions,
+    searchQuery,
+    filterCategory,
+  ]);
+
+  const visibleCategories = BEHAVIOR_CATEGORIES.filter(
+    (category) =>
+      (category.id !== "macro" || runtimeMacroBehavior) &&
+      (category.id !== "tapdance" || runtimeTapDanceBehavior),
   );
 
   const findBehavior = useCallback(
@@ -834,18 +902,30 @@ export function BehaviorDropdown({
                   filteredOptions.map((option) => (
                     <button
                       key={
-                        "macroSlot" in option
-                          ? `macro-${option.macroSlot}`
-                          : option.id
+                        option.createEntry
+                          ? `create-${option.createEntry}`
+                          : isNamedBehaviorOption(option)
+                            ? `${option.entryType}-${option.param1}`
+                            : option.id
                       }
                       type="button"
                       className={`w-full px-3 py-2 text-left transition-colors ${selectedBehaviorId === option.id ? "bg-[var(--color-electric)]/10" : "hover:bg-[var(--color-border)]"}`}
+                      disabled={
+                        creatingEntry ||
+                        (option.createEntry === "macro" && !onCreateMacro) ||
+                        (option.createEntry === "tapdance" && !onCreateTapDance)
+                      }
                       onClick={() => {
-                        if (
-                          "macroSlot" in option &&
-                          typeof option.macroSlot === "number"
-                        ) {
-                          onMacroSelect?.(option.macroSlot);
+                        if (option.createEntry) {
+                          if (option.createEntry === "macro") onCreateMacro?.();
+                          else onCreateTapDance?.();
+                          closeDropdown();
+                          return;
+                        }
+                        if (isNamedBehaviorOption(option)) {
+                          if (option.entryType === "macro")
+                            onMacroSelect?.(option.param1);
+                          else onTapDanceSelect?.(option.param1);
                           closeDropdown();
                           return;
                         }

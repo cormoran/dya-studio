@@ -41,3 +41,31 @@ it("waits for a write already in flight after queued edits are canceled", async 
     jest.useRealTimers();
   }
 });
+
+it("serializes immediate writes and applies the latest queued value after an in-flight write", async () => {
+  let finish!: () => void;
+  const writes: string[] = [];
+  const write = jest.fn(async (value: string) => {
+    writes.push(value);
+    if (value === "first")
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+  });
+  const { result } = renderHook(() => useDebouncedMemoryWrite(write, 0));
+  act(() => result.current.queue("first"));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  });
+  act(() => {
+    result.current.queue("second");
+    result.current.queue("latest");
+  });
+  const pending = result.current.flush();
+  expect(writes).toEqual(["first"]);
+  await act(async () => {
+    finish();
+    await pending;
+  });
+  expect(writes).toEqual(["first", "latest"]);
+});

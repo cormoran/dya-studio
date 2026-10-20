@@ -2,6 +2,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import { useAbyssBrowseUrl } from "../useAbyssBrowseUrl";
 import { abyssDiscoverUrl } from "../../lib/abyss/abyssCatalog";
+let testCase = 0;
+let deviceName = "";
 const originalFetch = global.fetch;
 const mockFetch = jest.fn();
 const app = { state: { connection: {}, deviceInfo: { name: "DYA" } } };
@@ -16,7 +18,8 @@ beforeEach(() => {
   global.fetch = mockFetch;
   mockFetch.mockReset();
   app.state.connection = {};
-  app.state.deviceInfo.name = "DYA";
+  deviceName = `DYA ${++testCase}`;
+  app.state.deviceInfo.name = deviceName;
 });
 afterAll(() => {
   global.fetch = originalFetch;
@@ -24,7 +27,7 @@ afterAll(() => {
 it("does not look up a closed menu and resolves a public keyboard without sign-in", async () => {
   mockFetch.mockResolvedValue({
     ok: true,
-    json: async () => [{ name: "DYA", slug: "dya-split" }],
+    json: async () => [{ name: deviceName, slug: "dya-split" }],
   });
   const { result, rerender } = renderHook(
     ({ open }) => useAbyssBrowseUrl(open),
@@ -53,7 +56,7 @@ it("ignores a late response from the previously connected keyboard", async () =>
   await act(async () => {
     finish({
       ok: true,
-      json: async () => [{ name: "DYA", slug: "old-board" }],
+      json: async () => [{ name: deviceName, slug: "old-board" }],
     });
   });
   expect(result.current).toBe(abyssDiscoverUrl());
@@ -84,12 +87,30 @@ it("keeps an in-flight catalog lookup and its result across closing and reopenin
   await act(async () => {
     finish({
       ok: true,
-      json: async () => [{ name: "DYA", slug: "cached-board" }],
+      json: async () => [{ name: deviceName, slug: "cached-board" }],
     });
   });
   rerender({ open: true });
   await waitFor(() =>
     expect(result.current).toMatch(/\/keyboard\/cached-board$/),
+  );
+  expect(mockFetch).toHaveBeenCalledTimes(1);
+});
+
+it("reuses the public catalog URL after remount and connection replacement", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [{ name: deviceName, slug: "remembered" }],
+  });
+  const first = renderHook(() => useAbyssBrowseUrl(true), { wrapper });
+  await waitFor(() =>
+    expect(first.result.current).toMatch(/keyboard\/remembered$/),
+  );
+  first.unmount();
+  app.state.connection = {};
+  const next = renderHook(() => useAbyssBrowseUrl(true), { wrapper });
+  await waitFor(() =>
+    expect(next.result.current).toMatch(/keyboard\/remembered$/),
   );
   expect(mockFetch).toHaveBeenCalledTimes(1);
 });

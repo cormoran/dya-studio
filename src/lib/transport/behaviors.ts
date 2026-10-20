@@ -323,6 +323,16 @@ export const BEHAVIORS = [
     ],
   },
   {
+    id: 32,
+    displayName: "Runtime Tap Dance",
+    metadata: [
+      {
+        param1: [{ name: "Tapdance", range: { min: 0, max: 2147483646 } }],
+        param2: [],
+      },
+    ],
+  },
+  {
     id: 31,
     displayName: "Runtime Macro",
     metadata: [],

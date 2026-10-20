@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { act, render, screen, within, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   ZMKAppProvider,
@@ -78,14 +85,19 @@ describe.each([MacroComboPage, KeymapPage])(
     let setCombo: jest.Mock;
     let saveCombo: jest.Mock;
     let refresh: jest.Mock;
+    let deleteCombo: jest.Mock;
+    let setTimeoutMs: jest.Mock;
+    let comboExists: boolean;
     let publish: (dirty: boolean) => void;
 
     beforeEach(() => {
       jest.clearAllMocks();
       localStorage.clear();
+      comboExists = true;
       ram = cloneCombo(initialCombo);
       saved = cloneCombo(initialCombo);
       macroSave = jest.fn().mockResolvedValue(true);
+      setTimeoutMs = jest.fn().mockResolvedValue(true);
       capture = jest.fn();
       setCombo = jest.fn(async (input) => {
         ram = { ...ram, ...input };
@@ -96,6 +108,11 @@ describe.each([MacroComboPage, KeymapPage])(
         saved = cloneCombo(ram);
         publish(false);
         return { affectedCount: 1 };
+      });
+      deleteCombo = jest.fn(async () => {
+        comboExists = false;
+        publish(true);
+        return true;
       });
       refresh = jest.fn(async () => {
         publish(runtime.hasPendingChanges);
@@ -111,7 +128,9 @@ describe.each([MacroComboPage, KeymapPage])(
           };
           runtime = {
             isAvailable: true,
-            combos: [ram],
+            combos: comboExists ? [ram] : [],
+            isComboUnsaved: () => dirty,
+            deleteCombo,
             globalSettings: {
               maxCombo: 16,
               timeoutMs: 50,
@@ -137,6 +156,9 @@ describe.each([MacroComboPage, KeymapPage])(
             loadCombos: jest.fn(),
             loadGlobalSettings: jest.fn(),
             clearError: jest.fn(),
+            setTimeoutMs,
+            setRequirePriorIdleMs: jest.fn().mockResolvedValue(true),
+            setSlowRelease: jest.fn().mockResolvedValue(true),
           } as unknown as UseRuntimeComboReturn;
           return runtime;
         });
@@ -184,7 +206,7 @@ describe.each([MacroComboPage, KeymapPage])(
         hasUnsavedChanges: true,
         isLoading: false,
         saveMacros: macroSave,
-        discardMacros: jest.fn(),
+        discardMacros: jest.fn().mockResolvedValue(true),
         loadMacros: jest.fn(),
         clearError: jest.fn(),
       } as never);
@@ -254,24 +276,33 @@ describe.each([MacroComboPage, KeymapPage])(
       }
     });
 
-    it("cannot persist an unrelated edit while a retained 17-position draft is invalid", async () => {
-      keymap.hasUnsavedChanges = true;
-      const user = userEvent.setup();
-      mount();
-      const editor = await open(user);
-      await user.click(
-        editor.getByRole("button", { name: /Key position 16:/ }),
-      );
-      if (Page === KeymapPage) await user.keyboard("{Escape}");
-      const save = screen.getByRole("button", { name: "Save", exact: true });
-      expect(save).toBeDisabled();
-      await user.click(save);
-      expect(saveCombo).not.toHaveBeenCalled();
-      expect(macroSave).not.toHaveBeenCalled();
-      expect(keymap.saveChanges).not.toHaveBeenCalled();
-      expect(setCombo).not.toHaveBeenCalled();
-      expect(saved.keyPositions).toEqual(positions(16));
-    });
+    it.each(["Escape", "Close"])(
+      "cannot persist an unrelated edit while a 17-position draft is retained after %s",
+      async (close) => {
+        keymap.hasUnsavedChanges = true;
+        const user = userEvent.setup();
+        mount();
+        const editor = await open(user);
+        await user.click(
+          editor.getByRole("button", { name: /Key position 16:/ }),
+        );
+        if (Page === KeymapPage) {
+          if (close === "Escape") await user.keyboard("{Escape}");
+          else
+            await user.click(
+              editor.getByRole("button", { name: "Close", exact: true }),
+            );
+        }
+        const save = screen.getByRole("button", { name: "Save", exact: true });
+        expect(save).toBeDisabled();
+        await user.click(save);
+        expect(saveCombo).not.toHaveBeenCalled();
+        expect(macroSave).not.toHaveBeenCalled();
+        expect(keymap.saveChanges).not.toHaveBeenCalled();
+        expect(setCombo).not.toHaveBeenCalled();
+        expect(saved.keyPositions).toEqual(positions(16));
+      },
+    );
 
     it("blocks 17 positions after a valid RAM edit, retains the error after closing, then saves and reads back 16", async () => {
       const user = userEvent.setup();
@@ -351,6 +382,140 @@ describe.each([MacroComboPage, KeymapPage])(
         "Boundary updated chord",
       );
     });
+
+    if (Page === KeymapPage) {
+      it("blocks combo settings persistence for a retained invalid item while keeping settings editable and restorable", async () => {
+        const user = userEvent.setup();
+        mount();
+        const editor = await open(user);
+        await user.click(
+          editor.getByRole("button", { name: /Key position 16:/ }),
+        );
+        await user.keyboard("{Escape}");
+        await user.click(
+          screen.getByRole("button", { name: "Combo Global Settings" }),
+        );
+        const settings = within(
+          screen.getByRole("dialog", { name: "Combo Global Settings" }),
+        );
+        fireEvent.change(
+          settings.getByRole("spinbutton", { name: "Timeout ms" }),
+          { target: { value: "75" } },
+        );
+        await waitFor(() =>
+          expect(runtime.setTimeoutMs).toHaveBeenCalledWith(75),
+        );
+        expect(settings.getByRole("alert")).toHaveTextContent(
+          "Select 16 positions or fewer.",
+        );
+        expect(settings.getByRole("alert")).toHaveTextContent(
+          "has not been applied or saved",
+        );
+        const save = settings.getByRole("button", { name: "Save and close" });
+        expect(save).toBeDisabled();
+        await user.click(save);
+        expect(saveCombo).not.toHaveBeenCalled();
+        expect(setCombo).not.toHaveBeenCalled();
+        await user.click(
+          settings.getByRole("button", { name: "Close", exact: true }),
+        );
+        await user.click(screen.getByRole("button", { name: "Keep editing" }));
+        expect(
+          settings.getByRole("spinbutton", { name: "Timeout ms" }),
+        ).toHaveValue(75);
+        await user.click(
+          settings.getByRole("button", { name: "Close", exact: true }),
+        );
+        await user.click(
+          screen.getByRole("button", { name: "Discard and close" }),
+        );
+        await waitFor(() =>
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+        );
+        expect(runtime.setTimeoutMs).toHaveBeenLastCalledWith(50);
+        expect(saveCombo).not.toHaveBeenCalled();
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "has not been applied or saved",
+        );
+        expect(
+          screen.getByRole("button", { name: "Save", exact: true }),
+        ).toBeDisabled();
+      });
+
+      it("allows combo settings Save and close when the empty default combo draft is unselected", async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(
+          screen.getByRole("button", { name: "Combo Global Settings" }),
+        );
+        const settings = within(
+          screen.getByRole("dialog", { name: "Combo Global Settings" }),
+        );
+        fireEvent.change(
+          settings.getByRole("spinbutton", { name: "Timeout ms" }),
+          { target: { value: "75" } },
+        );
+        await user.click(
+          settings.getByRole("button", { name: "Save and close" }),
+        );
+        await waitFor(() =>
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+        );
+        expect(saveCombo).toHaveBeenCalledTimes(1);
+        expect(setCombo).not.toHaveBeenCalled();
+      });
+      it("clears an invalid selection only after confirmed deletion succeeds, allowing an unrelated Save", async () => {
+        keymap.hasUnsavedChanges = true;
+        const user = userEvent.setup();
+        mount();
+        const editor = await open(user);
+        const modal = screen.getByRole("dialog", { name: "Combo Editor" });
+        await user.click(
+          editor.getByRole("button", { name: /Key position 16:/ }),
+        );
+        await user.click(
+          editor.getByRole("button", { name: "Delete", exact: true }),
+        );
+        let confirmation = within(
+          screen.getByRole("dialog", { name: "Delete", exact: true }),
+        );
+        await user.click(
+          confirmation.getByRole("button", { name: "Keep editing" }),
+        );
+        expect(deleteCombo).not.toHaveBeenCalled();
+        expect(editor.getByRole("alert")).toHaveTextContent(
+          "has not been applied or saved",
+        );
+        deleteCombo.mockResolvedValueOnce(false);
+        await user.click(
+          editor.getByRole("button", { name: "Delete", exact: true }),
+        );
+        confirmation = within(
+          screen.getByRole("dialog", { name: "Delete", exact: true }),
+        );
+        await user.click(
+          confirmation.getByRole("button", { name: "Delete", exact: true }),
+        );
+        expect(await confirmation.findByRole("alert")).toBeVisible();
+        expect(modal).toBeInTheDocument();
+        await user.click(
+          confirmation.getByRole("button", { name: "Delete", exact: true }),
+        );
+        await waitFor(() =>
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+        );
+        expect(deleteCombo).toHaveBeenCalledTimes(2);
+        expect(setCombo).not.toHaveBeenCalled();
+        expect(
+          screen.queryByText(/has not been applied or saved/),
+        ).not.toBeInTheDocument();
+        const save = screen.getByRole("button", { name: "Save", exact: true });
+        expect(save).toBeEnabled();
+        await user.click(save);
+        expect(keymap.saveChanges).toHaveBeenCalledTimes(1);
+        expect(saveCombo).toHaveBeenCalledTimes(1);
+      });
+    }
 
     it("abandons the invalid draft on Discard and permits unrelated Save again", async () => {
       const confirmation = jest.spyOn(window, "confirm").mockReturnValue(true);

@@ -139,6 +139,9 @@ it("shows a preview for the current map even when it is in sync", () => {
   mockSharing.current = record;
   show();
   expect(screen.getByText("In sync")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Overwrite from Abyss" }),
+  ).toBeNull();
   expect(screen.getByRole("button", { name: /My layout/ })).toBeEnabled();
   expect(
     screen.getByRole("button", { name: "Refresh your keymaps" }),
@@ -250,4 +253,29 @@ describe("mobile sharing dialog", () => {
     expect(screen.getByRole("button", { name: "My layout" })).toBeEnabled();
     expect(mockSharing.refresh).toHaveBeenCalledTimes(1);
   });
+});
+
+it("shows differences and opens each current-map action in its selected direction only", () => {
+  mockAuth.isAuthenticated = true;
+  mockSharing.current = record;
+  mockSharing.keymaps = [record, { id: "two", name: "Other map" }];
+  mockSharing.changed = true;
+  show();
+  expect(screen.getByText("Differences found")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Sync to Abyss" }).querySelector("svg"),
+  ).toHaveAttribute("aria-hidden", "true");
+  expect(
+    screen
+      .getByRole("button", { name: "Overwrite from Abyss" })
+      .querySelector("svg"),
+  ).toHaveAttribute("aria-hidden", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Sync to Abyss" }));
+  expect(mockSharing.prepare).toHaveBeenLastCalledWith("save", record);
+  fireEvent.click(screen.getByRole("button", { name: "Overwrite from Abyss" }));
+  expect(mockSharing.prepare).toHaveBeenLastCalledWith("apply", record);
+  expect(screen.getAllByRole("button", { name: "Sync to Abyss" })).toHaveLength(
+    1,
+  );
+  expect(mockSharing.confirm).not.toHaveBeenCalled();
 });

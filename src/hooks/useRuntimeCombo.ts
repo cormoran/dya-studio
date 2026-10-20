@@ -70,6 +70,8 @@ export interface UseRuntimeComboReturn {
   saveChanges: () => Promise<StatusResponse | null>;
   discardChanges: () => Promise<StatusResponse | null>;
   clearError: () => void;
+  discardCombo: (index: number) => Promise<boolean>;
+  isComboUnsaved: (index: number) => boolean;
 }
 
 export function useRuntimeCombo({
@@ -81,6 +83,8 @@ export function useRuntimeCombo({
     CODEC,
   );
   const [combos, setCombos] = useState<Combo[]>([]);
+  const savedGlobals = useRef<GlobalSettings | null>(null);
+  const savedCombos = useRef(new Map<number, Combo | null>());
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(
     null,
   );
@@ -145,6 +149,13 @@ export function useRuntimeCombo({
         Request.create({ listCombos: {} }),
       );
       if (response?.listCombos) {
+        for (const combo of response.listCombos.combos) {
+          if (!savedCombos.current.has(combo.index))
+            savedCombos.current.set(
+              combo.index,
+              JSON.parse(JSON.stringify(combo)),
+            );
+        }
         setCombos(
           [...response.listCombos.combos].sort((a, b) => a.index - b.index),
         );
@@ -177,6 +188,8 @@ export function useRuntimeCombo({
         Request.create({ getGlobalSettings: {} }),
       );
       if (response?.getGlobalSettings?.settings) {
+        if (!savedGlobals.current && response.getGlobalSettings.settings)
+          savedGlobals.current = { ...response.getGlobalSettings.settings };
         setGlobalSettings(response.getGlobalSettings.settings);
       }
     } catch (err) {
@@ -198,6 +211,8 @@ export function useRuntimeCombo({
 
   const setCombo = useCallback(
     async (combo: ComboInput, persist = false): Promise<boolean> => {
+      if (!savedCombos.current.has(combo.index))
+        savedCombos.current.set(combo.index, null);
       setIsLoading(true);
       setError(null);
       try {
@@ -480,6 +495,8 @@ export function useRuntimeCombo({
       const response = await callRuntimeComboRPC(Request.create({ save: {} }));
       if (response?.status) {
         setHasPendingChanges(false);
+        savedCombos.current.clear();
+        savedGlobals.current = null;
         await reload();
         return response.status;
       }
@@ -524,6 +541,67 @@ export function useRuntimeCombo({
       }
     }, [callRuntimeComboRPC, reload]);
 
+  const isComboUnsaved = useCallback(
+    (index: number): boolean => {
+      const current = combos.find((entry) => entry.index === index);
+      const baseline = savedCombos.current.get(index);
+      if (!baseline) return !!current;
+      if (!current) return true;
+      const values = (entry: Combo) => [
+        entry.name,
+        entry.keyPositions,
+        entry.behavior,
+        entry.layerMask,
+        entry.enabled,
+        entry.timeoutMs,
+        entry.requirePriorIdleMs,
+        entry.slowReleaseOverride,
+      ];
+      return (
+        JSON.stringify(values(current)) !== JSON.stringify(values(baseline))
+      );
+    },
+    [combos],
+  );
+  const discardCombo = useCallback(
+    async (index: number): Promise<boolean> => {
+      if (!savedCombos.current.has(index)) {
+        setError(
+          "The saved value of this item is unavailable. Other items were left unchanged.",
+        );
+        return false;
+      }
+      const baseline = savedCombos.current.get(index);
+      if (!baseline) {
+        if (!(await deleteCombo(index))) return false;
+      } else {
+        if (
+          !baseline.behavior ||
+          !(await setCombo({ ...baseline, behavior: baseline.behavior }))
+        )
+          return false;
+        if (!(await setComboName(index, baseline.name))) return false;
+      }
+      const globalsDirty =
+        savedGlobals.current &&
+        globalSettings &&
+        JSON.stringify(savedGlobals.current) !== JSON.stringify(globalSettings);
+      const othersDirty = combos.some(
+        (entry) => entry.index !== index && isComboUnsaved(entry.index),
+      );
+      setHasPendingChanges(!!globalsDirty || othersDirty);
+      return true;
+    },
+    [
+      combos,
+      deleteCombo,
+      globalSettings,
+      isComboUnsaved,
+      setCombo,
+      setComboName,
+    ],
+  );
+
   // Auto-load once per ready-transition. `reload` is in the dependency array
   // (its identity changes as the connection/gate updates), but `autoLoadedRef`
   // ensures we only *trigger* a reload the first time `ready` becomes true.
@@ -540,6 +618,8 @@ export function useRuntimeCombo({
       void reload();
     } else {
       autoLoadedRef.current = false;
+      savedCombos.current.clear();
+      savedGlobals.current = null;
       setCombos([]);
       setGlobalSettings(null);
       setHasPendingChanges(false);
@@ -566,6 +646,8 @@ export function useRuntimeCombo({
     setRequirePriorIdleMs,
     saveChanges,
     discardChanges,
+    discardCombo,
+    isComboUnsaved,
     clearError: () => setError(null),
   };
 }

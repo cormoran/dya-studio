@@ -1,11 +1,53 @@
+import { RuntimeBehaviorContext } from "../../contexts/RuntimeBehaviorContext";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useRuntimeTapDance } from "../../hooks/useRuntimeTapDance";
 import { KeycodeSelector } from "../KeycodeSelector";
 import { KeycodeValueSelector } from "../KeycodeValueSelector";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
 import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
 import { translate } from "../../i18n/translations";
 import { combineWithModifiers, MODIFIER_FLAGS } from "../../lib/keycodes";
+
+const mockMacroRuntime = {
+  isAvailable: true,
+  macros: [],
+  error: null,
+  isLoading: false,
+  loadMacros: jest.fn(),
+  createMacro: jest.fn(),
+  getMacroSlot: jest.fn(),
+};
+jest.mock("../../hooks/useRuntimeMacro", () => ({
+  useRuntimeMacro: () => mockMacroRuntime,
+}));
+
+const mockTapDanceRuntime = {
+  isAvailable: true,
+  entries: [
+    {
+      index: 7,
+      name: "Alphabet",
+      config: { singleBinding: { behaviorId: 10, param1: 0x70004, param2: 0 } },
+    },
+    {
+      index: 42,
+      name: "Navigation",
+      config: { singleBinding: { behaviorId: 10, param1: 0x70007, param2: 0 } },
+    },
+  ],
+  globalSettings: { apiVersion: 2, maxEntries: 16, maxNameLength: 24 },
+  hasUnsavedChanges: false,
+  busy: false,
+  error: null,
+  revision: 0,
+  load: jest.fn(),
+  save: jest.fn(),
+  create: jest.fn(),
+};
+jest.mock("../../hooks/useRuntimeTapDance", () => ({
+  useRuntimeTapDance: jest.fn(() => mockTapDanceRuntime),
+}));
 
 beforeEach(() => localStorage.clear());
 
@@ -588,6 +630,17 @@ it("applies a saved macro shortcut as a Runtime Macro binding", async () => {
   await user.click(screen.getByRole("button", { name: "Macro" }));
   await user.click(screen.getByRole("button", { name: "Email Execute macro" }));
 
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toBeDisabled();
+  expect(localStorage.getItem("keycodeSelectorCloseOnSelect")).toBe("true");
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
   expect(onSelect).toHaveBeenCalledWith({
     behaviorId: 91,
     param1: 4,
@@ -658,4 +711,365 @@ it("switches a floating editor to a fixed mobile sheet without applying or reset
   } finally {
     window.matchMedia = originalMatchMedia;
   }
+});
+
+it("uses named parameter choices above the tapdance actions and follows the standard selection setting", async () => {
+  localStorage.setItem("keycodeSelectorCloseOnSelect", "false");
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 32, param1: 7, param2: 0 }}
+      behaviors={
+        new Map([
+          [10, { id: 10, displayName: "Key Press", metadata: [] }],
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  const choice = screen.getByRole("button", {
+    name: "Navigation",
+    exact: true,
+  });
+  expect(
+    screen.queryByRole("group", { name: "Single" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "New tapdance" })).toHaveClass(
+    "border-dashed",
+  );
+  expect(screen.getByRole("button", { name: "Edit tapdance" })).not.toHaveClass(
+    "border-dashed",
+  );
+  expect(screen.getByText("Parameters")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "param1: Alphabet" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: "Tapdance" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Use tapdance" }),
+  ).not.toBeInTheDocument();
+  await user.click(choice);
+  expect(
+    screen.getByRole("button", { name: "param1: Navigation" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Edit tapdance" }));
+  const editDialog = screen.getByRole("dialog", {
+    name: "Edit tapdance · Navigation",
+  });
+  expect(
+    within(editDialog).getByRole("group", { name: "Single" }),
+  ).toBeInTheDocument();
+  expect(
+    within(editDialog).getByRole("button", { name: "D" }),
+  ).toBeInTheDocument();
+  await user.click(within(editDialog).getByRole("button", { name: "Close" }));
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(onClose).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+});
+
+it("keeps a named tapdance draft open even when close-on-select was enabled", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 32, param1: 7, param2: 0 }}
+      behaviors={
+        new Map([
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Navigation", exact: true }),
+  );
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toBeDisabled();
+  expect(localStorage.getItem("keycodeSelectorCloseOnSelect")).toBe("true");
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+  expect(onClose).toHaveBeenCalled();
+});
+
+it("loads tapdance shortcuts before selecting its behavior and applies the chosen named entry", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  const onClose = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      onClose={onClose}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 10, param1: 0x70004, param2: 0 }}
+      behaviors={
+        new Map([
+          [10, { id: 10, displayName: "Key Press", metadata: [] }],
+          [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+        ])
+      }
+      layers={[]}
+    />,
+  );
+  expect(useRuntimeTapDance).toHaveBeenLastCalledWith(true);
+  await user.click(
+    screen.getByRole("button", { name: /Key Press.*Press a key/ }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Tapdance", exact: true }),
+  );
+  await user.click(screen.getByRole("button", { name: "Navigation Tapdance" }));
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  expect(
+    screen.getByRole("button", { name: "Close on select" }),
+  ).toBeDisabled();
+  expect(localStorage.getItem("keycodeSelectorCloseOnSelect")).toBe("true");
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 42,
+    param2: 0,
+  });
+  expect(onClose).toHaveBeenCalled();
+});
+
+it.each(["macro", "tapdance"] as const)(
+  "creates a %s shortcut in RAM and selects its returned identifier without applying the binding",
+  async (type) => {
+    const user = userEvent.setup();
+    const onSelect = jest.fn(),
+      onClose = jest.fn();
+    mockMacroRuntime.createMacro.mockResolvedValue(true);
+    mockMacroRuntime.getMacroSlot.mockReturnValue(81);
+    mockTapDanceRuntime.create.mockResolvedValue(81);
+    render(
+      <KeycodeSelector
+        open
+        onClose={onClose}
+        onSelect={onSelect}
+        behaviors={
+          new Map([
+            [91, { id: 91, displayName: "Runtime Macro", metadata: [] }],
+            [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+          ])
+        }
+        layers={[]}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Select behavior" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: type === "macro" ? "Macro" : "Tapdance",
+        exact: true,
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: type === "macro" ? "New macro" : "New tapdance",
+        exact: true,
+      }),
+    );
+    expect(
+      type === "macro"
+        ? mockMacroRuntime.createMacro
+        : mockTapDanceRuntime.create,
+    ).toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole("button", { name: "Apply changes and close" }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      behaviorId: type === "macro" ? 91 : 32,
+      param1: 81,
+      param2: 0,
+    });
+  },
+);
+
+it("keeps the draft unchanged when macro creation fails and allows retry", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  mockMacroRuntime.createMacro
+    .mockResolvedValueOnce(false)
+    .mockResolvedValueOnce(true);
+  mockMacroRuntime.getMacroSlot.mockReturnValue(19);
+  render(
+    <KeycodeSelector
+      open
+      onClose={jest.fn()}
+      onSelect={onSelect}
+      behaviors={
+        new Map([[91, { id: 91, displayName: "Runtime Macro", metadata: [] }]])
+      }
+      layers={[]}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(screen.getByRole("button", { name: "Macro", exact: true }));
+  await user.click(
+    screen.getByRole("button", { name: "New macro", exact: true }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Could not create macro.",
+  );
+  expect(
+    screen.getByRole("button", { name: "Select behavior" }),
+  ).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(
+    screen.getByRole("button", { name: "New macro", exact: true }),
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 91,
+    param1: 19,
+    param2: 0,
+  });
+});
+
+it("requires explicit Apply for floating macro choices and restores auto-selection for other behaviors", async () => {
+  const user = userEvent.setup();
+  const onSelect = jest.fn();
+  render(
+    <KeycodeSelector
+      open
+      presentation="floating"
+      onClose={jest.fn()}
+      onSelect={onSelect}
+      currentBinding={{ behaviorId: 91, param1: 1, param2: 0 }}
+      behaviors={
+        new Map([
+          [91, { id: 91, displayName: "Runtime Macro", metadata: [] }],
+          [9, { id: 9, displayName: "None", metadata: [] }],
+        ])
+      }
+      runtimeMacros={[
+        { slot: 1, name: "One" },
+        { slot: 2, name: "Two" },
+      ]}
+      layers={[]}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Two", exact: true }));
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Apply to keyboard" }));
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 91,
+    param1: 2,
+    param2: 0,
+  });
+  onSelect.mockClear();
+  await user.click(screen.getByRole("button", { name: "None", exact: true }));
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 9,
+    param1: 0,
+    param2: 0,
+  });
+});
+
+it("uses the page runtime controllers for creation in descendant selectors", async () => {
+  const user = userEvent.setup();
+  const createMacro = jest.fn().mockResolvedValue(true);
+  const createTapDance = jest.fn().mockResolvedValue(99);
+  const shared = {
+    macro: {
+      ...mockMacroRuntime,
+      createMacro,
+      getMacroSlot: jest.fn(() => 87),
+    },
+    tapDance: { ...mockTapDanceRuntime, create: createTapDance },
+  };
+  const onSelect = jest.fn();
+  render(
+    <RuntimeBehaviorContext.Provider
+      value={
+        shared as unknown as NonNullable<
+          React.ContextType<typeof RuntimeBehaviorContext>
+        >
+      }
+    >
+      <div>
+        <KeycodeSelector
+          open
+          onClose={jest.fn()}
+          onSelect={onSelect}
+          behaviors={
+            new Map([
+              [91, { id: 91, displayName: "Runtime Macro", metadata: [] }],
+              [32, { id: 32, displayName: "Runtime Tap Dance", metadata: [] }],
+            ])
+          }
+          layers={[]}
+        />
+      </div>
+    </RuntimeBehaviorContext.Provider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(screen.getByRole("button", { name: "Macro", exact: true }));
+  await user.click(
+    screen.getByRole("button", { name: "New macro", exact: true }),
+  );
+  expect(createMacro).toHaveBeenCalledWith("Macro 1");
+  expect(shared.macro.getMacroSlot).toHaveBeenCalledWith("Macro 1");
+  expect(onSelect).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Runtime Macro - Execute macro" }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Tapdance", exact: true }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "New tapdance", exact: true }),
+  );
+  expect(createTapDance).toHaveBeenCalledWith("Tapdance 3");
+  await user.click(
+    screen.getByRole("button", { name: "Apply changes and close" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith({
+    behaviorId: 32,
+    param1: 99,
+    param2: 0,
+  });
 });

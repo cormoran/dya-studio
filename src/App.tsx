@@ -9,7 +9,6 @@ import {
   IconPuzzle,
   IconSettings,
   IconStethoscope,
-  IconWand,
 } from "@tabler/icons-react";
 
 import { SplashScreen } from "./components/SplashScreen";
@@ -28,7 +27,6 @@ import { HomePage } from "./pages/HomePage";
 import { ConnectionPage } from "./pages/ConnectionPage";
 import { KeymapPage } from "./pages/KeymapPage";
 import { TrackballPage } from "./pages/TrackballPage";
-import { MacroComboPage } from "./pages/MacroComboPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { CustomSubsystemsPage } from "./pages/CustomSubsystemsPage";
 import { TroubleshootingPage } from "./pages/TroubleshootingPage";
@@ -60,12 +58,6 @@ function getTabs(t: (key: string) => string): TabItem[] {
       label: t("Keymap"),
       icon: <IconKeyboard size={18} />,
       content: <KeymapPage />,
-    },
-    {
-      id: "macro-combo",
-      label: t("Macro&Combo"),
-      icon: <IconWand size={18} />,
-      content: <MacroComboPage />,
     },
     {
       id: "trackball",
@@ -151,7 +143,10 @@ function AppContent() {
   const tabs = getTabs(t);
   const { isAvailable: isDevtoolAvailable } = useDevtool();
   const [devtoolOpen, setDevtoolOpen] = useState(false);
-  const activeTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "home";
+  const resolvedTab = urlTab === "macro-combo" ? "keymap" : urlTab;
+  const activeTab = tabs.some((tab) => tab.id === resolvedTab)
+    ? resolvedTab
+    : "home";
 
   // The release notes page is a standalone, connection-independent route so it
   // stays reachable from the splash screen and via GitHub Release deep links.
@@ -188,7 +183,11 @@ function AppContent() {
       urlTab !== activeTab &&
       window.location.pathname !== "/"
     ) {
-      window.history.replaceState(null, "", "/");
+      window.history.replaceState(
+        null,
+        "",
+        urlTab === "macro-combo" ? "/keymap" : "/",
+      );
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
   }, [urlTab, activeTab, onReleaseNotes, onOauthCallback]);

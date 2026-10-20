@@ -8,6 +8,8 @@ import {
 import * as Popover from "@radix-ui/react-popover";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  IconArrowLeft,
+  IconArrowRight,
   IconChevronDown,
   IconCloud,
   IconLoader2,
@@ -38,10 +40,12 @@ export function KeymapSharingMenu({
   disabled,
   onApplied,
   beforeRead,
+  keyboardRevision,
 }: {
   disabled?: boolean;
   onApplied: () => Promise<unknown>;
   beforeRead?: () => Promise<void>;
+  keyboardRevision?: string;
 }) {
   const { t } = useLanguage();
   const auth = useAbyssAuth();
@@ -51,6 +55,7 @@ export function KeymapSharingMenu({
     auth.logout,
     beforeRead,
     auth.user?.username,
+    keyboardRevision,
   );
   const [open, setOpen] = useState(false);
   const mobile = useSyncExternalStore(
@@ -186,22 +191,71 @@ export function KeymapSharingMenu({
                     {t("Current keymap")}
                   </h3>
                   {sharing.current ? (
-                    <button
-                      className="btn-ghost w-full text-left flex items-center justify-between gap-2"
-                      disabled={busy}
-                      onClick={() =>
-                        void sharing.prepare("apply", sharing.current!)
-                      }
-                    >
-                      <span className="text-sm break-words min-w-0">
-                        {sharing.current.name}
-                      </span>
-                      {!sharing.changed && (
-                        <span className="text-xs text-[var(--color-text-muted)]">
-                          {t("In sync")}
+                    <div className="border-t border-[var(--color-border)] py-2 space-y-2">
+                      <button
+                        className="btn-ghost w-full text-left flex items-center justify-between gap-2"
+                        disabled={busy}
+                        onClick={() =>
+                          void sharing.prepare("apply", sharing.current!)
+                        }
+                      >
+                        <span className="text-sm break-words min-w-0">
+                          {sharing.current.name}
                         </span>
-                      )}
-                    </button>
+                        <span
+                          role="status"
+                          className="text-xs text-[var(--color-text-muted)] shrink-0"
+                        >
+                          {t(
+                            sharing.checking
+                              ? "Checking differences..."
+                              : sharing.changed
+                                ? "Differences found"
+                                : "In sync",
+                          )}
+                        </span>
+                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        {sharing.keymaps.some(
+                          (item) => item.id === sharing.current?.id,
+                        ) && (
+                          <button
+                            className="btn-ghost flex-1 inline-flex items-center justify-center gap-1"
+                            disabled={busy}
+                            onClick={() =>
+                              void sharing.prepare("save", sharing.current!)
+                            }
+                          >
+                            <IconArrowRight
+                              size={12}
+                              aria-hidden="true"
+                              className="shrink-0"
+                            />
+                            <span className="text-[11px] leading-4">
+                              {t("Sync to Abyss")}
+                            </span>
+                          </button>
+                        )}
+                        {sharing.changed && (
+                          <button
+                            className="btn-ghost flex-1 inline-flex items-center justify-center gap-1"
+                            disabled={busy}
+                            onClick={() =>
+                              void sharing.prepare("apply", sharing.current!)
+                            }
+                          >
+                            <span className="text-[11px] leading-4">
+                              {t("Overwrite from Abyss")}
+                            </span>
+                            <IconArrowLeft
+                              size={12}
+                              aria-hidden="true"
+                              className="shrink-0"
+                            />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <p className="text-xs text-[var(--color-text-muted)]">
                       {t(
@@ -311,7 +365,7 @@ export function KeymapSharingMenu({
                   className="animate-spin shrink-0"
                   aria-hidden="true"
                 />
-                {t("Loading...")}
+                {t(sharing.checking ? "Checking differences..." : "Loading...")}
               </p>
             )}
             {sharing.message && (

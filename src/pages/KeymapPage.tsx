@@ -1,7 +1,13 @@
+import {
+  MacroItemPreview,
+  TapDanceItemPreview,
+} from "../components/macroCombo/RuntimeItemPreview";
+import { RuntimeBehaviorContext } from "../contexts/RuntimeBehaviorContext";
 import { KeymapLayerTabs } from "../components/KeymapLayerTabs";
 import { KeymapSharingMenu } from "../components/importExport/KeymapSharingMenu";
 import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
+  createElement,
   useState,
   useContext,
   useCallback,
@@ -30,6 +36,9 @@ import {
   IconRefresh,
   IconX,
   IconLink,
+  IconCode,
+  IconMusic,
+  IconSettings,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -41,7 +50,15 @@ import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
 import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
-import { MacroEditorDialog } from "../components/macroCombo/MacroEditorDialog";
+import {
+  RuntimeListCard,
+  UnsupportedFeatureCard,
+} from "../components/macroCombo/RuntimeListCard";
+import {
+  RuntimeEditors,
+  type RuntimeView,
+} from "../components/macroCombo/RuntimeEditors";
+import { useRuntimeTapDance } from "../hooks/useRuntimeTapDance";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useKeymap, getKeymapLoadingLabel } from "../hooks/useKeymap";
@@ -51,7 +68,6 @@ import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
 import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
 import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
-import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
 import { ComboDraftValidationAlert } from "../components/macroCombo/ComboDraftValidationAlert";
 import {
   comboToDraft,
@@ -94,6 +110,15 @@ export function KeymapPage() {
   // "restore a previous version" flow behind the reset dropdown.
   const versionHistory = useKeymapVersionHistory(keymap, t);
   const isTabActive = useIsTabActive();
+  const runtimeTapDance = useRuntimeTapDance(
+    isTabActive && keymap.isFullyLoaded,
+  );
+  const [runtimeActionBusy, setRuntimeActionBusy] = useState(false);
+  const [runtimeView, setRuntimeView] = useState<RuntimeView | null>(null);
+  const [tapDanceSlot, setTapDanceSlot] = useState<number | null>(null);
+  const closeRuntimeEditor = () => {
+    setRuntimeView(null);
+  };
   const mobile = useMobileLayout();
   const pageRef = useRef<HTMLDivElement>(null);
   // Proactive lock state: the fast-keymap subsystem is unsecured, so the keymap
@@ -159,12 +184,8 @@ export function KeymapPage() {
   // The info panel and keyboard preview share the same content-column edges.
   const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
-  const [macroEditorMode, setMacroEditorMode] = useState<
-    "create" | "edit" | null
-  >(null);
-  const [macroEditorSlot, setMacroEditorSlot] = useState<number | undefined>();
-  const [macroEditorSession, setMacroEditorSession] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [runtimeStatus, setRuntimeStatus] = useState<string | null>(null);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isEditingLayers, setIsEditingLayers] = useState(false);
@@ -196,6 +217,7 @@ export function KeymapPage() {
     }
   }, [showComboBindingSelector, showKeycodeSelector]);
   const comboEditor = useComboEditor({
+    immediate: true,
     runtimeCombo,
     keymap,
     requireUnlocked,
@@ -248,42 +270,30 @@ export function KeymapPage() {
   const handleMacroAutoSelected = useCallback(() => undefined, []);
 
   const macroEditor = useMacroEditor({
+    immediate: true,
     runtimeMacro,
     keymap,
     layers: layersForSelector,
     keyboardLayout: keyboardLayoutContext.layout,
     requireUnlocked,
     t,
-    canMaintainSelection: macroEditorMode === "edit",
+    canMaintainSelection: runtimeView === "macro" && !runtimeActionBusy,
     onAutoSelected: handleMacroAutoSelected,
   });
-  const {
-    clearSelection: clearMacroSelection,
-    selectMacro,
-    beginCreate: beginMacroCreate,
-  } = macroEditor;
-
   const handleOpenMacroEditor = useCallback(
-    (slot?: number) => {
-      setMacroEditorSession((session) => session + 1);
-      setMacroEditorSlot(slot);
+    async (slot?: number) => {
+      if (!requireUnlocked()) return;
+      macroEditor.clearSelection();
       if (slot === undefined) {
-        beginMacroCreate();
-        setMacroEditorMode("create");
+        if (!(await macroEditor.handleCreateMacro())) return;
       } else {
-        const macro = runtimeMacro.macros.find(
-          (candidate) => candidate.slot === slot,
-        );
-        if (macro) {
-          clearMacroSelection();
-          selectMacro(macro);
-        } else {
-          clearMacroSelection();
-        }
-        setMacroEditorMode("edit");
+        const macro = runtimeMacro.macros.find((entry) => entry.slot === slot);
+        if (!macro) return;
+        macroEditor.selectMacro(macro);
       }
+      setRuntimeView("macro");
     },
-    [beginMacroCreate, clearMacroSelection, runtimeMacro.macros, selectMacro],
+    [macroEditor, requireUnlocked, runtimeMacro.macros],
   );
 
   // Get current binding for selected key
@@ -430,26 +440,89 @@ export function KeymapPage() {
     runtimeCombo.hasPendingChanges ||
     comboEditor.modifiedIndices.size > 0 ||
     comboEditor.globalModifiedFields.size > 0;
-  const hasUnsavedChanges = keymap.hasUnsavedChanges || hasComboChanges;
+  const hasMacroChanges =
+    runtimeMacro.hasUnsavedChanges || macroEditor.isMemoryWritePending;
+  const hasUnsavedChanges =
+    keymap.hasUnsavedChanges ||
+    hasComboChanges ||
+    hasMacroChanges ||
+    runtimeTapDance.hasUnsavedChanges;
+  const runtimeSaveBlocked =
+    runtimeTapDance.busy ||
+    runtimeCombo.isLoading ||
+    (runtimeMacro.isLoading && !macroEditor.isMemoryWritePending) ||
+    !!macroEditor.encodedSizeError ||
+    !!macroEditor.stringConversionError;
 
-  // The page-level Save is the single flash-persistence boundary for both
-  // keymap bindings and runtime combos.
+  // Flush queued RAM writes before persisting each changed domain.
   const handleSave = useCallback(async () => {
-    if (comboEditor.validationError) return;
+    if (
+      isSaving ||
+      runtimeSaveBlocked ||
+      comboEditor.validationError ||
+      !requireUnlocked()
+    )
+      return;
     setIsSaving(true);
+    setRuntimeStatus(null);
+    const macroChanged = hasMacroChanges;
+    const comboChanged = isComboAvailable && hasComboChanges;
+    const tapDanceChanged = runtimeTapDance.hasUnsavedChanges;
+    let comboCount = 0;
     try {
-      await comboEditor.flushPendingWrites();
+      if (!(await macroEditor.flushPendingWrites())) return;
+      if ((await comboEditor.flushPendingWrites()) === false) return;
+      if (hasMacroChanges) {
+        if (!(await runtimeMacro.saveMacros())) return;
+        macroEditor.clearGlobalModified();
+      }
+      if (
+        runtimeTapDance.hasUnsavedChanges &&
+        !(await runtimeTapDance.saveChanges())
+      )
+        return;
       if (keymap.hasUnsavedChanges) {
-        await keymap.saveChanges();
+        if (!(await keymap.saveChanges())) return;
       }
       if (isComboAvailable && hasComboChanges) {
         const status = await runtimeCombo.saveChanges();
-        if (status) comboEditor.clearModified();
+        if (!status) return;
+        comboEditor.clearModified();
+        comboCount = status.affectedCount;
       }
+      const messages: string[] = [];
+      if (macroChanged || comboChanged)
+        messages.push(
+          macroChanged
+            ? comboChanged
+              ? t("Saved runtime macros and {{count}} runtime combo changes.", {
+                  count: comboCount,
+                })
+              : t("Saved runtime macro changes.")
+            : t("Saved {{count}} runtime combo changes.", {
+                count: comboCount,
+              }),
+        );
+      if (tapDanceChanged) messages.push(t("Saved runtime tapdance changes."));
+      setRuntimeStatus(messages.join(" ") || null);
     } finally {
       setIsSaving(false);
     }
-  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo]);
+  }, [
+    comboEditor,
+    hasComboChanges,
+    isComboAvailable,
+    keymap,
+    runtimeCombo,
+    macroEditor,
+    runtimeMacro,
+    runtimeTapDance,
+    hasMacroChanges,
+    isSaving,
+    runtimeSaveBlocked,
+    t,
+    requireUnlocked,
+  ]);
 
   // Re-read the keymap from the keyboard. The page keeps its state across tab
   // switches now, so this is the way to pick up changes made outside the app
@@ -459,13 +532,25 @@ export function KeymapPage() {
     void keymap.loadKeymapData();
   }, [keymap]);
 
-  // Discard restores both independent in-memory editing domains to their
-  // last flash-saved values.
+  // Discard restores each editing domain to its last flash-saved values.
   const handleDiscard = useCallback(async () => {
     if (!confirm(t("Are you sure you want to discard all changes?"))) return;
     setIsDiscarding(true);
+    setRuntimeStatus(null);
     try {
       comboEditor.cancelPendingWrites();
+      macroEditor.cancelPendingWrites();
+      if (runtimeMacro.isAvailable) {
+        if (!(await runtimeMacro.discardMacros())) return;
+        macroEditor.clearGlobalModified();
+        await macroEditor.reloadLoadedMacro();
+      }
+      if (
+        runtimeTapDance.isAvailable &&
+        !(await runtimeTapDance.discardChanges())
+      )
+        return;
+      closeRuntimeEditor();
       await Promise.all([
         keymap.hasUnsavedChanges
           ? keymap.discardChanges()
@@ -481,7 +566,17 @@ export function KeymapPage() {
     } finally {
       setIsDiscarding(false);
     }
-  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo, t]);
+  }, [
+    comboEditor,
+    hasComboChanges,
+    isComboAvailable,
+    keymap,
+    runtimeCombo,
+    t,
+    macroEditor,
+    runtimeMacro,
+    runtimeTapDance,
+  ]);
 
   // Reset combines the keymap's built-in defaults with every currently known
   // runtime-combo slot, then persists both domains to flash.
@@ -729,7 +824,7 @@ export function KeymapPage() {
     } else if (combosRequestedRef.current && isComboAvailable) {
       void runtimeCombo.loadCombos();
     }
-    // A tab return must read edits made on Macro&Combo while this page was retained.
+    // Reload runtime combos when returning to the retained page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTabActive]);
 
@@ -770,7 +865,9 @@ export function KeymapPage() {
     mobile,
   ]);
 
-  return (
+  return createElement(
+    RuntimeBehaviorContext.Provider,
+    { value: { macro: runtimeMacro, tapDance: runtimeTapDance } },
     <div
       ref={pageRef}
       data-mobile-sheet-open={sheetOpen}
@@ -856,7 +953,7 @@ export function KeymapPage() {
                       }}
                       discard={{
                         description: t(
-                          "Drops unsaved keymap and combo edits in keyboard memory, then reloads their saved values.",
+                          "Drops unsaved keymap, macro, combo and tapdance edits in keyboard memory, then reloads their saved values.",
                         ),
                         onSelect: () => void handleDiscard(),
                         disabled: !hasUnsavedChanges || isDiscarding,
@@ -864,7 +961,19 @@ export function KeymapPage() {
                     />
                   </div>
                   <KeymapSharingMenu
-                    beforeRead={comboEditor.flushPendingWrites}
+                    keyboardRevision={JSON.stringify([
+                      keymap.keymap,
+                      runtimeCombo.combos,
+                      runtimeCombo.globalSettings,
+                      comboEditor.hasPendingWrites,
+                    ])}
+                    beforeRead={async () => {
+                      if (!(await macroEditor.flushPendingWrites()))
+                        throw new Error(
+                          t("Could not apply macro edits to memory."),
+                        );
+                      await comboEditor.flushPendingWrites();
+                    }}
                     disabled={
                       keymap.isLoading ||
                       isSaving ||
@@ -890,6 +999,7 @@ export function KeymapPage() {
                       isSaving ||
                       !hasUnsavedChanges ||
                       keymap.isLoading ||
+                      runtimeSaveBlocked ||
                       Boolean(comboEditor.validationError)
                     }
                   >
@@ -1398,25 +1508,9 @@ export function KeymapPage() {
 
             {/* Sensor Rotation Configuration */}
             {!sensorRotate.isAvailable && (
-              <div className="glass-card p-4 mt-6 mb-4 border-yellow-500/20 bg-yellow-500/10 flex items-center gap-3">
-                <div className="p-2">
-                  <IconAlertTriangle size={24} />
-                </div>
-                <p className="text-sm">
-                  {t(
-                    "Runtime sensor rotation subsystem is not available for your keyboard. Rotary encoder configuration will not be displayed. You can enable the feature by applying cormoran/zmk-behavior-runtime-sensor-rotate in your firmware.",
-                  )}
-                  <br />
-                  <a
-                    href="https://github.com/cormoran/zmk-behavior-runtime-sensor-rotate"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-electric)] underline mx-1"
-                  >
-                    cormoran/zmk-behavior-runtime-sensor-rotate
-                  </a>
-                </p>
-              </div>
+              <UnsupportedFeatureCard
+                title={t("Rotary Encoder Configuration")}
+              />
             )}
 
             {sensorRotate.isAvailable && currentLayer && (
@@ -1429,17 +1523,26 @@ export function KeymapPage() {
                 />
               </div>
             )}
-            {isComboAvailable && (
+            {isComboAvailable ? (
               <section className="glass-card p-4 mt-6" aria-label={t("Combos")}>
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <h2 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
                     <IconLink
                       size={17}
+                      aria-hidden="true"
                       className="text-[var(--color-electric)]"
                     />
                     {t("Combos")}
                   </h2>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn-ghost p-1"
+                      aria-label={t("Combo Global Settings")}
+                      onClick={() => setRuntimeView("combo-settings")}
+                    >
+                      <IconSettings size={18} />
+                    </button>
                     <button
                       type="button"
                       className="p-1 rounded text-[var(--color-electric)] hover:bg-[var(--color-border)] disabled:opacity-40"
@@ -1475,7 +1578,7 @@ export function KeymapPage() {
                     {t("No runtime combos configured")}
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {runtimeCombo.combos.map((combo, position) => {
                       const status = comboEditStatus(
                         combo.source,
@@ -1489,7 +1592,7 @@ export function KeymapPage() {
                           key={combo.index}
                           type="button"
                           data-testid={`combo-list-item-${combo.index}`}
-                          className={`min-w-56 max-w-full flex-[1_1_14rem] p-3 rounded-lg border text-left transition-colors ${
+                          className={`min-w-0 w-full p-3 rounded-lg border text-left transition-colors ${
                             isUnsaved
                               ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
                               : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/60"
@@ -1553,6 +1656,127 @@ export function KeymapPage() {
                   </div>
                 )}
               </section>
+            ) : (
+              <UnsupportedFeatureCard
+                title={t("Combos")}
+                icon={<IconLink size={17} />}
+              />
+            )}
+            {runtimeStatus && (
+              <p
+                role="status"
+                className="mt-4 text-sm text-[var(--color-text-muted)]"
+              >
+                {runtimeStatus}
+              </p>
+            )}
+            {runtimeMacro.isAvailable ? (
+              <RuntimeListCard
+                title={t("Macros")}
+                icon={<IconCode size={17} />}
+                addLabel={t("New macro")}
+                settingsLabel={t("Macro Global Settings")}
+                busy={runtimeMacro.isLoading || !keymap.isFullyLoaded}
+                error={
+                  runtimeMacro.error ||
+                  macroEditor.encodedSizeError ||
+                  macroEditor.stringConversionError
+                }
+                onAdd={() => {
+                  void handleOpenMacroEditor();
+                }}
+                onSettings={() => setRuntimeView("macro-settings")}
+                items={runtimeMacro.macros.map((macro) => ({
+                  id: macro.slot,
+                  name: macro.name || t("Macro {{slot}}", { slot: macro.slot }),
+                  dirty: macro.hasUnsavedChanges,
+                  preview: runtimeMacro.macroDetails?.get(macro.slot) ? (
+                    <MacroItemPreview
+                      macro={runtimeMacro.macroDetails.get(macro.slot)!}
+                      keyPressBehaviorId={
+                        runtimeMacro.globalSettings?.keyPressBehaviorId
+                      }
+                      behaviors={keymap.behaviors}
+                      context={{
+                        layers: layersForSelector,
+                        keyboardLayout: keyboardLayoutContext.layout,
+                        runtimeMacros: runtimeMacro.macros,
+                        shortFormat: true,
+                      }}
+                    />
+                  ) : undefined,
+                  onClick: () => {
+                    if (!requireUnlocked()) return;
+                    macroEditor.selectMacro(macro);
+                    setRuntimeView("macro");
+                  },
+                }))}
+              />
+            ) : (
+              <UnsupportedFeatureCard
+                title={t("Macros")}
+                icon={<IconCode size={17} />}
+              />
+            )}
+            {runtimeTapDance.isAvailable ? (
+              <RuntimeListCard
+                title={t("Tapdances")}
+                icon={<IconMusic size={17} />}
+                addLabel={t("New tapdance")}
+                settingsLabel={t("Tapdance Global Settings")}
+                busy={runtimeTapDance.busy || !runtimeTapDance.globalSettings}
+                error={runtimeTapDance.error}
+                addDisabled={
+                  !runtimeTapDance.globalSettings ||
+                  runtimeTapDance.entries.length >=
+                    runtimeTapDance.globalSettings.maxEntries
+                }
+                onAdd={async () => {
+                  if (!requireUnlocked()) return;
+                  let number = 1;
+                  while (
+                    runtimeTapDance.entries.some(
+                      (entry) => entry.name === `${t("Tapdance")} ${number}`,
+                    )
+                  )
+                    number++;
+                  const slot = await runtimeTapDance.create(
+                    `${t("Tapdance")} ${number}`,
+                  );
+                  if (slot !== null) {
+                    setTapDanceSlot(slot);
+                    setRuntimeView("tapdance");
+                  }
+                }}
+                onSettings={() => setRuntimeView("tapdance-settings")}
+                items={runtimeTapDance.entries.map((entry) => ({
+                  id: entry.index,
+                  name: entry.name,
+                  dirty: entry.hasUnsavedChanges,
+                  preview: (
+                    <TapDanceItemPreview
+                      config={entry.config}
+                      behaviors={keymap.behaviors}
+                      context={{
+                        layers: layersForSelector,
+                        keyboardLayout: keyboardLayoutContext.layout,
+                        runtimeMacros: runtimeMacro.macros,
+                        shortFormat: true,
+                      }}
+                    />
+                  ),
+                  onClick: () => {
+                    if (!requireUnlocked()) return;
+                    setTapDanceSlot(entry.index);
+                    setRuntimeView("tapdance");
+                  },
+                }))}
+              />
+            ) : (
+              <UnsupportedFeatureCard
+                title={t("Tapdances")}
+                icon={<IconMusic size={17} />}
+              />
             )}
           </>
         )}
@@ -1573,6 +1797,30 @@ export function KeymapPage() {
         </div>
       </div>
 
+      {(runtimeView !== null || showComboEditor) && isTabActive && (
+        <RuntimeEditors
+          key={showComboEditor ? "combo" : runtimeView}
+          view={showComboEditor ? "combo" : runtimeView!}
+          onBusyChange={setRuntimeActionBusy}
+          onClose={() => {
+            if (runtimeView === "macro")
+              void macroEditor
+                .flushPendingWrites()
+                .then(() => runtimeMacro.loadMacros());
+            closeRuntimeEditor();
+            setShowComboEditor(false);
+          }}
+          macro={macroEditor}
+          combo={comboEditor}
+          runtimeMacro={runtimeMacro}
+          runtimeCombo={runtimeCombo}
+          runtimeTapDance={runtimeTapDance}
+          tapDanceSlot={tapDanceSlot}
+          keymap={keymap}
+          layers={layersForSelector}
+          keyboardLayout={keyboardLayoutContext.layout}
+        />
+      )}
       {/* Rename Layer Dialog */}
       <Dialog.Root
         open={showRenameDialog}
@@ -1703,39 +1951,6 @@ export function KeymapPage() {
         labeler={versionHistory.labeler}
       />
 
-      <Dialog.Root
-        open={showComboEditor && isTabActive}
-        onOpenChange={(open) => !open && setShowComboEditor(false)}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[10000]" />
-          <Dialog.Content
-            aria-describedby={undefined}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(96vw,900px)] max-h-[90vh] overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl z-[10000]"
-          >
-            <Dialog.Title className="sr-only">{t("Combo Editor")}</Dialog.Title>
-            <div className="flex justify-end p-2">
-              <Dialog.Close
-                className="p-1 rounded hover:bg-[var(--color-border)]"
-                aria-label={t("Close")}
-              >
-                <IconX size={18} />
-              </Dialog.Close>
-            </div>
-            {comboEditor.selectedIndex !== null && (
-              <ComboEditorCard
-                combo={comboEditor}
-                runtimeCombo={runtimeCombo}
-                keymap={keymap}
-                layers={layersForSelector}
-                keyboardLayout={keyboardLayoutContext.layout}
-                runtimeMacros={runtimeMacro.macros}
-              />
-            )}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
       <KeycodeSelector
         open={showComboBindingSelector && isTabActive}
         presentation={selectorMode}
@@ -1808,24 +2023,6 @@ export function KeymapPage() {
       />
 
       {/* Keycode Selector Dialog */}
-      <MacroEditorDialog
-        key={macroEditorSession}
-        open={macroEditorMode !== null}
-        mode={macroEditorMode ?? "edit"}
-        editSlot={macroEditorSlot}
-        onOpenChange={(open) => {
-          if (!open) {
-            if (macroEditorMode === "create") macroEditor.cancelCreate();
-            setMacroEditorMode(null);
-            if (macroEditorMode === "edit") void runtimeMacro.loadMacros();
-          }
-        }}
-        macro={macroEditor}
-        runtimeMacro={runtimeMacro}
-        keymap={keymap}
-        layers={layersForSelector}
-        keyboardLayout={keyboardLayoutContext.layout}
-      />
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
@@ -1937,8 +2134,9 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        keymap={keymap.isFullyLoaded ? keymap.keymap : null}
         onOpenMacroEditor={handleOpenMacroEditor}
       />
-    </div>
+    </div>,
   );
 }

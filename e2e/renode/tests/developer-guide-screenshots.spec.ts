@@ -60,16 +60,19 @@ test("capture light-mode developer-guide UI assets", async ({ page }) => {
   ).toBeVisible();
   await capture(page, "keymap");
 
-  await page.getByRole("tab", { name: "Macro&Combo" }).click();
   const macros = page.locator("section").filter({
     has: page.getByRole("heading", { name: "Macros", exact: true }),
   });
   await expect(macros).toBeVisible();
-  await macros.getByTitle("Create macro").click();
+  await macros.getByRole("button", { name: "New macro", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Steps", exact: true }),
   ).toBeVisible();
   await capture(page, "macro");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
 
   const combos = page.locator("section").filter({
     has: page.getByRole("heading", { name: "Combos", exact: true }),
@@ -77,9 +80,13 @@ test("capture light-mode developer-guide UI assets", async ({ page }) => {
   await expect(combos).toBeVisible();
   await combos.getByTitle("New combo").click();
   await expect(
-    page.getByRole("heading", { name: "Combo Editor", exact: true }),
+    page.getByRole("dialog", { name: "Combo Editor", exact: true }),
   ).toBeVisible();
   await capture(page, "combo");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
 
   await page.getByRole("tab", { name: "Trackball" }).click();
   await expect(

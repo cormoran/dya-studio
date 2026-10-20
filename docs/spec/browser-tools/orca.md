@@ -77,6 +77,8 @@ orca snapshot --page <id> --json | jq -r 'if .ok then .result.snapshot else .err
 
 さらに期待語だけに絞って空になった場合は、絞り込みなしの `result.snapshot` と URL を確認する。接続画面への遷移や stale ref をブラウザ停止と誤認しない。
 
+呼出元の shell tool が処理中の `session_id` を返した場合は、output だけでなく session ID を含む応答全体を保存し、同じ session を poll して終了結果を確認する。Orca CLI の JSON が完成する前の空出力や出力途中を page hang と判定せず、同じ操作を重複発行しない。実際の timeout/エラー後は元の応答を保持し、fresh snapshot の再試行は1回に限定する。なお失敗する場合は具体的なエラーと page ID を coordinator へ渡し、独立した batch と報告・Issue 登録（許可済みの場合）・後始末へ進む。
+
 `wait --text` は画面に描画された text を待つ用途に使う。目的の文言が `aria-label` にしかない場合は一致しないことがあるため、最新 snapshot の accessible name、`wait --selector`、または対象を絞った `eval` で確認する。長いページの snapshot が出力上限で途中までになる場合も、後半の要素が存在しないと判断せず、snapshot の出力を絞るか `eval` で対象だけを読む。
 
 native confirm/alert は HTML dialog と別である。CLI 1.4.205 で利用した操作は次の通りだが、使用前に現在の `--help` を確認する。

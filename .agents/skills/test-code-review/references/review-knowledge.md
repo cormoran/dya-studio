@@ -1,86 +1,26 @@
 # Repository review knowledge
 
-These are decision aids learned from test-code review. Recheck the linked code
-before applying them; they are not permanent assertions about implementation.
+Recheck these paths before applying past findings; implementation and test contracts can change.
 
-## Hooks, notifications and timing
+## Hooks and timing
 
-- In [useRuntimeInputProcessor tests](../../../../src/hooks/__tests__/useRuntimeInputProcessor.test.tsx),
-  mount can issue both processor and layer requests. Route mock replies by decoded
-  request rather than assuming a fixed call order. Assert outgoing scaling/rotation
-  values without injecting a notification containing the desired answer; otherwise
-  the notification can hide a broken write. Keep notification handling as separate
-  behavior coverage.
-- [Unlock guide](../../../../src/hooks/useUnlockGuide.ts) previously depended on
-  the `subsystem` descriptor from `useCustomSubsystem`. The dependency library's
-  `useZMKApp.findSubsystem()` creates a fresh `{ index, identifier }` per lookup;
-  `loadFastKeymap` → `setLoaded` → render therefore restarted `getSnapshot` even
-  without user activity. Depend on connection-scoped primitive identity (index,
-  readiness) and keep genuine session/capability changes reactive. Recheck the
-  installed dependency implementation when reviewing this path.
-- [Unlock lifecycle regression](../../../../src/hooks/__tests__/useUnlockGuide.test.tsx)
-  uses the real custom-subsystem hooks, loader and protobuf codecs, returning a
-  fresh descriptor on each lookup and decoding outgoing `getSnapshot` requests.
-  Establish a completed guide, rerender, and assert that RPC activity settles;
-  then change connection/index and verify a new load completes. The modal's
-  fixed descriptor/mock loader alone missed this feedback loop. For browser
-  checks, compare RPC-log counts across an idle interval after loading and after
-  a harmless rerender; record intentional polling/background requests separately.
-- React debounce/cooldown tests should advance virtual time inside asynchronous
-  `act`, with `userEvent.setup({ advanceTimers: jest.advanceTimersByTime })`.
-  Check just before and at the boundary, and use distinct values/deadlines for
-  independent sensors. See [sensor tests](../../../../src/components/__tests__/SensorRotationConfig.test.tsx)
-  and [unlock tests](../../../../src/contexts/__tests__/StudioUnlockContext.test.tsx).
-- Do not replace every real wait with fake timers. [OAuth tests](../../../../src/lib/abyss/__tests__/abyssOAuth.test.ts)
-  use Node's native BroadcastChannel; advancing a fake clock can expire the callback
-  before real message delivery. Retain real delivery for the mismatched-state
-  scenario, while isolated timeout/cancellation boundaries can use fake time.
-- Wait for completion, not merely request start or an already-true negative state.
-  [Reconnect cancellation](../../../../src/components/__tests__/DeviceConnection.test.tsx)
-  waits for late port closure before asserting no connection was created;
-  [macro auto-load](../../../../src/hooks/__tests__/useRuntimeMacro.test.tsx) waits
-  for loaded settings. Recheck effects before keeping comments about old timers.
+- [Runtime input processor tests](../../../../src/hooks/__tests__/useRuntimeInputProcessor.test.tsx): mount may request processor and layer data. Route replies by decoded request, not call order. Assert outgoing scale/rotation without injecting the expected notification; test notification handling separately.
+- [Unlock guide](../../../../src/hooks/useUnlockGuide.ts): a fresh `useZMKApp.findSubsystem()` descriptor previously retriggered `getSnapshot` after `loadFastKeymap` set state. Depend on connection-scoped primitives, while keeping session/capability changes reactive. [Lifecycle regression](../../../../src/hooks/__tests__/useUnlockGuide.test.tsx) uses real hooks/codecs and fresh descriptors; after load/rerender, assert RPCs settle, then change connection/index and verify reload. A fixed mock descriptor misses this loop. In browser checks, compare idle RPC counts and separate intentional polling.
+- [Sensor tests](../../../../src/components/__tests__/SensorRotationConfig.test.tsx) and [unlock tests](../../../../src/contexts/__tests__/StudioUnlockContext.test.tsx): advance fake time inside async `act`, use `userEvent.setup({ advanceTimers: jest.advanceTimersByTime })`, and check before/at boundaries with distinct sensor values/deadlines.
+- [OAuth tests](../../../../src/lib/abyss/__tests__/abyssOAuth.test.ts): native BroadcastChannel delivery may lose a race to fake clock expiry. Retain real delivery for mismatched-state coverage; fake time can cover isolated timeout/cancellation.
+- [Reconnect cancellation](../../../../src/components/__tests__/DeviceConnection.test.tsx) waits for late port closure; [macro auto-load](../../../../src/hooks/__tests__/useRuntimeMacro.test.tsx) waits for loaded settings. Assert completion, not merely request start or an already-true negative.
 
-## Assertions that can pass without the promised behavior
+## False-pass patterns
 
-- An empty array passes `every`, an absent row passes an optional-field absence
-  assertion, and a stream that never started passes a no-further-notifications
-  check. Require a nonempty/present/started baseline. Examples:
-  [custom settings](../../../../src/lib/transport/__tests__/demo-custom-settings.test.ts),
-  [PMW disconnect](../../../../src/lib/transport/__tests__/demo-pmw3610.test.ts).
-- Save a nondefault value when testing persistence/consumption. Returning the
-  default cannot establish that a save occurred. Compare paginated item identities
-  and order, not just length; an offset test must actually request a nonzero offset.
-  See [OAuth return path](../../../../src/lib/abyss/__tests__/abyssOAuth.test.ts),
-  [keymap listing](../../../../src/lib/abyss/__tests__/abyssKeymapList.test.ts), and
-  [watchdog pagination](../../../../src/lib/transport/__tests__/demo-watchdog.test.ts).
-- Encoder/decoder round trips can hide matching bugs. Keep independently specified
-  wire vectors, as in [mouse encoding](../../../../src/lib/__tests__/mouseEncoding.test.ts).
-  [Demo transport](../../../../src/lib/transport/__tests__/demo.test.ts) also exercises
-  escaped bytes split across chunks using the real streams from setupTests. A stale
-  comment claiming TransformStream is unavailable is not a reason to keep a skip.
-- Scope controls by their labelled section and assert their actual state.
-  [Trackball rotation tests](../../../../src/pages/__tests__/TrackballPage.test.tsx)
-  formerly found an unrelated ordinal switch and checked only its existence.
+- Empty arrays pass `every`; absent rows pass optional-field absence; a stream that never started passes no-further-events. Establish present/nonempty/started baselines in [custom settings](../../../../src/lib/transport/__tests__/demo-custom-settings.test.ts) and [PMW disconnect](../../../../src/lib/transport/__tests__/demo-pmw3610.test.ts).
+- Persistence needs a nondefault saved value. Pagination needs item identities/order and a real nonzero offset, not just length. Recheck [OAuth return](../../../../src/lib/abyss/__tests__/abyssOAuth.test.ts), [keymap list](../../../../src/lib/abyss/__tests__/abyssKeymapList.test.ts), and [watchdog](../../../../src/lib/transport/__tests__/demo-watchdog.test.ts).
+- Encoder/decoder round trips can hide paired bugs: retain independent [mouse wire vectors](../../../../src/lib/__tests__/mouseEncoding.test.ts). [Demo transport](../../../../src/lib/transport/__tests__/demo.test.ts) covers escaped bytes across real stream chunks; do not preserve a skip based on stale TransformStream comments.
+- [Trackball rotation tests](../../../../src/pages/__tests__/TrackballPage.test.tsx): select controls within the labelled section and assert actual state, not existence of an unrelated ordinal switch.
 
-## Environment, coverage and validation limits
+## Environment and coverage
 
-- [Application tsconfig](../../../../tsconfig.app.json) excludes test filenames but
-  not every helper directory. A new plain `.ts` test helper using a global `jest`
-  can pass Jest while failing the production build. Prefer simple typed async
-  no-ops when call tracking is unused; otherwise provide explicit test types.
-- Page tests that do not assert history can use an idle history fixture to isolate
-  incidental IndexedDB effects. This does not establish page-to-history integration
-  coverage. [Version store/diff tests](../../../../src/lib/versionHistory/__tests__)
-  cover their own units, not every hook/caller interaction. Do not claim otherwise
-  or silence all console errors to hide unfinished effects.
-- [Jest coverage](../../../../jest.config.ts) excludes generated protobuf codecs,
-  mocks, setup and test helpers. Keep those exclusions aligned with new fixture
-  locations; [ESLint](../../../../eslint.config.js) excludes generated coverage reports.
-- [Renode product configuration](../../../../e2e/renode/playwright.config.ts) excludes
-  developer-guide captures. [Screenshot configuration](../../../../e2e/renode/playwright.screenshots.config.ts)
-  is opt-in through the guarded capture script. Verify both discovery sets when
-  changing them. Do not run image generation merely to validate discovery.
-- Preserve protocol/source variants, meaningful layout guards, and stable callback
-  identity tests tied to a demonstrated lifecycle regression. Superficially similar
-  tests can cover different firmware, persistence, or unlock behavior.
+- [Application tsconfig](../../../../tsconfig.app.json) excludes test files, not every helper directory. A plain `.ts` helper with global `jest` can pass Jest and fail build; use typed async no-ops when tracking is unnecessary or explicit test types.
+- An idle history fixture can isolate unrelated IndexedDB effects in page tests, but cannot prove page-to-history integration. [Version history units](../../../../src/lib/versionHistory/__tests__) cover their own logic, not all callers. Do not hide unfinished effects with global console suppression.
+- [Jest coverage](../../../../jest.config.ts) excludes generated codecs and test fixtures; keep new fixture locations aligned. [ESLint](../../../../eslint.config.js) excludes generated coverage reports.
+- [Renode product config](../../../../e2e/renode/playwright.config.ts) excludes developer-guide captures; [screenshot config](../../../../e2e/renode/playwright.screenshots.config.ts) is opt-in. Inspect both discovery sets after edits; do not generate images to verify listing.
+- Preserve protocol/source variants, meaningful layout guards, and callback identity tests tied to observed lifecycle regressions; similar setup can protect different contracts.

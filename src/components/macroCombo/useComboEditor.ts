@@ -3,7 +3,7 @@
  * selection, the combo draft, debounced memory writes and the combo global
  * settings. Extracted from the former ComboPage.
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useRef } from "react";
 import { useDebouncedMemoryWrite } from "../../hooks/useDebouncedMemoryWrite";
 import type { UseRuntimeComboReturn } from "../../hooks/useRuntimeCombo";
 import type { UseKeymapReturn } from "../../hooks/useKeymap";
@@ -29,6 +29,7 @@ export type ComboGlobalField =
   | "requirePriorIdleMs";
 
 export interface UseComboEditorArgs {
+  immediate?: boolean;
   runtimeCombo: UseRuntimeComboReturn;
   keymap: UseKeymapReturn;
   requireUnlocked: () => boolean;
@@ -39,6 +40,7 @@ export interface UseComboEditorArgs {
 }
 
 export function useComboEditor({
+  immediate = false,
   runtimeCombo,
   keymap,
   requireUnlocked,
@@ -75,8 +77,10 @@ export function useComboEditor({
   // MEMORY (persist=false) and marks the slot green. `setCombo` refreshes the
   // combo list from the device (which derives `source`), then the name is
   // written on top.
+  const comboWriteFailed = useRef(false);
   const writeComboToMemory = useCallback(
     async (next: ComboDraft) => {
+      comboWriteFailed.current = true;
       const comboSaved = await runtimeCombo.setCombo({
         index: next.index,
         keyPositions: next.keyPositions,
@@ -88,13 +92,17 @@ export function useComboEditor({
         slowReleaseOverride: next.slowReleaseOverride,
       });
       if (!comboSaved) return;
-      await runtimeCombo.setComboName(next.index, next.name);
+      if (!(await runtimeCombo.setComboName(next.index, next.name))) return;
+      comboWriteFailed.current = false;
       setModifiedIndices((prev) => new Set(prev).add(next.index));
     },
     [runtimeCombo],
   );
 
-  const comboMemoryWrite = useDebouncedMemoryWrite(writeComboToMemory);
+  const comboMemoryWrite = useDebouncedMemoryWrite(
+    writeComboToMemory,
+    immediate ? 0 : undefined,
+  );
 
   const globalTimeoutWrite = useDebouncedMemoryWrite<number>(
     useCallback(
@@ -107,6 +115,7 @@ export function useComboEditor({
       },
       [runtimeCombo],
     ),
+    immediate ? 0 : undefined,
   );
 
   const globalIdleWrite = useDebouncedMemoryWrite<number>(
@@ -122,6 +131,7 @@ export function useComboEditor({
       },
       [runtimeCombo],
     ),
+    immediate ? 0 : undefined,
   );
 
   const handleSlowReleaseChange = useCallback(
@@ -344,6 +354,7 @@ export function useComboEditor({
     await comboMemoryWrite.flush();
     await globalTimeoutWrite.flush();
     await globalIdleWrite.flush();
+    return !comboWriteFailed.current;
   }, [comboMemoryWrite, globalIdleWrite, globalTimeoutWrite]);
 
   /** Drop queued edits — discard restores the persisted values. */
@@ -354,12 +365,24 @@ export function useComboEditor({
   }, [comboMemoryWrite, globalIdleWrite, globalTimeoutWrite]);
 
   /** Clear client-side green tracking after a Save/Discard completed. */
-  const clearModified = useCallback(() => {
-    setModifiedIndices(new Set());
-    setGlobalModifiedFields(new Set());
+  const clearModified = useCallback((index?: number) => {
+    comboWriteFailed.current = false;
+    if (index === undefined) {
+      setModifiedIndices(new Set());
+      setGlobalModifiedFields(new Set());
+    } else
+      setModifiedIndices((current) => {
+        const next = new Set(current);
+        next.delete(index);
+        return next;
+      });
   }, []);
 
   return {
+    hasPendingWrites:
+      comboMemoryWrite.state !== "idle" ||
+      globalTimeoutWrite.state !== "idle" ||
+      globalIdleWrite.state !== "idle",
     selectedIndex,
     draft,
     showBehaviorSelector,
