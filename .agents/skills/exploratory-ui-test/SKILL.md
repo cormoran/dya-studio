@@ -7,6 +7,11 @@ description: Run specification-driven DYA Studio browser exploration with AI sub
 
 Read the [exploration guide](../../../docs/spec/EXPLORATORY_TESTING.md) for UI actions, evidence, restoration, and reporting; use the [sitemap](../../../docs/spec/README.md) and affected specs to select targets.
 
+Use the [evidence and review protocol](references/evidence-protocol.md) for every
+worker brief: pinned original checklist, receipt capture, pre-mutation/restoration
+guards, self-audit, and explicit review reply before settlement. Apply it to
+focused as well as whole-app work; tools validate structure, coordinator reviews truth.
+
 ## Scope
 
 - **Change-focused (default):** Cover changed flows, affected pages, shared consumers, save/cancel boundaries, and nearby regression risks.

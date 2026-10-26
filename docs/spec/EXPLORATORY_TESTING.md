@@ -22,6 +22,10 @@ coordinator は worker にも利用するツールと環境別手順を渡し、
 
 全体探索では [skill の計画・受入手順](../../.agents/skills/exploratory-ui-test/references/whole-app.md) に従い、全入口の batch と必須観測を dispatch 前に決める。同時実行数と総 batch 数は別であり、最初の2〜3 workerが終了しても未着手の計画済み batch を残して完了にしない。各 worker の最初の charter 後に途中レビューし、`worker_done` 前にも report/checklist の受入確認を依頼する。15〜25分は計画の目安で、必須操作を省くための打切り期限ではない。利用者の明示予算・期限は優先する。
 
+変更集中型も含め、[証跡・レビュー protocol](../../.agents/skills/exploratory-ui-test/references/evidence-protocol.md) を worker brief に含める。coordinator が dispatch 前の原本 checklist と SHA-256 を保持し、結果 copy を `check-coverage.mjs --plan ... --plan-sha256 ...` で照合する。元の ID・必須条件・対象・仕様 ID の削除や差替えは構造エラー。全 source の初期値と UI 復元経路を `check-state.mjs before-mutation` で確認し、経路不足ならその書込みを実行しない。復元は同じ session の全対象値を比較し、Saved 表示だけで判断しない。これらは入力された記録の構造検査であり、coordinator の実証跡レビューを置き換えない。
+
+レビュー ask は一つだけ保持し、timeout 後も同じ ID を再開する。coordinator は status 送信ではなく該当 ask に reply し、worker は受信した回答を記録する。`CONTINUE` は追加実行の指示で、終了許可ではない。現在の dispatch・成果物に対する明示的な `ACCEPT` または `SETTLE FAILED` を受信するまで `worker_done` を送らない。未実行は not-run とし、具体的な capability/権限/tool エラーなしに blocked へ変えない。
+
 この作業で Demo または割当済み Renode DUT 内の編集・Save・Discard と復帰はテスト範囲に含まれる。Demo の Save や Renode の一時 NVS を実機 flash や外部サービスへの書込みと混同して避けない。初期値を記録して戻す。Renode の再起動後は erased NVS から始まるため、物理的な電源断をまたぐ永続性の証拠にはしない。実機・外部アカウントは別条件。
 
 native confirm/alert は HTML dialog と別で、snapshot に現れない場合がある。確認文と accept/dismiss の操作またはツール応答を証拠に残す。メニュー項目をクリックしただけでは「承認済み」ではない。確認を観測/操作できない場合、承認後の期待は blocked とし、表示されない現象は tool/environment の可能性を付記する。`window.confirm` の上書きで pass を作らない。

@@ -39,7 +39,9 @@ Restore dependent bindings before deleting their macros; restore each affected s
 Report DUT/topology/firmware provenance, lease, transport/chooser, counts/bytes, write/Save/reboot totals, diagnostics, persistence stage, residual changes, and per-operation evidence. Separate UI, firmware, transport/tool, and physical-input observations; unexplained failures are candidates, not proven root causes. Review the evidence semantically and run the canonical checker:
 
 ```sh
-node .agents/skills/exploratory-ui-test/scripts/check-coverage.mjs /absolute/tmp/batch-coverage.json
+node .agents/skills/exploratory-ui-test/scripts/check-coverage.mjs \
+  /absolute/tmp/batch-coverage.json --plan /absolute/tmp/original.json \
+  --plan-sha256 <hash-recorded-before-dispatch>
 ```
 
-Exit 0 means structurally reviewable, not product pass; 1 means invalid structure/IDs/evidence, 2 required missing/not-run, 3 required blocked. Preserve its actual output. Required not-run coverage cannot settle as success. CI or one charter never proves whole-app coverage.
+Preserve the coordinator-owned original and its pre-dispatch hash following the [evidence protocol](../exploratory-ui-test/references/evidence-protocol.md). Exit 0 means structurally reviewable, not product pass; 1 means invalid structure/IDs/evidence or changed plan, 2 required missing/not-run, 3 required blocked. Preserve its actual output. Required not-run coverage cannot settle as success. CI or one charter never proves whole-app coverage.

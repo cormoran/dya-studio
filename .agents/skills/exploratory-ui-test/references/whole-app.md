@@ -18,7 +18,7 @@ Before `worker_done`, worker uses the current orchestration preamble's blocking 
 
 ## Checklist gate
 
-Coordinator creates a JSON checklist per batch before dispatch, with mandatory rows for baseline, distinct variant, each edit/save/readback/restoration stage, themes/states, and initial/final language/theme/editor mode. Optional combinations use `required: false`. Workers fill rows; coordinator compares them to the original plan and never allows mandatory rows to vanish or become exclusions.
+Coordinator creates a JSON checklist per batch before dispatch, with mandatory rows for baseline, distinct variant, each edit/save/readback/restoration stage, themes/states, and initial/final language/theme/editor mode. Optional combinations use `required: false`. Preserve `original.json` and its pre-dispatch SHA-256 in coordinator records, then give the worker a result copy. Follow the [evidence protocol](evidence-protocol.md) for immutable contracts, receipt capture, mutation guards and review replies. Workers fill result fields; no original row may vanish or become an exclusion.
 
 ```json
 {
@@ -42,10 +42,12 @@ Statuses: `pending`, `pass`, `product-candidate`, `spec-gap`, `blocked`, `not-ru
 Run from the checkout root:
 
 ```sh
-node .agents/skills/exploratory-ui-test/scripts/check-coverage.mjs /absolute/tmp/batch-coverage.json
+node .agents/skills/exploratory-ui-test/scripts/check-coverage.mjs \
+  /absolute/tmp/batch-coverage.json --plan /absolute/tmp/original.json \
+  --plan-sha256 <hash-recorded-before-dispatch>
 ```
 
-Exit 0: structurally reviewable required observations, including product candidates/spec gaps; **not** product pass. Exit 1: invalid structure/IDs/evidence; exit 2: required execution missing; exit 3: required blocked. The checker reads defined IDs under `docs/spec/pages` and `modules`. It cannot verify observation truth, checklist completeness, screenshot/DOM agreement, or correct ID selection; coordinator must. Retain checklist, report, raw action/readback logs and images, and resolve screenshot versus DOM language/theme contradictions. See the [Orca guide](../../../../docs/spec/browser-tools/orca.md) for image saving and terminal ownership.
+Exit 0: structurally reviewable required observations, including product candidates/spec gaps; **not** product pass. Exit 1: invalid structure/IDs/evidence or changed original plan/row contracts; exit 2: required execution missing; exit 3: required blocked. The checker reads defined IDs under `docs/spec/pages` and `modules`, and compares every row to the pinned plan. It cannot verify observation truth, completeness of the initial plan, screenshot/DOM agreement, or correct ID selection; coordinator must. Retain checklist, report, raw action/readback logs and images, and resolve screenshot versus DOM language/theme contradictions. See the [Orca guide](../../../../docs/spec/browser-tools/orca.md) for image saving and terminal ownership.
 
 ## Completion
 
