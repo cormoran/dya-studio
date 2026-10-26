@@ -183,12 +183,15 @@
 
 @media (min-width: 1024px) {
   .app-header-brand {
+    /* Match the centered max-w-6xl page content without losing edge padding. */
+    left: max(1.5rem, calc((100% - 72rem) / 2));
     transition:
       left 420ms cubic-bezier(0.22, 1, 0.36, 1),
       transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .app-header-controls {
+    max-width: calc(100% - max(1.5rem, (100% - 72rem) / 2) - 9.5rem);
     transition: max-width 420ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
