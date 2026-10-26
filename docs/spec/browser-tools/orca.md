@@ -83,6 +83,19 @@ CLI 生出力の保存には [証跡 protocol の capture-command.mjs](../../../
 
 `wait --text` は画面に描画された text を待つ用途に使う。目的の文言が `aria-label` にしかない場合は一致しないことがあるため、最新 snapshot の accessible name、`wait --selector`、または対象を絞った `eval` で確認する。長いページの snapshot が出力上限で途中までになる場合も、後半の要素が存在しないと判断せず、snapshot の出力を絞るか `eval` で対象だけを読む。
 
+### click が成功しても画面が変わらない場合
+
+`ok:true` / `clicked` は期待したイベントや navigation の完了を保証しない（[#347](https://github.com/cormoran/dya-studio/issues/347)）。最新 snapshot と同じ page の URL・固有 H1・`aria-current` href、言語、menu の `open` 等を読み戻す。内部 link の直接 `goto` が描画できても、その link の入力成功とは別に扱う。
+
+変更がなかったと確認できた**安全な閲覧・表示操作**なら、同じ操作を click で繰り返す代わりに、次の keyboard 経路を一度試す。保存・削除・外部 Open 等の副作用を持つ操作は、この手順で無条件に再実行しない。
+
+1. 最新 ref で `orca focus --page <id> --element <ref> --json` を実行する。ref がない native `summary` 等は `orca keypress --page <id> --key Tab --json`（逆順は `Shift+Tab`）で移動する。画面を読んで対象を決め、固定の Tab 回数を他ページへ流用しない。
+2. 読み取り専用 `eval` で **実際の** `document.activeElement` の tag、text、link の href を確認する。focus の成功 receipt だけでは次へ進まない。対象が違えば入力を止める。
+3. link/button は `orca keypress --page <id> --key Enter --json` で起動し、再び対象固有の URL・H1・active href または言語を確認する。native `summary` は Enter 後の `details.open` を確認する。アンカーは hash と対象 heading を照合する。
+4. keyboard 経路も効果を確認できなければ、その操作の具体的な tool/input blocker として報告し、独立して実行できる作業へ進む。DOM の `.click()`、`dispatchEvent()`、history/state/storage の直接書換えで入力成功を代用しない。
+
+独立ブラウザの通常 click/keyboard と比較する場合は、同じ固定 build と対象 route を使い、ブラウザごとの結果を分ける。独立入力で成功し Orca click だけが無反応なら、製品の routing 不具合と断定しない。Orca 内部の原因までは、この比較だけでは特定できない。connection-free な guide での検証を、接続中の編集やデバイス保存の確認へ拡張しない。
+
 native confirm/alert は HTML dialog と別である。CLI 1.4.205 で利用した操作は次の通りだが、使用前に現在の `--help` を確認する。
 
 ```sh
