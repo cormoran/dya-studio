@@ -208,3 +208,10 @@ review ask timeout resumed with the same ID; CONTINUE answer consumed before
 an explicit settlement reply. Record actual commands/results and coordinator
 review. Fixture acceptance proves this bounded protocol, not future worker
 compliance, whole-app coverage, real browser paint, or hardware persistence.
+
+For completed worker-start readiness failure despite a Ready TUI, outstanding
+background sessions, same-Task retry and retained custom-profile terminal
+cleanup, use the separate [bounded recovery fixture](worker-start-recovery-fixture.md).
+It defines refusal/unknown/no-input branches and the required attempt/ownership
+ledgers without treating synthetic receipts as live runtime acceptance. Do not
+induce readiness races or start extra workers to fill its live matrix.

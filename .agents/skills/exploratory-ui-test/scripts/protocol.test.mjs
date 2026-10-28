@@ -95,6 +95,70 @@ test("command failure and spawn failure have completed error receipts", () => {
   }
 });
 
+test("empty capture stays unfinished until a delayed synthetic failure, without forwarding stdin", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "exploration-empty-failure-"));
+  const receipt = join(dir, "operation-001");
+  const release = join(dir, "release");
+  const stdinEnded = join(dir, "stdin-ended");
+  // This exercises capture-command, not Orca readiness or lifecycle decisions.
+  // The nonzero child and explicitly synthetic payload are never runtime proof.
+  const payload = `${JSON.stringify({
+    synthetic: true,
+    state: "failed",
+    failedStage: "agent_readiness",
+    lastError: "timeout",
+  })}\n`;
+  const diagnostic =
+    "Synthetic observation only: Ready; background sessions: 3\n";
+  const child = spawn(
+    process.execPath,
+    [
+      script("capture-command.mjs"),
+      receipt,
+      "--",
+      process.execPath,
+      "-e",
+      `const fs = require("node:fs");
+       let input = "";
+       process.stdin.setEncoding("utf8");
+       process.stdin.on("data", chunk => { input += chunk; });
+       process.stdin.on("end", () => fs.writeFileSync(process.argv[2], input));
+       process.stdin.resume();
+       const timer = setInterval(() => {
+         if (!fs.existsSync(process.argv[1])) return;
+         clearInterval(timer);
+         process.stdout.write(process.argv[3]);
+         process.stderr.write(process.argv[4]);
+         process.exitCode = 9;
+       }, 10);`,
+      release,
+      stdinEnded,
+      payload,
+      diagnostic,
+    ],
+    { stdio: ["pipe", "ignore", "ignore"] },
+  );
+  const exited = once(child, "exit");
+  child.stdin.end("caller input must not reach the captured command\n");
+  try {
+    for (let i = 0; i < 500 && !existsSync(stdinEnded); i++)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(existsSync(stdinEnded), true);
+    assert.equal(readFileSync(stdinEnded, "utf8"), "");
+    assert.equal(readFileSync(join(receipt, "stdout.txt"), "utf8"), "");
+    assert.equal(existsSync(join(receipt, "result.json")), false);
+    writeFileSync(release, "complete the synthetic command");
+    assert.deepEqual(await exited, [1, null]);
+    assert.equal(read(join(receipt, "result.json")).code, 9);
+    assert.equal(readFileSync(join(receipt, "stdout.txt"), "utf8"), payload);
+    assert.equal(readFileSync(join(receipt, "stderr.txt"), "utf8"), diagnostic);
+  } finally {
+    writeFileSync(release, "release even after assertion failure");
+    await exited;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 function state(phase, change = () => {}) {
   const dir = mkdtempSync(join(tmpdir(), "exploration-state-"));
   try {

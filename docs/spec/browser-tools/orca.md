@@ -27,9 +27,45 @@ orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
 orca terminal read --terminal <handle> --json
 ```
 
-`wait.satisfied: true` と、起動画面の `model: gpt-5.6-luna low` の両方を確認してから prompt を送る。別の指定値では `gpt-5.6-luna` と `low` を依頼された model / effort に置き換え、表示された実値も記録する。待機が timeout の場合は一度だけ時間を延長して再試行し、なお未起動なら prompt を送らず blocked と報告する。
+`wait.satisfied: true` と、起動画面の `model: gpt-5.6-luna low` の両方を確認する。別の指定値では `gpt-5.6-luna` と `low` を依頼された model / effort に置き換え、表示された実値も記録する。画面の `Ready` だけでは runtime readiness を証明しない。待機が timeout の場合は一度だけ時間を延長して再試行し、なお未起動なら prompt を送らず blocked と報告する。監督対象の brief は版対応の `worker-start --terminal` で送り、その readiness / input receipt も確認する。失敗を直接の `terminal send` / `dispatch --inject` で迂回しない。
 
-新規 Codex worker は全て `--profile orca` を指定する。custom argv で作った terminal は orchestration 上 `external_terminal` になり得るため、coordinator が作成 receipt と handle を所有記録へ保存する。report・生ログの回収と settlement/release 後、release が `processAction: none` なら、この run 自身が作成した idle terminal だけを明示的に close し、`ptyKilled` と terminal list で確認する。他者の external terminal は閉じない。active worker は終了確認まで閉じず、版対応の orchestration 契約を守る。
+新規 Codex worker は全て `--profile orca` を指定する。custom argv で作った terminal は orchestration 上 `external_terminal` になり得るため、coordinator が作成 receipt と handle を所有記録へ保存する。後始末は下記の所有確認と版対応の orchestration 契約を守る。
+
+### worker-start が Ready 表示と異なる結果を返す場合
+
+これは探索 workflow の復旧手順（[#357](https://github.com/cormoran/dya-studio/issues/357)）であり、製品動作の仕様 ID は追加しない。報告された `agent_readiness/timeout` は起動済み terminal の `Ready` 表示と併存した。background terminal / ask / check session も観測されたが、原因と確定していない。アプリ不具合、恒久的な agent/browser 障害、未実行 UI の pass として扱わない。
+
+最初に選択済み CLI の `skills get orchestration --reference references/recovery-and-cleanup.md --json` と `worker-start --help` を読む。以下は CLI 1.4.240 で確認した形式であり、現在版の runtime receipt と回復指示を優先する。command は [capture runner](../../../.agents/skills/exploratory-ui-test/references/evidence-protocol.md#2-capture-before-interpreting) で丸ごと保存する。
+
+| 観測                                                                                  | 判定と次の操作                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 呼出元が `session_id` を返し、出力が空または途中                                      | 実行中。同じ session を終了まで poll し、全 receipt を保持する。再発行、失敗判定、別 worker 起動をしない。                                                                                                                                  |
+| 完了した command が refusal を返した                                                  | `error.code` / `data.nextSteps` と Task/Dispatch を確認する。preflight refusal に Dispatch がない場合もある。入力や failed attempt を捏造せず、変更なしの再試行をしない。                                                                   |
+| 完了 receipt が `state: failed`, `failedStage: agent_readiness`, `lastError: timeout` | Task ID、failed Dispatch ID、`effects`、`residualResources` と recovery を保存し、runtime の Task/Dispatch と照合する。`dispatch_input` が実施されていない明示的な証拠を確認する。Ready 表示や欠落フィールドだけで「未配信」と決めない。    |
+| `outcome_unknown`、入力が accepted だが submit 未確認、または receipt 欠落            | 未配信と仮定しない。request ID があれば `request-show --request <request-id> --json`、なければ Task/Dispatch/terminal を読取りで調査する。pending request の復旧は現在版の同一 `--retry-request` 契約に従う。新規 Task や別入力を作らない。 |
+
+coordinator は Run を限定した `worker-list --run <run-id> --json`（必要な場合 `--include-remote` と全 page）、`worker-show --dispatch <dispatch-id> --json`、`dispatch-show --task <task-id> --json` と対象 terminal の `read` / `wait` を突き合わせる。Task/Dispatch の状態、fleet の `projection.liveness` と PTY の `observation.status` は別に記録する。`unverifiable` や null `agentWait`、変化しない tail は終了の証拠ではない。fleet と execution-host observation の優先関係も版対応の recovery guide に従い、欠落を exit に昇格しない。
+
+background session ごとに caller の `session_id`、command/request/ask ID、所有者、完了/実行中/不明、最後の receipt、次の回収操作を残す。終わっていない ask は同じ message ID で再開し、送信成功は読了/承認とみなさない。background 数を減らすために他の terminal を閉じたり runtime を再起動したりしない。
+
+完了した failed/stopped attempt が runtime でも確定し、回復契約が retry を許す場合にだけ、**同じ Task** の failed Dispatch を指定する。別の既存 terminal を使う場合は、その独立作業が accepted settlement 済みで active Dispatch を持たないこと、同じ run の利用権、実際の model/effort と runtime readiness を確認し、placement を明示する。
+
+```sh
+orca orchestration worker-start \
+  --task <same-task-id> --retry-of <failed-dispatch-id> \
+  --worktree <existing-terminal-worktree> --terminal <other-existing-ready-handle> \
+  --json
+```
+
+`--spec` は新しい Task を作るので retry に使わない。各 failed attempt ID と後継 Dispatch ID を鎖として保持する。成功側でも `state: ready` / `stage: input_accepted` / `turnStart: observed` 等の実際の receipt と worker の受信を確認する。入力受付は UI 実行・復元の合格とは別である。3 回連続の起動失敗で circuit-break したら現在版の拒否を報告し、新 Task/Run や無関係な Dispatch で迂回しない。空出力や Ready 表示から盲目的に第4の browser worker を起動しない。
+
+### retained custom-profile terminal の後始末
+
+report・生ログ・pending session の回収、現在 Dispatch の `ACCEPT` / `SETTLE FAILED` と有効な settlement の後、coordinator は reuse / 明示要求による retain / release を決める。failed start が自分で作成した supervised terminal を所有する場合は receipt の `worker-release` を使う。`release_pending` / `release_unknown` はその recovery を継続し、手動 close で代用しない。
+
+release が完了して `processAction: none` でも、terminal が終了したことにはならない。この run が作った custom-profile terminal の作成 receipt と exact handle があり、release が external terminal を retained として残した場合だけ、fresh read と runtime 記録で idle・active Dispatch なし・利用者への所有移転なしを確認する。background session が残る/所有不明なら close を保留し残余として報告する。現在版の契約が許す場合にその **1 handle のみ** `terminal close --terminal <owned-idle-handle> --json` し、成功 receipt の `ptyKilled: true` と同じ workspace の fresh `terminal list --worktree <selector> --json` からの消失を両方保存する。どちらか欠ければ cleanup は未確認とする。他者・pre-existing・setup・coordinator terminal は触らず、`--all` は使わない。
+
+この分岐の証跡表と forward acceptance は [bounded worker-start fixture](../../../.agents/skills/exploratory-ui-test/references/worker-start-recovery-fixture.md) に従う。synthetic receipt の検証を runtime 修正や UI pass として報告しない。
 
 ## viewport と device emulation
 
