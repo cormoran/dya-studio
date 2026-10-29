@@ -849,6 +849,8 @@ const ja: Record<string, string> = {
   "Key positions must be below 65536.": "キー位置は 65536 未満にしてください。",
   "Choose a behavior.": "動作を選択してください。",
   "Layer mask is out of range.": "レイヤーマスクが範囲外です。",
+  "This combo draft has not been applied or saved. Fix it before saving.":
+    "このコンボの入力は未反映・未保存です。修正してから保存してください。",
   "Combo changes are pending.": "コンボの変更が保留中です。",
   "Combo deletion is pending.": "コンボの削除が保留中です。",
   "Global settings are pending.": "グローバル設定の変更が保留中です。",
@@ -2558,6 +2560,8 @@ const zh: Record<string, string> = {
   "Key positions must be below 65536.": "键位必须小于 65536。",
   "Choose a behavior.": "请选择行为。",
   "Layer mask is out of range.": "层掩码超出范围。",
+  "This combo draft has not been applied or saved. Fix it before saving.":
+    "此组合键草稿尚未应用或保存。请修正后再保存。",
   "Combo changes are pending.": "组合键的更改待处理。",
   "Combo deletion is pending.": "组合键的删除待处理。",
   "Global settings are pending.": "全局设置待处理。",

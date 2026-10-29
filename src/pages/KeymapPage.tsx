@@ -68,6 +68,7 @@ import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
 import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
 import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
 import { useComboEditor } from "../components/macroCombo/useComboEditor";
+import { ComboDraftValidationAlert } from "../components/macroCombo/ComboDraftValidationAlert";
 import {
   comboToDraft,
   comboEditStatus,
@@ -455,7 +456,13 @@ export function KeymapPage() {
 
   // Flush queued RAM writes before persisting each changed domain.
   const handleSave = useCallback(async () => {
-    if (isSaving || runtimeSaveBlocked || !requireUnlocked()) return;
+    if (
+      isSaving ||
+      runtimeSaveBlocked ||
+      comboEditor.validationError ||
+      !requireUnlocked()
+    )
+      return;
     setIsSaving(true);
     setRuntimeStatus(null);
     const macroChanged = hasMacroChanges;
@@ -553,6 +560,7 @@ export function KeymapPage() {
           : Promise.resolve(null),
       ]);
       comboEditor.clearModified();
+      comboEditor.clearSelection();
       setShowComboEditor(false);
       setShowComboBindingSelector(false);
     } finally {
@@ -992,7 +1000,7 @@ export function KeymapPage() {
                       !hasUnsavedChanges ||
                       keymap.isLoading ||
                       runtimeSaveBlocked ||
-                      Boolean(comboEditor.validationError && showComboEditor)
+                      Boolean(comboEditor.validationError)
                     }
                   >
                     {isSaving ? (
@@ -1551,6 +1559,11 @@ export function KeymapPage() {
                   <p role="alert" className="text-sm text-red-400 mb-2">
                     {t(runtimeCombo.error)}
                   </p>
+                )}
+                {!showComboEditor && comboEditor.validationError && (
+                  <ComboDraftValidationAlert
+                    error={comboEditor.validationError}
+                  />
                 )}
                 {comboEditor.statusMessage && (
                   <p
