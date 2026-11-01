@@ -81,6 +81,7 @@ Popでは「Current Settings by Device」の背景を淡い青（#e4f5ff）に�
 ## 不変条件
 
 - SET-I01: timeout の debounce は最後に queue した idle/sleep の組を一回だけ送る。表示だけを成功や flash 永続化と見なさない（S1–S3）。
+- SET-003 の `Saved` は、書き込み応答後の再取得で中央側が指定した idle と sleep の両方を報告した場合に表示する。中央側の応答なし、または値が異なる場合はエラーを表示する。
 - SET-I02: 編集フォームの基準値は `sourceId === 0` だが、peripheral 別の編集・隔離を保証しない。set RPC の `source: 0` は対象指定に使われないため、変更後は全 source の値を再取得して確認する（S1/S2）。
 - SET-I03: factory reset は confirmation 前、または Cancel / dialog close だけでは送信しない。busy 中の close/cancel を受け付けない（S1）。
 - SET-I04: Advanced custom settings のメモリ書込みと core activity settings の write-through を同じ Save / Discard 意味として扱わない（S1/S5）。
