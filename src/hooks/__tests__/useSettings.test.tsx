@@ -35,11 +35,16 @@ function Wrapper({ children }: { children: ReactNode }) {
     </ZMKAppContext.Provider>
   );
 }
-function notify(listener: number, idleMs = 300000) {
+function notify(
+  listener: number,
+  idleMs = 300000,
+  sleepMs = 900000,
+  source = 0,
+) {
   listeners[listener].callback({
     payload: Notification.encode(
       Notification.create({
-        activitySettings: { settings: { source: 0, idleMs, sleepMs: 900000 } },
+        activitySettings: { settings: { source, idleMs, sleepMs } },
       }),
     ).finish(),
   });
@@ -77,6 +82,32 @@ beforeEach(() => {
   );
 });
 afterEach(() => jest.useRealTimers());
+
+it.each([
+  ["matching", 0, 30000, 3600000, true],
+  ["different sleep", 0, 30000, 1800000, false],
+  ["different idle", 0, 0, 3600000, false],
+  ["peripheral only", 1, 30000, 3600000, false],
+  ["missing", -1, 0, 0, false],
+] as const)(
+  "verifies %s readback after a successful write",
+  async (_, source, idle, sleep, expected) => {
+    const { result } = renderHook(useSettings, { wrapper: Wrapper });
+    act(() => notify(0, 30000, 3600000));
+    await settle();
+    call.mockResolvedValueOnce({
+      setActivitySettings: { success: true },
+    } as Response);
+    let write!: Promise<boolean>;
+    await act(async () => {
+      write = result.current.setActivitySettings(30000, 3600000);
+    });
+    if (source >= 0) act(() => notify(1, idle, sleep, source));
+    await settle();
+    expect(await write).toBe(expected);
+    expect(Boolean(result.current.error)).toBe(!expected);
+  },
+);
 
 it("clears devices when support disappears and ignores late notifications", async () => {
   const { result, rerender } = renderHook(useSettings, { wrapper: Wrapper });

@@ -216,8 +216,22 @@ export function useSettings(): UseSettingsReturn {
           return false;
         }
         if (response?.setActivitySettings?.success) {
-          await loadAllSettings();
-          return isCurrent();
+          const devices = await loadAllSettings();
+          if (!isCurrent()) return false;
+          const central = devices.find((device) => device.sourceId === 0);
+          if (!central) {
+            update({
+              error: "The central did not report its activity timeouts",
+            });
+            return false;
+          }
+          if (central.idleMs !== idleMs || central.sleepMs !== sleepMs) {
+            update({
+              error: "The central reported different activity timeouts",
+            });
+            return false;
+          }
+          return true;
         }
         update({ error: "Failed to update activity settings" });
         return false;
