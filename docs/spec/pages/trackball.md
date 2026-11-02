@@ -45,7 +45,7 @@ UI の数値範囲は scaling 0.01–10、rotation -180–180°、temporary laye
 | TRACK-002 | scaling slider、`-`/`+`、数値 input                             | 0.01–10.00 の対数 slider、表示値は fraction へ変換                                                                      | debounce 後に processor ID の multiplier/divisor RPC。fraction は約分                                                    | S1/S2 |
 | TRACK-003 | Rotation switch、`-`/`+`、degree input                          | OFF は 0°、ON は -180–180° の input                                                                                     | debounce write。OFF 前の非0 rotation を復元する state はない                                                             | S1    |
 | TRACK-004 | Active on Layers を All / Specific にし layer checkbox を変える | bitmask 0 は All、各 layer の active cell が変化                                                                        | debounce write。layer ID bit 演算は 32-bit 範囲に依存                                                                    | S1/S2 |
-| TRACK-005 | Temporary Layer、activation/deactivation delay を変更           | enable、target layer、ms controls                                                                                       | debounce write。入力値の firmware validation は UI だけでは保証しない                                                    | S1/S2 |
+| TRACK-005 | Temporary Layer、activation/deactivation delay を変更           | enable、target layer、ms controls                                                                                       | enable / target は即時送信と読戻し照合。delay は debounce write                                                          | S1/S2 |
 | TRACK-006 | Axis snap の switch/mode/threshold/timeout を変更               | enable 時既定 Y、mode X/Y、数値 controls                                                                                | debounce write。OFF は NONE                                                                                              | S1/S2 |
 | TRACK-007 | X invert、Y invert、XY to scroll、XY swap を toggle             | switch の checked state が変わる                                                                                        | debounce write。複数 toggle の原子性はない                                                                               | S1/S2 |
 | TRACK-008 | PMW3610 driver row を選ぶ                                       | `CustomSettingsSectionCard` の当該 custom subsystem section                                                             | custom-settings subsystem が無い/section 0 の場合は編集不能。個別 field の保存契約は S4                                  | S1/S4 |
@@ -115,6 +115,7 @@ TRACK-003〜007 の processor switch は、表示中の設定名と選択中 pro
 
 ## エラーと復帰
 
+- TRACK-005 の AML スイッチと対象レイヤーは即時送信し、応答待ちの間は編集を無効にする。読戻し不一致では機器の値とエラーを表示する。遅延時間は従来の debounce を使う。
 - input processor `error` は red alert。RPC error は optimistic display の後でも起こり得るので `Reload processors` で current notification を確認する（S1/S2）。
 - PMW3610 custom settings は unavailable/no section/loading/error を別表示にする。driver write の失敗復帰は S4 の契約で、Trackball 固有に保証しない。
 - `Versions` restore 中は busy/disabled。restore failure と device partial state の UX は version history の未検証事項。

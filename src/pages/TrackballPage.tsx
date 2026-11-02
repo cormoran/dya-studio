@@ -254,12 +254,6 @@ export function TrackballPage() {
   const rotationSave = useDebouncedSave<number>({
     delay: MEMORY_WRITE_DEBOUNCE_MS,
   });
-  const tempLayerEnabledSave = useDebouncedSave<boolean>({
-    delay: MEMORY_WRITE_DEBOUNCE_MS,
-  });
-  const tempLayerLayerSave = useDebouncedSave<number>({
-    delay: MEMORY_WRITE_DEBOUNCE_MS,
-  });
   const tempLayerActivationDelaySave = useDebouncedSave<number>({
     delay: MEMORY_WRITE_DEBOUNCE_MS,
   });
@@ -387,8 +381,6 @@ export function TrackballPage() {
     scalingMultiplierSave.reset();
     scalingDivisorSave.reset();
     rotationSave.reset();
-    tempLayerEnabledSave.reset();
-    tempLayerLayerSave.reset();
     tempLayerActivationDelaySave.reset();
     tempLayerDeactivationDelaySave.reset();
     activeLayersSave.reset();
@@ -410,10 +402,8 @@ export function TrackballPage() {
     scalingDivisorSave.pendingValue ?? processor?.scaleDivisor ?? 1;
   const displayRotation =
     rotationSave.pendingValue ?? processor?.rotationDegrees ?? 0;
-  const displayTempLayerEnabled =
-    tempLayerEnabledSave.pendingValue ?? processor?.tempLayerEnabled ?? false;
-  const displayTempLayerLayer =
-    tempLayerLayerSave.pendingValue ?? processor?.tempLayerLayer ?? 0;
+  const displayTempLayerEnabled = processor?.tempLayerEnabled ?? false;
+  const displayTempLayerLayer = processor?.tempLayerLayer ?? 0;
   const displayTempLayerActivationDelay =
     tempLayerActivationDelaySave.pendingValue ??
     processor?.tempLayerActivationDelayMs ??
@@ -491,16 +481,14 @@ export function TrackballPage() {
 
   const handleTempLayerEnabledChange = (enabled: boolean) => {
     if (!processor) return;
-    tempLayerEnabledSave.setPendingValue(enabled, async (value) => {
-      await setTempLayerEnabled(processor.id, value);
-    });
+    // The hook displays device errors; restore callers also receive the rejection.
+    void setTempLayerEnabled(processor.id, enabled).catch(() => {});
   };
 
   const handleTempLayerLayerChange = (layer: number) => {
     if (!processor) return;
-    tempLayerLayerSave.setPendingValue(layer, async (value) => {
-      await setTempLayerLayer(processor.id, value);
-    });
+    // The hook displays device errors; restore callers also receive the rejection.
+    void setTempLayerLayer(processor.id, layer).catch(() => {});
   };
 
   const handleTempLayerActivationDelayChange = (delayMs: number) => {
@@ -1240,6 +1228,7 @@ export function TrackballPage() {
                         </div>
                         <div className="flex-shrink-0">
                           <Switch.Root
+                            disabled={isLoading}
                             checked={displayTempLayerEnabled}
                             onCheckedChange={handleTempLayerEnabledChange}
                             aria-label={processorSwitchName("Temporary Layer")}
@@ -1259,6 +1248,7 @@ export function TrackballPage() {
                             </label>
                             {layers.length > 0 ? (
                               <select
+                                disabled={isLoading}
                                 value={displayTempLayerLayer}
                                 onChange={(e) =>
                                   handleTempLayerLayerChange(

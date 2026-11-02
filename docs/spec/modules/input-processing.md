@@ -26,12 +26,12 @@
 
 ## 現行の機能仕様
 
-| ID        | 前提 → 操作                                                                    | 観測できる結果                                                    | 保存範囲・副作用                                                                                                   | 根拠 |
-| --------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---- |
-| INPUT-001 | ready → `loadProcessors`                                                       | list request 後の notification processor list                     | read は保存しない。response error/exception は error                                                               | S1   |
-| INPUT-002 | scaling を numerator/divisor で設定                                            | fraction を約分し multiplier → divisor の順で送る                 | first write 成功後、second write 失敗なら楽観 state は両値のまま残り得る。保存媒体は firmware RPC の外では確認不能 | S2   |
-| INPUT-003 | rotation/temp layer/active layer/axis snap/invert/scroll/swap を ID 指定で更新 | 対象 processor の表示を先に更新し、response error を error にする | 各 request は write-through RPC。flash/RAM の区別は protocol 実装外で未確認                                        | S2   |
-| INPUT-004 | custom processor notification を受信                                           | 同 ID の processor を notification 値に置換                       | caller の pending UI と競合する場合の優先規則は hook 単独にない                                                    | S1   |
+| ID        | 前提 → 操作                                                                    | 観測できる結果                                           | 保存範囲・副作用                                                                                                   | 根拠 |
+| --------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---- |
+| INPUT-001 | ready → `loadProcessors`                                                       | list request 後の notification processor list            | read は保存しない。response error/exception は error                                                               | S1   |
+| INPUT-002 | scaling を numerator/divisor で設定                                            | fraction を約分し multiplier → divisor の順で送る        | first write 成功後、second write 失敗なら楽観 state は両値のまま残り得る。保存媒体は firmware RPC の外では確認不能 | S2   |
+| INPUT-003 | rotation/temp layer/active layer/axis snap/invert/scroll/swap を ID 指定で更新 | AML enable / target は読戻し値を表示。他の項目は楽観更新 | 各 request は write-through RPC。flash/RAM の区別は protocol 実装外で未確認                                        | S2   |
+| INPUT-004 | custom processor notification を受信                                           | 同 ID の processor を notification 値に置換              | caller の pending UI と競合する場合の優先規則は hook 単独にない                                                    | S1   |
 
 INPUT-003 の Trackball UI consumer は、各 processor switch の accessible name に現在言語の設定名と選択中 processor 名を含める。`checked` はその processor の表示値を示す。これは consumer の表示契約であり、hook の RPC 契約とは区別する。
 
@@ -62,6 +62,7 @@ INPUT-003 の Trackball UI consumer は、各 processor switch の accessible na
 ## エラーと復帰
 
 - ready でない `loadProcessors` は `Not connected to device or subsystem not found`。mutation は ready でない場合 no-op で、利用者への明示 feedback は caller 側にない。
+- INPUT-003 の AML 有効化と対象レイヤーは対応する応答と同一 ID の getProcessor の値を照合する。設定復元でも拒否・無応答・不一致は失敗として伝播する。
 - response/transport exception は `Failed to set ...` と error。optimistic mutation に rollback はないため Reload で firmware notification/current value を再取得して確認する。
 - notification decode error は console に記録するのみで、画面 error にしない。
 
