@@ -306,7 +306,10 @@ export function useRuntimeCombo({
           return false;
         }
         if (response?.status) {
-          setCombos((prev) => prev.filter((combo) => combo.index !== index));
+          // Delete writes a disabled override for a default-backed slot. Read
+          // the device's derived source back so the editor and a later Refresh
+          // agree about the slot, then expose the staged mutation to Save.
+          await loadCombos();
           if (!persist) {
             setHasPendingChanges(true);
           }
@@ -324,7 +327,7 @@ export function useRuntimeCombo({
       }
       return false;
     },
-    [callRuntimeComboRPC],
+    [callRuntimeComboRPC, loadCombos],
   );
 
   const resetCombo = useCallback(

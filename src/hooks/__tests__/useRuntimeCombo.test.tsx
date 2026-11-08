@@ -10,6 +10,7 @@ import {
   ComboSource,
   Response,
   SlowReleaseOverride,
+  Request,
   type Combo,
 } from "../../proto/cormoran/runtime_combo/runtime_combo";
 
@@ -281,6 +282,75 @@ describe("useRuntimeCombo", () => {
     expect(ok).toBe(true);
     expect(result.current.combos).toEqual([resetCombo]);
     expect(result.current.hasPendingChanges).toBe(true);
+  });
+
+  it("marks a deleted combo as pending and reloads its disabled override", async () => {
+    const deletedCombo: Combo = {
+      index: 0,
+      name: "Escape chord",
+      keyPositions: [0, 1],
+      behavior: { behaviorId: 10, param1: 0x29, param2: 0 },
+      layerMask: 0,
+      enabled: false,
+      timeoutMs: 0,
+      requirePriorIdleMs: 0,
+      slowReleaseOverride: SlowReleaseOverride.SLOW_RELEASE_OVERRIDE_INHERIT,
+      source: ComboSource.COMBO_SOURCE_OVERRIDDEN,
+    };
+
+    mockCallRPC
+      .mockResolvedValueOnce(
+        Response.encode(
+          Response.create({ listCombos: { combos: [] } }),
+        ).finish(),
+      )
+      .mockResolvedValueOnce(
+        Response.encode(
+          Response.create({
+            getGlobalSettings: {
+              settings: { timeoutMs: 50, slowRelease: false, maxCombo: 16 },
+            },
+          }),
+        ).finish(),
+      )
+      .mockResolvedValueOnce(
+        Response.encode(
+          Response.create({ status: { affectedCount: 1, message: "ok" } }),
+        ).finish(),
+      )
+      .mockResolvedValueOnce(
+        Response.encode(
+          Response.create({ listCombos: { combos: [deletedCombo] } }),
+        ).finish(),
+      );
+
+    const wrapper = createWrapper({
+      state: {
+        connection: { isConnected: true },
+        customSubsystems: [{ index: 7, identifier: "cormoran__runtime_combo" }],
+      },
+      findSubsystem: (id: string) =>
+        id === "cormoran__runtime_combo"
+          ? { index: 7, identifier: "cormoran__runtime_combo" }
+          : null,
+    });
+
+    const { result } = renderHook(() => useRuntimeCombo(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.deleteCombo(0);
+    });
+
+    expect(ok).toBe(true);
+    expect(result.current.hasPendingChanges).toBe(true);
+    expect(result.current.combos).toEqual([deletedCombo]);
+    expect(Request.decode(mockCallRPC.mock.calls[2][0]).deleteCombo).toEqual({
+      index: 0,
+      persist: false,
+    });
   });
 
   it("sets the global require-prior-idle duration", async () => {
