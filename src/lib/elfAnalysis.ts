@@ -37,6 +37,8 @@ export interface LineEntry {
   address: number;
   file: string;
   line: number;
+  /** True for DW_LNE_end_sequence sentinels marking the end of a code range. */
+  endSequence?: boolean;
 }
 
 export interface ElfInfo {
@@ -66,23 +68,44 @@ export class ElfParseError extends Error {
 // Low-level readers
 // ---------------------------------------------------------------------------
 
-function readNullString(data: Uint8Array, offset: number): string {
-  let end = offset;
-  while (end < data.length && data[end] !== 0) end++;
-  return new TextDecoder().decode(data.subarray(offset, end));
+const utf8Decoder = new TextDecoder();
+const ELF32_SECTION_HEADER_MIN_SIZE = 40;
+const ELF32_SYMBOL_MIN_SIZE = 16;
+
+function readNullString(
+  data: Uint8Array,
+  offset: number,
+  end: number = data.length,
+): { text: string; nextOffset: number } {
+  const limit = Math.min(end, data.length);
+  if (offset >= limit) {
+    return { text: "", nextOffset: limit };
+  }
+  let pos = offset;
+  while (pos < limit && data[pos] !== 0) pos++;
+  const text = utf8Decoder.decode(data.subarray(offset, pos));
+  const nextOffset = pos < limit ? pos + 1 : limit;
+  return { text, nextOffset };
 }
 
 function readULEB128(
   data: Uint8Array,
   offset: number,
+  end: number = data.length,
 ): { value: number; bytesRead: number } {
-  let result = 0,
-    shift = 0,
-    pos = offset;
-  while (pos < data.length) {
+  const limit = Math.min(end, data.length);
+  let result = 0;
+  let factor = 1;
+  let pos = offset;
+  let count = 0;
+  while (pos < limit) {
     const byte = data[pos++];
-    result |= (byte & 0x7f) << shift;
-    shift += 7;
+    // Stay within JS safe integer / uint32 precision (up to 7 * 7 = 49 bits).
+    if (count < 7) {
+      result += (byte & 0x7f) * factor;
+      factor *= 128;
+    }
+    count++;
     if (!(byte & 0x80)) break;
   }
   return { value: result, bytesRead: pos - offset };
@@ -91,16 +114,24 @@ function readULEB128(
 function readSLEB128(
   data: Uint8Array,
   offset: number,
+  end: number = data.length,
 ): { value: number; bytesRead: number } {
-  let result = 0,
-    shift = 0,
-    pos = offset;
+  const limit = Math.min(end, data.length);
+  if (offset >= limit) {
+    return { value: 0, bytesRead: 0 };
+  }
+  let result = 0;
+  let shift = 0;
+  let pos = offset;
   let byte = 0;
-  do {
+  while (pos < limit) {
     byte = data[pos++];
-    result |= (byte & 0x7f) << shift;
+    if (shift < 32) {
+      result |= (byte & 0x7f) << shift;
+    }
     shift += 7;
-  } while (pos < data.length && byte & 0x80);
+    if (!(byte & 0x80)) break;
+  }
   if (shift < 32 && byte & 0x40) result |= -(1 << shift);
   return { value: result, bytesRead: pos - offset };
 }
@@ -118,6 +149,20 @@ interface SectionHeader {
   sh_entsize: number;
 }
 
+function sliceSection(bytes: Uint8Array, section: SectionHeader): Uint8Array {
+  const end = section.sh_offset + section.sh_size;
+  if (
+    section.sh_offset > bytes.length ||
+    end > bytes.length ||
+    end < section.sh_offset
+  ) {
+    throw new ElfParseError(
+      `Section ${section.name || "(unnamed)"} exceeds file bounds`,
+    );
+  }
+  return bytes.subarray(section.sh_offset, end);
+}
+
 function parseSectionHeaders(
   bytes: Uint8Array,
   view: DataView,
@@ -128,12 +173,16 @@ function parseSectionHeaders(
   const e_shstrndx = view.getUint16(50, true);
 
   if (e_shoff === 0 || e_shnum === 0) return [];
+  if (e_shentsize < ELF32_SECTION_HEADER_MIN_SIZE) {
+    throw new ElfParseError("Invalid ELF section header entry size");
+  }
 
   // Read raw section headers first (names resolved after)
-  const rawSections: Omit<SectionHeader, "name">[] = [];
+  const rawSections: (Omit<SectionHeader, "name"> & { _nameIdx: number })[] =
+    [];
   for (let i = 0; i < e_shnum; i++) {
     const base = e_shoff + i * e_shentsize;
-    if (base + 40 > bytes.length) break;
+    if (base + ELF32_SECTION_HEADER_MIN_SIZE > bytes.length) break;
     rawSections.push({
       sh_type: view.getUint32(base + 4, true),
       sh_offset: view.getUint32(base + 16, true),
@@ -142,22 +191,32 @@ function parseSectionHeaders(
       sh_entsize: view.getUint32(base + 36, true),
       // sh_name offset temporarily stored; resolved below
       _nameIdx: view.getUint32(base + 0, true),
-    } as Omit<SectionHeader, "name"> & { _nameIdx: number });
+    });
   }
 
   // Resolve section names via .shstrtab
   let shstrtab: Uint8Array | null = null;
   if (e_shstrndx < rawSections.length) {
-    const s = rawSections[e_shstrndx] as Omit<SectionHeader, "name"> & {
-      _nameIdx: number;
-    };
-    shstrtab = bytes.subarray(s.sh_offset, s.sh_offset + s.sh_size);
+    const s = rawSections[e_shstrndx];
+    const end = s.sh_offset + s.sh_size;
+    if (s.sh_offset > bytes.length || end > bytes.length || end < s.sh_offset) {
+      throw new ElfParseError(
+        "Section header string table exceeds file bounds",
+      );
+    }
+    shstrtab = bytes.subarray(s.sh_offset, end);
   }
 
-  return rawSections.map((s) => {
-    const raw = s as Omit<SectionHeader, "name"> & { _nameIdx: number };
-    const name = shstrtab ? readNullString(shstrtab, raw._nameIdx) : "";
-    return { ...raw, name } as SectionHeader;
+  return rawSections.map((raw) => {
+    const name = shstrtab ? readNullString(shstrtab, raw._nameIdx).text : "";
+    return {
+      name,
+      sh_type: raw.sh_type,
+      sh_offset: raw.sh_offset,
+      sh_size: raw.sh_size,
+      sh_link: raw.sh_link,
+      sh_entsize: raw.sh_entsize,
+    };
   });
 }
 
@@ -171,41 +230,38 @@ function parseSymbols(
   const strtabSection = sections[symtabSection.sh_link];
   if (!strtabSection) return [];
 
-  const symtab = bytes.subarray(
-    symtabSection.sh_offset,
-    symtabSection.sh_offset + symtabSection.sh_size,
-  );
-  const strtab = bytes.subarray(
-    strtabSection.sh_offset,
-    strtabSection.sh_offset + strtabSection.sh_size,
-  );
+  const entSize = symtabSection.sh_entsize || ELF32_SYMBOL_MIN_SIZE;
+  if (entSize < ELF32_SYMBOL_MIN_SIZE) {
+    throw new ElfParseError("Invalid ELF symbol table entry size");
+  }
 
-  const entSize = symtabSection.sh_entsize || 16;
+  const symtab = sliceSection(bytes, symtabSection);
+  const strtab = sliceSection(bytes, strtabSection);
+  const symView = new DataView(
+    symtab.buffer,
+    symtab.byteOffset,
+    symtab.byteLength,
+  );
   const symbols: SymbolEntry[] = [];
 
   for (let i = 0; i < Math.floor(symtab.length / entSize); i++) {
     const base = i * entSize;
-    if (base + 16 > symtab.length) break;
+    if (base + ELF32_SYMBOL_MIN_SIZE > symtab.length) break;
 
-    const symView = new DataView(
-      symtab.buffer,
-      symtab.byteOffset + base,
-      entSize,
-    );
-    const st_name = symView.getUint32(0, true);
-    const st_value = symView.getUint32(4, true);
-    const st_size = symView.getUint32(8, true);
-    const st_info = symView.getUint8(12);
-    const st_shndx = symView.getUint16(14, true);
+    const st_name = symView.getUint32(base + 0, true);
+    const st_value = symView.getUint32(base + 4, true);
+    const st_size = symView.getUint32(base + 8, true);
+    const st_info = symView.getUint8(base + 12);
+    const st_shndx = symView.getUint16(base + 14, true);
 
     const stType = st_info & 0x0f;
 
     if (stType === STT_FUNC && st_shndx !== SHN_UNDEF && st_value !== 0) {
-      const name = readNullString(strtab, st_name);
+      const { text: name } = readNullString(strtab, st_name);
       if (name) {
         symbols.push({
           name,
-          address: st_value & ~1, // clear Thumb mode bit
+          address: (st_value & ~1) >>> 0, // clear Thumb mode bit (unsigned)
           size: st_size,
         });
       }
@@ -278,24 +334,21 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
       maxOpsPerInsn = data[offset++];
     }
 
-    if (offset >= unitEnd) {
+    if (offset >= programStart) {
       offset = unitEnd;
       continue;
     }
-    const defaultIsStmt = data[offset++] !== 0;
-
-    if (offset >= unitEnd) {
-      offset = unitEnd;
-      continue;
-    }
-    const lineBase = new DataView(
-      data.buffer,
-      data.byteOffset + offset,
-      1,
-    ).getInt8(0);
+    // default_is_stmt (not used in addr2line output)
     offset++;
 
-    if (offset >= unitEnd) {
+    if (offset >= programStart) {
+      offset = unitEnd;
+      continue;
+    }
+    const lineBase = view.getInt8(offset);
+    offset++;
+
+    if (offset >= programStart) {
       offset = unitEnd;
       continue;
     }
@@ -305,7 +358,7 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
       continue;
     }
 
-    if (offset >= unitEnd) {
+    if (offset >= programStart) {
       offset = unitEnd;
       continue;
     }
@@ -325,9 +378,9 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
         offset++;
         break;
       }
-      const dir = readNullString(data, offset);
-      offset += dir.length + 1;
-      includeDirs.push(dir);
+      const dir = readNullString(data, offset, programStart);
+      offset = dir.nextOffset;
+      includeDirs.push(dir.text);
     }
 
     // File name entries (DWARF 4 format)
@@ -337,21 +390,21 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
         offset++;
         break;
       }
-      const fname = readNullString(data, offset);
-      offset += fname.length + 1;
+      const fname = readNullString(data, offset, programStart);
+      offset = fname.nextOffset;
 
-      const dirIdxR = readULEB128(data, offset);
+      const dirIdxR = readULEB128(data, offset, programStart);
       offset += dirIdxR.bytesRead;
-      const timeR = readULEB128(data, offset);
+      const timeR = readULEB128(data, offset, programStart);
       offset += timeR.bytesRead;
-      const lenR = readULEB128(data, offset);
+      const lenR = readULEB128(data, offset, programStart);
       offset += lenR.bytesRead;
 
       const dir =
         dirIdxR.value > 0 && dirIdxR.value < includeDirs.length
           ? includeDirs[dirIdxR.value]
           : "";
-      fileNames.push(dir ? `${dir}/${fname}` : fname);
+      fileNames.push(dir ? `${dir}/${fname.text}` : fname.text);
     }
 
     // Execute line number program
@@ -360,14 +413,17 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
     let address = 0;
     let fileIdx = 1;
     let line = 1;
-    let isStmt = defaultIsStmt;
 
-    const emitRow = () => {
+    const emitRow = (endSequence = false) => {
       const fname =
         fileIdx > 0 && fileIdx < fileNames.length
           ? fileNames[fileIdx]
           : `file${fileIdx}`;
-      lines.push({ address, file: fname, line });
+      lines.push(
+        endSequence
+          ? { address, file: fname, line, endSequence: true }
+          : { address, file: fname, line },
+      );
     };
 
     while (offset < unitEnd) {
@@ -375,19 +431,19 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
 
       if (opcode === 0) {
         // Extended opcode
-        const extLenR = readULEB128(data, offset);
+        const extLenR = readULEB128(data, offset, unitEnd);
         offset += extLenR.bytesRead;
-        if (offset >= unitEnd) break;
+        if (extLenR.value < 1 || offset >= unitEnd) break;
+        const extEnd = offset + extLenR.value;
+        if (extEnd < offset || extEnd > unitEnd) break;
         const extOp = data[offset++];
-        const extEnd = offset + extLenR.value - 1;
 
         switch (extOp) {
           case DW_LNE_end_sequence:
-            emitRow();
+            emitRow(true);
             address = 0;
             fileIdx = 1;
             line = 1;
-            isStmt = defaultIsStmt;
             break;
           case DW_LNE_set_address:
             if (offset + 4 <= extEnd) {
@@ -395,19 +451,19 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
             }
             break;
           case DW_LNE_define_file: {
-            const fn = readNullString(data, offset);
-            let fnOff = offset + fn.length + 1;
-            const dirIdxR = readULEB128(data, fnOff);
+            const fn = readNullString(data, offset, extEnd);
+            let fnOff = fn.nextOffset;
+            const dirIdxR = readULEB128(data, fnOff, extEnd);
             fnOff += dirIdxR.bytesRead;
-            const timeR = readULEB128(data, fnOff);
+            const timeR = readULEB128(data, fnOff, extEnd);
             fnOff += timeR.bytesRead;
-            const _lenR = readULEB128(data, fnOff);
+            const _lenR = readULEB128(data, fnOff, extEnd);
             void _lenR;
             const dir =
               dirIdxR.value > 0 && dirIdxR.value < includeDirs.length
                 ? includeDirs[dirIdxR.value]
                 : "";
-            fileNames.push(dir ? `${dir}/${fn}` : fn);
+            fileNames.push(dir ? `${dir}/${fn.text}` : fn.text);
             break;
           }
         }
@@ -423,31 +479,30 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
             emitRow();
             break;
           case DW_LNS_advance_pc: {
-            const r = readULEB128(data, offset);
+            const r = readULEB128(data, offset, unitEnd);
             offset += r.bytesRead;
             address += (r.value * minInsnLength) / Math.max(maxOpsPerInsn, 1);
             break;
           }
           case DW_LNS_advance_line: {
-            const r = readSLEB128(data, offset);
+            const r = readSLEB128(data, offset, unitEnd);
             offset += r.bytesRead;
             line += r.value;
             break;
           }
           case DW_LNS_set_file: {
-            const r = readULEB128(data, offset);
+            const r = readULEB128(data, offset, unitEnd);
             offset += r.bytesRead;
             fileIdx = r.value;
             break;
           }
           case DW_LNS_set_column: {
-            const r = readULEB128(data, offset);
+            const r = readULEB128(data, offset, unitEnd);
             offset += r.bytesRead;
             void r; // column not used in output
             break;
           }
           case DW_LNS_negate_stmt:
-            isStmt = !isStmt;
             break;
           case DW_LNS_set_basic_block:
             break;
@@ -466,7 +521,7 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
           case DW_LNS_set_epilogue_begin:
             break;
           case DW_LNS_set_isa: {
-            const r = readULEB128(data, offset);
+            const r = readULEB128(data, offset, unitEnd);
             offset += r.bytesRead;
             void r;
             break;
@@ -475,7 +530,7 @@ function parseDebugLine(data: Uint8Array): LineEntry[] {
             // Unknown standard opcode: skip its operands
             if (opcode - 1 < stdOpLengths.length) {
               for (let i = 0; i < stdOpLengths[opcode - 1]; i++) {
-                const r = readULEB128(data, offset);
+                const r = readULEB128(data, offset, unitEnd);
                 offset += r.bytesRead;
               }
             }
@@ -529,10 +584,7 @@ export function parseElf(buffer: ArrayBuffer, fileName: string): ElfInfo {
   const debugLineSection = sections.find((s) => s.name === ".debug_line");
   if (debugLineSection && debugLineSection.sh_size > 0) {
     try {
-      const data = bytes.subarray(
-        debugLineSection.sh_offset,
-        debugLineSection.sh_offset + debugLineSection.sh_size,
-      );
+      const data = sliceSection(bytes, debugLineSection);
       lines = parseDebugLine(data);
     } catch {
       // Best-effort: silently ignore DWARF parse errors
@@ -547,7 +599,7 @@ export function resolveAddress(
   elf: ElfInfo,
   rawAddress: number,
 ): ResolvedAddress | null {
-  const address = rawAddress & ~1; // clear ARM Thumb mode bit
+  const address = (rawAddress & ~1) >>> 0; // clear ARM Thumb mode bit (unsigned)
 
   let functionName: string | undefined;
   let offset: number | undefined;
@@ -571,10 +623,6 @@ export function resolveAddress(
     if (sym.size === 0 || address < sym.address + sym.size) {
       functionName = sym.name;
       offset = address - sym.address;
-    } else {
-      // Outside the symbol's size range but closest — still useful
-      functionName = sym.name;
-      offset = address - sym.address;
     }
   }
 
@@ -595,7 +643,7 @@ export function resolveAddress(
     }
   }
 
-  if (lineIdx >= 0) {
+  if (lineIdx >= 0 && !elf.lines[lineIdx].endSequence) {
     file = elf.lines[lineIdx].file;
     lineNum = elf.lines[lineIdx].line;
   }

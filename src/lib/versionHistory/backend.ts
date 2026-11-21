@@ -74,10 +74,55 @@ function openDatabase(): Promise<IDBDatabase> {
 export function createIndexedDbBackend(): VersionStoreBackend | null {
   if (typeof indexedDB === "undefined") return null;
 
-  // One lazily-opened connection shared by every call; a failed open is not
-  // retried for the lifetime of the page (the cause is never transient).
   let dbPromise: Promise<IDBDatabase> | null = null;
-  const db = () => (dbPromise ??= openDatabase());
+  let memoryFallback: VersionStoreBackend | null = null;
+
+  const resetConnection = () => {
+    dbPromise = null;
+  };
+
+  const db = (): Promise<IDBDatabase> => {
+    if (!dbPromise) {
+      dbPromise = openDatabase().then(
+        (connection) => {
+          connection.onversionchange = () => {
+            connection.close();
+            resetConnection();
+          };
+          connection.onclose = resetConnection;
+          return connection;
+        },
+        (error) => {
+          resetConnection();
+          throw error;
+        },
+      );
+    }
+    return dbPromise;
+  };
+
+  const withFallback = async <T>(
+    runIndexedDb: () => Promise<T>,
+    runMemory: (fallback: VersionStoreBackend) => Promise<T>,
+  ): Promise<T> => {
+    if (memoryFallback) return runMemory(memoryFallback);
+    try {
+      return await runIndexedDb();
+    } catch (error) {
+      // If IndexedDB itself failed to open (private browsing, blocked upgrade,
+      // storage disabled), degrade to the in-memory backend so history keeps
+      // working for the current session instead of permanently failing.
+      if (!dbPromise) {
+        console.warn(
+          "Version history IndexedDB unavailable; falling back to memory:",
+          error,
+        );
+        memoryFallback = createMemoryBackend();
+        return runMemory(memoryFallback);
+      }
+      throw error;
+    }
+  };
 
   const tx = async <T>(
     mode: IDBTransactionMode,
@@ -85,37 +130,56 @@ export function createIndexedDbBackend(): VersionStoreBackend | null {
   ): Promise<T> => {
     const connection = await db();
     const transaction = connection.transaction(SNAPSHOT_STORE, mode);
-    const result = await run(transaction.objectStore(SNAPSHOT_STORE));
-    await new Promise<void>((resolve, reject) => {
+    // Attach transaction lifecycle listeners synchronously before awaiting any
+    // IDBRequest so auto-commit cannot fire before listeners are installed.
+    const completed = new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-      transaction.onabort = () => reject(transaction.error);
+      transaction.onerror = () =>
+        reject(transaction.error ?? new Error("IndexedDB transaction error"));
+      transaction.onabort = () =>
+        reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
     });
+    const result = await run(transaction.objectStore(SNAPSHOT_STORE));
+    await completed;
     return result;
   };
 
   return {
     list(deviceKey, tabId) {
-      return tx("readonly", (store) =>
-        promisify<StoredSnapshot[]>(
-          store
-            .index(DEVICE_TAB_INDEX)
-            .getAll(IDBKeyRange.only([deviceKey, tabId])) as IDBRequest<
-            StoredSnapshot[]
-          >,
-        ),
+      return withFallback(
+        () =>
+          tx("readonly", (store) =>
+            promisify<StoredSnapshot[]>(
+              store
+                .index(DEVICE_TAB_INDEX)
+                .getAll(IDBKeyRange.only([deviceKey, tabId])) as IDBRequest<
+                StoredSnapshot[]
+              >,
+            ),
+          ),
+        (fallback) => fallback.list(deviceKey, tabId),
       );
     },
     add(snapshot) {
-      return tx("readwrite", async (store) => {
-        const key = await promisify(store.add(snapshot) as IDBRequest<number>);
-        return { ...snapshot, id: key } as StoredSnapshot;
-      });
+      return withFallback(
+        () =>
+          tx("readwrite", async (store) => {
+            const key = await promisify(
+              store.add(snapshot) as IDBRequest<number>,
+            );
+            return { ...snapshot, id: key } as StoredSnapshot;
+          }),
+        (fallback) => fallback.add(snapshot),
+      );
     },
     remove(ids) {
-      return tx("readwrite", async (store) => {
-        for (const id of ids) store.delete(id);
-      });
+      return withFallback(
+        () =>
+          tx("readwrite", async (store) => {
+            for (const id of ids) store.delete(id);
+          }),
+        (fallback) => fallback.remove(ids),
+      );
     },
   };
 }

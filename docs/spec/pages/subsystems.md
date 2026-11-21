@@ -27,7 +27,7 @@
 - supported: `SUPPORTED_SUBSYSTEM_IDENTIFIERS` にある既知 feature は折りたたみ `Already supported by DYA Studio` に置く。Keymap の Tapdances card が扱う `cormoran__runtime_tapdance` と、専用タブがない Fast Keymap も supported に分類する。firmware の index と `uiUrl` metadata は分類後もカードに表示する。
 - unsupported: dedicated UI がない item を先に card 表示する。`uiUrl` が空なら `No web UI available for this subsystem.`。
 - Demo: 接続 label が `Demo` の場合だけ `Demo: Subsystem Toggles`。checkbox 変更は直ちに browser state を変えるが、advertisement の反映は Reconnect 後。
-- approved / unapproved: http / https の legacy entry だけを移行対象とし、承認済み URL は SHA-256 digest で保持する。不正 URL は legacy storage から除外されるが、card の metadata URL が invalid のときの link click 挙動は未検証。
+- approved / unapproved: http / https のみ外部リンクとしてクリック・遷移可能（`isValidUrl`）。不正 URL や `javascript:` 等の非 http/https scheme はテキスト表示のみでクリック不可、navigation も行わない。承認済み URL は SHA-256 digest で保持し、legacy entry の移行も http / https のみ対象とする。
 
 ## 現行の機能仕様
 
@@ -91,4 +91,4 @@ PopではDemo subsystemのcheckbox項目を淡い青・透明枠で表示する�
 
 ## 未解決・未検証
 
-外部 URL の実訪問、popup/同一ページ遷移のブラウザ差、invalid metadata URL の click、disconnect failure、storage 拒否、実 firmware の discovery timing は未検証。metadata URL が表示されたことは安全性の承認根拠ではない。
+外部 URL の実訪問、popup/同一ページ遷移のブラウザ差、disconnect failure、storage 拒否、実 firmware の discovery timing は未検証。metadata URL が表示されたことは安全性の承認根拠ではない。

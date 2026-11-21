@@ -2,7 +2,7 @@
 
 > 2026-10-18 ユーザー明示要求: Macro&Combo タブを廃止し、編集入口を [Keymap KM-029/030](keymap.md) のカードと modal に統合する。この文書は共有 editor/RPC の契約を定義する。旧ページの試行記録は当時の UI に対する証拠であり、現行のカード配置を実測した証拠ではない。
 
-旧タブの互換実装と回帰比較用ソース: [MacroComboPage](../../../src/pages/MacroComboPage.tsx)。App のタブ登録からは除外する。
+旧タブの `MacroComboPage`（および旧 `MobileMacroComboMenu` / `useMacroComboVersionHistory`）は削除済み。App の `/macro-combo` 互換ルートは Keymap へ遷移する。
 
 ## 範囲・根拠
 

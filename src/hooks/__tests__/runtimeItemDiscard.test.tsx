@@ -216,3 +216,32 @@ it("preserves unsaved global settings when the only dirty macro is discarded", a
     mockCall.mock.calls.some(([, r]) => r.discardMacros || r.saveMacros),
   ).toBe(false);
 });
+
+it("preserves Uint8Array packedKeys when discarding a saved keyTapSequence macro", async () => {
+  const { result } = renderHook(() => useRuntimeMacro());
+  await waitFor(() => expect(result.current.macros).toHaveLength(2));
+  const packedKeys = new Uint8Array([0x04, 0x05, 0x06]);
+  await act(async () => {
+    await result.current.createMacro("Seq", [
+      { keyTapSequence: { packedKeys } },
+    ]);
+    await result.current.saveMacros();
+  });
+  const saved = result.current.macros.find((entry) => entry.name === "Seq")!;
+  await act(async () => {
+    await result.current.setMacroStepCount(saved.slot, 1);
+    await result.current.setMacroStep(saved.slot, 0, {
+      delay: { delayMs: 55 },
+    });
+  });
+  await act(async () => {
+    expect(await result.current.discardMacro("Seq")).toBe(true);
+  });
+  const restored = await result.current.getMacro(saved.slot);
+  expect(restored?.steps[0].keyTapSequence?.packedKeys).toBeInstanceOf(
+    Uint8Array,
+  );
+  expect(
+    Array.from(restored?.steps[0].keyTapSequence?.packedKeys ?? []),
+  ).toEqual([0x04, 0x05, 0x06]);
+});

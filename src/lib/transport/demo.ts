@@ -188,7 +188,7 @@ const DEMO = {
       {
         id: 0,
         name: "Base",
-        bindings: KEYBOARD_KEYCODES.splice(0, maxKeys).map((code) => ({
+        bindings: KEYBOARD_KEYCODES.slice(0, maxKeys).map((code) => ({
           behaviorId: 10,
           param1: code.code,
           param2: 0,

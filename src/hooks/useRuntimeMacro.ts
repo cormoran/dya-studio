@@ -20,6 +20,25 @@ const CODEC = {
   decode: (payload: Uint8Array) => Response.decode(payload),
 };
 
+function cloneMacroStep(step: MacroStep): MacroStep {
+  return {
+    down: step.down ? { ...step.down } : undefined,
+    up: step.up ? { ...step.up } : undefined,
+    tap: step.tap ? { ...step.tap } : undefined,
+    delay: step.delay ? { ...step.delay } : undefined,
+    keyTapSequence: step.keyTapSequence
+      ? { packedKeys: new Uint8Array(step.keyTapSequence.packedKeys) }
+      : undefined,
+  };
+}
+
+function cloneMacroDetail(macro: MacroDetail): MacroDetail {
+  return {
+    ...macro,
+    steps: macro.steps.map(cloneMacroStep),
+  };
+}
+
 export interface UseRuntimeMacroReturn {
   isAvailable: boolean;
   macros: MacroSummary[];
@@ -216,7 +235,7 @@ export function useRuntimeMacro(
             if (!summary.hasUnsavedChanges)
               savedMacros.current.set(
                 summary.name,
-                JSON.parse(JSON.stringify(detail.getMacro.macro)),
+                cloneMacroDetail(detail.getMacro.macro),
               );
           }
         }

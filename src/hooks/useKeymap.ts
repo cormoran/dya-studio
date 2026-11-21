@@ -840,38 +840,36 @@ export function useKeymap(): UseKeymapReturn {
   );
 
   // Save changes
-  const saveChanges = useCallback(async (): Promise<boolean> => {
-    const result = await callRpc(
-      { keymap: { saveChanges: true } },
-      (response) => response.keymap?.saveChanges,
-    );
-
-    if (result?.ok) {
-      setHasUnsavedChanges(false);
-      // Everything is now persisted: nothing is pending on the device anymore.
-      setPendingPositions(new Set());
-      // Update original bindings to current state after save
-      if (keymap) {
-        storeOriginalBindings(keymap);
-      }
-      clearError();
-      return true;
-    }
-
-    if (result?.err !== undefined) {
-      setErrorWithAutoClear(
-        `Failed to save changes: operation not allowed or storage error`,
+  const saveChanges = useCallback(
+    async (savedKeymapOverride?: Keymap): Promise<boolean> => {
+      const result = await callRpc(
+        { keymap: { saveChanges: true } },
+        (response) => response.keymap?.saveChanges,
       );
-    }
 
-    return false;
-  }, [
-    callRpc,
-    keymap,
-    storeOriginalBindings,
-    clearError,
-    setErrorWithAutoClear,
-  ]);
+      if (result?.ok) {
+        setHasUnsavedChanges(false);
+        // Everything is now persisted: nothing is pending on the device anymore.
+        setPendingPositions(new Set());
+        // Update original bindings to current state after save
+        const savedKeymap = savedKeymapOverride ?? keymap;
+        if (savedKeymap) {
+          storeOriginalBindings(savedKeymap);
+        }
+        clearError();
+        return true;
+      }
+
+      if (result?.err !== undefined) {
+        setErrorWithAutoClear(
+          `Failed to save changes: operation not allowed or storage error`,
+        );
+      }
+
+      return false;
+    },
+    [callRpc, keymap, storeOriginalBindings, clearError, setErrorWithAutoClear],
+  );
 
   // Discard changes
   const discardChanges = useCallback(async (): Promise<boolean> => {
@@ -902,9 +900,17 @@ export function useKeymap(): UseKeymapReturn {
       return false;
     }
 
+    // Track the post-reset bindings locally so saveChanges() records the new
+    // defaults as originalBindings rather than the stale pre-reset closure.
+    const nextLayers = keymap.layers.map((layer) => ({
+      ...layer,
+      bindings: [...layer.bindings],
+    }));
+
     // Apply only the positions whose current binding differs from the default,
     // to keep the number of RPCs (BLE round-trips) to what actually changed.
-    for (const layer of keymap.layers) {
+    for (let layerIdx = 0; layerIdx < keymap.layers.length; layerIdx++) {
+      const layer = keymap.layers[layerIdx];
       for (let position = 0; position < layer.bindings.length; position++) {
         const def = defaultBindings.get(bindingKey(layer.id, position));
         if (!def) continue;
@@ -915,11 +921,12 @@ export function useKeymap(): UseKeymapReturn {
           // setBinding already surfaced the error (incl. unlock-required).
           return false;
         }
+        nextLayers[layerIdx].bindings[position] = { ...def };
       }
     }
 
     // Persist the now-default keymap to flash.
-    return saveChanges();
+    return saveChanges({ ...keymap, layers: nextLayers });
   }, [keymap, defaultBindings, setBinding, saveChanges, setErrorWithAutoClear]);
 
   // Set active physical layout

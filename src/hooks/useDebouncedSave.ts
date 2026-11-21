@@ -52,9 +52,11 @@ export function useDebouncedSave<T>(
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [pendingValue, setPendingValueState] = useState<T | null>(null);
 
+  const pendingValueRef = useRef<T | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const statusTimerRef = useRef<number | null>(null);
   const saveFnRef = useRef<((value: T) => Promise<void>) | null>(null);
+  const generationRef = useRef(0);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -65,6 +67,7 @@ export function useDebouncedSave<T>(
   }, []);
 
   const cancel = useCallback(() => {
+    generationRef.current += 1;
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -73,68 +76,94 @@ export function useDebouncedSave<T>(
       clearTimeout(statusTimerRef.current);
       statusTimerRef.current = null;
     }
+    pendingValueRef.current = null;
     setPendingValueState(null);
     setSaveStatus("idle");
     saveFnRef.current = null;
   }, []);
 
   const saveNow = useCallback(async () => {
-    if (pendingValue !== null && saveFnRef.current) {
+    const value = pendingValueRef.current;
+    const saveFn = saveFnRef.current;
+    if (value !== null && saveFn) {
+      const generation = ++generationRef.current;
       // Clear any pending timers
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      if (statusTimerRef.current) {
+        clearTimeout(statusTimerRef.current);
+        statusTimerRef.current = null;
+      }
 
       setSaveStatus("saving");
       try {
-        await saveFnRef.current(pendingValue);
+        await saveFn(value);
+        if (generationRef.current !== generation) return;
+        pendingValueRef.current = null;
         setPendingValueState(null);
         setSaveStatus("saved");
 
         // Clear "saved" status after duration
-        if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-        statusTimerRef.current = setTimeout(() => {
-          setSaveStatus("idle");
+        statusTimerRef.current = window.setTimeout(() => {
+          if (generationRef.current === generation) {
+            setSaveStatus("idle");
+          }
           statusTimerRef.current = null;
         }, savedStatusDuration);
       } catch (error) {
         console.error("Failed to save:", error);
-        setSaveStatus("idle");
+        if (generationRef.current === generation) {
+          setSaveStatus("idle");
+        }
       }
     }
-  }, [pendingValue, savedStatusDuration]);
+  }, [savedStatusDuration]);
 
   const setPendingValue = useCallback(
     (value: T, saveFn: (value: T) => Promise<void>) => {
+      const generation = ++generationRef.current;
+      pendingValueRef.current = value;
       setPendingValueState(value);
       saveFnRef.current = saveFn;
       setSaveStatus("pending");
 
-      // Clear existing save timer
+      // Clear existing save and status timers
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (statusTimerRef.current) {
+        clearTimeout(statusTimerRef.current);
+        statusTimerRef.current = null;
       }
 
       // Set new timer for auto-save
-      saveTimerRef.current = setTimeout(async () => {
+      saveTimerRef.current = window.setTimeout(async () => {
+        saveTimerRef.current = null;
+        if (generationRef.current !== generation) return;
         setSaveStatus("saving");
         try {
           await saveFn(value);
+          if (generationRef.current !== generation) return;
+          pendingValueRef.current = null;
           setPendingValueState(null);
           setSaveStatus("saved");
 
           // Clear "saved" status after duration
-          if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-          statusTimerRef.current = setTimeout(() => {
-            setSaveStatus("idle");
+          statusTimerRef.current = window.setTimeout(() => {
+            if (generationRef.current === generation) {
+              setSaveStatus("idle");
+            }
             statusTimerRef.current = null;
           }, savedStatusDuration);
         } catch (error) {
           console.error("Failed to save:", error);
-          setSaveStatus("idle");
+          if (generationRef.current === generation) {
+            setSaveStatus("idle");
+          }
         }
-        saveTimerRef.current = null;
       }, delay);
     },
     [delay, savedStatusDuration],

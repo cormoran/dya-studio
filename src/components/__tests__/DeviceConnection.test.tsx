@@ -761,5 +761,55 @@ describe("DeviceConnection", () => {
       consoleErrorSpy.mockRestore();
       consoleWarnSpy.mockRestore();
     });
+
+    test("does not show the reconnecting overlay on cold loads with no paired serial ports", async () => {
+      jest.useFakeTimers();
+      try {
+        setPairedSerialPorts([]);
+
+        render(
+          <DeviceConnectionProvider reconnectMinDisplayMs={600}>
+            <TestComponent />
+          </DeviceConnectionProvider>,
+        );
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(10);
+        });
+
+        expect(screen.queryByTestId("reconnecting")).not.toBeInTheDocument();
+        expect(screen.getByTestId("connect-button")).toBeInTheDocument();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    test("succeeds connecting even if sessionStorage.setItem throws", async () => {
+      const user = userEvent.setup();
+      mocks.mockSuccessfulConnection({ deviceName: "Storage Restricted" });
+      const setItemSpy = jest
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new DOMException("QuotaExceededError");
+        });
+
+      try {
+        render(
+          <DeviceConnectionProvider reconnectMinDisplayMs={0}>
+            <TestComponent method="demo" />
+          </DeviceConnectionProvider>,
+        );
+
+        await user.click(screen.getByTestId("connect-button"));
+
+        await waitFor(() => {
+          expect(screen.getByTestId("connection-status")).toHaveTextContent(
+            "Connected",
+          );
+        });
+      } finally {
+        setItemSpy.mockRestore();
+      }
+    });
   });
 });

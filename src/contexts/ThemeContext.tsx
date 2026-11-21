@@ -23,11 +23,28 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 const STORAGE_KEY = "dya-studio-theme";
 
+function readStoredTheme(): Theme | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return isTheme(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Ignore storage errors in restricted contexts.
+  }
+}
+
 function getInitialTheme(): Theme {
   // Check localStorage first
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (isTheme(stored)) {
+    const stored = readStoredTheme();
+    if (stored) {
       return stored;
     }
     // Check system preference
@@ -51,7 +68,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     root.classList.remove(...themeOptions.map((option) => option.value));
     root.classList.add(theme);
     root.style.colorScheme = theme === "dark" ? "dark" : "light";
-    localStorage.setItem(STORAGE_KEY, theme);
     setPopFontEnabled(theme === "pop");
   }, [theme]);
 
@@ -59,9 +75,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem(STORAGE_KEY);
       // Only auto-switch if user hasn't set a preference
-      if (!stored) {
+      if (!readStoredTheme()) {
         setThemeState(e.matches ? "light" : "dark");
       }
     };
@@ -70,10 +85,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  }, []);
+    const next = theme === "dark" ? "light" : "dark";
+    writeStoredTheme(next);
+    setThemeState(next);
+  }, [theme]);
 
   const setTheme = useCallback((newTheme: Theme) => {
+    writeStoredTheme(newTheme);
     setThemeState(newTheme);
   }, []);
 

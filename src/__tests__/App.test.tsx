@@ -25,11 +25,6 @@ jest.mock("../pages/ReleaseNotesPage", () => ({
 jest.mock("../components/developerGuide", () => ({
   DeveloperGuidePage: () => <div data-testid="developer-guide" />,
 }));
-// Stubbed so routing tests do not pull the Abyss SDK into the module graph.
-jest.mock("../pages/ImportExportPage", () => ({
-  IMPORT_EXPORT_TAB_ID: "import-export",
-  ImportExportPage: () => <div data-testid="import-export" />,
-}));
 
 function goTo(url: string) {
   window.history.replaceState(null, "", url);
