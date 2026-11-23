@@ -14,8 +14,12 @@ function storage(): Storage | null {
 
 /** The connection method that can be safely resumed after a page reload. */
 export function savedConnectionMethod(): ConnectionMethod | null {
-  const method = storage()?.getItem(CONNECTION_METHOD_STORAGE_KEY);
-  return method === "demo" || method === "serial" ? method : null;
+  try {
+    const method = storage()?.getItem(CONNECTION_METHOD_STORAGE_KEY);
+    return method === "demo" || method === "serial" ? method : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -25,9 +29,17 @@ export function savedConnectionMethod(): ConnectionMethod | null {
  */
 export function saveConnectionMethod(method: ConnectionMethod): void {
   if (method !== "demo" && method !== "serial") return;
-  storage()?.setItem(CONNECTION_METHOD_STORAGE_KEY, method);
+  try {
+    storage()?.setItem(CONNECTION_METHOD_STORAGE_KEY, method);
+  } catch {
+    // Storage writes are best-effort and must not fail an active connection.
+  }
 }
 
 export function clearSavedConnectionMethod(): void {
-  storage()?.removeItem(CONNECTION_METHOD_STORAGE_KEY);
+  try {
+    storage()?.removeItem(CONNECTION_METHOD_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors on cleanup.
+  }
 }

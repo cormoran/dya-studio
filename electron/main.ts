@@ -11,9 +11,20 @@ let mainWindow: BrowserWindow | null = null;
 let pendingBluetoothCallback: ((deviceId: string) => void) | null = null;
 let pendingBluetoothWindow: BrowserWindow | null = null;
 let bluetoothPromptTimer: NodeJS.Timeout | null = null;
+let isPromptingBluetooth = false;
 const bluetoothDevices = new Map<string, BluetoothDevice>();
 const BLUETOOTH_DISCOVERY_TIMEOUT_MS = 6000;
 const BLUETOOTH_DISCOVERY_SETTLE_MS = 800;
+const ALLOWED_EXTERNAL_PROTOCOLS = new Set(["https:", "http:", "mailto:"]);
+
+function isAllowedExternalUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    return ALLOWED_EXTERNAL_PROTOCOLS.has(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
 
 function cancelPendingBluetoothSelection() {
   if (bluetoothPromptTimer) {
@@ -118,27 +129,34 @@ function registerSerialHandlers(session: Session, window: BrowserWindow) {
     return false;
   });
 
-  session.on(
-    "select-serial-port",
-    async (event, portList, contents, callback) => {
-      if (contents !== window.webContents) {
-        return;
-      }
+  const handleSelectSerialPort = async (
+    event: Electron.Event,
+    portList: SerialPort[],
+    contents: Electron.WebContents,
+    callback: (portId: string) => void,
+  ) => {
+    if (window.isDestroyed() || contents !== window.webContents) {
+      return;
+    }
 
-      event.preventDefault();
-      cancelPendingBluetoothSelection();
+    event.preventDefault();
+    cancelPendingBluetoothSelection();
 
-      let portId = "";
+    let portId = "";
 
-      try {
-        portId = await promptForSerialPort(window, portList);
-      } catch (error) {
-        console.error("Failed to choose serial port:", error);
-      }
+    try {
+      portId = await promptForSerialPort(window, portList);
+    } catch (error) {
+      console.error("Failed to choose serial port:", error);
+    }
 
-      callback(portId);
-    },
-  );
+    callback(portId);
+  };
+
+  session.on("select-serial-port", handleSelectSerialPort);
+  window.once("closed", () => {
+    session.off("select-serial-port", handleSelectSerialPort);
+  });
 }
 
 function registerBluetoothHandlers(window: BrowserWindow) {
@@ -146,6 +164,9 @@ function registerBluetoothHandlers(window: BrowserWindow) {
     "select-bluetooth-device",
     async (event, devices, callback) => {
       event.preventDefault();
+      if (window.isDestroyed() || isPromptingBluetooth) {
+        return;
+      }
 
       pendingBluetoothCallback = callback;
 
@@ -174,11 +195,17 @@ function registerBluetoothHandlers(window: BrowserWindow) {
         pendingBluetoothCallback = null;
         bluetoothDevices.clear();
 
-        if (!dialogWindow || !selectBluetoothDevice) {
+        if (
+          !dialogWindow ||
+          dialogWindow.isDestroyed() ||
+          !selectBluetoothDevice
+        ) {
+          selectBluetoothDevice?.("");
           return;
         }
 
         let deviceId = "";
+        isPromptingBluetooth = true;
 
         try {
           deviceId = await promptForBluetoothDevice(
@@ -187,6 +214,8 @@ function registerBluetoothHandlers(window: BrowserWindow) {
           );
         } catch (error) {
           console.error("Failed to choose Bluetooth device:", error);
+        } finally {
+          isPromptingBluetooth = false;
         }
 
         selectBluetoothDevice(deviceId);
@@ -196,7 +225,7 @@ function registerBluetoothHandlers(window: BrowserWindow) {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
@@ -205,21 +234,36 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
+  mainWindow = window;
 
-  registerSerialHandlers(mainWindow.webContents.session, mainWindow);
-  registerBluetoothHandlers(mainWindow);
+  window.once("closed", () => {
+    if (pendingBluetoothWindow === window) {
+      cancelPendingBluetoothSelection();
+    }
+    if (mainWindow === window) {
+      mainWindow = null;
+    }
+  });
+
+  registerSerialHandlers(window.webContents.session, window);
+  registerBluetoothHandlers(window);
 
   if (isDev) {
-    mainWindow.loadURL("http://localhost:5173");
-    mainWindow.webContents.openDevTools();
+    window.loadURL("http://localhost:5173");
+    window.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+    window.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedExternalUrl(url)) {
+      void shell.openExternal(url);
+    } else {
+      console.warn("Blocked opening disallowed external URL:", url);
+    }
     return { action: "deny" };
   });
 }

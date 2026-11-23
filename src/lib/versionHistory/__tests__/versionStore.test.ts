@@ -1,4 +1,4 @@
-import { createMemoryBackend } from "../backend";
+import { createIndexedDbBackend, createMemoryBackend } from "../backend";
 import { SNAPSHOT_ENVELOPE_VERSION } from "../types";
 import type { VersionStoreBackend } from "../types";
 import {
@@ -106,5 +106,94 @@ describe("deleteVersion", () => {
     await deleteVersion(recorded!.id, backend);
 
     expect(await loadVersions(scope, backend)).toHaveLength(0);
+  });
+});
+
+describe("createIndexedDbBackend", () => {
+  const originalIndexedDB = globalThis.indexedDB;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: originalIndexedDB,
+    });
+  });
+
+  test("resolves even when transaction.oncomplete fires synchronously with request.onsuccess", async () => {
+    const rows: unknown[] = [];
+    const fakeIndexedDB = {
+      open: () => {
+        const req: Record<string, unknown> = {};
+        queueMicrotask(() => {
+          req.result = {
+            transaction: () => {
+              const tx: Record<string, unknown> = {};
+              const store = {
+                add: (value: unknown) => {
+                  const addReq: Record<string, unknown> = {};
+                  queueMicrotask(() => {
+                    rows.push(value);
+                    addReq.result = rows.length;
+                    (addReq.onsuccess as (() => void) | undefined)?.();
+                    // Auto-commit in the same turn, before a post-await listener could attach.
+                    (tx.oncomplete as (() => void) | undefined)?.();
+                  });
+                  return addReq;
+                },
+              };
+              tx.objectStore = () => store;
+              return tx;
+            },
+          };
+          (req.onsuccess as (() => void) | undefined)?.();
+        });
+        return req;
+      },
+    };
+
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: fakeIndexedDB,
+    });
+
+    const backend = createIndexedDbBackend();
+    expect(backend).not.toBeNull();
+    const added = await backend!.add({
+      deviceKey: "dya2",
+      tabId: "keymap",
+      schemaVersion: 1,
+      envelopeVersion: SNAPSHOT_ENVELOPE_VERSION,
+      timestamp: 1234,
+      data: { ok: true },
+    });
+    expect(added.id).toBe(1);
+  });
+
+  test("falls back to in-memory storage when indexedDB.open fails", async () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+    const fakeIndexedDB = {
+      open: () => {
+        const req: Record<string, unknown> = {};
+        queueMicrotask(() => {
+          req.error = new Error("IndexedDB disabled");
+          (req.onerror as (() => void) | undefined)?.();
+        });
+        return req;
+      },
+    };
+
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: fakeIndexedDB,
+    });
+
+    try {
+      const backend = createIndexedDbBackend()!;
+      const result = await recordVersion(scope, { x: 1 }, 1000, backend);
+      expect(result.recorded).not.toBeNull();
+      expect(await loadVersions(scope, backend)).toHaveLength(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

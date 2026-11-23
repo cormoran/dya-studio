@@ -134,15 +134,17 @@ export function buildSupportReport(input: SupportReportInput): string {
           const fmt = (
             r: ElfResolvedIncident["pc"] | ElfResolvedIncident["lr"],
           ): string => {
-            let s = `0x${r.address.toString(16).padStart(8, "0")}`;
+            let s = `0x${(r.address >>> 0).toString(16).padStart(8, "0")}`;
             if (r.functionName) {
               s += ` → ${r.functionName}`;
               if (r.offset) s += `+0x${r.offset.toString(16)}`;
-              if (r.file) {
-                const parts = r.file.replace(/\\/g, "/").split("/");
-                const shortFile = parts.slice(-3).join("/");
-                s += ` (${shortFile}${r.line ? `:${r.line}` : ""})`;
-              }
+            }
+            if (r.file) {
+              const parts = r.file.replace(/\\/g, "/").split("/");
+              const shortFile = parts.slice(-3).join("/");
+              s += r.functionName
+                ? ` (${shortFile}${r.line ? `:${r.line}` : ""})`
+                : ` → ${shortFile}${r.line ? `:${r.line}` : ""}`;
             }
             return s;
           };

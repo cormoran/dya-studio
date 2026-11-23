@@ -5,13 +5,22 @@ export const KEYMAP_SCHEMA =
   "https://abyss.keyboard-hub.com/schemas/keymap/v1.json";
 
 export function parseSharedKeymap(value: unknown): KeymapDocument {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("This file is not a valid KeyboardHub keymap.");
+  }
+  const input = value as Record<string, unknown>;
+  const hadSchema = Object.hasOwn(input, "$schema");
   const parsed = keyboardHubKeymapSchema.safeParse({
     $schema: KEYMAP_SCHEMA,
-    ...(value as object),
+    ...input,
   });
   if (!parsed.success)
     throw new Error("This file is not a valid KeyboardHub keymap.");
-  return value as KeymapDocument;
+  const sanitized = { ...(parsed.data as Record<string, unknown>) };
+  if (!hadSchema) {
+    delete sanitized.$schema;
+  }
+  return sanitized as KeymapDocument;
 }
 
 /** Firmware cannot delete layers/positions. Preview exactly the state we can write.

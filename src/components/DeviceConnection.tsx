@@ -143,11 +143,13 @@ export function DeviceConnectionProvider({
     };
 
     const method = savedConnectionMethod() === "demo" ? "demo" : "serial";
+    const hasReconnectTarget = async () => {
+      if (method === "demo") return true;
+      const ports = await getPairedSerialPorts();
+      return ports.length > 0;
+    };
     const reconnect = async () => {
       if (method === "demo") return connectDemo();
-
-      const ports = await getPairedSerialPorts();
-      if (ports.length === 0) return null;
       return connectToPairedSerial();
     };
 
@@ -159,6 +161,17 @@ export function DeviceConnectionProvider({
     const startTimer = window.setTimeout(() => {
       void (async () => {
         if (cancelledState.current) return;
+
+        let canReconnect = false;
+        try {
+          canReconnect = await hasReconnectTarget();
+        } catch (error) {
+          if (!cancelledState.current) {
+            console.warn("Auto-reconnect check failed:", error);
+          }
+          return;
+        }
+        if (cancelledState.current || !canReconnect) return;
 
         setIsReconnecting(true);
         let transport: RpcTransport | null = null;
@@ -184,6 +197,7 @@ export function DeviceConnectionProvider({
             return;
           }
 
+          attemptedMethodRef.current = method;
           setConnectionMethod(method);
           await zmkApp.connect(() =>
             Promise.resolve(transport as RpcTransport),

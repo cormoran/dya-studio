@@ -16,11 +16,13 @@ import {
   isCompleteSharingSelection,
   type SharingSelection,
 } from "../lib/abyss/keymapSharing";
-import type {
-  AbyssKeymapSummary,
-  AbyssLayoutDefinition,
-  AbyssLayoutResolveResult,
-  AbyssKeymapData,
+import {
+  AbyssApiError,
+  AbyssOAuthError,
+  type AbyssKeymapSummary,
+  type AbyssLayoutDefinition,
+  type AbyssLayoutResolveResult,
+  type AbyssKeymapData,
 } from "@keyboard-hub/abyss-client";
 import { useCustomSubsystem } from "./useCustomSubsystem";
 import { useStudioUnlock } from "./useStudioUnlock";
@@ -66,6 +68,21 @@ import {
   Request as ProcessorRequest,
   Response as ProcessorResponse,
 } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
+
+function sharingErrorMessage(caught: unknown): string {
+  const lockMessage = studioLockErrorText(caught);
+  if (lockMessage) return lockMessage;
+  if (
+    caught instanceof AbyssApiError ||
+    caught instanceof AbyssOAuthError ||
+    caught instanceof TypeError
+  ) {
+    return abyssErrorMessageKey(caught);
+  }
+  return caught instanceof Error
+    ? caught.message
+    : abyssErrorMessageKey(caught);
+}
 
 const processorCodec = {
   encode: (request: ProcessorRequest) =>
@@ -266,12 +283,7 @@ export function useKeymapSharing(
           getAbyssClient()?.clearTokenSet();
           await onUnauthorized?.();
         }
-        setError(
-          studioLockErrorText(caught) ??
-            (caught instanceof Error
-              ? caught.message
-              : abyssErrorMessageKey(caught)),
-        );
+        setError(sharingErrorMessage(caught));
       }
       return false;
     } finally {
@@ -493,10 +505,13 @@ export function useKeymapSharing(
       const { loaded, resolved } = await capture(valid, false, Boolean(record));
       const client = getAbyssClient();
       const target =
-        file ??
-        (record && client ? (await readRecord(record.id, valid)).data : null);
+        file !== undefined
+          ? file
+          : record && client
+            ? (await readRecord(record.id, valid)).data
+            : undefined;
       valid();
-      if (!target) throw new Error("Keymap data unavailable");
+      if (target === undefined) throw new Error("Keymap data unavailable");
       const remote = parseSharedKeymap(target);
       const identifier = record ? await readIdentity(valid, true) : null;
       const expectedIdentifier = record
@@ -634,11 +649,7 @@ export function useKeymapSharing(
           await associate(pending.record.id, valid);
         } else {
           const failures: string[] = [];
-          const failureText = (caught: unknown) =>
-            studioLockErrorText(caught) ??
-            (caught instanceof Error
-              ? caught.message
-              : abyssErrorMessageKey(caught));
+          const failureText = sharingErrorMessage;
           try {
             if (!isEmptyDiff(writable)) {
               outcome.attempted = true;
@@ -735,11 +746,7 @@ export function useKeymapSharing(
         if (pending.kind === "save" && authenticated) await refreshList(valid);
       } catch (caught) {
         if (pending.kind === "apply") setMessage(null);
-        outcome.error =
-          studioLockErrorText(caught) ??
-          (caught instanceof Error
-            ? caught.message
-            : abyssErrorMessageKey(caught));
+        outcome.error = sharingErrorMessage(caught);
         throw caught;
       } finally {
         if (pending.kind === "apply") {
@@ -793,11 +800,7 @@ export function useKeymapSharing(
         await refreshList(valid);
       } catch (caught) {
         valid();
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : abyssErrorMessageKey(caught),
-        );
+        setError(sharingErrorMessage(caught));
       }
     }).finally(() => tab.close());
   };

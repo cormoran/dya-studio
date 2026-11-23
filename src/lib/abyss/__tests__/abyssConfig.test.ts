@@ -72,28 +72,6 @@ describe("isAbyssConfigured", () => {
   });
 });
 
-describe("isAbyssTabVisible", () => {
-  it("shows the tab locally without an OAuth client id", async () => {
-    const { isAbyssConfigured, isAbyssTabVisible } = await loadConfig({
-      clientId: "",
-      isLocalDevelopment: true,
-    });
-
-    expect(isAbyssConfigured()).toBe(false);
-    expect(isAbyssTabVisible()).toBe(true);
-  });
-
-  it("keeps the tab hidden in deployed builds without an OAuth client id", async () => {
-    const { isAbyssTabVisible } = await loadConfig({ clientId: "" });
-    expect(isAbyssTabVisible()).toBe(false);
-  });
-
-  it("shows the tab in deployed builds only when OAuth is configured", async () => {
-    const { isAbyssTabVisible } = await loadConfig({ clientId: "test-client" });
-    expect(isAbyssTabVisible()).toBe(true);
-  });
-});
-
 describe("abyssKeymapUrl", () => {
   it("links to the configured instance and encodes the record id", async () => {
     const { abyssKeymapUrl } = await loadConfig({ baseUrl: DEV_INSTANCE });

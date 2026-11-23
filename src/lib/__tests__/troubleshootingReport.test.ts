@@ -272,6 +272,41 @@ describe("buildSupportReport", () => {
     const japaneseCharPattern = /[぀-ヿ一-鿿]/;
     expect(japaneseCharPattern.test(withoutInjectedError)).toBe(false);
   });
+
+  it("includes resolved file:line even when functionName is unavailable", () => {
+    const input: SupportReportInput = {
+      ...baseInput(),
+      watchdog: {
+        available: true,
+        data: {
+          status: null,
+          incidents: [],
+          elfFileName: "zephyr.elf",
+          elfResolved: [
+            {
+              id: 1,
+              pc: {
+                address: 0x80001234,
+                file: "/workspace/app/src/main.c",
+                line: 42,
+              },
+              lr: {
+                address: 0x00010010,
+                functionName: "caller",
+                offset: 4,
+                file: "/workspace/app/src/caller.c",
+                line: 12,
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const report = buildSupportReport(input);
+    expect(report).toContain("0x80001234 → app/src/main.c:42");
+    expect(report).toContain("0x00010010 → caller+0x4 (app/src/caller.c:12)");
+  });
 });
 
 describe("findSuspectKeys", () => {

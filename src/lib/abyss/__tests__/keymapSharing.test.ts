@@ -36,6 +36,15 @@ it("validates round-trip exports and rejects invalid binding objects", () => {
       layers: [{ name: "Base", bindings: [{ type: "invalid" }] }],
     }),
   ).toThrow(/valid KeyboardHub/);
+  expect(() => parseSharedKeymap(null)).toThrow(/valid KeyboardHub/);
+  expect(() => parseSharedKeymap([])).toThrow(/valid KeyboardHub/);
+  expect(() => parseSharedKeymap("not-an-object")).toThrow(/valid KeyboardHub/);
+  expect(() =>
+    parseSharedKeymap({
+      ...device,
+      unexpectedExtraField: "should-not-leak",
+    }),
+  ).toThrow(/valid KeyboardHub/);
 });
 it("previews retained extra keys and layers, retaining absent optional sections", () => {
   const target = {

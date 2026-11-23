@@ -449,6 +449,46 @@ describe("CustomSubsystemsPage", () => {
         expect(mockZMKApp.disconnect).toHaveBeenCalledTimes(1),
       );
     });
+
+    it("does not allow clicking or navigating to non-http(s) firmware URLs", async () => {
+      const dangerousSubsystems = createMockSubsystems([
+        {
+          index: 0,
+          identifier: "zmk__evil",
+          uiUrl: [
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "https://safe.example.com/ui",
+          ],
+        },
+      ]);
+
+      renderComponent({
+        state: {
+          connection: null,
+          deviceInfo: null,
+          customSubsystems: dangerousSubsystems,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      const jsText = screen.getByText("javascript:alert(1)");
+      expect(jsText.closest("button")).toBeNull();
+      fireEvent.click(jsText);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(mockNavigateTo).not.toHaveBeenCalled();
+
+      const dataText = screen.getByText(
+        "data:text/html,<script>alert(1)</script>",
+      );
+      expect(dataText.closest("button")).toBeNull();
+
+      // Safe https URL remains clickable.
+      expect(
+        screen.getByText("https://safe.example.com/ui").closest("button"),
+      ).not.toBeNull();
+    });
   });
 
   describe("Don't show again", () => {

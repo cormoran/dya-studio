@@ -393,19 +393,29 @@ function SubsystemCard({ subsystem, onLinkClick }: SubsystemCardProps) {
           <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
             {t("Web UI")}
           </p>
-          {subsystem.uiUrl.map((url, urlIndex) => (
-            <button
-              key={urlIndex}
-              className="flex items-center gap-2 text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors group w-full text-left"
-              onClick={() => void onLinkClick(url)}
-            >
-              <IconExternalLink
-                size={14}
-                className="flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-              />
-              <span className="underline break-all">{url}</span>
-            </button>
-          ))}
+          {subsystem.uiUrl.map((url, urlIndex) =>
+            isValidUrl(url) ? (
+              <button
+                key={urlIndex}
+                type="button"
+                className="flex items-center gap-2 text-sm text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors group w-full text-left"
+                onClick={() => void onLinkClick(url)}
+              >
+                <IconExternalLink
+                  size={14}
+                  className="flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                />
+                <span className="underline break-all">{url}</span>
+              </button>
+            ) : (
+              <span
+                key={urlIndex}
+                className="block text-xs font-mono text-[var(--color-text-muted)] break-all"
+              >
+                {url}
+              </span>
+            ),
+          )}
         </div>
       ) : (
         <p className="text-xs text-[var(--color-text-muted)] mt-2">
@@ -431,11 +441,13 @@ export function CustomSubsystemsPage() {
   );
 
   const navigate = (url: string) => {
+    if (!isValidUrl(url)) return;
     zmkApp?.disconnect();
     navigateTo(url);
   };
 
   const handleLinkClick = async (url: string) => {
+    if (!isValidUrl(url)) return;
     if (await isUrlApproved(url)) {
       navigate(url);
     } else {

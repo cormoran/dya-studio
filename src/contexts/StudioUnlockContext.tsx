@@ -29,6 +29,7 @@ import type { ReactNode } from "react";
 import {
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -36,6 +37,7 @@ import {
 } from "react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import { UnlockPrompt } from "../components/UnlockPrompt";
+import { ConnectionContext } from "./DeviceConnectionContext";
 import {
   StudioUnlockCancelledError,
   isStudioUnlockError,
@@ -95,6 +97,7 @@ export function StudioUnlockProvider({
    */
   quietMs?: number;
 }) {
+  const { isConnected } = useContext(ConnectionContext);
   const { locked, lockState } = useStudioLockState();
 
   // All bookkeeping lives in refs so every gate helper below can be a *stable*
@@ -114,6 +117,10 @@ export function StudioUnlockProvider({
   const suppressingRef = useRef(false);
   const inFlightRef = useRef(0);
   const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Incremented on cancel/disconnect so in-flight retryAll() attempts that fail
+  // with unlock-required after cancellation reject instead of re-opening the modal.
+  const cancelGenRef = useRef(0);
+  const wasConnectedRef = useRef(isConnected);
   // Mirror of `locked` for the stable `requireUnlock` (updated off-render so the
   // callback can stay dependency-free and never change identity).
   const lockedRef = useRef(locked);
@@ -159,6 +166,7 @@ export function StudioUnlockProvider({
   }, [scheduleQuietTimer]);
 
   const retryAll = useCallback(async () => {
+    const retryGen = cancelGenRef.current;
     // Snapshot and clear: any op that is still locked re-parks itself below.
     const ops = parkedRef.current;
     parkedRef.current = [];
@@ -179,15 +187,23 @@ export function StudioUnlockProvider({
           op.resolve(await op.attempt());
         } catch (err) {
           if (isStudioUnlockError(err)) {
-            // Still locked: keep it parked and the modal open.
-            parkedRef.current.push(op);
-            syncOpen();
+            if (cancelGenRef.current !== retryGen || suppressingRef.current) {
+              op.reject(new StudioUnlockCancelledError());
+            } else {
+              // Still locked: keep it parked and the modal open.
+              parkedRef.current.push(op);
+              syncOpen();
+            }
           } else {
             op.reject(err);
           }
         }
       }),
     );
+
+    if (cancelGenRef.current !== retryGen) {
+      return;
+    }
 
     // Replay the operations the user originally attempted (open the selector,
     // apply the edit, …) now that we're unlocked. Best-effort: a throwing
@@ -202,6 +218,7 @@ export function StudioUnlockProvider({
   }, [syncOpen]);
 
   const cancel = useCallback(() => {
+    cancelGenRef.current += 1;
     // Enter the cooldown; arm the quiet timer (nothing may be in flight right
     // now, in which case it starts counting down immediately).
     suppressingRef.current = true;
@@ -217,6 +234,25 @@ export function StudioUnlockProvider({
       op.reject(new StudioUnlockCancelledError());
     }
   }, [scheduleQuietTimer, syncOpen]);
+
+  // Reset parked ops and close the modal when an active connection drops.
+  useEffect(() => {
+    const wasConnected = wasConnectedRef.current;
+    wasConnectedRef.current = isConnected;
+    if (wasConnected && !isConnected) {
+      cancelGenRef.current += 1;
+      suppressingRef.current = false;
+      clearQuietTimer();
+      const ops = parkedRef.current;
+      parkedRef.current = [];
+      proactiveOpenRef.current = false;
+      pendingActionsRef.current = [];
+      syncOpen();
+      for (const op of ops) {
+        op.reject(new StudioUnlockCancelledError());
+      }
+    }
+  }, [isConnected, clearQuietTimer, syncOpen]);
 
   // On unlock: clear the cancel cooldown (a real unlock supersedes any recent
   // dismissal) and auto-retry any parked requests.

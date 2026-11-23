@@ -5,6 +5,7 @@ import { MetaError } from "@zmkfirmware/zmk-studio-ts-client";
 import { ErrorConditions } from "@zmkfirmware/zmk-studio-ts-client/meta";
 import type { StudioLockState } from "@cormoran/zmk-studio-react-hook";
 import { StudioUnlockProvider } from "../StudioUnlockContext";
+import { ConnectionContext } from "../DeviceConnectionContext";
 import { useStudioUnlock } from "../../hooks/useStudioUnlock";
 import { StudioUnlockCancelledError } from "../../lib/studioUnlock";
 
@@ -524,5 +525,48 @@ describe("StudioUnlockProvider", () => {
       await user.click(screen.getByText("run2"));
       await screen.findByText("Keyboard Unlock Required");
     });
+  });
+
+  it("closes the modal and rejects parked ops when the device disconnects", async () => {
+    const onReject = jest.fn();
+    const fn = jest.fn().mockRejectedValue(unlockError());
+    const makeConnection = (isConnected: boolean) => ({
+      isConnected,
+      deviceName: isConnected ? "DYA" : undefined,
+      onConnect: jest.fn(),
+      onDisconnect: jest.fn(),
+      isLoading: false,
+      error: null,
+      isReconnecting: false,
+      onCancelReconnect: jest.fn(),
+    });
+
+    const { rerender } = render(
+      <ConnectionContext.Provider value={makeConnection(true)}>
+        <StudioUnlockProvider>
+          <Harness fn={fn} onReject={onReject} label="run" />
+        </StudioUnlockProvider>
+      </ConnectionContext.Provider>,
+    );
+
+    await userEvent.click(screen.getByText("run"));
+    await screen.findByText("Keyboard Unlock Required");
+
+    rerender(
+      <ConnectionContext.Provider value={makeConnection(false)}>
+        <StudioUnlockProvider>
+          <Harness fn={fn} onReject={onReject} label="run" />
+        </StudioUnlockProvider>
+      </ConnectionContext.Provider>,
+    );
+
+    await waitFor(() =>
+      expect(onReject).toHaveBeenCalledWith(
+        expect.any(StudioUnlockCancelledError),
+      ),
+    );
+    expect(
+      screen.queryByText("Keyboard Unlock Required"),
+    ).not.toBeInTheDocument();
   });
 });

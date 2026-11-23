@@ -38,13 +38,30 @@ function detectBrowserLanguage(): Language {
   return "en";
 }
 
+function readStoredLanguage(): Language | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return isLanguage(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredLanguage(language: Language): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, language);
+  } catch {
+    // Ignore storage errors in restricted contexts.
+  }
+}
+
 function getInitialLanguage(): Language {
   if (typeof window === "undefined") {
     return "en";
   }
 
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (isLanguage(stored)) {
+  const stored = readStoredLanguage();
+  if (stored) {
     return stored;
   }
 
@@ -59,19 +76,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   const setLanguage = useCallback((newLanguage: Language) => {
-    localStorage.setItem(STORAGE_KEY, newLanguage);
+    writeStoredLanguage(newLanguage);
     setLanguageState(newLanguage);
   }, []);
 
   const toggleLanguage = useCallback(() => {
-    setLanguageState((current) => {
-      const index = LANGUAGE_CYCLE.indexOf(current);
-      const next =
-        LANGUAGE_CYCLE[(index === -1 ? 0 : index + 1) % LANGUAGE_CYCLE.length];
-      localStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
-  }, []);
+    const index = LANGUAGE_CYCLE.indexOf(language);
+    const next =
+      LANGUAGE_CYCLE[(index === -1 ? 0 : index + 1) % LANGUAGE_CYCLE.length];
+    writeStoredLanguage(next);
+    setLanguageState(next);
+  }, [language]);
 
   const t = useCallback(
     (key: string, params?: TranslationParams) =>

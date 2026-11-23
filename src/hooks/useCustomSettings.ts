@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
+import { resolveCustomSubsystemIdentifier } from "../lib/rpcLogging";
 import { useCustomSubsystem } from "./useCustomSubsystem";
 import {
   Notification,
@@ -141,22 +142,23 @@ export function useCustomSettings(
 
   const subsystemIdentifierForIndex = useCallback(
     (index: number) =>
-      zmkApp?.state.customSubsystems?.subsystems[index]?.identifier ??
-      t("Subsystem {{index}}", { index }),
+      resolveCustomSubsystemIdentifier(
+        index,
+        zmkApp?.state.customSubsystems?.subsystems,
+      ) ?? t("Subsystem {{index}}", { index }),
     [t, zmkApp?.state.customSubsystems?.subsystems],
   );
 
-  // Resolve the caller-requested subsystem identifier to the numeric index the
-  // list scope expects. Undefined identifier => no scoping. A set-but-unknown
-  // identifier resolves to undefined, which is treated as "subsystem absent".
+  // Resolve the caller-requested subsystem identifier to the device-assigned
+  // numeric index the list scope expects. Undefined identifier => no scoping.
+  // A set-but-unknown identifier resolves to undefined ("subsystem absent").
   const targetSubsystemIndex = useMemo(() => {
     if (subsystemIdentifier === undefined) {
       return undefined;
     }
-    const index = zmkApp?.state.customSubsystems?.subsystems?.findIndex(
+    return zmkApp?.state.customSubsystems?.subsystems?.find(
       (candidate) => candidate?.identifier === subsystemIdentifier,
-    );
-    return index !== undefined && index >= 0 ? index : undefined;
+    )?.index;
   }, [subsystemIdentifier, zmkApp?.state.customSubsystems?.subsystems]);
 
   const callCustomRequest = useCallback(
