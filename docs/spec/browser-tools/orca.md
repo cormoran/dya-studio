@@ -141,6 +141,30 @@ orca dialog dismiss --page <id> --json
 
 クリック後の dialog を処理し、確認文、成功応答、再 snapshot を証拠に残す。保留 dialog がない等の失敗応答は承認の証拠にならない。確認を観測/操作できなければ承認後の経路は blocked とする。
 
+### hidden file input と download
+
+Keymap sharing の file 操作（[IE-020/021](../pages/import-export.md)）では、`ファイルから反映` のボタンと実際の `input[type=file]` を区別する。hidden input は accessibility snapshot に ref が出ない場合がある。読み取り専用 `eval` で input の件数・`accept`・既存の id / 親要素を確認し、一意な selector で対象を特定する。trigger button の ref を upload に渡した場合の `Node is not a file input element` は対象選択の誤りであり、アプリの import 失敗ではない。
+
+CLI 1.4.240 では、`upload --help` が `<ref>` と表示していても、`--element` に CSS selector を指定して hidden input にファイルを渡せる。input が一つの場合の形式は次の通り。複数なら既存の id / 親要素で絞り、DOM に id を追加したり input の値を書き換えたりしない。
+
+```sh
+orca upload --page <returned-page-id> \
+  --element 'input[type=file]' \
+  --files /absolute/tmp/invalid-keymap.json --json
+```
+
+この指定での upload 成功と、不正な形式の JSON に対するアプリ内 alert を同版の Demo で確認した。`uploaded: 1` だけではアプリの検証・preview・反映成功を示さない。fresh snapshot / DOM で実際の alert または preview を読み、有効ファイルの差分・Include・確認取消し・反映後 readback は別々に検証する。実機の保存・復元も別条件である。
+
+ファイル保存は、最新 snapshot の Save-to-file ref と明示的な一時出力先を使う。
+
+```sh
+orca download --page <returned-page-id> \
+  --selector <fresh-save-to-file-ref> \
+  --path /absolute/tmp/exported-keymap.json --json
+```
+
+完了した inner response と実ファイルの存在・内容を確認する。`Downloaded file not found at expected path (GUID: ...)` は download の取得・配置に関する tool blocker とし、アプリが無効な JSON を出力した証拠にはしない。本ガイドの bounded recovery 後も実ファイルがなければ、有効 export に依存する検証は blocked として残す。通常の click 成功やファイル名だけで export / import を pass にしない。
+
 ## 到達できない場合
 
 `runtime_unavailable` や localhost 接続失敗では、許可された sandbox 外実行で `orca status --json` と指定 URL の HTTP 到達性を再確認する。ブラウザの実行ホスト、サーバーの実 URL/ポートも確認する。sandbox 内で起動した local dev server に paired desktop browser から到達できない場合は、許可を得て server も sandbox 外で明示的な host/port（例: `--host 127.0.0.1 --port 5174`）に起動し直す。ブラウザツールを切り替えて制約を隠さない。worker は独自に runtime の serve/restart を繰り返さず、具体的エラーを coordinator へ送る。復帰できるまでアプリの不具合や pass と判定しない。
