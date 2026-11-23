@@ -389,78 +389,72 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     [ready, call, updateProcessorOptimistically],
   );
 
-  const setTempLayerEnabled = useCallback(
-    async (id: number, enabled: boolean) => {
-      if (!ready) return;
-
+  const writeTemporaryLayerSetting = useCallback(
+    async (id: number, change: { enabled: boolean } | { layer: number }) => {
       setIsLoading(true);
       setError(null);
-
       try {
-        updateProcessorOptimistically(id, { tempLayerEnabled: enabled });
-
-        const request = Request.create({
-          setTempLayerEnabled: {
-            id,
-            enabled,
-          },
-        });
-
-        const resp = await call(request);
-
-        if (resp) {
-          if (resp.error) {
-            setError(resp.error.message);
-            return;
-          }
+        if (!ready)
+          throw new Error("Not connected to device or subsystem not found");
+        const enable = "enabled" in change;
+        const ack = await gatedCall(
+          Request.create(
+            enable
+              ? { setTempLayerEnabled: { id, enabled: change.enabled } }
+              : { setTempLayerLayer: { id, layer: change.layer } },
+          ),
+        );
+        if (
+          ack?.error ||
+          !(enable ? ack?.setTempLayerEnabled : ack?.setTempLayerLayer)
+        ) {
+          throw new Error(
+            ack?.error?.message ||
+              "Device did not acknowledge the temporary layer change",
+          );
+        }
+        const read = await gatedCall(Request.create({ getProcessor: { id } }));
+        const reported = read?.getProcessor?.processor;
+        if (read?.error || !reported || reported.id !== id) {
+          throw new Error(
+            read?.error?.message ||
+              "Could not verify the temporary layer setting",
+          );
+        }
+        updateProcessorOptimistically(
+          id,
+          enable
+            ? { tempLayerEnabled: reported.tempLayerEnabled }
+            : { tempLayerLayer: reported.tempLayerLayer },
+        );
+        if (
+          enable
+            ? reported.tempLayerEnabled !== change.enabled
+            : reported.tempLayerLayer !== change.layer
+        ) {
+          throw new Error(
+            "Device reported a different temporary layer setting",
+          );
         }
       } catch (err) {
-        console.error("Failed to set temp layer enabled:", err);
-        setError(
-          `Failed to set temp layer enabled: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
+        setError(err instanceof Error ? err.message : String(err));
+        throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [ready, call, updateProcessorOptimistically],
+    [ready, gatedCall, updateProcessorOptimistically],
+  );
+
+  const setTempLayerEnabled = useCallback(
+    (id: number, enabled: boolean) =>
+      writeTemporaryLayerSetting(id, { enabled }),
+    [writeTemporaryLayerSetting],
   );
 
   const setTempLayerLayer = useCallback(
-    async (id: number, layer: number) => {
-      if (!ready) return;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        updateProcessorOptimistically(id, { tempLayerLayer: layer });
-
-        const request = Request.create({
-          setTempLayerLayer: {
-            id,
-            layer,
-          },
-        });
-
-        const resp = await call(request);
-
-        if (resp) {
-          if (resp.error) {
-            setError(resp.error.message);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Failed to set temp layer:", err);
-        setError(
-          `Failed to set temp layer: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [ready, call, updateProcessorOptimistically],
+    (id: number, layer: number) => writeTemporaryLayerSetting(id, { layer }),
+    [writeTemporaryLayerSetting],
   );
 
   const setTempLayerActivationDelay = useCallback(

@@ -244,6 +244,101 @@ describe("useRuntimeInputProcessor", () => {
     });
   });
 
+  describe("Temporary layer confirmation", () => {
+    it.each([
+      "enabled",
+      "layer",
+      "rejected",
+      "no ack",
+      "wrong ack",
+      "missing readback",
+      "wrong id",
+      "different layer",
+    ])("handles %s", async (scenario) => {
+      const id = 4;
+      const enable = scenario !== "layer" && scenario !== "different layer";
+      const requests: Request[] = [];
+      const original = {
+        id,
+        name: "Mouse",
+        tempLayerEnabled: false,
+        tempLayerLayer: 1,
+      };
+      mockCallRPC.mockImplementation(async (payload: Uint8Array) => {
+        const request = Request.decode(payload);
+        if (request.listProcessors || request.getLayerInfo)
+          return Response.encode(Response.create({})).finish();
+        requests.push(request);
+        if (request.getProcessor) {
+          if (scenario === "missing readback") return null;
+          return Response.encode(
+            Response.create({
+              getProcessor: {
+                processor: {
+                  ...original,
+                  id: scenario === "wrong id" ? 0 : id,
+                  tempLayerEnabled: enable,
+                  tempLayerLayer: scenario === "different layer" ? 2 : 3,
+                },
+              },
+            }),
+          ).finish();
+        }
+        if (scenario === "no ack") return null;
+        return Response.encode(
+          Response.create(
+            scenario === "rejected"
+              ? { error: { message: "denied" } }
+              : enable && scenario !== "wrong ack"
+                ? { setTempLayerEnabled: {} }
+                : { setTempLayerLayer: {} },
+          ),
+        ).finish();
+      });
+      const wrapper = createWrapper({
+        state: {
+          connection: {} as never,
+          customSubsystems: [{ index: 0, identifier: "cormoran_rip" }],
+        },
+        findSubsystem: () => ({ index: 0, identifier: "cormoran_rip" }),
+        onNotification: mockOnNotification,
+      });
+      const { result } = renderHook(() => useRuntimeInputProcessor(), {
+        wrapper,
+      });
+      act(() =>
+        mockOnNotification.mock.calls[0][0].callback({
+          payload: Notification.encode(
+            Notification.create({ processorChanged: { processor: original } }),
+          ).finish(),
+        }),
+      );
+      const success = scenario === "enabled" || scenario === "layer";
+      await act(async () => {
+        const write = enable
+          ? result.current.setTempLayerEnabled(id, true)
+          : result.current.setTempLayerLayer(id, 3);
+        if (success) await write;
+        else await expect(write).rejects.toThrow();
+      });
+      expect(requests[0]).toMatchObject(
+        enable
+          ? { setTempLayerEnabled: { id, enabled: true } }
+          : { setTempLayerLayer: { id, layer: 3 } },
+      );
+      if (["rejected", "no ack", "wrong ack"].includes(scenario))
+        expect(requests).toHaveLength(1);
+      else expect(requests[1].getProcessor).toEqual({ id });
+      expect(result.current.processors[0]).toMatchObject({
+        id,
+        tempLayerEnabled: scenario === "enabled",
+        tempLayerLayer:
+          scenario === "layer" ? 3 : scenario === "different layer" ? 2 : 1,
+      });
+      expect(result.current.error === null).toBe(success);
+    });
+  });
+
   describe("Setting Scaling", () => {
     it("should set scaling successfully and simplify fraction", async () => {
       const mockConnection = { isConnected: true };
